@@ -53,8 +53,27 @@ pub trait RemoteOpener: Send + Sync {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String>;
     fn describe(&self, entry: &RemoteEntry) -> Described;
     /// The track could not be opened. The facade decides whether its server
-    /// stopped answering.
-    fn failed(&self, _entry: &RemoteEntry, _why: &str) {}
+    /// stopped answering. `play` is the player's generation of the play it
+    /// was opened for, when a player asked: a failure that comes late, from a
+    /// play that was replaced meanwhile, says nothing of the queue that
+    /// replaced it.
+    fn failed(&self, _entry: &RemoteEntry, _why: &str, _play: Option<u64>) {}
+}
+
+thread_local! {
+    /// The play this thread opens tracks for.
+    static PLAY: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(None) };
+}
+
+/// Says which play this thread opens tracks for from now on: the player's
+/// thread as it takes a play, and the thread that opens a track ahead for it.
+pub(crate) fn opening_for(play: Option<u64>) {
+    PLAY.set(play);
+}
+
+/// The play this thread opens tracks for.
+pub(crate) fn opening_play() -> Option<u64> {
+    PLAY.get()
 }
 
 static OPENER: RwLock<Option<Arc<dyn RemoteOpener>>> = RwLock::new(None);
@@ -122,7 +141,7 @@ pub(crate) fn open(path: &Path, entry: &RemoteEntry) -> Result<Opened, String> {
             Ok((decoded, playback, normalization))
         }
         Err(why) => {
-            opener.failed(entry, &why);
+            opener.failed(entry, &why, opening_play());
             Err(why)
         }
     }

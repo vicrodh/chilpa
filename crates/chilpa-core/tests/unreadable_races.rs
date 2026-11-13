@@ -140,15 +140,26 @@ impl AudioSink for Swallow {
     }
 }
 
-/// The fake of the facade's opener. Each test registers where its entry is.
+/// The fake of the facade's opener. Each test registers what its entries do.
 #[derive(Default)]
 struct Opener {
     /// Where an entry's file is served.
     served: Mutex<HashMap<String, String>>,
+    /// Entries whose `locate` says it was entered, waits to be let go and
+    /// then fails.
+    held: Mutex<HashMap<String, (Sender<()>, Arc<AtomicBool>)>>,
+    /// Each failure the player reported: the entry and the play it was for.
+    failed: Mutex<Vec<(String, Option<u64>)>>,
 }
 
 impl RemoteOpener for Opener {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        let held = self.held.lock().unwrap().get(&entry.external_id).cloned();
+        if let Some((entered, go)) = held {
+            let _ = entered.send(());
+            wait_for(&go);
+            return Err("the source timed out".into());
+        }
         let url = self.served.lock().unwrap().get(&entry.external_id).cloned().ok_or("nobody serves this entry")?;
         Ok(Located {
             normalization: None,
@@ -161,6 +172,9 @@ impl RemoteOpener for Opener {
     fn describe(&self, _: &RemoteEntry) -> Described {
         Described::default()
     }
+    fn failed(&self, entry: &RemoteEntry, _why: &str, play: Option<u64>) {
+        self.failed.lock().unwrap().push((entry.external_id.clone(), play));
+    }
 }
 
 fn opener() -> &'static Opener {
@@ -171,6 +185,7 @@ fn opener() -> &'static Opener {
         impl RemoteOpener for Shared {
             fn locate(&self, e: &RemoteEntry) -> Result<Located, String> { self.0.locate(e) }
             fn describe(&self, e: &RemoteEntry) -> Described { self.0.describe(e) }
+            fn failed(&self, e: &RemoteEntry, why: &str, play: Option<u64>) { self.0.failed(e, why, play) }
         }
         chilpa_core::remote::install(Arc::new(Shared(opener)));
         opener
@@ -483,4 +498,36 @@ fn a_play_on_its_way_out_does_not_spend_the_stop_mark_of_the_one_replacing_it() 
     assert_eq!(replaced_while_failing_to_open("mark-removed", true, 1), [0, 1], "the new play stops after its second track");
     // The old play's failing track has the new mark's number.
     assert_eq!(replaced_while_failing_to_open("mark-failing", false, 0), [0], "the new play stops after its first track");
+}
+
+#[test]
+fn a_failure_of_a_replaced_play_s_open_says_which_play_it_was_for() {
+    let dir = folder("late-report");
+    let opener = opener();
+    let (entered, entered_seen) = channel();
+    let go = Arc::new(AtomicBool::new(false));
+    opener.held.lock().unwrap().insert("late".into(), (entered, Arc::clone(&go)));
+    let player = player();
+    let old = player.play_from_index(&[entry("late")], "fake", None, false, None, &[], None);
+    entered_seen.recv_timeout(Duration::from_secs(10)).expect("the old play is opening its track");
+    player.stop_for_handoff();
+    let new = player.play_from_index(&[wave(&dir, "02.wav")], "fake", None, false, None, &[], None);
+    go.store(true, Ordering::Release);
+    events_until_over(&player, new);
+    let failed = opener.failed.lock().unwrap().clone();
+    assert!(failed.contains(&("late".to_string(), Some(old))), "the late failure names the old play, not the new one: {failed:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_failure_of_a_track_opened_ahead_says_which_play_it_was_for() {
+    let opener = opener();
+    opener.served.lock().unwrap().insert("ahead-first".into(), serve(wave_bytes(30_000), None));
+    let (entered, _entered_seen) = channel();
+    opener.held.lock().unwrap().insert("ahead-next".into(), (entered, Arc::new(AtomicBool::new(true))));
+    let player = player();
+    let play = player.play_from_index(&[entry("ahead-first"), entry("ahead-next")], "fake", None, false, None, &[], None);
+    events_until_over(&player, play);
+    let failed = opener.failed.lock().unwrap().clone();
+    assert!(failed.contains(&("ahead-next".to_string(), Some(play))), "opened on a thread of its own, for the same play: {failed:?}");
 }

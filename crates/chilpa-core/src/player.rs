@@ -208,13 +208,15 @@ impl Player {
                             }
                             controls_thread.start_index.store(start_index.unwrap_or(usize::MAX), Ordering::Release);
                             let started = std::time::Instant::now();
-                            // What is this play's alone: its events and the
-                            // stop mark set for it.
+                            // What is this play's alone: its events, the
+                            // stop mark set for it, and the remote opens it
+                            // asks for.
                             let events = Events { to: events_tx.clone(), generation };
                             let controls = crate::queue_playback::Controls {
                                 stop_after: controls_thread.stop_after.of(generation),
                                 ..controls_thread.clone()
                             };
+                            crate::remote::opening_for(Some(generation));
                             let result = play(
                                 &queue,
                                 &device,

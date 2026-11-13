@@ -263,11 +263,11 @@ impl RemoteOpener for Openers {
         Described { tags, artwork, duration: Duration::from_millis(heard.duration_ms) }
     }
 
-    fn failed(&self, entry: &RemoteEntry, why: &str) {
-        self.reports.failed(entry.to_entry(), why, !chilpa_core::network::current().offline);
+    fn failed(&self, entry: &RemoteEntry, why: &str, play: Option<u64>) {
+        self.reports.failed(entry.to_entry(), why, !chilpa_core::network::current().offline, play);
         if entry.source.provider != PROVIDER {
             if let Some(servers) = &self.servers {
-                servers.failed(entry, why);
+                servers.failed(entry, why, play);
             }
         }
     }

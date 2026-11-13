@@ -1084,7 +1084,12 @@ where
                     };
                     let at = crate::preload::at(crate::remote::entry(&path).is_some(), delivery.opened.sample_rate_hz, length);
                     let (caps, dsd_mode, direct) = (caps.clone(), controls.dsd_mode.get(), controls.dsd_direct(caps));
-                    preload.request_at(path, at, move |path| open_track(path, &caps, policy, dsd_mode, direct.as_ref()));
+                    // Opened on a thread of its own, for the same play.
+                    let play = crate::remote::opening_play();
+                    preload.request_at(path, at, move |path| {
+                        crate::remote::opening_for(play);
+                        open_track(path, &caps, policy, dsd_mode, direct.as_ref())
+                    });
                 }
             }
         }
