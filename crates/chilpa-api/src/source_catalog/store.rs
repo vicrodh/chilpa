@@ -478,6 +478,13 @@ impl Store {
         id
     }
 
+    /// A track-derived card can have its image only on one of its members.
+    pub(super) fn card_image<'a>(&'a self, card: &'a Card) -> &'a str {
+        if !card.image.is_empty() { return &card.image; }
+        card.tracks.iter().flatten().filter_map(|id| self.tracks.get(id))
+            .map(|track| track.image.as_str()).find(|image| !image.is_empty()).unwrap_or_default()
+    }
+
     /// A card's cover as shown: the one the listener chose, over the one
     /// fetched.
     pub fn shown_art(&self, card: &Card) -> String {

@@ -4,6 +4,14 @@ use chilpa_api::Album;
 use std::{cell::RefCell, rc::Rc};
 const PAGE: usize = 128;
 const PAGES_KEPT: usize = 24;
+/// A visible source card requests missing artwork even when its snapshot is cached.
+pub fn artwork(album: &Album, visible: bool) -> cxx_qt_lib::QUrl {
+    if album.id < 0 {
+        crate::format::art_url(&app::with(|api| api.source_album_artwork(album.id, visible)))
+    } else {
+        crate::format::art_url(&album.artwork_path)
+    }
+}
 pub enum Albums {
     Loaded(Vec<Album>),
     Snapshot { ids: Vec<i64>, pages: Rc<RefCell<chilpa_api::PageCache<Album>>> },

@@ -70,7 +70,7 @@ pub mod qobject {
         #[qinvokable]
         fn year(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
-        fn art(self: &AlbumGridModel, index: i32, rev: i32) -> QUrl;
+        fn art(self: &AlbumGridModel, index: i32, rev: i32, visible: bool) -> QUrl;
         #[qinvokable]
         fn album_id(self: &AlbumGridModel, index: i32, rev: i32) -> i64;
         #[qinvokable]
@@ -212,8 +212,8 @@ impl qobject::AlbumGridModel {
     pub fn year(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| a.year.map(|year| QString::from(&year.to_string())).unwrap_or_default()).unwrap_or_default()
     }
-    pub fn art(&self, index: i32, _rev: i32) -> QUrl {
-        self.rust().get(index, |album| crate::format::art_url(&album.artwork_path)).unwrap_or_default()
+    pub fn art(&self, index: i32, _rev: i32, visible: bool) -> QUrl {
+        self.rust().get(index, |album| chilpa_qt_kit::album_rows::artwork(album, visible)).unwrap_or_default()
     }
     pub fn artist(&self, index: i32, _rev: i32) -> QString {
         self.rust().artist_cards.get(index.max(0) as usize).map(QString::from).unwrap_or_default()

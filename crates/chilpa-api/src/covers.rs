@@ -121,10 +121,17 @@ impl Drop for DecodePermit<'_> {
 /// I keep the raster permit through validation or resizing. Decoder scratch
 /// buffers and the small resized output sit outside this raw-pixel budget.
 pub(crate) fn with_decoded<R: std::io::BufRead + std::io::Seek, T>(
-    mut reader: image::ImageReader<R>, mut limits: image::Limits,
+    reader: image::ImageReader<R>, limits: image::Limits,
     use_picture: impl FnOnce(image::DynamicImage) -> T,
 ) -> Option<T> {
     let mut permit = DECODE_BUDGET.acquire();
+    decode_image(reader, limits, &mut permit, use_picture)
+}
+
+fn decode_image<R: std::io::BufRead + std::io::Seek, T>(
+    mut reader: image::ImageReader<R>, mut limits: image::Limits, permit: &mut DecodePermit<'_>,
+    use_picture: impl FnOnce(image::DynamicImage) -> T,
+) -> Option<T> {
     reader.limits(limits.clone());
     let mut decoder = reader.into_decoder().ok()?;
     let bytes = decoder.total_bytes();
@@ -136,6 +143,12 @@ pub(crate) fn with_decoded<R: std::io::BufRead + std::io::Seek, T>(
 }
 
 pub(crate) fn with_cover<T>(path: &Path, use_picture: impl FnOnce(image::DynamicImage) -> T) -> Option<T> {
+    with_cover_size(path, None, use_picture)
+}
+
+fn with_cover_size<T>(path: &Path, size: Option<u32>, use_picture: impl FnOnce(image::DynamicImage) -> T) -> Option<T> {
+    use std::io::{Read, Seek};
+    let mut permit = DECODE_BUDGET.acquire();
     let file = std::fs::File::open(path).ok()?;
     if file.metadata().ok()?.len() > ENCODED_BYTES { return None; }
     let reader = image::ImageReader::new(std::io::BufReader::new(file)).with_guessed_format().ok()?;
@@ -143,7 +156,64 @@ pub(crate) fn with_cover<T>(path: &Path, use_picture: impl FnOnce(image::Dynamic
     limits.max_image_width = Some(8192);
     limits.max_image_height = Some(8192);
     limits.max_alloc = Some(DECODE_BYTES);
-    with_decoded(reader, limits, use_picture)
+    if reader.format() != Some(image::ImageFormat::Jpeg) || size.is_none() {
+        return decode_image(reader, limits, &mut permit, use_picture);
+    }
+    let mut input = reader.into_inner();
+    let mut encoded = Vec::new();
+    input.by_ref().take(ENCODED_BYTES + 1).read_to_end(&mut encoded).ok()?;
+    if encoded.len() as u64 > ENCODED_BYTES { return None; }
+    let mut decoder = turbojpeg::Decompressor::new().ok()?;
+    let header = decoder.read_header(&encoded).ok()?;
+    limits.check_dimensions(header.width.try_into().ok()?, header.height.try_into().ok()?).ok()?;
+    let channels = if header.colorspace == turbojpeg::Colorspace::Gray { 1 } else { 3 };
+    let original_bytes = (header.width as u64).checked_mul(header.height as u64)?.checked_mul(channels)?;
+    if original_bytes > DECODE_BYTES { return None; }
+    let Some(scale) = jpeg_scale(&header, size?) else {
+        // Unsupported color/coding modes and small originals use the existing decoder.
+        // Only headers have been inspected; no image is decoded twice.
+        drop(decoder);
+        drop(encoded);
+        input.rewind().ok()?;
+        return decode_image(image::ImageReader::with_format(input, image::ImageFormat::Jpeg), limits, &mut permit, use_picture);
+    };
+    // Reserve the original raster, not the scaled output: decoder scratch is not free.
+    permit.reserve(original_bytes)?;
+    decoder.set_scaling_factor(scale).ok()?;
+    // Match the existing JPEG decoder's progressive scan cap.
+    decoder.set_scan_limit(100).ok()?;
+    let scaled = header.scaled(scale);
+    let format = if channels == 1 { turbojpeg::PixelFormat::GRAY } else { turbojpeg::PixelFormat::RGB };
+    let mut output = turbojpeg::Image {
+        pixels: vec![0; scaled.width * scaled.height * channels as usize],
+        width: scaled.width, height: scaled.height, pitch: scaled.width * channels as usize, format,
+    };
+    // A corrupt fast-path JPEG fails once instead of triggering a second full decode.
+    decoder.decompress(&encoded, output.as_deref_mut()).ok()?;
+    let picture = if channels == 1 {
+        image::DynamicImage::ImageLuma8(image::GrayImage::from_raw(scaled.width as u32, scaled.height as u32, output.pixels)?)
+    } else {
+        image::DynamicImage::ImageRgb8(image::RgbImage::from_raw(scaled.width as u32, scaled.height as u32, output.pixels)?)
+    };
+    // IDCT dimensions round up independently. Derive the final aspect ratio from
+    // the original header so odd dimensions do not stretch the cover by a pixel.
+    let ratio = f64::from(size?) / header.width.max(header.height) as f64;
+    let width = (header.width as f64 * ratio).round().max(1.0) as u32;
+    let height = (header.height as f64 * ratio).round().max(1.0) as u32;
+    Some(use_picture(picture.thumbnail_exact(width, height)))
+}
+
+fn jpeg_scale(header: &turbojpeg::DecompressHeader, size: u32) -> Option<turbojpeg::ScalingFactor> {
+    use turbojpeg::{Colorspace, ScalingFactor};
+    if header.is_lossless || header.is_arithmetic
+        || !matches!(header.colorspace, Colorspace::RGB | Colorspace::YCbCr | Colorspace::Gray) {
+        return None;
+    }
+    // At least halve both axes (four times fewer output pixels). The final thumbnail
+    // retains the requested longest side, including non-square and odd-sized covers.
+    [ScalingFactor::ONE_EIGHTH, ScalingFactor::ONE_QUARTER, ScalingFactor::ONE_HALF]
+        .into_iter().find(|scale| scale.scale(header.width.max(header.height)) >= size as usize
+            && header.width.max(header.height) >= size as usize * 2)
 }
 
 /// The cover at `path`, `size` pixels on its longer side, from the cache;
@@ -211,7 +281,7 @@ fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     MAKING.once(&out, || {
         // A cover smaller than asked is kept at its size: making it bigger
         // only makes it blurrier and heavier.
-        let pixels = with_cover(path, |cover| {
+        let pixels = with_cover_size(path, Some(size), |cover| {
             let small = if cover.width().max(cover.height()) > size { cover.thumbnail(size, size) } else { cover };
             small.into_rgb8()
         })?;
@@ -472,5 +542,113 @@ mod contained_tests {
         assert_eq!(result.get_pixel(0,40),art.get_pixel(0,20));
         assert_eq!(result.get_pixel(79,40),art.get_pixel(79,20));
         assert_ne!(result.get_pixel(0,0),result.get_pixel(0,79));
+    }
+}
+
+#[cfg(test)]
+mod scaled_jpeg_tests {
+    use super::*;
+
+    fn jpeg(width: usize, height: usize, format: turbojpeg::PixelFormat, progressive: bool) -> Vec<u8> {
+        let pixel = match format {
+            turbojpeg::PixelFormat::GRAY => vec![123],
+            turbojpeg::PixelFormat::CMYK => vec![20, 90, 150, 10],
+            _ => vec![180, 60, 90],
+        };
+        let pixels = pixel.repeat(width * height);
+        let input = turbojpeg::Image { pixels: pixels.as_slice(), width, height, pitch: width * pixel.len(), format };
+        let mut compressor = turbojpeg::Compressor::new().unwrap();
+        compressor.set_quality(95).unwrap();
+        if format == turbojpeg::PixelFormat::GRAY { compressor.set_subsamp(turbojpeg::Subsamp::Gray).unwrap(); }
+        compressor.set_progressive(progressive).unwrap();
+        compressor.compress_to_vec(input).unwrap()
+    }
+
+    #[test]
+    fn scaled_jpeg_keeps_rgb_gray_and_odd_cover_shapes_at_the_requested_size() {
+        let dir = tempfile::tempdir().unwrap();
+        for (width, height, format, progressive) in [
+            (1024, 1024, turbojpeg::PixelFormat::RGB, false),
+            (1025, 513, turbojpeg::PixelFormat::RGB, true),
+            (513, 1025, turbojpeg::PixelFormat::GRAY, false),
+            (1, 1024, turbojpeg::PixelFormat::GRAY, false),
+        ] {
+            let data = jpeg(width, height, format, progressive);
+            let header = turbojpeg::read_header(&data).unwrap();
+            assert!(jpeg_scale(&header, 128).is_some());
+            let path = dir.path().join(format!("{width}-{height}.jpg"));
+            std::fs::write(&path, &data).unwrap();
+            let expected = image::load_from_memory(&data).unwrap().thumbnail(128, 128).into_rgb8();
+            let reduced = with_cover_size(&path, Some(128), |picture| {
+                let reserved = DECODE_BUDGET.used.lock().unwrap().1;
+                let original_bytes = width as u64 * height as u64 * format.size() as u64;
+                assert!(reserved >= original_bytes, "scaled decoding still reserves the original raster");
+                picture.into_rgb8()
+            }).unwrap();
+            assert_eq!(reduced.dimensions(), expected.dimensions());
+            for (actual, expected) in reduced.as_raw().iter().zip(expected.as_raw()) {
+                assert!(actual.abs_diff(*expected) <= 4, "the displayed color survives scaled decoding");
+            }
+        }
+    }
+
+    #[test]
+    fn small_and_cmyk_jpegs_keep_the_existing_decode_path() {
+        let dir = tempfile::tempdir().unwrap();
+        for (width, height, format, progressive) in [
+            (96, 64, turbojpeg::PixelFormat::RGB, false),
+            (512, 384, turbojpeg::PixelFormat::CMYK, false),
+        ] {
+            let data = jpeg(width, height, format, progressive);
+            let header = turbojpeg::read_header(&data).unwrap();
+            assert!(jpeg_scale(&header, 128).is_none());
+            let path = dir.path().join("fallback.jpg");
+            std::fs::write(&path, &data).unwrap();
+            let original = with_cover(&path, |picture| picture.into_rgb8()).unwrap();
+            let fallback = with_cover_size(&path, Some(128), |picture| picture.into_rgb8()).unwrap();
+            assert_eq!(fallback, original, "fallback does not alter color conversion or dimensions");
+        }
+    }
+
+    #[test]
+    fn lossless_jpeg_is_never_given_a_scaled_destination_buffer() {
+        let dir = tempfile::tempdir().unwrap();
+        let pixels = vec![123u8; 512 * 384 * 3];
+        let input = turbojpeg::Image { pixels: pixels.as_slice(), width: 512, height: 384,
+            pitch: 512 * 3, format: turbojpeg::PixelFormat::RGB };
+        let mut compressor = turbojpeg::Compressor::new().unwrap();
+        compressor.set_lossless(true).unwrap();
+        let data = compressor.compress_to_vec(input).unwrap();
+        let header = turbojpeg::read_header(&data).unwrap();
+        assert!(header.is_lossless);
+        assert!(jpeg_scale(&header, 64).is_none());
+        let decoded = turbojpeg::decompress(&data, turbojpeg::PixelFormat::RGB).unwrap();
+        assert_eq!(decoded.pixels, pixels, "the fixture is a valid lossless JPEG");
+        let path = dir.path().join("lossless.jpg");
+        std::fs::write(&path, data).unwrap();
+        let original = with_cover(&path, |picture| picture.into_rgb8());
+        let fallback = with_cover_size(&path, Some(64), |picture| picture.into_rgb8());
+        assert_eq!(fallback, original, "the existing decoder decides whether this coding mode is supported");
+    }
+
+    #[test]
+    fn corrupt_and_oversized_jpegs_do_not_bypass_original_limits() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = jpeg(512, 512, turbojpeg::PixelFormat::RGB, false);
+        let frame = original.windows(2).position(|bytes| bytes == [0xff, 0xc0]).unwrap();
+        for (width, height) in [(8193u16, 1u16), (8192, 8192)] {
+            let mut data = original.clone();
+            data[frame + 5..frame + 7].copy_from_slice(&height.to_be_bytes());
+            data[frame + 7..frame + 9].copy_from_slice(&width.to_be_bytes());
+            let path = dir.path().join("oversized.jpg");
+            std::fs::write(&path, data).unwrap();
+            assert!(with_cover_size(&path, Some(64), |_| ()).is_none());
+        }
+        let path = dir.path().join("corrupt.jpg");
+        std::fs::write(&path, &original[..frame + 19]).unwrap();
+        assert!(with_cover_size(&path, Some(64), |_| ()).is_none());
+        std::fs::write(&path, original).unwrap();
+        std::fs::OpenOptions::new().write(true).open(&path).unwrap().set_len(ENCODED_BYTES + 1).unwrap();
+        assert!(with_cover_size(&path, Some(64), |_| ()).is_none());
     }
 }

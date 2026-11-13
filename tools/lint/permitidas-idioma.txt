@@ -1031,3 +1031,11 @@ Romanizer
 
 # JavaScript Array method used by the bounded checklist window.
 unshift
+
+# External JPEG decoder, pixel format, and native build API names.
+cmake
+cmyk
+colorspace
+luma
+subsamp
+turbojpeg

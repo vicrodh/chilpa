@@ -238,6 +238,11 @@ fn words(text: &str) -> Vec<String> {
 }
 
 impl Chilpa {
+    /// A visible source card requests missing artwork even when its snapshot is cached.
+    pub fn source_album_artwork(&self, id: i64, visible: bool) -> String {
+        if visible { self.catalog.visible_art_of_card(id) } else { self.catalog.art_of_card(id) }
+    }
+
     /// Refresh covers of an existing Home snapshot without changing its membership.
     pub fn refresh_source_album_artwork(&self, rows: &mut [Album]) {
         for row in rows { row.artwork_path = self.catalog.art_of_card(row.id); }

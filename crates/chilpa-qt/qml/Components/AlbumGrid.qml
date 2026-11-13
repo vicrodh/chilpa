@@ -113,6 +113,7 @@ Item {
             // The group this row opens, if it opens one.
             required property string group
             readonly property real lead: group !== "" ? Metrics.rowGroup : 0
+            readonly property bool onScreen: grid.visible && y + height > grid.visibleTop && y < grid.visibleTop + (grid.viewport ? grid.viewport.height : view.height) && (!grid.shelf || x + width > view.contentX && x < view.contentX + view.width)
             readonly property bool nearby: !grid.viewport || y + height >= grid.visibleTop - grid.viewport.height && y < grid.visibleTop + grid.viewport.height * 2
 
             width: grid.shelf ? grid.cardWidth : grid.technical ? view.contentWidth : grid.width
@@ -141,7 +142,7 @@ Item {
                 aiGenerated: shown && grid.model.aiGenerated(row.first, row.revision)
                 subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
                 year: shown ? grid.model.year(row.first, row.revision) : ""
-                art: shown && !grid.technical ? grid.model.art(row.first, row.revision) : ""
+                art: shown && !grid.technical ? grid.model.art(row.first, row.revision, row.onScreen) : ""
                 columns: grid.listColumns
                 sources: shown && !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
                 mixed: !!grid.model && grid.model.mixed
@@ -182,7 +183,7 @@ Item {
                     aiGenerated: occupied && grid.model.aiGenerated(at, rev)
                     subtitle: occupied ? grid.model.subtitle(at, rev) : ""
                     year: occupied ? grid.model.year(at, rev) : ""
-                    art: occupied ? grid.model.art(at, rev) : ""
+                    art: occupied ? grid.model.art(at, rev, row.onScreen) : ""
                     artColors: occupied && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, grid.detailsRev) || "[]") : []
                     qualityInfo: occupied && !round ? JSON.parse(AlbumActions.quality(albumId, grid.detailsRev) || "{}") : ({})
                     tint: at
