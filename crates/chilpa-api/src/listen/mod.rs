@@ -133,7 +133,7 @@ impl Chilpa {
     }
     fn install_buffer(&mut self, b: &Buffer) {
         self.listen.active = b.id;
-        self.queue = b.paths.clone(); self.queue_origins = b.origins.clone(); self.queue_origins.resize(self.queue.len(), None); self.removed = b.removed.clone();
+        self.swap_rows(b.paths.clone()); self.queue_origins = b.origins.clone(); self.queue_origins.resize(self.queue.len(), None); self.removed = b.removed.clone();
         self.queue_placement = b.placement.clone(); self.queue_groups = b.groups.clone();
         self.next_queue_group = b.groups.iter().map(|g| g.key).max().unwrap_or(0) + 1;
         self.base = 0; self.shuffle = b.shuffle;
@@ -165,6 +165,7 @@ impl Chilpa {
         // the window, and its listen is one somebody chose to leave.
         self.plays.retire(Fate::Replaced(Replaced::Track));
         if let Some(p) = &self.player { p.stop_for_handoff(); }
+        self.now.playing = false;
         self.finish_buffer_switch();
         true
     }
@@ -219,7 +220,7 @@ impl Chilpa {
         if self.listen.pending.is_some_and(|p| p.0 == id) { self.listen.pending = None; }
         self.listen.undo = Some(Undo { originals: vec![(at, self.listen.buffers[at].clone())], created: Vec::new(), selected: self.listen.selected });
         if id == self.listen.active {
-            self.stop(); self.queue.clear(); self.queue_origins.clear(); self.removed.clear(); self.queue_groups.clear();
+            self.stop(); self.swap_rows(Vec::new()); self.queue_origins.clear(); self.removed.clear(); self.queue_groups.clear();
             self.queue_placement.clear(); self.now = NowPlaying::default();
             // The output stays empty; another tab never starts by closing this one.
             self.listen.active = 0;
@@ -240,7 +241,7 @@ impl Chilpa {
         b.order = (0..paths.len()).collect(); b.groups.clear(); b.placement = vec![QueuePlacement::Original; paths.len()];
         b.cursor = 0; b.seconds = 0.0; b.stop_after = None;
         if self.listen.active == id {
-            self.stop(); self.listen.active = 0; self.queue.clear(); self.queue_origins.clear(); self.now = NowPlaying::default();
+            self.stop(); self.listen.active = 0; self.swap_rows(Vec::new()); self.queue_origins.clear(); self.now = NowPlaying::default();
         }
         self.store_buffer(b); self.persist_buffers();
     }
@@ -248,7 +249,7 @@ impl Chilpa {
         let Some(undo) = self.listen.undo.take() else { return };
         let affected: Vec<_> = undo.originals.iter().map(|(_, b)| b.id).chain(undo.created).collect();
         if affected.contains(&self.listen.active) {
-            self.stop(); self.listen.active = 0; self.queue.clear(); self.queue_origins.clear();
+            self.stop(); self.listen.active = 0; self.swap_rows(Vec::new()); self.queue_origins.clear();
             self.removed.clear(); self.queue_placement.clear(); self.queue_groups.clear(); self.now = NowPlaying::default();
         }
         if self.listen.pending.is_some_and(|p| affected.contains(&p.0)) { self.listen.pending = None; }

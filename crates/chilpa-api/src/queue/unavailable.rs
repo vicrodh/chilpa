@@ -452,14 +452,16 @@ impl Chilpa {
     /// Nothing from `from` on can be played: whatever played stops, and the
     /// window shows the queue as one that ran out, with the count.
     pub(crate) fn end_unplayable(&mut self, from: usize) {
-        if self.player.is_some() && self.now.playing {
+        // What played stops and leaves the window: what it says from here on
+        // is about a queue that is over. The rows may already have been
+        // swapped under it and the play told to stop for a launch that, as
+        // it turns out, does not come.
+        if self.player.is_some() {
             self.stop();
         }
+        self.plays.retire(Fate::Stopped);
         self.set_stop_after(None);
         self.sleep_until = None;
-        // What played is no longer in front of the window: what it says from
-        // here on is about a queue that is over.
-        self.plays.retire(Fate::Stopped);
         let lyrics_revision = self.now.lyrics_revision + 1;
         self.now = NowPlaying { index: from, queue_len: self.queue.len(), lyrics_revision, ..NowPlaying::default() };
         self.say_skipped();
@@ -620,7 +622,7 @@ mod tests {
         let mut api = crate::Chilpa::new();
         // The queue that replaced the one play 8 was opening `late` for.
         api.queue = vec![entry("other"), entry("late")];
-        api.plays.push(9, 0);
+        api.plays.push(9, 0, 0);
         api.unavailable.reports.failed(entry("late"), "timed out", false, Some(8));
         api.take_unavailable_reports();
         assert!(api.unavailable.marked.is_empty(), "the old play's failure is not this queue's");

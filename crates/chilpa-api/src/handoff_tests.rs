@@ -320,3 +320,24 @@ fn a_failure_of_a_replaced_play_is_not_said_of_the_one_that_replaced_it() {
     let logged = logged(&mut api, at);
     assert_eq!((logged.events, logged.skips), (1, 1), "{logged:?}");
 }
+
+#[test]
+fn a_queue_replaced_under_a_play_takes_the_play_off_the_window_at_once() {
+    let (a, at) = (161, 1_000_000_161);
+    let mut api = playing(a, "/music/rows-replaced.flac", at);
+    say(&mut api, a, PlayerEvent::Progress { frames: seconds(2), played: seconds(2) });
+    assert_eq!(api.now.frames, seconds(2));
+    // Other rows take the queue's place, and the launch that should follow
+    // is refused or has not gone out yet.
+    api.replace_queue(vec!["/music/another-queue.flac".into()]);
+    assert!(!api.now.playing, "nothing plays until a launch says so");
+    // What the old play said before it was told to stop is read now: every
+    // position it names is another row's.
+    say(&mut api, a, PlayerEvent::Progress { frames: seconds(5), played: seconds(5) });
+    assert_eq!(api.now.frames, seconds(2), "the window does not follow it");
+    say(&mut api, a, closed(seconds(5), How::Failed));
+    say(&mut api, a, PlayerEvent::Failed { message: "the device failed".into() });
+    assert!(api.now.error.is_empty(), "nor is its failure said of the new queue: {}", api.now.error);
+    let logged = logged(&mut api, at);
+    assert_eq!((logged.events, logged.skips), (1, 1), "its listen is written all the same: {logged:?}");
+}

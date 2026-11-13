@@ -50,6 +50,8 @@ pub(crate) enum Replaced {
 /// One launch the player was asked for, until its last event is read.
 pub(crate) struct Play {
     pub id: u64,
+    /// The count of the queue's rows it was launched on.
+    pub epoch: u64,
     /// Where in the queue it was launched from.
     pub from: usize,
     /// Whether a track of it has started in front of the window.
@@ -95,8 +97,8 @@ impl Plays {
     }
 
     /// A launch went out: it is the play in front of the window.
-    pub fn push(&mut self, id: u64, from: usize) {
-        self.0.push_back(Play { id, from, started: false, fate: Fate::Current, ledger: Ledger::default() });
+    pub fn push(&mut self, id: u64, from: usize, epoch: u64) {
+        self.0.push_back(Play { id, epoch, from, started: false, fate: Fate::Current, ledger: Ledger::default() });
     }
 
     fn take(&mut self, id: u64) -> Option<Play> {
@@ -118,7 +120,7 @@ impl Chilpa {
             Relaunch::Track => Replaced::Track,
         };
         self.plays.retire(Fate::Replaced(replaced));
-        self.plays.push(id, from);
+        self.plays.push(id, from, self.rows_epoch);
         self.launch_counted();
     }
 

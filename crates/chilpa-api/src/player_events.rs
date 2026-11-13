@@ -33,8 +33,9 @@ impl Chilpa {
             return;
         };
         let (fate, from, had_started) = (play.fate, play.from, play.started);
-        // With no queue in front of the window, no play is in front of it.
-        let shown = fate == Fate::Current && self.listen.active != 0;
+        // In front of the window, and launched on the rows that stand: what
+        // it says of a position is about the track the window has there.
+        let shown = fate == Fate::Current && play.epoch == self.rows_epoch;
         match event {
             PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, attempt, index, queue_len, dsd_multiple, dsd_passthrough } => {
                 let rate = opened.sample_rate_hz;

@@ -20,6 +20,7 @@ use super::*;
 pub(crate) mod back_button;
 pub(crate) mod ended;
 pub(crate) mod normalization;
+pub(crate) mod rows;
 pub(crate) mod unavailable;
 
 /// Where the playback switches are kept.
@@ -61,7 +62,7 @@ impl Chilpa {
     pub(crate) fn replace_queue_from(&mut self, queue: Vec<String>, start: Option<usize>) -> usize {
         self.before_queue_replace();
         self.set_stop_after(None);
-        self.queue = queue;
+        self.swap_rows(queue);
         self.queue_origins = vec![self.browse_origin.clone(); self.queue.len()];
         self.casting.order.clear();
         self.queue_placement = vec![QueuePlacement::Original; self.queue.len()];
@@ -108,9 +109,9 @@ impl Chilpa {
         if saved.entries.is_empty() || saved.entries.len() > 100_000 {
             return;
         }
-        self.queue = saved.entries.iter().map(|entry| entry.path.clone()).collect();
+        self.swap_rows(saved.entries.iter().map(|entry| entry.path.clone()).collect());
         if self.queue.iter().any(|path| path.is_empty()) {
-            self.queue.clear(); self.queue_origins.clear();
+            self.swap_rows(Vec::new()); self.queue_origins.clear();
             return;
         }
         self.queue_placement = saved
@@ -324,7 +325,9 @@ impl Chilpa {
     /// Nothing happens if nothing is playing: the chosen output is already
     /// remembered, and the next track will start there.
     pub fn move_output(&mut self, device: &str, bit_perfect: bool) {
-        if self.player.is_none() || !self.now.playing || self.queue.is_empty() {
+        // Only the play in front of the window can be moved: one that is on
+        // its way out, for another queue or a stop, is not picked up again.
+        if self.plays.current().is_none() || self.queue.is_empty() {
             return;
         }
         let at = std::time::Duration::from_secs_f64(self.now.seconds.max(0.0));
@@ -451,7 +454,7 @@ impl Chilpa {
         self.queue_groups = groups.into_values().collect();
         self.queue_placement = kept.iter().map(|(_, placement, _)| *placement).collect();
         self.queue_origins = kept_origins;
-        self.queue = kept.into_iter().map(|(path, _, _)| path).collect();
+        self.swap_rows(kept.into_iter().map(|(path, _, _)| path).collect());
         self.removed = vec![false; self.queue.len()];
         self.now = NowPlaying {
             path: self.queue[0].clone(),
@@ -480,7 +483,7 @@ impl Chilpa {
         self.stop();
         self.set_stop_after(None);
         self.sleep_until = None;
-        self.queue.clear(); self.queue_origins.clear();
+        self.swap_rows(Vec::new()); self.queue_origins.clear();
         self.removed.clear();
         self.queue_placement.clear();
         self.queue_groups.clear();
@@ -562,7 +565,7 @@ impl Chilpa {
             && matches!(self.queue_placement.get(order[at]), Some(QueuePlacement::Next | QueuePlacement::Later)) { at += 1; }
         self.queue_origins.resize(first, None);
         self.queue_origins.extend(std::iter::repeat_n(self.browse_origin.clone(), tracks.len()));
-        self.queue.extend(tracks.iter().map(|p| p.display().to_string()));
+        self.extend_rows(tracks.iter().map(|p| p.display().to_string()));
         self.queue_placement.resize(self.queue.len(), placement);
         self.removed.resize(self.queue.len(), false);
         order.splice(at..at, first..self.queue.len());

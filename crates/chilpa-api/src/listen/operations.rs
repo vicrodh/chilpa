@@ -90,7 +90,7 @@ impl Chilpa {
             for (i, removed) in b.removed.iter().enumerate().skip(self.base) { if *removed { p.remove_from_queue(i - self.base); } }
         }
         self.listen.active = b.id;
-        self.queue = b.paths.clone(); self.queue_origins = b.origins.clone(); self.removed = b.removed.clone();
+        self.grow_rows_to(&b.paths); self.queue_origins = b.origins.clone(); self.removed = b.removed.clone();
         self.queue_placement = b.placement.clone(); self.queue_groups = b.groups.clone();
         self.next_queue_group = b.groups.iter().map(|g| g.key).max().unwrap_or(0) + 1;
         self.casting.order = b.order.clone(); self.stop_after = b.stop_after; self.now.queue_len = b.paths.len();

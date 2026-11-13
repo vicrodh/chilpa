@@ -609,6 +609,9 @@ pub struct Chilpa {
     /// The plays asked of the player and not yet seen end, each with the
     /// listens it opened.
     plays: plays::Plays,
+    /// Counts the times the queue's rows were put in the place of others: a
+    /// play is about the rows it was launched on (`queue/rows.rs`).
+    rows_epoch: u64,
     /// Sends listens to ListenBrainz; started by the window, never by a test.
     scrobbler: Option<scrobble::Scrobbler>,
     /// The current queue's paths, whole and in the order they were queued.
@@ -762,6 +765,7 @@ impl Chilpa {
             pending_volume: None,
             library: None,
             plays: Default::default(),
+            rows_epoch: 0,
             scrobbler: None,
             queue: Vec::new(),
             queue_work: Default::default(),
@@ -1224,10 +1228,12 @@ impl Chilpa {
         if self.casting.active() { self.cast_stop(); return; }
         // An episode stopped halfway is picked up from here.
         self.keep_place(true);
-        if self.player.as_ref().is_none_or(|p| p.idle()) {
-            self.now.playing = false; self.now.paused = false;
-            self.stop_after = None; self.sleep_until = None;
-        }
+        // Stopped as this returns, whatever the player is in the middle of:
+        // what plays leaves the window, and what it says while it unwinds is
+        // not about it any more.
+        self.plays.retire(plays::Fate::Stopped);
+        self.now.playing = false; self.now.paused = false;
+        self.stop_after = None; self.sleep_until = None;
         if let Some(p) = &self.player {
             p.stop();
         }
