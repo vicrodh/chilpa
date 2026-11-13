@@ -19,6 +19,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
+use crate::plays::Fate;
 use crate::{Chilpa, NowPlaying, Relaunch, Repeat, TrackRow};
 
 /// Why an entry cannot be played.
@@ -133,21 +134,11 @@ struct Mark {
     launch: u64,
 }
 
-/// The launch in flight: where it started, whether a track of it has
-/// started, and the player's generation for it.
-#[derive(Clone)]
-struct Launch {
-    from: usize,
-    started: bool,
-    generation: u64,
-}
-
-/// The run's unavailable entries and the launch in flight.
+/// The run's unavailable entries.
 #[derive(Default)]
 pub(crate) struct State {
     /// By queue entry, so a track queued twice is judged once.
     marked: HashMap<String, Mark>,
-    launch: Option<Launch>,
     /// Launches so far. A mark made before the current one was handed to
     /// the player as a removed row, so it cannot be what the player failed on.
     launches: u64,
@@ -247,18 +238,12 @@ impl Chilpa {
         }
     }
 
-    /// The launch went out from `from`, as the player's `generation`.
-    pub(crate) fn launched_from(&mut self, from: usize, generation: u64) {
+    /// A launch went out: what is marked from here on is marked during it.
+    pub(crate) fn launch_counted(&mut self) {
         self.unavailable.launches += 1;
-        self.unavailable.launch = Some(Launch { from, started: false, generation });
         if self.now.error.is_empty() {
             self.say_skipped();
         }
-    }
-
-    /// The player's generation of the launch in flight.
-    pub(crate) fn launch_generation(&self) -> Option<u64> {
-        self.unavailable.launch.as_ref().map(|launch| launch.generation)
     }
 
     /// The rows the player passes without opening: the ones the listener
@@ -275,9 +260,6 @@ impl Chilpa {
     /// plays, and what cannot be played is taken out of the player's walk.
     /// The output stays open and gapless holds across the gap.
     pub(crate) fn look_past_unavailable(&mut self) {
-        if let Some(launch) = &mut self.unavailable.launch {
-            launch.started = true;
-        }
         let at = self.now.index;
         if self.casting.active() || self.repeat == Repeat::One || self.stop_after == Some(at) {
             return;
@@ -303,7 +285,7 @@ impl Chilpa {
         if reports.is_empty() {
             return;
         }
-        let current = self.unavailable.launch.as_ref().map(|launch| launch.generation);
+        let current = self.plays.current().map(|play| play.id);
         let mut marked = false;
         for (entry, why, play) in reports {
             if play.is_some() && current.is_some() && play != current {
@@ -326,25 +308,13 @@ impl Chilpa {
         }
     }
 
-    /// The player passed over a queue entry it could not play -- it would not
-    /// open, or it broke partway -- and went on. The entry is marked like one
-    /// found missing, left out of the laps that follow, and counted; one that
-    /// broke partway, after `played` frames, ends its listen as cut short.
-    pub(crate) fn player_skipped(&mut self, generation: u64, index: usize, path: &Path, why: String, played: Option<u64>) {
-        let current = self.unavailable.launch.as_ref().is_some_and(|launch| launch.generation == generation);
-        chilpa_core::trace_playback("facade", "unavailable_passed", format_args!("index={} generation={generation} current={current} played={played:?} why={why:?}", self.base + index));
-        // Said by a play this launch replaced: the queue it was about is gone,
-        // and the same entry in this one may well play.
-        if !current {
-            return;
-        }
-        // Heard up to where it broke: the listen closes here, with what was
-        // heard, and is not taken for one that played through when the next
-        // track starts or the queue runs out.
-        if let Some(frames) = played.filter(|_| self.in_progress.as_ref().is_some_and(|listen| listen.path == path && listen.play == generation)) {
-            self.set_played(frames);
-            self.log_play(true);
-        }
+    /// The play in front of the window passed over a queue entry it could
+    /// not play -- it would not open, or it broke partway -- and went on. The
+    /// entry is marked like one found missing, left out of the laps that
+    /// follow, and counted. What a play behind the window passed over does
+    /// not come here: the queue it was about is gone, and the same entry in
+    /// this one may well play.
+    pub(crate) fn player_skipped(&mut self, index: usize, path: &Path, why: String) {
         // The player left that position out itself. A copy of the entry
         // elsewhere is marked with it and passed when reached, or left out
         // ahead as a track starts; looking for copies here walked the whole
@@ -358,20 +328,18 @@ impl Chilpa {
         self.say_skipped();
     }
 
-    /// The player failed. When nothing it reached in this launch could be
-    /// played, the queue ends as one that ran out; otherwise playback stops
-    /// and says why.
-    pub(crate) fn player_failed(&mut self, message: String) {
-        if self.skip_failure() {
+    /// The play in front of the window failed; it was launched from `from`
+    /// and `started` says whether a track of it had started. When nothing it
+    /// reached could be played, the queue ends as one that ran out; otherwise
+    /// playback stops and says why.
+    pub(crate) fn player_failed(&mut self, message: String, from: usize, started: bool) {
+        if self.skip_failure(from, started) {
             return;
         }
         self.now.playing = false;
         self.stop_after = None;
         self.sleep_until = None;
         self.now.error = message;
-        // A device failure is not a listen, but whatever did play is
-        // logged, marked as interrupted.
-        self.log_play(true);
     }
 
     /// Grows when the marks change: the queue's rows are read again.
@@ -455,13 +423,12 @@ impl Chilpa {
     /// goes, so it fails on a track only when nothing it reached played: once
     /// a track of the launch has started, or where something playable stands
     /// on its way, the failure is the output's and is not skipped.
-    fn skip_failure(&mut self) -> bool {
+    fn skip_failure(&mut self, from: usize, started: bool) -> bool {
         self.take_unavailable_reports();
-        let Some(launch) = self.unavailable.launch.clone() else { return false };
-        if launch.started || self.casting.active() || self.queue.is_empty() {
+        if started || self.casting.active() || self.queue.is_empty() {
             return false;
         }
-        let walk = self.walk_unavailable(launch.from, true);
+        let walk = self.walk_unavailable(from, true);
         // Only an entry marked during this launch can be what the player
         // failed on: one marked before was handed to it as a removed row.
         let current = self.unavailable.launches;
@@ -484,13 +451,15 @@ impl Chilpa {
 
     /// Nothing from `from` on can be played: whatever played stops, and the
     /// window shows the queue as one that ran out, with the count.
-    fn end_unplayable(&mut self, from: usize) {
+    pub(crate) fn end_unplayable(&mut self, from: usize) {
         if self.player.is_some() && self.now.playing {
             self.stop();
         }
         self.set_stop_after(None);
         self.sleep_until = None;
-        self.unavailable.launch = None;
+        // What played is no longer in front of the window: what it says from
+        // here on is about a queue that is over.
+        self.plays.retire(Fate::Stopped);
         let lyrics_revision = self.now.lyrics_revision + 1;
         self.now = NowPlaying { index: from, queue_len: self.queue.len(), lyrics_revision, ..NowPlaying::default() };
         self.say_skipped();
@@ -634,11 +603,10 @@ mod tests {
         let mut api = crate::Chilpa::new();
         let count = 10_000;
         api.queue = (0..count).map(|n| format!("/nowhere/{n:05}.flac")).collect();
-        api.unavailable.launch = Some(Launch { from: 0, started: true, generation: 7 });
         let started = Instant::now();
         for index in 0..count {
             let path = PathBuf::from(&api.queue[index]);
-            api.player_skipped(7, index, &path, "refused".into(), None);
+            api.player_skipped(index, &path, "refused".into());
         }
         let took = started.elapsed();
         assert_eq!(api.unavailable.marked.len(), count, "each one is marked");
@@ -652,7 +620,7 @@ mod tests {
         let mut api = crate::Chilpa::new();
         // The queue that replaced the one play 8 was opening `late` for.
         api.queue = vec![entry("other"), entry("late")];
-        api.unavailable.launch = Some(Launch { from: 0, started: true, generation: 9 });
+        api.plays.push(9, 0);
         api.unavailable.reports.failed(entry("late"), "timed out", false, Some(8));
         api.take_unavailable_reports();
         assert!(api.unavailable.marked.is_empty(), "the old play's failure is not this queue's");

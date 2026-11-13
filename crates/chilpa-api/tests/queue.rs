@@ -1132,6 +1132,7 @@ fn tracks_of_a_replaced_queue_read_late_are_not_logged_as_played_through() {
         1,
         "only the new queue's track played through; the one that broke and the one cut off by the new queue did not: {logged:?}"
     );
+    assert_eq!(logged.skips, 2, "and both of those are in the history, cut short: {logged:?}");
     let _ = std::fs::remove_dir_all(dir);
 }
 

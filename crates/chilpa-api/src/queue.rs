@@ -20,7 +20,6 @@ use super::*;
 pub(crate) mod back_button;
 pub(crate) mod ended;
 pub(crate) mod normalization;
-pub(crate) mod replaced;
 pub(crate) mod unavailable;
 
 /// Where the playback switches are kept.
@@ -255,8 +254,9 @@ impl Chilpa {
         if tracks.is_empty() {
             return;
         }
-        if self.player.is_some() && self.now.playing {
-            self.mark_relaunch(why);
+        // The play in front of the window is told to stop for this one; what
+        // becomes of it is said as this one goes out.
+        if self.plays.current().is_some() {
             if let Some(player) = &self.player {
                 player.stop_for_handoff();
             }
@@ -315,8 +315,8 @@ impl Chilpa {
                 tracks.first()
             ),
         );
-        let generation = player.play_from_index(&tracks, device, start_at, paused, Some(from), &removed, self.stop_after);
-        self.launched_from(from, generation);
+        let play = player.play_from_index(&tracks, device, start_at, paused, Some(from), &removed, self.stop_after);
+        self.launched(play, from, why);
     }
 
     /// Moves what is playing to another output, keeping its place.
@@ -431,6 +431,7 @@ impl Chilpa {
         let next_group = self.next_queue_group;
         self.clear_queue_state();
         self.player = None;
+        self.forget_plays();
         self.next_queue_group = next_group;
         if kept.is_empty() {
             self.now = NowPlaying::default();

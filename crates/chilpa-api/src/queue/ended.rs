@@ -17,7 +17,6 @@ impl Chilpa {
         let ran_out = self.stop_after.is_none() && !self.tracks_left_after(self.now.index);
         self.stop_after = None;
         self.sleep_until = None;
-        self.log_play(false);
         if ran_out {
             self.show_nothing_playing();
         }

@@ -14,33 +14,29 @@ impl crate::InProgress {
     }
 }
 
-impl Chilpa {
-    pub(super) fn resume_listen(
-        &mut self,
-        path: &std::path::Path,
-        rate: u32,
-        bits: Option<u8>,
-        perfect: bool,
-        play: u64,
-        attempt: u64,
-    ) -> bool {
-        let Some(current) = self
-            .in_progress
-            .as_mut()
-            .filter(|c| c.resuming && c.path == path)
-        else {
-            return false;
-        };
-        current.carried_ms = current.heard_ms();
-        current.played_frames = 0;
-        current.sample_rate_hz = rate;
-        current.bit_depth = bits;
-        current.bit_perfect &= perfect;
-        current.resuming = false;
-        current.play = play;
-        current.attempt = attempt;
-        true
+impl crate::plays::ledger::Heard for crate::InProgress {
+    fn path(&self) -> &std::path::Path {
+        &self.path
     }
+
+    fn set_frames(&mut self, frames: u64) {
+        self.played_frames = frames;
+    }
+}
+
+impl crate::InProgress {
+    /// The same track goes on at another output: what was heard so far is
+    /// kept, and the count starts again at the new one's rate.
+    pub(super) fn picked_up(&mut self, rate: u32, bits: Option<u8>, perfect: bool) {
+        self.carried_ms = self.heard_ms();
+        self.played_frames = 0;
+        self.sample_rate_hz = rate;
+        self.bit_depth = bits;
+        self.bit_perfect &= perfect;
+    }
+}
+
+impl Chilpa {
     pub fn listening_summary(&mut self, filter: &ListenFilter) -> Result<ListenMetrics, String> {
         self.library()
             .ok_or_else(|| chilpa_i18n::t("the library is unavailable"))?
@@ -66,9 +62,9 @@ impl Chilpa {
         path: &std::path::Path,
         tags: Option<&chilpa_tags::Tags>,
         started: i64,
+        cover: String,
     ) -> ListenContext {
         let mut context = ListenContext::default();
-        let cover = self.now.artwork_path.clone();
         // A source's track: its stable id, and its record's as the catalog
         // read it, so the history and the home can name the record and find
         // it again. Asked before the library, which holds the facade.
@@ -125,10 +121,9 @@ impl Chilpa {
         context
     }
 
-    pub(super) fn log_play(&mut self, skipped: bool) {
-        let Some(current) = self.in_progress.take() else {
-            return;
-        };
+    /// Writes a listen to the history. One nothing was heard of is none.
+    /// A failure to save is said in the window only when `shown`.
+    pub(super) fn record_listen(&mut self, current: crate::InProgress, skipped: bool, shown: bool) {
         if current.sample_rate_hz == 0 || current.heard_ms() == 0 {
             return;
         }
@@ -145,9 +140,12 @@ impl Chilpa {
         };
         if let Some(lib) = self.library() {
             if let Err(error) = lib.record_listen(&event) {
-                self.now.error =
-                    chilpa_i18n::t_args("the listen could not be saved: {}", &[&error.to_string()]);
+                if shown {
+                    self.now.error =
+                        chilpa_i18n::t_args("the listen could not be saved: {}", &[&error.to_string()]);
+                }
                 eprintln!("listening.record_failed error={error}");
+                chilpa_core::trace_playback("facade", "listen_not_saved", format_args!("shown={shown} error={error}"));
             } else {
                 self.home.changed();
             }

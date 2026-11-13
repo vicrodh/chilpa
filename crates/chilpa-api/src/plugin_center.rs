@@ -821,7 +821,8 @@ mod tests {
         api.replace_queue(vec![track.to_string_lossy().into_owned()]);
         api.now.playing = true;
         api.player = Some(chilpa_core::spawn_player());
-        api.player.as_ref().unwrap().play_all_from_paused(&[track], "file:capture", None, false);
+        let play = api.player.as_ref().unwrap().play_from_index(&[track], "file:capture", None, false, None, &[], None);
+        api.launched(play, 0, crate::Relaunch::Track);
         let deadline = Instant::now() + Duration::from_secs(5);
         while api.now.playing && Instant::now() < deadline {
             api.poll();

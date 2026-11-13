@@ -407,12 +407,7 @@ fn channels(n: u16) -> String {
 struct InProgress {
     context: listening::ListenContext,
     path: PathBuf,
-    /// The play that opened it, or that picked it up on another output: the
-    /// only one whose events are about it.
-    play: u64,
-    /// The track's turn in that play: what its `Closed` names.
-    attempt: u64,
-    resuming: bool,
+    /// What was heard of it on the outputs it played at before this one.
     carried_ms: u64,
     started_at: i64,
     sample_rate_hz: u32,
@@ -611,8 +606,9 @@ pub struct Chilpa {
     core: chilpa_core::Core,
     pub(crate) pending_volume: Option<u8>,
     library: Option<chilpa_library::Library>,
-    /// What is needed to log the play when it ends.
-    in_progress: Option<InProgress>,
+    /// The plays asked of the player and not yet seen end, each with the
+    /// listens it opened.
+    plays: plays::Plays,
     /// Sends listens to ListenBrainz; started by the window, never by a test.
     scrobbler: Option<scrobble::Scrobbler>,
     /// The current queue's paths, whole and in the order they were queued.
@@ -700,13 +696,6 @@ pub struct Chilpa {
     audio_output: audio_output::AudioOutput,
     home: home::Home,
     sample_rate: u32,
-    /// Set while a relaunch we asked for is unwinding the old playback.
-    ///
-    /// Stopping in order to start again is not the listener stopping, and
-    /// without this the `Stopped` that comes back would be filed as a skip
-    /// and the window would blink to "not playing" on its way to the new
-    /// device. What it holds is what to do with the interrupted listen.
-    relaunching: Option<(Relaunch, u64)>,
     /// The stacks and outputs as last listed, on a thread of their own. The
     /// window reads what was found and never asks the stacks itself: on
     /// PipeWire asking starts a process, and it froze the window.
@@ -772,7 +761,7 @@ impl Chilpa {
             core: chilpa_core::Core::new(),
             pending_volume: None,
             library: None,
-            in_progress: None,
+            plays: Default::default(),
             scrobbler: None,
             queue: Vec::new(),
             queue_work: Default::default(),
@@ -831,7 +820,6 @@ impl Chilpa {
             audio_output: audio_output::AudioOutput::default(),
             home: home::Home::default(),
             sample_rate: 0,
-            relaunching: None,
             outputs_listing,
             metadata: metadata::Editor::default(),
             servers: servers::Servers::default(),
@@ -1273,12 +1261,8 @@ impl Chilpa {
             self.now.paused = player.is_paused();
         }
         self.follow_playing_documents();
-        let mut started = false;
         self.take_unavailable_reports();
-        let events = self.player.as_ref().map(|p| p.poll_tagged()).unwrap_or_default();
-        for (generation, event) in events {
-            self.apply_player_event(generation, event, &mut started);
-        }
+        let started = self.read_player_events();
         // A new track's verdict cannot see the volume moved after it. The
         // level the player holds, not the settings: this runs every tick.
         let gain = self.player.as_ref().map_or(1.0, |p| p.volume());
@@ -1287,17 +1271,6 @@ impl Chilpa {
         self.finish_tick(started);
         self.plugin_update_activity(self.plugin_playback_active());
         &self.now
-    }
-
-    /// Records in the log how much of the current track had played.
-    ///
-    /// The log is append-only: the stats, the smart lists and the
-    /// play count sync with a DAP all come out of here.
-    fn set_played(&mut self, frames: u64) {
-        if let Some(current) = self.in_progress.as_mut() {
-            current.played_frames = frames;
-        }
-        self.scrobble_if_heard();
     }
 
     /// The current state, without collecting events.
@@ -1326,7 +1299,7 @@ impl Drop for Chilpa {
         self.persist_queue_session();
         if let Some(player) = self.player.as_mut() { player.shutdown(); }
         if self.player.is_some() { self.poll(); }
-        self.log_play(true);
+        self.settle_plays();
         self.shutdown_cast();
         if let Some(natives) = self.catalog.natives() { natives.flush_playback(); }
     }

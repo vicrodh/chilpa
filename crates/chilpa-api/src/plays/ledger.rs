@@ -132,12 +132,14 @@ impl<L: Heard> Ledger<L> {
     }
 
     /// The listen of the track that started last, while it is open.
+    #[cfg(test)]
     pub fn newest(&self) -> Option<&L> {
         self.open.back().map(|open| &open.listen)
     }
 
     /// The listen kept for another output, or the one carried in and not
     /// picked up yet.
+    #[cfg(test)]
     pub fn waiting_mut(&mut self) -> Option<&mut L> {
         self.parked.as_mut().or(self.carried.as_mut())
     }

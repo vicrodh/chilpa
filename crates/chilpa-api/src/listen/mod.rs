@@ -6,6 +6,7 @@ mod snapshot;
 #[cfg(test)]
 mod snapshot_tests;
 
+use crate::plays::{Fate, Replaced};
 use crate::{Chilpa, NowPlaying, QueueGroup, QueuePlacement, Repeat};
 use serde::{Deserialize, Serialize};
 
@@ -160,8 +161,10 @@ impl Chilpa {
         let seconds = if key.is_empty() { b.seconds } else { 0.0 };
         self.listen.pending = Some((id, at, seconds));
         // I wait for the existing worker's stop barrier without blocking Qt.
+        // What plays is left for another queue: it is no longer in front of
+        // the window, and its listen is one somebody chose to leave.
+        self.plays.retire(Fate::Replaced(Replaced::Track));
         if let Some(p) = &self.player { p.stop_for_handoff(); }
-        self.relaunching = None;
         self.finish_buffer_switch();
         true
     }
@@ -169,8 +172,8 @@ impl Chilpa {
         if self.listen.pending.is_none() || self.casting.disconnecting { return; }
         if self.player.as_ref().is_some_and(|p| !p.idle()) { return; }
         let Some((id, index, seconds)) = self.listen.pending.take() else { return };
-        if let Some(p) = &self.player { let _ = p.poll(); }
-        self.log_play(true);
+        // The old play has ended: what it said last settles its listens.
+        self.read_player_events();
         self.capture_buffer();
         let Some(mut b) = self.buffer_snapshot(id) else { return };
         if !b.live(index) { return; }

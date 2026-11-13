@@ -85,7 +85,7 @@ impl Chilpa {
         }).unwrap_or_else(|| if self.casting.order.len() == self.queue.len() { self.casting.order.clone() } else { (0..self.queue.len()).collect() });
         self.base = 0;
         let player = self.player.take();
-        self.log_play(false);
+        self.forget_plays();
         self.casting.selected = Some(device.clone()); self.casting.connected = false;
         self.casting.status = Status::default(); self.casting.error.clear(); self.casting.loaded = false;
         self.now.bit_perfect = false;
