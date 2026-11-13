@@ -61,17 +61,22 @@ fn composition(row: &rusqlite::Row<'_>) -> rusqlite::Result<Composition> {
 }
 
 impl Library {
+    /// A header count does not materialize or sort a page of work cards.
+    pub fn composition_count(&self, composer: &str, text: &str) -> rusqlite::Result<usize> {
+        self.db.query_row(&format!("{WORKS} SELECT count(DISTINCT work_key) FROM identified{CONDITION}"),
+            params![composer, text.trim()], |row| row.get::<_, i64>(0).map(|total| total as usize))
+    }
+
     /// Sixty entries per page, plus a total, with filtering before pagination.
     /// SQLite owns grouping temporaries; only the requested page crosses here.
     pub fn compositions(&self, composer: &str, text: &str, page: usize) -> rusqlite::Result<(Vec<Composition>, usize)> {
         let condition = CONDITION;
-        let total: i64 = self.db.query_row(&format!("{WORKS} SELECT count(DISTINCT work_key) FROM identified{condition}"),
-            params![composer, text.trim()], |row| row.get(0))?;
+        let total = self.composition_count(composer, text)?;
         let sql = format!("{WORKS} SELECT work_key, min(title), composers, count(DISTINCT coalesce(album_id, -id)), count(*)
             FROM identified{condition} GROUP BY work_key ORDER BY chilpa_work_sort(min(title)) COLLATE BINARY, work_key LIMIT ?3 OFFSET ?4");
         let mut statement = self.db.prepare(&sql)?;
         let rows = statement.query_map(params![composer, text.trim(), PAGE_SIZE as i64, page.saturating_mul(PAGE_SIZE).min(i64::MAX as usize) as i64], composition)?.collect::<rusqlite::Result<Vec<_>>>()?;
-        Ok((rows, total as usize))
+        Ok((rows, total))
     }
 
     /// Stream ordered works so a merged source page retains only 60 entries.
@@ -118,6 +123,8 @@ mod tests {
         let changes = lib.db.total_changes();
         let (works, total) = lib.compositions("", "", 0).unwrap();
         assert_eq!(total, 2);
+        assert_eq!(lib.composition_count("", "").unwrap(), 2);
+        assert_eq!(lib.composition_count("first writer", "son").unwrap(), 1);
         assert_eq!(works.iter().map(|work| work.tracks).sum::<usize>(), 3);
         let (works, total) = lib.compositions("first writer", "son", 0).unwrap();
         assert_eq!((total, works[0].tracks), (1, 2));
