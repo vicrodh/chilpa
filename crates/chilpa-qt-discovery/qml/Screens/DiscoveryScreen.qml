@@ -93,7 +93,7 @@ Item {
         Flow {
             width: parent.width; spacing: Metrics.gap4
             visible: discoveryPage.detail
-            PillButton { text: discoveryPage.rootTitle; kind: "ghost"; onClicked: Navigation.goKey(discoveryPage.mode, "") }
+            PillButton { objectName: "discoveryRoot"; text: discoveryPage.rootTitle; kind: "ghost"; onClicked: Navigation.go(discoveryPage.mode, 0) }
             Repeater {
                 model: discoveryPage.breadcrumb
                 PillButton {

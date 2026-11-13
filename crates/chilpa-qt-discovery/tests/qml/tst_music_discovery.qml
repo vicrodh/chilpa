@@ -30,6 +30,12 @@ TestCase {
         compare(key.recording, "recording:2")
         compare(key.album, 42)
     }
+    function test_the_breadcrumb_returns_to_the_root_without_a_key() {
+        const page = createTemporaryObject(maker, this, {mode:"genres",routeKey:JSON.stringify({kind:"genre",name:"Death Metal"})})
+        mouseClick(findChild(page, "discoveryRoot"))
+        compare(Navigation.page, "genres")
+        compare(Navigation.selectedId, 0)
+    }
     function test_hidden_pages_stop_queries() {
         const page = createTemporaryObject(maker, this)
         const model = findChild(page, "discoveryModel")
