@@ -66,7 +66,7 @@ Rectangle {
             PaneColumn {
                 required property int index
                 required property var entry
-                width: (panes.width - panes.columns.length - 1) * Metrics.paneShare[entry.column] / Math.max(1, panes.shares) // derived: the seams between columns and at the edges
+                width: (panes.width - panes.columns.length - 1) * Metrics.paneShare[entry.column] / (panes.shares || 1) // derived: the seams between columns and at the edges
                 height: parent.height
                 column: entry.column
                 title: entry.title
