@@ -403,12 +403,14 @@ fn the_player_says_which_entry_it_passed_over_and_why() {
     }).collect();
     assert_eq!(said.iter().map(|(index, path, _)| (*index, path.clone())).collect::<Vec<_>>(), [(1, tracks[1].clone()), (2, tracks[2].clone())]);
     assert!(said.iter().all(|(_, _, message)| !message.is_empty()), "each one says why: {said:?}");
-    let played: Vec<Option<u64>> = events.iter().filter_map(|event| match event {
-        PlayerEvent::Skipped { played, .. } => Some(*played),
+    // How much of each went out is said as it is closed: the refused one
+    // never started, so nothing closes it; the broken one closes as broken.
+    let closed: Vec<(usize, u64, chilpa_core::attempts::How)> = events.iter().filter_map(|event| match event {
+        PlayerEvent::Closed { index, heard, how, .. } => Some((*index, *heard, *how)),
         _ => None,
     }).collect();
-    assert_eq!(played[0], None, "the refused track never opened");
-    assert!(played[1].is_some_and(|frames| frames > 0), "the broken one says how much of it went out: {played:?}");
+    assert!(!closed.iter().any(|(index, _, _)| *index == 1), "the refused track never opened: {closed:?}");
+    assert!(closed.iter().any(|(index, heard, how)| *index == 2 && *heard > 0 && *how == chilpa_core::attempts::How::Broken), "the broken one says how much of it went out: {closed:?}");
     assert_eq!(started(&events), [0, 2, 3], "the broken track started, the refused one did not");
     // Said before what follows it starts, so whoever counts them is never late.
     let position = |wanted: &dyn Fn(&PlayerEvent) -> bool| events.iter().position(wanted).unwrap();
@@ -423,19 +425,31 @@ fn each_entry_passed_over_says_which_play_it_belongs_to() {
     let dir = folder("player-generation");
     let tracks = [garbage(&dir, "01.flac"), wave(&dir, "02.wav")];
     let player = player();
-    let said = |events: &[PlayerEvent]| -> Vec<u64> {
-        events.iter().filter_map(|event| match event {
-            PlayerEvent::Skipped { generation, .. } => Some(*generation),
-            _ => None,
-        }).collect()
+    // The word carries no play of its own: it comes under the number of the
+    // play that said it, as every event does.
+    let said = |play: u64| -> Vec<u64> {
+        let limit = Instant::now() + Duration::from_secs(20);
+        let mut under = Vec::new();
+        loop {
+            for (of, event) in player.poll_tagged() {
+                if matches!(event, PlayerEvent::Skipped { .. }) {
+                    under.push(of);
+                }
+                if of == play && matches!(event, PlayerEvent::Finished { .. } | PlayerEvent::Failed { .. } | PlayerEvent::Stopped { .. }) {
+                    return under;
+                }
+            }
+            assert!(Instant::now() < limit, "the play never ended");
+            std::thread::sleep(Duration::from_millis(5));
+        }
     };
     let first = player.play_from_index(&tracks, "fake", None, false, None, &[], None);
-    let first_events = events_until_over(&player);
+    let first_said = said(first);
     let second = player.play_from_index(&tracks, "fake", None, false, None, &[], None);
-    let second_events = events_until_over(&player);
+    let second_said = said(second);
     assert_ne!(first, second, "each play has its own");
-    assert_eq!(said(&first_events), [first]);
-    assert_eq!(said(&second_events), [second]);
+    assert_eq!(first_said, [first]);
+    assert_eq!(second_said, [second]);
     let _ = std::fs::remove_dir_all(dir);
 }
 

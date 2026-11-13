@@ -10,7 +10,7 @@ use chilpa_audio::render::Outcome;
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_audio::format::StreamFormat;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
@@ -62,14 +62,12 @@ pub enum PlayerEvent {
     /// Something failed, in text the interface can show.
     Failed { message: String },
     /// A queue entry was passed over and the queue went on: it would not
-    /// open, or it broke partway. `generation` is the play it belongs to, as
-    /// `play_from_index` returned it: whoever started another play since can
-    /// tell it is not about the queue in front of them. `index` is its place
-    /// in the queue the player was given; `message` says why, in text the
-    /// interface can show. `played` is how many frames of it went out before
-    /// it broke, and `None` when it never opened: a track heard partway is a
-    /// listen cut short.
-    Skipped { generation: u64, attempt: u64, index: usize, path: PathBuf, message: String, played: Option<u64> },
+    /// open, or it broke partway. `attempt` is its turn in the play, the one
+    /// its `Closed` names when it had started; `index` is its place in the
+    /// queue the player was given; `message` says why, in text the interface
+    /// can show. Which play it belongs to is said with the event, as with
+    /// every other, and how much of it was heard is in its `Closed`.
+    Skipped { attempt: u64, index: usize, path: PathBuf, message: String },
     /// A track that started is over: how it ended and how many frames of it
     /// left the device, which is what was heard. Said once for every
     /// `Started`, before the play ends, and possibly after the next track
@@ -104,7 +102,6 @@ enum Order {
     /// and a start position cannot be taken by anything but the play it
     /// belongs to.
     Play(crate::launch::LaunchRun),
-    Stop(u64),
     Quit,
 }
 
@@ -159,18 +156,14 @@ pub struct Player {
     events: Receiver<(u64, PlayerEvent)>,
     /// Where a launch asked of a player that closed says it ended.
     events_tx: Sender<(u64, PlayerEvent)>,
-    /// The settings every launch shares. Its stop, seek, Next, stop mark and
-    /// start are not used: each launch has its own.
+    /// The settings every launch shares. Its stop, seek, Next, stop mark,
+    /// start and order are not used: each launch has its own.
     controls: crate::queue_playback::Controls,
     /// The queue that is playing. It is shared with the thread so things
     /// can be added without cutting off what is playing.
     queue: Arc<Mutex<crate::queue_playback::SharedQueue>>,
-    /// Counts play and stop requests, for `idle`: the worker says which stop
-    /// it has passed.
-    generation: Arc<AtomicU64>,
     admission: Arc<Mutex<Admission>>,
     thread: Option<JoinHandle<()>>,
-    settled: Arc<AtomicU64>,
 }
 
 impl Player {
@@ -187,9 +180,6 @@ impl Player {
         let (events_tx, events_rx) = channel::<(u64, PlayerEvent)>();
         let controls = crate::queue_playback::Controls::new();
         let queue = Arc::new(Mutex::new(crate::queue_playback::SharedQueue::default()));
-        let generation = Arc::new(AtomicU64::new(0));
-        let settled = Arc::new(AtomicU64::new(0));
-        let settled_thread = settled.clone();
         let admission = Arc::new(Mutex::new(Admission { open: true, unsettled: Vec::new() }));
         let admission_thread = Arc::clone(&admission);
 
@@ -202,10 +192,6 @@ impl Player {
                         Order::Quit => {
                             chilpa_audio::diagnostics::trace("player", "order_received", format_args!("kind=quit"));
                             break;
-                        }
-                        Order::Stop(stamp) => {
-                            settled_thread.store(stamp, Ordering::Release);
-                            chilpa_audio::diagnostics::trace("player", "order_received", format_args!("kind=stop barrier=passed"));
                         }
                         Order::Play(run) => {
                             let launch = Arc::clone(&run.launch);
@@ -239,11 +225,10 @@ impl Player {
                                 launch.controls.seek.request(at);
                             }
                             let started = std::time::Instant::now();
-                            // What is this play's alone: its events and the
-                            // remote opens it asks for. Its stop, its seek,
-                            // its stop mark and where it starts came with it.
+                            // What is this play's alone: its events. Its
+                            // stop, its seek, its stop mark, its order and
+                            // where it starts came with it.
                             let events = Events { to: run.events(), generation };
-                            crate::remote::opening_for(Some(generation));
                             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                                 play(&launch, &run.device, &mut probe, &mut open, &mut drive, &events)
                             }));
@@ -272,18 +257,14 @@ impl Player {
                 // it was asked for, and none is taken after: under the lock a
                 // launch is sent under, so none slips in behind.
                 let mut admission = admission_thread.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-                while let Ok(order) = orders_rx.try_recv() {
-                    if let Order::Stop(stamp) = order {
-                        settled_thread.store(stamp, Ordering::Release);
-                    }
-                }
+                while orders_rx.try_recv().is_ok() {}
                 admission.open = false;
                 drop(admission);
                 chilpa_audio::diagnostics::trace("player", "thread_stopped", format_args!(""));
             })
             .expect("the player thread starts");
 
-        Self { orders: orders_tx, events: events_rx, events_tx, controls, queue, generation, admission, thread: Some(thread), settled }
+        Self { orders: orders_tx, events: events_rx, events_tx, controls, queue, admission, thread: Some(thread) }
     }
 
     fn admission(&self) -> std::sync::MutexGuard<'_, Admission> {
@@ -337,8 +318,7 @@ impl Player {
     /// I launch the whole queue with an explicit cursor, keeping its earlier rows.
     /// Returns the play's generation, which every `Skipped` of it carries.
     /// A play still running is not stopped by it: whoever replaces one stops
-    /// it first. Its order is the player's own, shared with every play asked
-    /// for this way.
+    /// it first. It walks the queue in the queue's own order.
     #[allow(clippy::too_many_arguments)]
     pub fn play_from_index(
         &self, paths: &[PathBuf], device: &str,
@@ -349,7 +329,7 @@ impl Player {
             paths: paths.to_vec(), device: device.to_string(), start_index, start_at, paused,
             removed: removed.to_vec(), stop_after, order: Vec::new(),
         };
-        self.submit(spec, self.controls.order.clone(), false).id.get()
+        self.submit(spec, crate::queue_playback::Order::new(), false).id.get()
     }
 
     /// Asks for a play and hands back what reaches it alone: its seek, its
@@ -377,7 +357,6 @@ impl Player {
         if let Ok(mut current) = self.queue.lock() {
             *current = queue.clone();
         }
-        self.generation.fetch_add(1, Ordering::AcqRel);
         // What is this play's alone, beside the settings every play shares.
         let controls = crate::queue_playback::Controls {
             stop: StopSignal::new(),
@@ -536,26 +515,6 @@ impl Player {
         self.queue.lock().map(|queue| queue.len()).unwrap_or(0)
     }
 
-    /// Shuffles the playing queue. It takes effect when the track ends.
-    pub fn shuffle(&self, len: usize) {
-        self.controls.order.set(crate::queue_playback::shuffled_now(len), len);
-    }
-
-    /// Sets a traversal order for the playing queue.
-    pub fn set_order(&self, order: Vec<usize>, len: usize) -> bool {
-        self.controls.order.set(order, len)
-    }
-
-    /// The traversal order in use; empty when it is the queue's own.
-    pub fn order(&self) -> Vec<usize> {
-        self.controls.order.get()
-    }
-
-    /// Goes back to the order things were queued in.
-    pub fn clear_order(&self) {
-        self.controls.order.clear();
-    }
-
     /// Asks to stop. It does not wait on the device.
     pub fn stop(&self) {
         chilpa_audio::diagnostics::trace("player", "stop_requested", format_args!(""));
@@ -572,16 +531,9 @@ impl Player {
     /// Stops every launch that has not ended, the ones still waiting too:
     /// each has its own stop, which is never lowered again.
     fn call_off(&self, handoff: bool) {
-        self.generation.fetch_add(1, Ordering::AcqRel);
         for launch in &self.admission().unsettled {
             launch.cancel(handoff);
         }
-        let _ = self.orders.send(Order::Stop(self.generation.load(Ordering::Acquire)));
-    }
-
-    /// Whether the worker has acknowledged the latest stop barrier.
-    pub fn idle(&self) -> bool {
-        self.settled.load(Ordering::Acquire) == self.generation.load(Ordering::Acquire)
     }
 
     /// Whatever events there are, without blocking.
@@ -604,7 +556,6 @@ impl Player {
     /// I stop and join while keeping the final delivery events available to poll.
     pub fn shutdown(&mut self) {
         if self.thread.is_none() { return; }
-        self.generation.fetch_add(1, Ordering::AcqRel);
         for launch in &self.admission().unsettled {
             launch.cancel(false);
         }
@@ -651,7 +602,7 @@ fn play(
     drive: &mut OpenDrive,
     events: &Events,
 ) -> Result<Outcome, PlayError> {
-    let (queue, controls, generation) = (&launch.queue, &launch.controls, launch.id.get());
+    let (queue, controls) = (&launch.queue, &launch.controls);
     let exclusive = controls.exclusive.get();
     // What the samples meet after Chilpa hands them over. The delivery
     // cannot see that far, and a verdict that ignores it says bit-perfect
@@ -853,7 +804,7 @@ fn play(
         },
         &mut |attempt, index, path, why, played| {
             chilpa_audio::diagnostics::trace("player", "track_passed_over", format_args!("index={index}/{total} path={path:?} played={played:?} why={why}"));
-            let _ = events.send(PlayerEvent::Skipped { generation, attempt, index, path: path.to_path_buf(), message: why.to_string(), played });
+            let _ = events.send(PlayerEvent::Skipped { attempt, index, path: path.to_path_buf(), message: why.to_string() });
         },
         &mut |closed| {
             let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how });

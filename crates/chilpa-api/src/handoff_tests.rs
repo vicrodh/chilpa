@@ -399,7 +399,7 @@ fn abandon(api: &mut Chilpa, last: Vec<(u64, PlayerEvent)>) {
 }
 
 fn broke(play_path: &str) -> PlayerEvent {
-    PlayerEvent::Skipped { generation: 0, attempt: 1, index: 0, path: PathBuf::from(play_path), message: "it broke".into(), played: Some(1) }
+    PlayerEvent::Skipped { attempt: 1, index: 0, path: PathBuf::from(play_path), message: "it broke".into() }
 }
 
 #[test]

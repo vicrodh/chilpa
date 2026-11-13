@@ -127,7 +127,7 @@ impl RemoteOpener for Fake {
             ..Default::default()
         }
     }
-    fn failed(&self, entry: &RemoteEntry, why: &str, _play: Option<u64>) {
+    fn failed(&self, entry: &RemoteEntry, why: &str) {
         self.failed.lock().unwrap().push(format!("{}: {why}", entry.external_id));
     }
 }
@@ -143,7 +143,7 @@ fn fake() -> (&'static Fake, Arc<AtomicU64>) {
         impl RemoteOpener for Shared {
             fn locate(&self, e: &RemoteEntry) -> Result<Located, String> { self.0.locate(e) }
             fn describe(&self, e: &RemoteEntry) -> Described { self.0.describe(e) }
-            fn failed(&self, e: &RemoteEntry, why: &str, play: Option<u64>) { self.0.failed(e, why, play) }
+            fn failed(&self, e: &RemoteEntry, why: &str) { self.0.failed(e, why) }
         }
         chilpa_core::remote::install(Arc::new(Shared(fake)));
         (fake, authorized)

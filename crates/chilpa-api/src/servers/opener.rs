@@ -115,7 +115,7 @@ impl RemoteOpener for Opener {
         Described { tags, artwork: artwork.map(std::path::PathBuf::from), ..Default::default() }
     }
 
-    fn failed(&self, entry: &RemoteEntry, _why: &str, _play: Option<u64>) {
+    fn failed(&self, entry: &RemoteEntry, _why: &str) {
         let source = self.with_library(|lib| lib.find_source(&entry.source.provider, &entry.source.instance).ok().flatten());
         if let Some(source) = source {
             self.signal_failure(source);

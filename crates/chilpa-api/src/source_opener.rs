@@ -263,12 +263,12 @@ impl RemoteOpener for Openers {
         Described { tags, artwork, duration: Duration::from_millis(heard.duration_ms) }
     }
 
-    fn failed(&self, entry: &RemoteEntry, why: &str, play: Option<u64>) {
+    fn failed(&self, entry: &RemoteEntry, why: &str) {
         // Health and pacing only: the play that asked says what it passed over.
         self.reports.failed(!chilpa_core::network::current().offline);
         if entry.source.provider != PROVIDER {
             if let Some(servers) = &self.servers {
-                servers.failed(entry, why, play);
+                servers.failed(entry, why);
             }
         }
     }
@@ -321,14 +321,14 @@ mod tests {
         api.swap_rows(vec![entry.to_entry()]);
         api.launched(9, 0, crate::Relaunch::Track);
         let openers = Openers::new(None, None, api.catalog.clone(), api.unavailable.reports());
-        for play in [Some(8), Some(9), None] {
-            openers.failed(&entry, "timed out", play);
+        for _ in 0..3 {
+            openers.failed(&entry, "timed out");
         }
         api.poll();
         assert!(!api.marked_at(0), "only the play that reaches the entry says it was passed over");
         assert!(!api.now.error.starts_with("Skipped"), "{}", api.now.error);
         // Its own play passing it over is what marks it.
-        api.apply_player_event(9, chilpa_core::player::PlayerEvent::Skipped { generation: 9, attempt: 1, index: 0, path: entry.to_entry().into(), message: "timed out".into(), played: None }, &mut false);
+        api.apply_player_event(9, chilpa_core::player::PlayerEvent::Skipped { attempt: 1, index: 0, path: entry.to_entry().into(), message: "timed out".into() }, &mut false);
         assert!(api.marked_at(0));
     }
 

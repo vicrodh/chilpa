@@ -148,8 +148,8 @@ struct Opener {
     /// Entries whose `locate` says it was entered, waits to be let go and
     /// then fails.
     held: Mutex<HashMap<String, (Sender<()>, Arc<AtomicBool>)>>,
-    /// Each failure the player reported: the entry and the play it was for.
-    failed: Mutex<Vec<(String, Option<u64>)>>,
+    /// Each failure the player reported, by its entry.
+    failed: Mutex<Vec<String>>,
 }
 
 impl RemoteOpener for Opener {
@@ -158,7 +158,10 @@ impl RemoteOpener for Opener {
         if let Some((entered, go)) = held {
             let _ = entered.send(());
             wait_for(&go);
-            return Err("the source timed out".into());
+            // Let go, it fails; unless it is also served, and then it opens.
+            if !self.served.lock().unwrap().contains_key(&entry.external_id) {
+                return Err("the source timed out".into());
+            }
         }
         let url = self.served.lock().unwrap().get(&entry.external_id).cloned().ok_or("nobody serves this entry")?;
         Ok(Located {
@@ -172,8 +175,8 @@ impl RemoteOpener for Opener {
     fn describe(&self, _: &RemoteEntry) -> Described {
         Described::default()
     }
-    fn failed(&self, entry: &RemoteEntry, _why: &str, play: Option<u64>) {
-        self.failed.lock().unwrap().push((entry.external_id.clone(), play));
+    fn failed(&self, entry: &RemoteEntry, _why: &str) {
+        self.failed.lock().unwrap().push(entry.external_id.clone());
     }
 }
 
@@ -185,7 +188,7 @@ fn opener() -> &'static Opener {
         impl RemoteOpener for Shared {
             fn locate(&self, e: &RemoteEntry) -> Result<Located, String> { self.0.locate(e) }
             fn describe(&self, e: &RemoteEntry) -> Described { self.0.describe(e) }
-            fn failed(&self, e: &RemoteEntry, why: &str, play: Option<u64>) { self.0.failed(e, why, play) }
+            fn failed(&self, e: &RemoteEntry, why: &str) { self.0.failed(e, why) }
         }
         chilpa_core::remote::install(Arc::new(Shared(opener)));
         opener
@@ -500,8 +503,27 @@ fn a_play_on_its_way_out_does_not_spend_the_stop_mark_of_the_one_replacing_it() 
     assert_eq!(replaced_while_failing_to_open("mark-failing", false, 0), [0], "the new play stops after its first track");
 }
 
+fn skipped_in(events: &[(u64, PlayerEvent)], play: u64) -> Vec<usize> {
+    events.iter().filter_map(|(of, event)| match event {
+        PlayerEvent::Skipped { index, .. } if *of == play => Some(*index),
+        _ => None,
+    }).collect()
+}
+
+/// Waits until the opener has heard that `id` failed.
+fn heard_failed(id: &str) -> bool {
+    let limit = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < limit {
+        if opener().failed.lock().unwrap().iter().any(|failed| failed == id) {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    false
+}
+
 #[test]
-fn a_failure_of_a_replaced_play_s_open_says_which_play_it_was_for() {
+fn a_failure_of_a_replaced_play_s_open_is_not_said_by_the_play_that_replaced_it() {
     let dir = folder("late-report");
     let opener = opener();
     let (entered, entered_seen) = channel();
@@ -513,21 +535,73 @@ fn a_failure_of_a_replaced_play_s_open_says_which_play_it_was_for() {
     player.stop_for_handoff();
     let new = player.play_from_index(&[wave(&dir, "02.wav")], "fake", None, false, None, &[], None);
     go.store(true, Ordering::Release);
-    events_until_over(&player, new);
-    let failed = opener.failed.lock().unwrap().clone();
-    assert!(failed.contains(&("late".to_string(), Some(old))), "the late failure names the old play, not the new one: {failed:?}");
+    let events = events_until_over(&player, new);
+    assert!(heard_failed("late"), "the opener hears of the failure, for its own pacing");
+    assert!(skipped_in(&events, new).is_empty(), "the play that replaced it passed nothing over: {events:?}");
+    assert_eq!(started_in(&events, new), [0], "{events:?}");
+    assert!(old < new);
     let _ = std::fs::remove_dir_all(dir);
 }
 
 #[test]
-fn a_failure_of_a_track_opened_ahead_says_which_play_it_was_for() {
+fn a_track_opened_ahead_that_fails_is_said_by_the_play_that_reaches_it() {
     let opener = opener();
     opener.served.lock().unwrap().insert("ahead-first".into(), serve(wave_bytes(30_000), None));
     let (entered, _entered_seen) = channel();
     opener.held.lock().unwrap().insert("ahead-next".into(), (entered, Arc::new(AtomicBool::new(true))));
     let player = player();
     let play = player.play_from_index(&[entry("ahead-first"), entry("ahead-next")], "fake", None, false, None, &[], None);
-    events_until_over(&player, play);
-    let failed = opener.failed.lock().unwrap().clone();
-    assert!(failed.contains(&("ahead-next".to_string(), Some(play))), "opened on a thread of its own, for the same play: {failed:?}");
+    let events = events_until_over(&player, play);
+    assert!(heard_failed("ahead-next"));
+    assert_eq!(skipped_in(&events, play), [1], "said once, by the play that reached it: {events:?}");
+}
+
+/// A track is being opened ahead for a play, and stays in that open while
+/// the player is let go and another is made. What comes of the open, when it
+/// is let go at last, reaches no play: the one that asked is over, and the
+/// one in the new player never asked. `opens` is whether it then opens or
+/// fails.
+fn an_open_ahead_let_go_after_its_player_left(name: &str, opens: bool) {
+    let dir = folder(name);
+    let opener = opener();
+    let (first, next) = (format!("{name}-first"), format!("{name}-next"));
+    opener.served.lock().unwrap().insert(first.clone(), serve(wave_bytes(30_000), None));
+    if opens {
+        opener.served.lock().unwrap().insert(next.clone(), serve(wave_bytes(30_000), None));
+    }
+    let (entered, entered_seen) = channel();
+    let go = Arc::new(AtomicBool::new(false));
+    opener.held.lock().unwrap().insert(next.clone(), (entered, Arc::clone(&go)));
+    let mut old_player = player();
+    let old = old_player.play_from_index(&[entry(&first), entry(&next)], "fake", None, false, None, &[], None);
+    entered_seen.recv_timeout(Duration::from_secs(10)).expect("the next track is being opened ahead");
+    // The player goes, with that open still out.
+    old_player.shutdown();
+    let old_events = old_player.poll_tagged();
+    drop(old_player);
+    assert!(skipped_in(&old_events, old).is_empty(), "it never reached the track: {old_events:?}");
+    let new_player = player();
+    let new = new_player.play_from_index(&[wave(&dir, "02.wav")], "fake", None, false, None, &[], None);
+    go.store(true, Ordering::Release);
+    if !opens {
+        assert!(heard_failed(&next), "the opener hears of the failure");
+    }
+    let mut events = events_until_over(&new_player, new);
+    std::thread::sleep(Duration::from_millis(150));
+    events.extend(new_player.poll_tagged());
+    assert!(events.iter().all(|(of, _)| *of == new), "every event of the new player is its own play's: {events:?}");
+    assert!(skipped_in(&events, new).is_empty(), "{events:?}");
+    assert_eq!(started_in(&events, new), [0], "{events:?}");
+    assert!(matches!(events.last(), Some((_, PlayerEvent::Finished { .. }))), "{events:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn an_open_ahead_that_fails_after_its_player_left_is_said_by_no_play() {
+    an_open_ahead_let_go_after_its_player_left("stalled-fails", false);
+}
+
+#[test]
+fn an_open_ahead_that_opens_after_its_player_left_reaches_no_play() {
+    an_open_ahead_let_go_after_its_player_left("stalled-opens", true);
 }

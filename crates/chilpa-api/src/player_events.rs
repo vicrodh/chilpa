@@ -81,7 +81,7 @@ impl Chilpa {
             // A track was passed over and the queue went on. One that broke
             // partway had started: its listen is cut short, whenever it is
             // closed.
-            PlayerEvent::Skipped { attempt, index, path, message, .. } => {
+            PlayerEvent::Skipped { attempt, index, path, message } => {
                 if let Some(play) = self.plays.get_mut(id) {
                     play.ledger.known(attempt, How::Broken);
                 }

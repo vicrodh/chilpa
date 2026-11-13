@@ -446,6 +446,7 @@ fn a_disc_launched_with_a_start_position_starts_there() {
     });
     assert!(first.is_some_and(|at| at >= 66_150), "the disc started where it was asked to: {first:?}");
     p.stop();
+}
 
 #[test]
 fn a_stream_that_was_announced_is_closed_once_whether_or_not_it_got_to_play() {
@@ -493,5 +494,4 @@ fn a_disc_s_track_cut_by_a_bad_sector_is_closed_as_broken_and_the_next_as_comple
     assert!(events.iter().any(|event| matches!(event, PlayerEvent::Notice { attempt: 1, .. })), "{events:?}");
     assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "and ended once, as a disc that played out: {events:?}");
     assert_eq!(events.iter().filter(|event| matches!(event, PlayerEvent::Failed { .. })).count(), 0);
-}
 }
