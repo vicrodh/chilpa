@@ -42,6 +42,8 @@ Item {
     readonly property int art: rich && showArt && includes("art") ? Metrics.colArt : 0
     readonly property int sourceWidth: showSource && includes("source") ? named(Metrics.colSource, sourceName) : 0
     readonly property int quality: !includes("quality") ? 0 : named(rich ? Metrics.colQualityRich : Metrics.colQualityCompact, qualityName)
+    readonly property int bits: sheet && includes("bits") ? named(Metrics.nerdyDepth, bitsName) : 0
+    readonly property int rate: sheet && includes("rate") ? named(Metrics.nerdyRate, rateName) : 0
     readonly property int rating: showRating && Prefs.ratings && includes("rating") ? named(Metrics.colRating, ratingName) : 0
     readonly property int plays: showPlays && includes("plays") ? named(rich ? Metrics.colPlaysRich : Metrics.colPlaysCompact, playsName) : 0
     // An hour-long track's time fits too: "1:02:47", not cut into the next column.
@@ -52,9 +54,11 @@ Item {
     // inset, so no language cuts it.
     readonly property var names: ({ title: I18n.tr("Title", I18n.rev), artist: I18n.tr("Artist", I18n.rev), album: I18n.tr("Album", I18n.rev),
         source: I18n.tr("Source", I18n.rev), quality: I18n.tr("Quality", I18n.rev), rating: I18n.tr("Rating", I18n.rev),
-        format: I18n.tr("Format", I18n.rev), favorite: I18n.tr("Favorite", I18n.rev), plays: I18n.tr("Plays", I18n.rev), time: I18n.tr("Time", I18n.rev) })
+        bits: I18n.tr("Bit depth", I18n.rev), rate: I18n.tr("Sample rate", I18n.rev), format: I18n.tr("Format", I18n.rev), favorite: I18n.tr("Favorite", I18n.rev), plays: I18n.tr("Plays", I18n.rev), time: I18n.tr("Time", I18n.rev) })
     function named(design, name) { return Math.max(design, Math.ceil(name.implicitWidth) + (sheet ? Metrics.gap16 + Metrics.iconSm + Metrics.gap8 : Metrics.gap8)) }
     Text { id: favoriteName; text: cols.names.favorite; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: bitsName; text: cols.names.bits; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: rateName; text: cols.names.rate; font.pointSize: Type.label; font.weight: Type.bold }
     Text { id: formatName; text: cols.names.format; font.pointSize: Type.label; font.weight: Type.bold }
     Text { id: sourceName; text: cols.names.source; font.pointSize: Type.label; font.weight: Type.bold }
     Text { id: qualityName; text: cols.names.quality; font.pointSize: Type.label; font.weight: Type.bold }
@@ -89,8 +93,8 @@ Item {
     readonly property real titleShare: 2.4
     readonly property real artistShare: showArtist && (!rich || sheet) ? 1.4 : 0
     readonly property real albumShare: showAlbum ? (rich ? 1.4 : 1.5) : 0
-    readonly property real free: Math.max(0, width - pad * 2 - index - art - sourceWidth - format - quality - rating - plays - time - afterTime - more) // derived: padding on both sides
-    readonly property real minimumWidth: pad * 2 + index + art + sourceWidth + format + quality + rating + plays + time + afterTime + more + least * 6 // derived: two header widths per mandatory column, with padding on both sides
+    readonly property real free: Math.max(0, width - pad * 2 - index - art - sourceWidth - format - bits - rate - quality - rating - plays - time - afterTime - more) // derived: padding on both sides
+    readonly property real minimumWidth: pad * 2 + index + art + sourceWidth + format + bits + rate + quality + rating + plays + time + afterTime + more + least * 6 // derived: two header widths per mandatory column, with padding on both sides
     readonly property var flex: share(free, [["title", titleShare], ["artist", artistShare], ["album", albumShare]], wants || ({}))
     function share(room, shares, wanted) {
         const out = ({title: 0, artist: 0, album: 0})
@@ -128,12 +132,16 @@ Item {
     readonly property real ratingX: timeX + time + afterTime
     readonly property real qualityX: ratingX + rating
     readonly property real formatX: qualityX + quality
-    readonly property real moreX: formatX + format
+    readonly property real bitsX: formatX + format
+    readonly property real rateX: bitsX + bits
+    readonly property real moreX: rateX + rate
     // Resolve horizontal visibility once per list, not for every recycled row.
     readonly property bool sourceShown: sourceWidth > 0 && inView(sourceX, sourceWidth)
     readonly property bool qualityShown: quality > 0 && inView(qualityX, quality)
     readonly property bool ratingShown: rating > 0 && inView(ratingX, rating)
     readonly property bool favoriteShown: favorite > 0 && inView(moreX, favorite)
+    readonly property bool bitsShown: bits > 0 && inView(bitsX, bits)
+    readonly property bool rateShown: rate > 0 && inView(rateX, rate)
     readonly property bool formatShown: format > 0 && inView(formatX, format)
     readonly property bool timeShown: time > 0 && inView(timeX, time)
     readonly property bool playsShown: plays > 0 && inView(playsX, plays)

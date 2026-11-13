@@ -87,6 +87,8 @@ ScreenHead {
             {name: "rating", text: I18n.tr("Rating", I18n.rev)},
             {name: "quality", text: I18n.tr("Quality", I18n.rev)},
             {name: "format", text: I18n.tr("Format", I18n.rev)},
+            {name: "bits", text: I18n.tr("Bit depth", I18n.rev)},
+            {name: "rate", text: I18n.tr("Sample rate", I18n.rev)},
             {name: "favorite", text: I18n.tr("Favorite", I18n.rev)}
         ]
         onChosen: columns => {

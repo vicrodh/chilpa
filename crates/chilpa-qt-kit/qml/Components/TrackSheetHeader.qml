@@ -21,6 +21,8 @@ Item {
         {key: "rating", label: cols.names.rating, x: cols.ratingX, width: cols.rating, filter: true},
         {key: "quality", label: cols.names.quality, x: cols.qualityX, width: cols.quality, filter: true},
         {key: "format", label: cols.names.format, x: cols.formatX, width: cols.format, filter: true},
+        {key: "bits", label: cols.names.bits, x: cols.bitsX, width: cols.bits, filter: true},
+        {key: "rate", label: cols.names.rate, x: cols.rateX, width: cols.rate, filter: true},
         {key: "favorite", label: cols.names.favorite, x: cols.moreX, width: cols.favorite, filter: true}
     ]
     Repeater {

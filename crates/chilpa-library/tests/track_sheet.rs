@@ -69,6 +69,38 @@ fn technical_values_match_rows_and_ratings_include_zero() {
 }
 
 #[test]
+fn technical_selections_keep_numeric_keys_intersections_and_missing_values() {
+    let lib = fixture(4);
+    lib.connection().execute_batch("UPDATE tracks SET bit_depth=24,sample_rate_hz=96000 WHERE id=2;
+        UPDATE tracks SET bit_depth=24,sample_rate_hz=192000 WHERE id=3;
+        UPDATE tracks SET bit_depth=NULL,sample_rate_hz=NULL WHERE id=4;").unwrap();
+    for (selection, ids) in [
+        (json!({"bits":[24],"rate":["96000"]}),vec![2]),
+        (json!({"bits":["16","24"],"rate":[44100,192000]}),vec![1,3]),
+        (json!({"bits":[""],"rate":[""]}),vec![4]),
+        (json!({"bits":["24",""],"rate":[96000]}),vec![2]),
+    ] { assert_eq!(lib.browse_ids(&filter(selection),TrackOrder::Title).unwrap().ids,ids); }
+    assert_eq!(lib.track_sheet_choices(&filter(json!({"bits":[16]})),"bits","",None).unwrap(),[("".into(),1),("16".into(),1),("24".into(),2)]);
+    assert_eq!(lib.track_sheet_choices(&Filter::default(),"rate","",None).unwrap(),[("".into(),1),("44100".into(),1),("96000".into(),1),("192000".into(),1)]);
+    assert_eq!(lib.track_sheet_choices(&filter(json!({"bits":[24]})),"rate","96",None).unwrap(),[("96000".into(),1)]);
+    for selection in [json!({"bits":["16-bit"]}),json!({"rate":["44.1kHz"]}),json!({"rate":[0]}),json!({"bits":[-1]}),json!({"rate":[44.1]})] {
+        assert!(filter(selection).sheet.invalid,"display labels and invalid numbers cannot become query keys");
+    }
+}
+
+#[test]
+fn local_numeric_facets_page_in_numeric_order_without_skipping_values() {
+    let lib=fixture(205);
+    lib.connection().execute("UPDATE tracks SET sample_rate_hz=id*1000",[]).unwrap();
+    let first=lib.track_sheet_choices(&Filter::default(),"rate","",None).unwrap();
+    assert_eq!((first.len(),first[0].0.as_str(),first[99].0.as_str()),(101,"1000","100000"));
+    let second=lib.track_sheet_choices(&Filter::default(),"rate","",Some(&first[99].0)).unwrap();
+    assert_eq!((second.len(),second[0].0.as_str(),second[99].0.as_str()),(101,"101000","200000"));
+    let last=lib.track_sheet_choices(&Filter::default(),"rate","",Some(&second[99].0)).unwrap();
+    assert_eq!((last.len(),last[4].0.as_str()),(5,"205000"));
+}
+
+#[test]
 fn exact_titles_keep_multilingual_names_punctuation_empty_names_and_mixed_selections() {
     let names = ["", "!!!", "日本語の歌", "中文音乐", "한국어 노래", "éA", "Aé", "a \"quote\"", "😀", "Song", "song", "nul\0name",
         "À", "Ö", "Ø", "ö", "ø", "ÿ", "ぁ", "ゖ", "ァ", "ヺ", "一", "鿋", "가", "힣", "Ω", "𞤀", "\u{0301}"];
@@ -142,6 +174,8 @@ fn hundred_thousand_tracks_match_refine_results_and_measure_alternating_pairs() 
         ("artist", json!({"artist":["Artist 042"]}), Some(node(Field::Artist,"Artist 042"))),
         ("album", json!({"album":["Record 042"]}), Some(node(Field::Album,"Record 042"))),
         ("rating", json!({"rating":[0]}), Some(node(Field::Rating,"0"))),
+        ("bits", json!({"bits":[16]}), Some(node(Field::Bits,"16"))),
+        ("rate", json!({"rate":[44100]}), Some(node(Field::Rate,"44100"))),
         ("quality", json!({"quality":["lossless"]}), Some(node(Field::Quality,"cd"))),
         ("intersection", json!({"artist":["Artist 042"],"title":["Song 000041"],"quality":["lossless"]}),
             Some(Node::All(vec![node(Field::Artist,"Artist 042"),node(Field::Title,"Song 000041"),node(Field::Quality,"cd")]))),
@@ -168,7 +202,7 @@ fn hundred_thousand_tracks_match_refine_results_and_measure_alternating_pairs() 
         cases.push(json!({"field":name,"matching_tracks":expected.len(),"samples":pairs}));
     }
     let mut facets = Vec::new();
-    for field in ["title","artist","album","source","format","quality","rating","favorite"] {
+    for field in ["title","artist","album","source","format","quality","rating","bits","rate","favorite"] {
         let mut pairs = Vec::new();
         let sheet = || {
             let at=Instant::now();

@@ -217,6 +217,7 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         number: track.number,
         duration_ms: track.duration_ms,
         plays: track.metadata["plays"].as_i64().filter(|n| *n >= 0).unwrap_or(0) as usize,
+        bit_depth: track.format.as_ref().and_then(|f| f.bits),
         quality: track.format.as_ref().map(|f| f.quality()).unwrap_or_default(),
         artwork_path: art,
         available: track.playable,

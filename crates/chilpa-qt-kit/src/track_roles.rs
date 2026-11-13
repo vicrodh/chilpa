@@ -47,6 +47,8 @@ pub fn track(track: &chilpa_api::TrackRow, role: i32, number: i32, playing: bool
         25 => text(&track.credits.as_ref().map(|c| c.document().to_string()).unwrap_or_default()),
         26 => QVariant::from(&track.ai_generated.unwrap_or(false)),
         27 => text(&track.quality.format),
+        29 => QVariant::from(&i32::from(track.bit_depth.unwrap_or(0))),
+        30 => QVariant::from(&i64::from(track.quality.rate_hz.unwrap_or(0))),
         28 => {
             let short = track.quality.short();
             let detail = short.strip_prefix(&track.quality.format).unwrap_or(&short).trim();

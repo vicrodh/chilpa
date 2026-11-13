@@ -4,7 +4,7 @@ import app.chilpa.kit
 import "../Theme"
 import "../Primitives"
 
-// At most eight column tags and one search tag; two visible lines at most.
+// At most ten column tags and one search tag; two visible lines at most.
 Item {
     id: trail
     property var filters: ({})
@@ -14,7 +14,7 @@ Item {
     signal removed(string field)
     signal cleared()
     readonly property var entries: {
-        const keys = ["title", "artist", "album", "source", "rating", "format", "quality", "favorite"]
+        const keys = ["title", "artist", "album", "source", "rating", "format", "quality", "bits", "rate", "favorite"]
         const result = keys.filter(key => {
             const value = filters[key]
             return typeof value === "boolean" || Array.isArray(value) && value.length > 0

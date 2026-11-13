@@ -43,6 +43,8 @@ pub struct TrackRow {
     pub duration_ms: u64,
     pub plays: usize,
     pub quality: Quality,
+    /// Stored depth, including values the quality badge omits.
+    pub bit_depth: Option<u8>,
     /// Its record's cover, empty if there is none.
     pub artwork_path: String,
     /// It can be played now. A row that cannot is dimmed, does not play,
@@ -107,6 +109,7 @@ pub struct GroupHeader {
 pub(crate) fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
     TrackRow {
         quality: Quality::of_track(&t.external_id, t.codec.as_deref(), t.bit_depth, t.sample_rate_hz),
+        bit_depth: t.bit_depth,
         available: t.available,
         ai_generated: None,
         explicit: t.explicit,
@@ -331,7 +334,7 @@ pub(crate) fn file_row(path: &str) -> TrackRow {
     // Not in the library: a file opened from a folder plays if it is there;
     // a server's track the library no longer holds does not.
     let available = !chilpa_models::RemoteEntry::is_remote(path) && std::path::Path::new(path).exists();
-    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new(), disc_subtitle: String::new(), work: String::new(), composer_target: String::new(), groups: None, ai_generated: None, explicit: None, credits: None }
+    TrackRow { bit_depth: None, title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new(), disc_subtitle: String::new(), work: String::new(), composer_target: String::new(), groups: None, ai_generated: None, explicit: None, credits: None }
 }
 
 /// A record as its page shows it.
@@ -878,7 +881,7 @@ impl Chilpa {
                     row.disc = track.disc;
                     row.number = track.number;
                     if art.is_empty() { self.catalog.want_art_of(&row.path); } else { row.artwork_path = art; }
-                    if let Some(format) = track.format { row.quality = format.quality(); }
+                    if let Some(format) = track.format { row.bit_depth = format.bits; row.quality = format.quality(); }
                 } else {
                     // The library's row for a source's track (cached when a
                     // list was imported or synced) has a record of its own

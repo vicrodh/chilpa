@@ -1,5 +1,6 @@
 import QtQuick
 import "../Theme"
+import "../Theme/AudioLabels.js" as AudioLabels
 import "../Primitives"
 
 // I share the ordinary row's format, rating, play count and duration.
@@ -25,6 +26,28 @@ Item {
         elide: Text.ElideRight
         font.pointSize: Type.small
         color: Theme.color.textSecondary
+    }
+    Loader {
+        active: facts.row.cols.bitsShown || facts.row.cols.rateShown
+        anchors.fill: parent
+        sourceComponent: Item {
+            Text {
+                objectName: "trackBitDepth"
+                x: facts.row.cols.bitsX; width: facts.row.cols.bits - Metrics.gap12
+                visible: facts.row.cols.bitsShown
+                anchors.verticalCenter: parent.verticalCenter
+                text: AudioLabels.display("bits", facts.row.bitDepth) || "—"
+                elide: Text.ElideRight; font.pointSize: Type.small; color: Theme.color.textSecondary
+            }
+            Text {
+                objectName: "trackSampleRate"
+                x: facts.row.cols.rateX; width: facts.row.cols.rate - Metrics.gap12
+                visible: facts.row.cols.rateShown
+                anchors.verticalCenter: parent.verticalCenter
+                text: AudioLabels.display("rate", facts.row.sampleRate) || "—"
+                elide: Text.ElideRight; font.pointSize: Type.small; color: Theme.color.textSecondary
+            }
+        }
     }
     RatingStars {
         id: stars

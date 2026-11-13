@@ -6,7 +6,7 @@ use std::collections::{BTreeMap, HashSet};
 use std::sync::Arc;
 
 pub const PAGE_SIZE: usize = 100;
-pub const FIELDS: &[&str] = &["title", "artist", "album", "source", "rating", "format", "quality"];
+pub const FIELDS: &[&str] = &["title", "artist", "album", "source", "rating", "format", "quality", "bits", "rate"];
 
 /// A screen owns this selection. Empty lists mean all, including empty names.
 /// Source favorites are a shared snapshot of the facade's marks, never JSON input.
@@ -37,10 +37,12 @@ impl Selection {
             for value in values {
                 let name = match value {
                     serde_json::Value::String(name) => name.clone(),
-                    serde_json::Value::Number(n) if field == "rating" => n.to_string(),
+                    serde_json::Value::Number(n) if ["rating", "bits", "rate"].contains(&field.as_str()) => n.to_string(),
                     _ => { out.invalid = true; continue; }
                 };
                 if field == "rating" && !name.parse::<u8>().is_ok_and(|n| n <= 5) { out.invalid = true; }
+                if ["bits", "rate"].contains(&field.as_str()) && !name.is_empty()
+                    && !name.parse::<u32>().is_ok_and(|n| n > 0 && n.to_string() == name) { out.invalid = true; }
                 chosen.push(name);
             }
             chosen.sort(); chosen.dedup();
@@ -91,6 +93,19 @@ impl Selection {
                 args.push(Box::new(serde_json::to_string(values).expect("string selections")));
                 continue;
             }
+            if field == "bits" || field == "rate" {
+                let column = if field == "bits" { "t.bit_depth" } else { "t.sample_rate_hz" };
+                if values.len() == 1 && !values[0].is_empty() {
+                    sql.push_str(&format!(" AND {column}=?"));
+                    args.push(Box::new(values[0].parse::<i64>().expect("validated number")));
+                    continue;
+                }
+                sql.push_str(&format!(" AND ({column} IN (SELECT CAST(value AS INTEGER) FROM json_each(?))"));
+                args.push(Box::new(serde_json::to_string(values).expect("numeric selections")));
+                if values.iter().any(String::is_empty) { sql.push_str(&format!(" OR {column} IS NULL OR {column}<=0")); }
+                sql.push(')');
+                continue;
+            }
             let Some(expression) = expression(field) else { sql.push_str(" AND 0"); continue; };
             // One bound value avoids JSON decoding for the common single selection.
             if values.len() == 1 {
@@ -128,6 +143,8 @@ fn expression(field: &str) -> Option<&'static str> {
         "rating" => "CAST(coalesce((SELECT stars FROM track_ratings WHERE track_id=t.id),0) AS TEXT)",
         "format" => "chilpa_format(t.external_id,t.codec,t.bit_depth,t.sample_rate_hz)",
         "quality" => "CASE chilpa_quality(t.external_id,t.codec,t.bit_depth,t.sample_rate_hz) WHEN 1 THEN 'lossy' WHEN 2 THEN 'lossless' WHEN 3 THEN 'hires' WHEN 4 THEN 'dsd' ELSE 'unknown' END",
+        "bits" => "CASE WHEN t.bit_depth>0 THEN CAST(t.bit_depth AS TEXT) ELSE '' END",
+        "rate" => "CASE WHEN t.sample_rate_hz>0 THEN CAST(t.sample_rate_hz AS TEXT) ELSE '' END",
         "favorite" => "CASE WHEN t.id IN (SELECT track_id FROM track_favorites) THEN 'true' ELSE 'false' END",
         _ => return None,
     })
@@ -145,6 +162,7 @@ impl Library {
         -> rusqlite::Result<Vec<(String, usize)>> {
         if field == "artist" && !search.is_empty() { return self.track_sheet_artists(filter, search, after); }
         let name = expression(field).ok_or(rusqlite::Error::InvalidQuery)?;
+        let order = if field == "bits" || field == "rate" { format!("CAST(({name}) AS INTEGER)") } else { format!("({name}) COLLATE BINARY") };
         let mut filter = filter.clone();
         filter.sheet.without(field);
         let (mut clause, mut args) = super::browse::clause(&filter);
@@ -160,11 +178,11 @@ impl Library {
             args.push(Box::new(super::query::fold(search)));
         }
         if let Some(after) = after {
-            clause.push_str(&format!(" AND ({name}) COLLATE BINARY > ?"));
+            clause.push_str(&format!(" AND {order} > {}", if field == "bits" || field == "rate" { "CAST(? AS INTEGER)" } else { "?" }));
             args.push(Box::new(after.to_string()));
         }
         let sql = format!("SELECT {name} AS name,count(*) FROM tracks t LEFT JOIN albums a ON a.id=t.album_id
-            {clause} GROUP BY name COLLATE BINARY ORDER BY name COLLATE BINARY LIMIT {}", PAGE_SIZE + 1);
+            {clause} GROUP BY name COLLATE BINARY ORDER BY {order} LIMIT {}", PAGE_SIZE + 1);
         let mut statement = self.connection().prepare(&sql)?;
         let rows = statement.query_map(params_from_iter(args.iter()), |row| Ok((row.get(0)?, row.get::<_, i64>(1)? as usize)))?;
         rows.collect()

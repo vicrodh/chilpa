@@ -176,6 +176,8 @@ Item {
             inViewport: !list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
             sourceName: columns.sourceShown ? model.sourceName || "" : ""
             composer: Prefs.trackComposers ? model.composer || "" : ""
+            bitDepth: columns.bitsShown ? model.bitDepth || 0 : 0
+            sampleRate: columns.rateShown ? model.sampleRate || 0 : 0
             format: columns.formatShown ? model.format || "" : ""
             quality: columns.qualityShown ? model.quality || "" : ""
             tier: columns.qualityShown ? model.tier || 0 : 0

@@ -5,6 +5,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/AudioLabels.js" as AudioLabels
 import "qrc:/qt/qml/app/chilpa/qml/Screens" as Screens
 
 TestCase {
@@ -107,6 +108,60 @@ TestCase {
             verify(columns[name] > 0, name)
         compare(findChild(header, "tracksColumn-artist").x, columns.artistX - Metrics.gap8)
         compare(findChild(header, "tracksColumn-format").x, columns.formatX - Metrics.gap8)
+    }
+    function test_technical_filters_keep_raw_keys_in_checklists_and_trails_data() {
+        return [{tag:"bits",field:"bits",key:"16",label:"16-bit"}, {tag:"rate",field:"rate",key:"44100",label:"44.1kHz"}]
+    }
+    function test_audio_labels_preserve_precision_unknown_values_and_other_fields() {
+        compare(AudioLabels.display("bits", "24"), "24-bit")
+        compare(AudioLabels.display("rate", "88200"), "88.2kHz")
+        compare(AudioLabels.display("rate", "2822400"), "2.8224MHz")
+        compare(AudioLabels.display("rate", "22579200"), "22.5792MHz")
+        compare(AudioLabels.display("bits", 0), "")
+        compare(AudioLabels.display("rate", null), "")
+        compare(AudioLabels.display("artist", "0"), "0")
+        compare(AudioLabels.display("title", "16"), "16")
+    }
+    function test_technical_filters_keep_raw_keys_in_checklists_and_trails(data) {
+        columns.optionalColumns = [data.field]
+        const cell = findChild(header, "tracksColumn-" + data.field)
+        verify(cell.visible && cell.width > 0)
+        popup.show(data.field, data.field, [], cell)
+        backend.answer([{key:data.key,label:data.key,count:2}], "", "", false)
+        const list = findChild(popup.contentItem, "tracksFilterChoices")
+        tryVerify(() => list.itemAtIndex(0) !== null)
+        compare(list.itemAtIndex(0).entry.text, data.label)
+        popup.toggle(data.key); popup.apply()
+        compare(applied.signalArguments[0][1], [data.key])
+        const page = createTemporaryObject(screenMaker, test, {width:1100,height:700})
+        page.columnFilters = {[data.field]:[data.key]}
+        const trail = findChild(page, "tracksFilterTrail")
+        compare(trail.entries.length, 1)
+        compare(trail.entries[0].value, data.label)
+        compare(JSON.parse(page.scrollView.model.key.split("\u001f")[4])[data.field], [data.key])
+    }
+    function test_technical_cells_follow_optional_columns_and_row_density_data() {
+        return [{tag:"compact",rich:false},{tag:"rich",rich:true}]
+    }
+    function test_technical_cells_follow_optional_columns_and_row_density(data) {
+        const page = createTemporaryObject(screenMaker, test, {width:1100,height:700})
+        page.shownColumns = ["bits","rate"]
+        const rows = page.scrollView
+        rows.model.append({trackId:1,rowKind:0,number:1,title:"Track",artist:"Artist",album:"Album",duration:"3:00",plays:0,
+            bitDepth:24,sampleRate:96000,quality:"FLAC",tier:3,available:true,playing:false,selected:false,headerLabel:"",headerMeta:"",art:""})
+        rows.forceLayout()
+        const row = rows.itemAtIndex(0)
+        verify(row !== null)
+        row.cols.rich = data.rich
+        tryVerify(() => findChild(row, "trackBitDepth") !== null)
+        compare(findChild(row, "trackBitDepth").text, "24-bit")
+        compare(findChild(row, "trackSampleRate").text, "96kHz")
+        const builds = row.contentBuilds
+        page.shownColumns = []
+        tryVerify(() => findChild(row, "trackBitDepth") === null)
+        compare(row.bitDepth, 0); compare(row.sampleRate, 0)
+        compare(row.contentBuilds, builds)
+        compare(rows.itemAtIndex(0), row)
     }
     function test_horizontal_clipping_releases_the_clocks_on_the_same_row() {
         const page = createTemporaryObject(screenMaker, test, {width:620, height:500})

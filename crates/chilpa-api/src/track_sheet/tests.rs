@@ -95,3 +95,43 @@ fn choices_include_all_rating_states_and_search_source_display_names() {
     let source = reader.track_column_using(&query,&Filter::default(),"source","display","",&index);
     assert_eq!(source["items"],json!([{"key":"plugin:fixture","label":"Source Display","count":205}]));
 }
+
+#[test]
+fn technical_columns_merge_sources_with_the_same_raw_values_as_local_tracks() {
+    let (reader, index) = fixture();
+    let mut items = index.items.to_vec();
+    for (item, bits, rate) in [(0,16,44100),(1,24,96000),(2,8,192000)] {
+        items[item].bits=Some(bits); items[item].rate=Some(rate);
+    }
+    let index=SourceIndex::new(items,Vec::new());
+    let query=key(json!({"bits":[16],"rate":["44100"]}));
+    let tracks=reader.tracks_using(&query,&Filter::default(),&index);
+    assert_eq!(tracks.snapshot.ids.len(),2);
+    assert!(tracks.snapshot.ids.contains(&1) && tracks.snapshot.ids.contains(&-1));
+    let bits=reader.track_column_using(&key(json!({})),&Filter::default(),"bits","","",&index);
+    assert_eq!(bits["items"],json!([{"key":"","label":"","count":202},{"key":"8","label":"8","count":1},
+        {"key":"16","label":"16","count":2},{"key":"24","label":"24","count":1}]));
+    let rates=reader.track_column_using(&query,&Filter::default(),"rate","","",&index);
+    assert_eq!(rates["items"],json!([{"key":"44100","label":"44100","count":2}]));
+    let bits=reader.track_column_using(&query,&Filter::default(),"bits","","",&index);
+    assert_eq!(bits["items"],json!([{"key":"16","label":"16","count":2}]));
+}
+
+#[test]
+fn numeric_choice_pages_stay_sorted_and_complete_across_local_and_source_values() {
+    let (reader,index)=fixture();
+    let items=index.items.iter().enumerate().map(|(at,item)| SourceItem {rate:Some((at as i64+1)*1000),..item.clone()}).collect();
+    let index=SourceIndex::new(items,Vec::new());
+    let mut cursor=String::new(); let mut values=Vec::new();
+    loop {
+        let result=reader.track_column_using(&key(json!({})),&Filter::default(),"rate","",&cursor,&index);
+        assert_eq!(result["error"],"");
+        let items=result["items"].as_array().unwrap(); assert!(items.len()<=100);
+        values.extend(items.iter().map(|item| item["key"].as_str().unwrap().parse::<u32>().unwrap()));
+        if result["more"]==false {break}
+        cursor=result["next"].as_str().unwrap().to_string();
+    }
+    assert_eq!(values.len(),206);
+    assert!(values.windows(2).all(|pair|pair[0]<pair[1]));
+    assert!(values.contains(&44100) && values.contains(&205000));
+}

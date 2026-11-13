@@ -40,6 +40,7 @@ TrackRowSlot {
     // Who wrote it, quiet after the title; empty when nobody is named.
     property string format: ""
     property string qualityDetail: ""
+    property int bitDepth: 0; property int sampleRate: 0
     property string composer: ""
     property bool explicitContent: false
     property bool aiGenerated: false

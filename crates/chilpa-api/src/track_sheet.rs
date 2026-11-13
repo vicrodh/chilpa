@@ -18,6 +18,9 @@ pub(crate) fn passes(selection: &Selection, item: &SourceItem, stars: &Stars) ->
         || !selection.accepts("quality", item.tier) { return false; }
     if selection.values.contains_key("source") && !selection.accepts("source", &item.source_key()) { return false; }
     if selection.values.contains_key("rating") && !selection.accepts("rating", &stars.tracks.get(&item.track).copied().unwrap_or(0).to_string()) { return false; }
+    for (field, number) in [("bits", item.bits), ("rate", item.rate)] {
+        if selection.values.contains_key(field) && !selection.accepts(field, &number.filter(|n| *n > 0).map(|n| n.to_string()).unwrap_or_default()) { return false; }
+    }
     selection.favorite.is_none_or(|on| on == selection.source_favorites.contains(&item.track))
 }
 
@@ -30,6 +33,8 @@ fn value(item: &SourceItem, field: &str, stars: &Stars, selection: &Selection) -
         "rating" => stars.tracks.get(&item.track).copied().unwrap_or(0).to_string(),
         "format" => item.format.into(),
         "quality" => item.tier.into(),
+        "bits" => item.bits.filter(|n| *n > 0).map(|n| n.to_string()).unwrap_or_default(),
+        "rate" => item.rate.filter(|n| *n > 0).map(|n| n.to_string()).unwrap_or_default(),
         "favorite" => selection.source_favorites.contains(&item.track).to_string(),
         _ => String::new(),
     }
@@ -44,6 +49,10 @@ fn fixed_label(field: &str, key: &str) -> String {
         _ => return key.to_string(),
     };
     chilpa_i18n::t(name)
+}
+
+fn ordered(field: &str, key: String) -> (u32, String) {
+    (if field == "bits" || field == "rate" { key.parse().unwrap_or(0) } else { 0 }, key)
 }
 
 impl Reader {
@@ -95,10 +104,11 @@ impl Reader {
         let matches = |key: &str| search.is_empty() || fold(key).contains(&search)
             || source_labels.iter().any(|entry| entry.key == key && fold(&entry.label).contains(&search))
             || (!fixed.is_empty() && fold(&fixed_label(field, key)).contains(&search));
-        let mut choices: BTreeMap<String, usize> = local.into_iter().collect();
+        let after_ordered = after.as_ref().map(|key| ordered(field, key.clone()));
+        let mut choices: BTreeMap<_, usize> = local.into_iter().map(|(key, count)| (ordered(field, key), count)).collect();
         for item in index.items.iter().filter(|item| item.saved_track && item.track != 0 && prepared.passes(item, &stars)) {
-            let key = value(item, field, &stars, &filter.sheet);
-            if after.as_ref().is_some_and(|after| key <= *after) || (fixed.is_empty() && !matches(&key)) { continue; }
+            let key = ordered(field, value(item, field, &stars, &filter.sheet));
+            if after_ordered.as_ref().is_some_and(|after| key <= *after) || (fixed.is_empty() && !matches(&key.1)) { continue; }
             // Once full, keys past the end cannot enter this page. Removing a large
             // key is safe: the greatest retained key can only decrease during the pass.
             if choices.len() > PAGE_SIZE && choices.last_key_value().is_some_and(|(last, _)| &key > last) { continue; }
@@ -106,15 +116,15 @@ impl Reader {
             if choices.len() > PAGE_SIZE + 1 { choices.pop_last(); }
         }
         for key in fixed {
-            if after.as_ref().is_none_or(|after| *key > after.as_str()) { choices.entry((*key).into()).or_default(); }
+            if after.as_ref().is_none_or(|after| *key > after.as_str()) { choices.entry(ordered(field, (*key).into())).or_default(); }
         }
-        if !fixed.is_empty() { choices.retain(|key, _| matches(key)); }
+        if !fixed.is_empty() { choices.retain(|(_, key), _| matches(key)); }
         let more = choices.len() > PAGE_SIZE;
         if more { choices.pop_last(); }
         if let Some((last, _)) = choices.last_key_value() {
-            answer["next"] = json!(serde_json::to_string(last).expect("string cursor"));
+            answer["next"] = json!(serde_json::to_string(&last.1).expect("string cursor"));
         }
-        answer["items"] = json!(choices.into_iter().map(|(key, count)| {
+        answer["items"] = json!(choices.into_iter().map(|((_, key), count)| {
             let label = source_labels.iter().find(|entry| entry.key == key).map(|entry| entry.label.clone()).unwrap_or_else(|| key.clone());
             json!({"key":key,"label":label,"count":count})
         }).collect::<Vec<_>>());
