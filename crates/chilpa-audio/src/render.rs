@@ -266,6 +266,9 @@ pub enum Outcome {
     Failed { frames: u64, error: SinkError },
     /// The source could not be read on: a damaged file, a disc image with a
     /// bad sector. Not the device: a queue says so and passes over it.
+    /// `frames` leaves out what a seek threw away unheard: the queue goes on,
+    /// what the device still holds of the track is heard, and the count is
+    /// what is logged as listened to.
     Unreadable { frames: u64, reason: String },
 }
 
@@ -465,7 +468,7 @@ fn deliver<K: AudioSink>(
                     "source_failed",
                     format_args!("after={:?} frames={frames} reason={reason:?}", started.elapsed()),
                 );
-                return Outcome::Unreadable { frames, reason };
+                return Outcome::Unreadable { frames: frames.saturating_sub(thrown_away), reason };
             }
         };
         // From somewhere else in the track: what the device holds is from
@@ -924,6 +927,68 @@ mod tests {
         );
         assert_eq!(out, Outcome::Finished { frames: 10 }, "ten frames handed over: the ten read ahead of the seek went");
         assert_eq!(heard, [0], "and none of them heard");
+    }
+
+    /// A device that holds all it is handed until a flush, and says how much
+    /// it was handed in all.
+    struct Counting(Holding, std::sync::Arc<std::sync::atomic::AtomicU64>);
+
+    impl AudioSink for Counting {
+        fn format(&self) -> StreamFormat {
+            self.0.format()
+        }
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            let taken = self.0.write(frames)?;
+            self.1.fetch_add(taken as u64, std::sync::atomic::Ordering::Release);
+            Ok(taken)
+        }
+        fn held(&self) -> u64 {
+            self.0.held()
+        }
+        fn flush(&mut self) -> Result<(), SinkError> {
+            self.0.flush()
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+    }
+
+    /// Ten frames; then, once the device has them, ten more from somewhere
+    /// else in the track; then a read that fails.
+    struct SoughtThenBroken(usize, std::sync::Arc<std::sync::atomic::AtomicU64>, bool);
+
+    impl FrameSource for SoughtThenBroken {
+        fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+            self.0 += 1;
+            match self.0 {
+                1 => Ok(Some(block(10))),
+                2 => {
+                    while self.1.load(std::sync::atomic::Ordering::Acquire) < 10 {
+                        std::thread::sleep(Duration::from_millis(1));
+                    }
+                    self.2 = true;
+                    Ok(Some(block(10)))
+                }
+                _ => Err("the file is cut here".into()),
+            }
+        }
+        fn moved(&mut self) -> bool {
+            std::mem::take(&mut self.2)
+        }
+    }
+
+    #[test]
+    fn a_source_that_breaks_after_a_seek_does_not_count_what_the_seek_threw_away() {
+        // Ten frames are in the device when the seek comes: they are flushed
+        // unheard. The ten after the seek are all that can be heard.
+        let written = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let out = render(
+            &mut SoughtThenBroken(0, written.clone(), false),
+            &mut Counting(Holding(0), written.clone()),
+            &StopSignal::new(),
+        );
+        assert_eq!(written.load(std::sync::atomic::Ordering::Acquire), 20, "twenty frames were handed over");
+        assert_eq!(out, Outcome::Unreadable { frames: 10, reason: "the file is cut here".into() });
     }
 
     /// Blocks to hand over, and then either the end or, when set, a failure.
