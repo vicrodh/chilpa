@@ -4,7 +4,7 @@ use crate::{Chilpa, Reader};
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Sender};
 
-type Job = Box<dyn FnOnce(&Reader) + Send>;
+type Job = Box<dyn FnOnce(Result<&Reader, &str>) + Send>;
 
 /// The window's query thread. Opening the reader belongs to the thread,
 /// and a failed open drops only that job, never the rest of the session.
@@ -26,11 +26,12 @@ impl QueryWorker {
                         }
                         Err(e) => {
                             eprintln!("chilpa-queries: {e}; will retry on the next job");
+                            job(Err(&e));
                             continue;
                         }
                     }
                 }
-                if let Some(reader) = &reader { job(reader); }
+                if let Some(reader) = &reader { job(Ok(reader)); }
             }
         })?;
         Ok(Self { jobs })
@@ -38,8 +39,15 @@ impl QueryWorker {
 
     /// False if the thread stopped; the caller can create a new worker.
     pub fn submit(&self, job: impl FnOnce(&Reader) + Send + 'static) -> bool {
-        if self.jobs.send(Box::new(job)).is_err() {
+        self.submit_checked(move |result| if let Ok(reader) = result { job(reader); })
+    }
+
+    /// Completes even when opening the read-only connection fails, so a page
+    /// can show a retry action instead of retaining an indefinite spinner.
+    pub fn submit_checked(&self, job: impl FnOnce(Result<&Reader, &str>) + Send + 'static) -> bool {
+        if let Err(error) = self.jobs.send(Box::new(job)) {
             eprintln!("chilpa-queries: query thread stopped; will restart on the next job");
+            error.0(Err("query thread stopped"));
             return false;
         }
         true

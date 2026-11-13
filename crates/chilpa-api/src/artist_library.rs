@@ -14,6 +14,8 @@ pub(crate) struct Collection {
     pub popular: Vec<TrackRow>,
     pub labels: Vec<String>,
     pub art: String,
+    pub genres: Vec<String>,
+    pub compositions: usize,
 }
 struct Entry {
     collection: Option<Collection>,
@@ -84,7 +86,9 @@ impl Reader {
         let mut popular: Vec<_> = self.lib.browse_tracks(&filter, crate::TrackOrder::Plays, 10).unwrap_or_default().into_iter().map(crate::browse::row_of).collect();
         popular.retain(|track| track.plays > 0);
         if popular.is_empty() { popular = self.lib.browse_tracks(&filter, crate::TrackOrder::Artist, 10).unwrap_or_default().into_iter().map(crate::browse::row_of).collect(); }
-        Collection { records, appearances, labels, art, popular }
+        let genres = self.lib.facet_genres(&filter).unwrap_or_default().into_iter().map(|entry| entry.label).take(6).collect();
+        let compositions = self.lib.compositions(name, "", 0).map(|(_, count)| count).unwrap_or(0);
+        Collection { records, appearances, labels, art, popular, genres, compositions }
     }
 }
 impl Chilpa {

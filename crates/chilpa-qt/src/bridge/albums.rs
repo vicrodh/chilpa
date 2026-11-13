@@ -302,7 +302,7 @@ impl qobject::AlbumGridModel {
             return;
         }
         let list = match self.rust().kind.to_string().as_str() {
-            "all" => {
+            "all" | "discovery" => {
                 // Sorting the whole library does not fit in a frame: the
                 // worker takes the snapshot and the rows follow.
                 let generation = self.rust().generation + 1;
@@ -312,7 +312,7 @@ impl qobject::AlbumGridModel {
                 let scope = self.rust().key.to_string();
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let found = reader.albums_view_scoped(&order, &group, &text, &extras, &scope);
+                    let found = reader.collection_albums(&kind, &order, &group, &text, &extras, &scope);
                     let _ = thread.queue(move |model| model.arrive(generation, found));
                 });
                 return;
@@ -335,7 +335,7 @@ impl qobject::AlbumGridModel {
                 }
                 self.as_mut().rust_mut().groups = groups; cards
             }
-            "artists" => {
+            "artists" | "discoveryArtists" => {
                 // An artist is drawn as a card too: its name where a record's
                 // title goes, how many records it has under it.
                 let generation = self.rust().generation + 1;
@@ -344,7 +344,7 @@ impl qobject::AlbumGridModel {
                 let extras = crate::browse::read(|s| s.filter.clone());
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let artists = reader.listed_artists(&role, &extras);
+                    let artists = if kind == "discoveryArtists" { reader.discovery_artists(&role) } else { reader.listed_artists(&role, &extras) };
                     let _ = thread.queue(move |model| model.arrive_artists(generation, artists));
                 });
                 return;
@@ -489,8 +489,8 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
         }).release();
         self.as_mut()
             .on_filter_changed(|m| match m.kind().to_string().as_str() {
-                "artists" => m.show_artists(),
-                "all" | "source" => m.schedule(),
+                "artists" | "discoveryArtists" => m.show_artists(),
+                "all" | "source" | "discovery" => m.schedule(),
                 _ => {}
             })
             .release();

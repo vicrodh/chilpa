@@ -18,6 +18,7 @@ extern const QStaticPlugin qt_static_plugin_app_chilpa_artwork_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_about_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_stats_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_sources_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_discovery_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_controls_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_folders_plugin();
 extern const QStaticPlugin qt_static_plugin_app_chilpa_devices_plugin();
@@ -52,6 +53,7 @@ extern "C" void chilpa_install_shell()
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_about_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_stats_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_sources_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_discovery_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_controls_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_folders_plugin());
     qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_devices_plugin());

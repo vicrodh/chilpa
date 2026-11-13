@@ -17,6 +17,9 @@ pub enum Screen {
     Home,
     Library,
     Artists,
+    Genres,
+    Composers,
+    Compositions,
     Albums,
     /// Every track of the library, in one list.
     Tracks,
@@ -60,6 +63,9 @@ impl Screen {
             Screen::Home => "home",
             Screen::Library => "library",
             Screen::Artists => "artists",
+            Screen::Genres => "genres",
+            Screen::Composers => "composers",
+            Screen::Compositions => "compositions",
             Screen::Albums => "albums",
             Screen::Tracks => "tracks",
             Screen::Album => "album",
@@ -86,7 +92,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Genres, Screen::Composers, Screen::Compositions, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -274,6 +280,11 @@ impl Tabs {
 /// Where the open tabs are kept between runs.
 const TABS_KEY: &str = "ui.tabs";
 
+fn discovery_title(key: &str, fallback: String) -> String {
+    crate::discovery::Selection::parse(key).map(|selected| selected.name)
+        .filter(|name| !name.is_empty()).unwrap_or(fallback)
+}
+
 impl crate::Chilpa {
     /// I perform the destination's source work after its acknowledgement frame.
     pub fn prepare_planned_route(&mut self, plan: PlannedRoute) -> bool {
@@ -291,6 +302,9 @@ impl crate::Chilpa {
             Screen::Home => (self.t("Home"), "home"),
             Screen::Library => (self.t("Library"), "columns3"),
             Screen::Artists => (self.t("Artists"), "microphone2"),
+            Screen::Genres => (discovery_title(&r.key, self.t("Genres")), "hierarchy2"),
+            Screen::Composers => (discovery_title(&r.key, self.t("Composers")), "pencil"),
+            Screen::Compositions => (discovery_title(&r.key, self.t("Compositions")), "music"),
             Screen::Albums => (self.t("Albums"), "disc"),
             Screen::Tracks => (self.t("Tracks"), "music"),
             Screen::Settings => (self.t("Settings"), "settings"),

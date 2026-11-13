@@ -50,6 +50,8 @@ pub(crate) struct SourceItem {
     pub genres: Vec<String>,
     pub label: String,
     pub composers: Vec<String>,
+    /// The explicit work tag; never inferred from a recording title.
+    pub work: String,
     /// When the listener saved it, in Unix seconds; zero when unknown.
     pub added_at: i64,
     /// I keep a normalized release kind, or an empty string when unknown.

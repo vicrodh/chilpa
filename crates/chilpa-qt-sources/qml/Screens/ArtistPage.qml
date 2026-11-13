@@ -40,20 +40,29 @@ Item {
     }
     readonly property bool local: about.local === true
     readonly property string name: header.title || ""
-    readonly property var network: name !== "" ? JSON.parse(Sources.network(name, Library.remoteRev) || "{}") : ({})
+    readonly property var network: page.presented && page.visible && page.networkOpen && name !== "" ? JSON.parse(Sources.network(name, Library.remoteRev) || "{}") : ({})
     readonly property var shelves: (about.shelves || []).filter(s => s.sidebar !== true)
     // Open unless the window is narrow with a panel on the right, as QBZ.
     readonly property bool constrained: Window.width < Metrics.networkNarrow && SettingsModel.lyricsOpen
-    readonly property bool networkEnabled: network.enabled !== false
-    property bool networkOpen: !constrained
+    readonly property bool networkEnabled: Sources.networkAllowed(name, Library.remoteRev)
+    property bool networkOpen: !constrained && SettingsModel.kept("ui.artist.network") === "true"
     onNetworkEnabledChanged: if (!networkEnabled) networkOpen = false
     onConstrainedChanged: if (constrained) networkOpen = false
-    onKeyChanged: { networkOpen = !constrained; inLibrary = false }
+    onKeyChanged: { networkOpen = !constrained && SettingsModel.kept("ui.artist.network") === "true"; inLibrary = false }
     onAboutChanged: if (!inLibrary) { const info = about.header || {}; libraryKey = !local && info.plugin && info.ref ? info.plugin + " artist-library:" + info.ref : "" }
     // The shelves by key, changed only when a shelf comes or goes, so a
     // page read again keeps every block where it was.
     KeyedModel { id: shelfRows; items: page.shelves }
-    Component.onCompleted: aboutChanged()
+    Component.onCompleted: { aboutChanged(); acceptContextIntent() }
+    onNameChanged: if (presented) acceptContextIntent()
+    onPresentedChanged: if (presented) acceptContextIntent()
+    function acceptContextIntent() {
+        if (!name) return
+        const intent = Visit.recall("artist.aboutIntent", {})
+        if (!intent.name) return
+        Visit.keep("artist.aboutIntent", {})
+        if (intent.name === name && Date.now() - intent.at < Motion.artistContextIntent) networkOpen = networkEnabled
+    }
     function blockOf(id) {
         for (let i = 0; i < blocks.count; i++) {
             const item = blocks.itemAt(i)
@@ -99,10 +108,11 @@ Item {
                 height: Math.max(Metrics.artistPortrait, item ? item.implicitHeight : 0)
                 active: page.presented
                 asynchronous: true
-                sourceComponent: Component { ArtistHeader { info: page.header; local: page.local; networkOpen: page.networkOpen; networkEnabled: page.networkEnabled; sceneAvailable: page.networkEnabled && !!page.network.origin?.place && (page.network.origin?.tags || []).length > 0; onToggleNetwork: page.networkOpen = !page.networkOpen; onSceneRequested: page.askScene(); inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on } }
+                sourceComponent: Component { ArtistHeader { info: page.header; local: page.local; networkOpen: page.networkOpen; networkEnabled: page.networkEnabled; sceneAvailable: page.networkEnabled && !!page.network.origin?.place && (page.network.origin?.tags || []).length > 0; onToggleNetwork: page.toggleNetwork(); onSceneRequested: page.askScene(); inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on } }
                 ArtTile { id: preview; visible: !head.item; width: Math.min(Metrics.artistPortrait, head.width / 3); height: width; radius: width / 2; source: page.header.art || "" } // derived: one third of the header and a circular crop
                 Text { visible: !head.item; x: preview.width + Metrics.blockGap; anchors.verticalCenter: parent.verticalCenter; width: parent.width - x; text: page.header.title || ""; font.pointSize: Type.display; font.weight: Type.bold; color: Theme.color.textPrimary }
             }
+            ArtistContext { width: parent.width; info: page.header; networkEnabled: page.networkEnabled; onAboutRequested: page.toggleNetwork() }
             // Where the jump bar sits when the page is at the top.
             Item { id: jumpSlot; width: parent.width; height: Metrics.jumpBar }
             Repeater {
@@ -205,7 +215,7 @@ Item {
         Loader {
             objectName: "artistNetworkLoader"
             anchors.fill: parent
-            active: page.presented && page.networkEnabled
+            active: page.presented && page.visible && page.networkEnabled && page.networkOpen
             asynchronous: true
             sourceComponent: Component { ArtistNetwork {
                 width: parent.width; height: parent.height
@@ -214,6 +224,10 @@ Item {
                 onSceneRequested: page.askScene()
             } }
         }
+    }
+    function toggleNetwork() {
+        networkOpen = !networkOpen
+        SettingsModel.keep("ui.artist.network", networkOpen ? "true" : "false")
     }
     function askScene() { sceneChoice.active = true; sceneChoice.item.open() }
     Loader {

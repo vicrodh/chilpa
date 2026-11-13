@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../../qml/Screens"
 
 // The artist page draws the facade's shaped document: the blocks in their
@@ -30,7 +31,7 @@ TestCase {
     function rendered(page) {
         waitForRendering(page)
         tryVerify(() => findChild(page, "artistHeaderLoader")?.status === Loader.Ready
-            && findChild(page, "artistNetworkLoader")?.status === Loader.Ready, 3000)
+            && (!page.networkOpen || findChild(page, "artistNetworkLoader")?.status === Loader.Ready), 3000)
     }
     function test_a_portrait_that_arrives_after_the_page_shows_without_reading_it_again() {
         const doc = JSON.parse(document())
@@ -63,6 +64,7 @@ TestCase {
         findChild(page, "artistPortraitMenu").close()
     }
     function init() {
+        SettingsModel.keep("ui.artist.network", "true")
         Sources.pages = { "fixture native:artist:1": document() }
         Sources.networks = { "Maiden": JSON.stringify({ loading: false, available: true, origin: { person: false, begin: "Dec 25, 1975", end: "", place: "Leyton", exact: true },
             relationships: { any: true, members: [{ name: "Steve Harris", tooltip: "bass (1975 - present)" }], groups: [], collaborators: [] }, similar: ["Judas Priest", "Saxon"], resolves: true }) }
@@ -78,7 +80,7 @@ TestCase {
         verify(findText(page, "JUMP TO"))
         verify(findText(page, "Read more"), "a long biography is cut")
         verify(findChild(page, "radioAction").visible)
-        verify(findChild(page, "networkAction").checked, "the sidebar opens by itself")
+        verify(findChild(page, "networkAction").checked, "the explicit sidebar preference is restored")
         // The sidebar: labels and similar artists from the source, the
         // origin and the members from the network.
         verify(findText(page, "LABELS"))
@@ -131,6 +133,30 @@ TestCase {
         sources.activated(0)
         compare(Navigation.went, ["artist", "Maiden"])
         Sources.show({ panels: [{ id: "radio", name: "Radio", icon: "broadcast" }] })
+    }
+
+    function test_an_explicit_composer_about_intent_opens_context_without_changing_the_preference() {
+        SettingsModel.keep("ui.artist.network", "false")
+        Visit.keep("artist.aboutIntent", {name:"Maiden",at:Date.now()})
+        const page = createTemporaryObject(pageMaker, this)
+        rendered(page)
+        compare(page.networkOpen, true)
+        compare(SettingsModel.kept("ui.artist.network"), "false")
+        compare(Object.keys(Visit.recall("artist.aboutIntent", {})).length, 0)
+    }
+
+    function test_artist_context_stays_unmounted_until_requested() {
+        SettingsModel.keep("ui.artist.network", "false")
+        const page = createTemporaryObject(pageMaker, this)
+        rendered(page)
+        compare(page.networkOpen, false)
+        compare(findChild(page, "artistNetworkLoader").active, false)
+        compare(Object.keys(page.network).length, 0)
+        mouseClick(findChild(page, "artistAbout"))
+        tryCompare(page, "networkOpen", true)
+        tryCompare(findChild(page, "artistNetworkLoader"), "status", Loader.Ready)
+        mouseClick(findChild(page, "networkAction"))
+        tryCompare(findChild(page, "artistNetworkLoader"), "active", false)
     }
 
     function test_the_network_button_closes_and_opens_the_sidebar() {

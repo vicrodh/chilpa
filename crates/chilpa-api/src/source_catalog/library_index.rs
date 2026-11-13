@@ -123,6 +123,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
         genres: if own_genres.is_empty() { album.as_ref().map(|a| a.genres.clone()).unwrap_or_default() } else { own_genres },
         label: if own_label.is_empty() { album.as_ref().map(|a| a.label.clone()).unwrap_or_default() } else { own_label },
         composers,
+        work: text(&track.metadata, "work"),
         added_at: track.metadata["added_at"].as_i64().or(album.as_ref().map(|a| a.added_at)).unwrap_or(0),
         release_type: album.as_ref().map(|a| a.release_type.clone()).unwrap_or_default(),
         disc: (track.disc > 0).then_some(track.disc as i64),
@@ -245,6 +246,14 @@ impl Catalog {
                 for card in shelf.cards.iter().copied().chain(shelf.tracks.iter().filter_map(|id|inner.store.tracks.get(id)).map(|track|track.album_id)).filter_map(|id| inner.store.cards.get(&id)) {
                     (card.read_at, card.tracks.as_ref().map(Vec::len),card.metadata["favorite"]==true,card.metadata["in_library"]!=false).hash(&mut hash);
                 }
+                // Work edits can arrive within the same timestamp tick. Hash
+                // borrowed fields, without cloning tracks or serializing JSON.
+                let album_tracks = shelf.cards.iter().filter_map(|id| inner.store.cards.get(id))
+                    .flat_map(|card| card.tracks.iter().flatten());
+                for track in shelf.tracks.iter().chain(album_tracks).filter_map(|id| inner.store.tracks.get(id)) {
+                    (track.id, track.metadata["work"].as_str(), track.metadata["composer"].as_str()).hash(&mut hash);
+                    for name in track.metadata["composers"].as_array().into_iter().flatten().filter_map(Value::as_str) { name.hash(&mut hash); }
+                }
             }
         }
         hash.finish()
@@ -263,6 +272,26 @@ impl Catalog {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn work_and_composer_edits_invalidate_integrated_tracks_without_a_timestamp_change() {
+        let catalog = Catalog::new();
+        let track = {
+            let mut inner = catalog.lock();
+            let track = inner.store.track_id("plugin:fixture:track:1");
+            inner.store.shelves.insert("fixture section:tracks".into(), super::super::store::Shelf { tracks:vec![track], ..Default::default() });
+            track
+        };
+        let chosen = vec![("fixture".into(),false,true)];
+        let empty = catalog.integrated_signature(&chosen);
+        catalog.lock().store.tracks.get_mut(&track).unwrap().metadata = json!({"work":"Suite","composers":["Writer"]});
+        let first = catalog.integrated_signature(&chosen);
+        assert_ne!(first, empty);
+        catalog.lock().store.tracks.get_mut(&track).unwrap().metadata = json!({"work":"Suite","composers":["Writer"]});
+        assert_eq!(first, catalog.integrated_signature(&chosen));
+        catalog.lock().store.tracks.get_mut(&track).unwrap().metadata["composers"] = json!(["Other writer"]);
+        assert_ne!(first, catalog.integrated_signature(&chosen));
+    }
 
     #[test]
     fn album_hearts_refresh_the_index_without_changing_library_membership(){
@@ -319,7 +348,7 @@ mod tests {
             track.plugin = "guest".into();
             track.album_id = read;
             track.title = "Song".into();
-            track.metadata = json!({"kind": "track", "ref": "track:1@playlist:9", "composers": ["Writer"], "year": 2005});
+            track.metadata = json!({"kind": "track", "ref": "track:1@playlist:9", "composers": ["Writer"], "work":"Suite", "year": 2005});
         }
         store.cards.get_mut(&read).unwrap().tracks = Some(vec![song_id]);
         store.shelves.insert("guest section:albums".into(), super::super::store::Shelf { cards: vec![read, unread], ..Default::default() });
@@ -327,6 +356,7 @@ mod tests {
         assert_eq!(items.len(), 2);
         let song = &items[0];
         assert!(song.saved_album);
+        assert_eq!(song.work, "Suite");
         assert_eq!((song.track, song.album, song.title.as_str(), song.identity.as_str()), (song_id, read, "Song", "track:1"));
         assert_eq!(song.genres, ["Jazz"], "the root genre is not a genre");
         assert_eq!((song.label.as_str(), song.year, song.added_at, song.release_type.as_str()), ("House", Some(1971), 9, "ep"));

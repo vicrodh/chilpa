@@ -50,6 +50,7 @@ mod refine;
 mod browse_candidates;
 pub mod credits;
 pub mod metadata;
+pub mod compositions;
 pub mod edit;
 pub mod favorites;
 pub mod features;

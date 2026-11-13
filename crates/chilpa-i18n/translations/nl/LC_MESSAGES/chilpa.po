@@ -238,8 +238,14 @@ msgstr "API-sleutel"
 msgid "About"
 msgstr "Over"
 
+msgid "About & connections"
+msgstr ""
+
 msgid "About Chilpa"
 msgstr "Over Chilpa"
+
+msgid "About this composer"
+msgstr ""
 
 msgid "Accent"
 msgstr "Accent"
@@ -480,6 +486,9 @@ msgstr "Al deze"
 msgid "All qualities"
 msgstr "Alle kwaliteiten"
 
+msgid "All recordings"
+msgstr ""
+
 msgid "All results"
 msgstr "Alle resultaten"
 
@@ -500,6 +509,9 @@ msgstr "Alles gereed"
 
 msgid "All sources"
 msgstr "Alle bronnen"
+
+msgid "All subgenres"
+msgstr ""
 
 msgid "All themes"
 msgstr "Alle thema's"
@@ -833,6 +845,9 @@ msgstr "Beschikbare GPU’s"
 
 msgid "Available offline"
 msgstr "Offline beschikbaar"
+
+msgid "Available parts, grouped by album and performer. Work tags do not confirm a complete recording."
+msgstr ""
 
 msgid "Available version"
 msgstr "Beschikbare versie"
@@ -1628,8 +1643,14 @@ msgstr "Voltooid werk is opgeslagen. Doorgaan controleert de map opnieuw en slaa
 msgid "Composer"
 msgstr "Componist"
 
+msgid "Composer not tagged"
+msgstr ""
+
 msgid "Composers"
 msgstr "Componisten"
+
+msgid "Compositions"
+msgstr ""
 
 msgid "Compressor ratio · 1–6"
 msgstr "Compressorratio · 1–6"
@@ -1777,6 +1798,9 @@ msgstr "Kon de afspeellijst niet verplaatsen."
 
 msgid "Could not read the analysis inventory."
 msgstr "Kon het analyse-overzicht niet lezen."
+
+msgid "Could not read the library"
+msgstr ""
 
 msgid "Could not remove the saved profile."
 msgstr ""
@@ -2510,6 +2534,9 @@ msgstr "Expliciet"
 msgid "Explore"
 msgstr "Verkennen"
 
+msgid "Explore works, recordings and albums credited to this composer."
+msgstr ""
+
 msgid "Export"
 msgstr "Exporteren"
 
@@ -2612,6 +2639,9 @@ msgstr "Filteren op genre"
 msgid "Filter playlists"
 msgstr "Afspeellijsten filteren"
 
+msgid "Filter recordings"
+msgstr ""
+
 msgid "Filter the library"
 msgstr "Bibliotheek filteren"
 
@@ -2698,6 +2728,9 @@ msgstr "Mappen zijn niet beschikbaar. Hun bestaande nummers blijven in de biblio
 
 msgid "Follow"
 msgstr "Volgen"
+
+msgid "Follow a style into its subgenres, or search for one directly."
+msgstr ""
 
 msgid "Follow lyrics"
 msgstr "Songtekst volgen"
@@ -4163,17 +4196,26 @@ msgstr ""
 msgid "No albums found"
 msgstr "Geen albums gevonden"
 
+msgid "No albums in this selection"
+msgstr ""
+
 msgid "No artists from this scene were found."
 msgstr "Er zijn geen artiesten uit deze scène gevonden."
 
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "Er zijn in deze scène geen artiesten van je geselecteerde plug-ins gevonden."
 
+msgid "No artists in this selection"
+msgstr ""
+
 msgid "No audio output is known yet; try again in a moment."
 msgstr "Er is nog geen audio-uitvoer bekend; probeer het zo nog eens."
 
 msgid "No composer"
 msgstr "Geen componist"
+
+msgid "No composer credits yet. Add composers in the metadata editor."
+msgstr ""
 
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "Nog geen voorwaarden. Voeg er hieronder een toe, of klik op waarden in Kolommen."
@@ -4211,6 +4253,9 @@ msgstr "Geen mappen komen overeen met je zoekopdracht."
 msgid "No genre"
 msgstr "Geen genre"
 
+msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
+msgstr ""
+
 msgid "No genres in this period."
 msgstr "Geen genres in deze periode."
 
@@ -4240,6 +4285,9 @@ msgstr "Geen songtekst voor dit nummer."
 
 msgid "No matches"
 msgstr "Geen overeenkomsten"
+
+msgid "No matches. Try another search."
+msgstr ""
 
 msgid "No matching music."
 msgstr "Geen overeenkomende muziek."
@@ -4346,6 +4394,9 @@ msgstr "In deze uitvoering zijn nog geen nummers verwerkt."
 msgid "No tracks in the selected libraries yet."
 msgstr "Nog geen nummers in de geselecteerde bibliotheken."
 
+msgid "No tracks in this selection"
+msgstr ""
+
 msgid "No tracks match all of these"
 msgstr "Geen nummers voldoen aan al deze voorwaarden"
 
@@ -4356,6 +4407,9 @@ msgid "No tracks match your search."
 msgstr "Geen nummers komen overeen met je zoekopdracht."
 
 msgid "No tracks without an album match these filters."
+msgstr ""
+
+msgid "No work tags in this selection. Composer credits are still available under Albums and Tracks."
 msgstr ""
 
 msgid "No year"
@@ -5420,6 +5474,9 @@ msgstr "Onlangs afgespeelde afspeellijsten in de bibliotheek"
 msgid "Recording engineer"
 msgstr "Opnametechnicus"
 
+msgid "Recordings"
+msgstr ""
+
 msgid "Records"
 msgstr "Albums"
 
@@ -5967,6 +6024,9 @@ msgstr "In deze weergave zoeken…"
 
 msgid "Search title, artist or album"
 msgstr "Zoek op titel, artiest of album"
+
+msgid "Search your library"
+msgstr ""
 
 msgid "Searching MusicBrainz for {genre} artists…"
 msgstr "In MusicBrainz zoeken naar {genre} artiesten…"
@@ -6524,6 +6584,9 @@ msgstr "Studio 24/48"
 msgid "Stumbling"
 msgstr "Haperend"
 
+msgid "Subgenres"
+msgstr ""
+
 msgid "Subscribe"
 msgstr "Abonneren"
 
@@ -6869,6 +6932,9 @@ msgstr "De uitvoer speelt nog"
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "De uitvoer speelt alleen Chilpa af. Andere programma's wachten tot Chilpa loslaat."
+
+msgid "The people behind the music in your library."
+msgstr ""
 
 msgid "The player is busy. Close the other file transfer application and try again."
 msgstr ""
@@ -7986,6 +8052,9 @@ msgstr "Woorden in de albumtitel en in de titel van het nummer"
 
 msgid "Work"
 msgstr "Werk"
+
+msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
+msgstr ""
 
 msgid "Write XML"
 msgstr "XML schrijven"
@@ -9491,6 +9560,11 @@ msgid_plural "{} channels"
 msgstr[0] "{} kanaal"
 msgstr[1] "{} kanalen"
 
+msgid "{} composition"
+msgid_plural "{} compositions"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} condition"
 msgid_plural "{} conditions"
 msgstr[0] "{} voorwaarde"
@@ -9696,6 +9770,11 @@ msgstr "{} van {} formaten komen ongewijzigd aan"
 msgid "{} of {} tracks match this release"
 msgstr "{} van {} nummers komen overeen met deze uitgave"
 
+msgid "{} part"
+msgid_plural "{} parts"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} play"
 msgid_plural "{} plays"
 msgstr[0] "{} keer afgespeeld"
@@ -9756,6 +9835,11 @@ msgstr[1] "{} sterren"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} laadt nog · aantallen kunnen stijgen"
+
+msgid "{} style in your library"
+msgid_plural "{} styles in your library"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} to copy · {} to update · {} to remove · {} already present"
 msgstr "{} te kopiëren · {} bij te werken · {} te verwijderen · {} al aanwezig"

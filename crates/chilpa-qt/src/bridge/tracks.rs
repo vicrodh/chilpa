@@ -783,19 +783,20 @@ impl qobject::TrackListModel {
             if let Some(rows) = cached { self.home_arrived(asked, rows); }
             return;
         }
-        if kind == "tracks" {
-            app::with(|api| api.prepare_track_libraries());
+        if matches!(kind.as_str(), "tracks" | "discovery") {
+            if kind == "tracks" { app::with(|api| api.prepare_track_libraries()); }
             // Found on the worker; what is shown stays until it is back.
             let (query, extras) = (self.rust().key.to_string(), browse::read(|s| s.filter.clone()));
             let asked = self.rust().asked + 1;
             self.as_mut().rust_mut().asked = asked;
             let thread = self.qt_thread();
-            worker::submit(move |reader| reader.tracks_progressive(&query, &extras, |found| {
+            worker::submit(move |reader| reader.collection_tracks(&kind, &query, &extras, |found| {
                 let _ = thread.queue(move |mut model| {
                     if model.rust().asked == asked {
                         let ms = found.snapshot.totals.duration_ms;
                         (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
-                        model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
+                        let kind = model.kind().to_string();
+                        model.show(kind, Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
                     }
                 });
             }));

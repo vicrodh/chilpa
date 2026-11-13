@@ -5,6 +5,11 @@ import QtQuick
 // 02-layout.md and 03-components.md). Nothing outside Theme/ writes a size by
 // hand; the QML literal check fails if it does.
 QtObject {
+    readonly property int discoveryEntryWidth: 300
+    readonly property int discoveryEntryHeight: 88
+    readonly property int discoveryPageSize: 60
+    readonly property int discoveryPreview: 8
+    readonly property int discoverySearchChars: 256
     readonly property int outputDetailsWidth: 700
     // The track information modal: room for three columns of facts, each no
     // narrower than a cell; a narrower window takes fewer columns.

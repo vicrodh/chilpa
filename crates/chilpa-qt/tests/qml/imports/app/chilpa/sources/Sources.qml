@@ -39,6 +39,7 @@ QtObject {
     signal pageRequested(string key)
     function page(key, rev) { pageRequested(key); return pages[key] || JSON.stringify({ music: false }) }
     property var networks: ({})
+    function networkAllowed(name, rev) { return JSON.parse(networks[name] || "{}").enabled !== false }
     function network(name, rev) { return networks[name] || JSON.stringify({ loading: false }) }
     property var sceneDocument: ({state:"idle",artists:[]})
     function scene(rev) { return JSON.stringify(sceneDocument) }

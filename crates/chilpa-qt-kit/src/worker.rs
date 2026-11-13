@@ -13,6 +13,17 @@ pub fn submit(job: impl FnOnce(&chilpa_api::Reader) + Send + 'static) {
     submit_to(&WORKER, job);
 }
 
+/// A page receives a terminal result when initialization or reader startup fails.
+pub fn submit_checked(job: impl FnOnce(Result<&chilpa_api::Reader, &str>) + Send + 'static) {
+    WORKER.with(|slot| {
+        let mut worker = slot.borrow_mut();
+        if worker.is_none() { *worker = crate::app::with(|api| api.query_worker()); }
+        if let Some(running) = worker.as_ref() {
+            if !running.submit_checked(job) { *worker = None; }
+        } else { job(Err("could not initialize the library reader")); }
+    });
+}
+
 /// Album navigation has its own reader, so an old search cannot delay it.
 pub fn submit_album(job: impl FnOnce(&chilpa_api::Reader) + Send + 'static) {
     let queued = std::time::Instant::now();

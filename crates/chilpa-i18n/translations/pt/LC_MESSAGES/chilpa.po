@@ -238,8 +238,14 @@ msgstr "Chave de API"
 msgid "About"
 msgstr "Sobre"
 
+msgid "About & connections"
+msgstr ""
+
 msgid "About Chilpa"
 msgstr "Sobre o Chilpa"
+
+msgid "About this composer"
+msgstr ""
 
 msgid "Accent"
 msgstr "Destaque"
@@ -480,6 +486,9 @@ msgstr "Todas estas"
 msgid "All qualities"
 msgstr "Todas as qualidades"
 
+msgid "All recordings"
+msgstr ""
+
 msgid "All results"
 msgstr "Todos os resultados"
 
@@ -500,6 +509,9 @@ msgstr "Tudo pronto"
 
 msgid "All sources"
 msgstr "Todas as fontes"
+
+msgid "All subgenres"
+msgstr ""
 
 msgid "All themes"
 msgstr "Todos os temas"
@@ -833,6 +845,9 @@ msgstr "GPUs disponíveis"
 
 msgid "Available offline"
 msgstr "Disponível offline"
+
+msgid "Available parts, grouped by album and performer. Work tags do not confirm a complete recording."
+msgstr ""
 
 msgid "Available version"
 msgstr "Versão disponível"
@@ -1628,8 +1643,14 @@ msgstr "O trabalho concluído está salvo. Continuar verifica a pasta novamente 
 msgid "Composer"
 msgstr "Compositor"
 
+msgid "Composer not tagged"
+msgstr ""
+
 msgid "Composers"
 msgstr "Compositores"
+
+msgid "Compositions"
+msgstr ""
 
 msgid "Compressor ratio · 1–6"
 msgstr "Razão do compressor · 1–6"
@@ -1777,6 +1798,9 @@ msgstr "Não foi possível mover a playlist."
 
 msgid "Could not read the analysis inventory."
 msgstr "Não foi possível ler o inventário de análises."
+
+msgid "Could not read the library"
+msgstr ""
 
 msgid "Could not remove the saved profile."
 msgstr ""
@@ -2510,6 +2534,9 @@ msgstr "Explícito"
 msgid "Explore"
 msgstr "Explorar"
 
+msgid "Explore works, recordings and albums credited to this composer."
+msgstr ""
+
 msgid "Export"
 msgstr "Exportar"
 
@@ -2612,6 +2639,9 @@ msgstr "Filtrar por gênero"
 msgid "Filter playlists"
 msgstr "Filtrar playlists"
 
+msgid "Filter recordings"
+msgstr ""
+
 msgid "Filter the library"
 msgstr "Filtrar a biblioteca"
 
@@ -2698,6 +2728,9 @@ msgstr "As pastas estão indisponíveis. Suas faixas existentes permanecem na bi
 
 msgid "Follow"
 msgstr "Seguir"
+
+msgid "Follow a style into its subgenres, or search for one directly."
+msgstr ""
 
 msgid "Follow lyrics"
 msgstr "Acompanhar letra"
@@ -4163,17 +4196,26 @@ msgstr ""
 msgid "No albums found"
 msgstr "Nenhum álbum encontrado"
 
+msgid "No albums in this selection"
+msgstr ""
+
 msgid "No artists from this scene were found."
 msgstr "Nenhum artista desta cena foi encontrado."
 
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "Nenhum artista dos plugins selecionados foi encontrado nesta cena."
 
+msgid "No artists in this selection"
+msgstr ""
+
 msgid "No audio output is known yet; try again in a moment."
 msgstr "Ainda não se conhece nenhuma saída de áudio; tente de novo em um momento."
 
 msgid "No composer"
 msgstr "Sem compositor"
+
+msgid "No composer credits yet. Add composers in the metadata editor."
+msgstr ""
 
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "Ainda não há condições. Adicione uma abaixo ou clique em valores em Colunas."
@@ -4211,6 +4253,9 @@ msgstr "Nenhuma pasta corresponde à sua busca."
 msgid "No genre"
 msgstr "Sem gênero"
 
+msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
+msgstr ""
+
 msgid "No genres in this period."
 msgstr "Nenhum gênero neste período."
 
@@ -4240,6 +4285,9 @@ msgstr "Não há letra para esta faixa."
 
 msgid "No matches"
 msgstr "Nenhuma correspondência"
+
+msgid "No matches. Try another search."
+msgstr ""
 
 msgid "No matching music."
 msgstr "Nenhuma música correspondente."
@@ -4346,6 +4394,9 @@ msgstr "Nenhuma faixa foi processada nesta execução ainda."
 msgid "No tracks in the selected libraries yet."
 msgstr "Ainda não há faixas nas bibliotecas selecionadas."
 
+msgid "No tracks in this selection"
+msgstr ""
+
 msgid "No tracks match all of these"
 msgstr "Nenhuma faixa atende a todas estas"
 
@@ -4356,6 +4407,9 @@ msgid "No tracks match your search."
 msgstr "Nenhuma faixa corresponde à sua busca."
 
 msgid "No tracks without an album match these filters."
+msgstr ""
+
+msgid "No work tags in this selection. Composer credits are still available under Albums and Tracks."
 msgstr ""
 
 msgid "No year"
@@ -5420,6 +5474,9 @@ msgstr "Playlists reproduzidas recentemente na biblioteca"
 msgid "Recording engineer"
 msgstr "Engenheiro de gravação"
 
+msgid "Recordings"
+msgstr ""
+
 msgid "Records"
 msgstr "Discos"
 
@@ -5967,6 +6024,9 @@ msgstr "Pesquisar nesta visualização…"
 
 msgid "Search title, artist or album"
 msgstr "Buscar por título, artista ou álbum"
+
+msgid "Search your library"
+msgstr ""
 
 msgid "Searching MusicBrainz for {genre} artists…"
 msgstr "Buscando artistas de {genre} no MusicBrainz…"
@@ -6524,6 +6584,9 @@ msgstr "Estúdio 24/48"
 msgid "Stumbling"
 msgstr "Instável"
 
+msgid "Subgenres"
+msgstr ""
+
 msgid "Subscribe"
 msgstr "Assinar"
 
@@ -6869,6 +6932,9 @@ msgstr "A saída ainda está tocando"
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "A saída toca apenas o Chilpa. Os outros programas esperam até que ela seja liberada."
+
+msgid "The people behind the music in your library."
+msgstr ""
 
 msgid "The player is busy. Close the other file transfer application and try again."
 msgstr ""
@@ -7986,6 +8052,9 @@ msgstr "Palavras no título do álbum e no da faixa"
 
 msgid "Work"
 msgstr "Obra"
+
+msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
+msgstr ""
 
 msgid "Write XML"
 msgstr "Gravar XML"
@@ -9491,6 +9560,11 @@ msgid_plural "{} channels"
 msgstr[0] "{} canal"
 msgstr[1] "{} canais"
 
+msgid "{} composition"
+msgid_plural "{} compositions"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} condition"
 msgid_plural "{} conditions"
 msgstr[0] "{} condição"
@@ -9696,6 +9770,11 @@ msgstr "{} de {} formatos saem sem alteração"
 msgid "{} of {} tracks match this release"
 msgstr "{} de {} faixas correspondem a este lançamento"
 
+msgid "{} part"
+msgid_plural "{} parts"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} play"
 msgid_plural "{} plays"
 msgstr[0] "{} reprodução"
@@ -9756,6 +9835,11 @@ msgstr[1] "{} estrelas"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} ainda carregando · os números podem aumentar"
+
+msgid "{} style in your library"
+msgid_plural "{} styles in your library"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} to copy · {} to update · {} to remove · {} already present"
 msgstr "{} para copiar · {} para atualizar · {} para remover · {} já presentes"

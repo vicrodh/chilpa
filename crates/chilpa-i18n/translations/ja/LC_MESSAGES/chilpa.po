@@ -238,8 +238,14 @@ msgstr "APIキー"
 msgid "About"
 msgstr "概要"
 
+msgid "About & connections"
+msgstr ""
+
 msgid "About Chilpa"
 msgstr "Chilpaについて"
+
+msgid "About this composer"
+msgstr ""
 
 msgid "Accent"
 msgstr "アクセント"
@@ -479,6 +485,9 @@ msgstr "すべてに一致"
 msgid "All qualities"
 msgstr "すべての音質"
 
+msgid "All recordings"
+msgstr ""
+
 msgid "All results"
 msgstr "すべての結果"
 
@@ -499,6 +508,9 @@ msgstr "準備完了"
 
 msgid "All sources"
 msgstr "すべてのソース"
+
+msgid "All subgenres"
+msgstr ""
 
 msgid "All themes"
 msgstr "すべてのテーマ"
@@ -832,6 +844,9 @@ msgstr "利用可能なGPU"
 
 msgid "Available offline"
 msgstr "オフラインで再生できます"
+
+msgid "Available parts, grouped by album and performer. Work tags do not confirm a complete recording."
+msgstr ""
 
 msgid "Available version"
 msgstr "利用可能なバージョン"
@@ -1626,8 +1641,14 @@ msgstr "完了した処理は保存されています。続行するとフォル
 msgid "Composer"
 msgstr "作曲者"
 
+msgid "Composer not tagged"
+msgstr ""
+
 msgid "Composers"
 msgstr "作曲者"
+
+msgid "Compositions"
+msgstr ""
 
 msgid "Compressor ratio · 1–6"
 msgstr "コンプレッサーのレシオ · 1–6"
@@ -1775,6 +1796,9 @@ msgstr "プレイリストを移動できませんでした。"
 
 msgid "Could not read the analysis inventory."
 msgstr "解析一覧を読み取れませんでした。"
+
+msgid "Could not read the library"
+msgstr ""
 
 msgid "Could not remove the saved profile."
 msgstr ""
@@ -2508,6 +2532,9 @@ msgstr "露骨な表現あり"
 msgid "Explore"
 msgstr "探索"
 
+msgid "Explore works, recordings and albums credited to this composer."
+msgstr ""
+
 msgid "Export"
 msgstr "エクスポート"
 
@@ -2610,6 +2637,9 @@ msgstr "ジャンルで絞り込む"
 msgid "Filter playlists"
 msgstr "プレイリストを絞り込む"
 
+msgid "Filter recordings"
+msgstr ""
+
 msgid "Filter the library"
 msgstr "ライブラリを絞り込む"
 
@@ -2696,6 +2726,9 @@ msgstr "フォルダーを利用できません。既存の曲はライブラリ
 
 msgid "Follow"
 msgstr "フォロー"
+
+msgid "Follow a style into its subgenres, or search for one directly."
+msgstr ""
 
 msgid "Follow lyrics"
 msgstr "歌詞を追従"
@@ -4158,17 +4191,26 @@ msgstr ""
 msgid "No albums found"
 msgstr "アルバムが見つかりません"
 
+msgid "No albums in this selection"
+msgstr ""
+
 msgid "No artists from this scene were found."
 msgstr "このシーンのアーティストは見つかりませんでした。"
 
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "選択したプラグインのアーティストは、このシーンで見つかりませんでした。"
 
+msgid "No artists in this selection"
+msgstr ""
+
 msgid "No audio output is known yet; try again in a moment."
 msgstr "まだ音声出力が見つかりません。少し待ってからもう一度お試しください。"
 
 msgid "No composer"
 msgstr "作曲者なし"
+
+msgid "No composer credits yet. Add composers in the metadata editor."
+msgstr ""
 
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "条件はまだありません。下で追加するか、列で値をクリックしてください。"
@@ -4206,6 +4248,9 @@ msgstr "検索に一致するフォルダーはありません。"
 msgid "No genre"
 msgstr "ジャンルなし"
 
+msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
+msgstr ""
+
 msgid "No genres in this period."
 msgstr "この期間にジャンルはありません。"
 
@@ -4235,6 +4280,9 @@ msgstr "このトラックの歌詞はありません。"
 
 msgid "No matches"
 msgstr "一致なし"
+
+msgid "No matches. Try another search."
+msgstr ""
 
 msgid "No matching music."
 msgstr "一致する音楽がありません。"
@@ -4341,6 +4389,9 @@ msgstr "この実行ではまだ処理されたトラックがありません。
 msgid "No tracks in the selected libraries yet."
 msgstr "選択したライブラリにはまだトラックがありません。"
 
+msgid "No tracks in this selection"
+msgstr ""
+
 msgid "No tracks match all of these"
 msgstr "すべてに一致するトラックはありません"
 
@@ -4351,6 +4402,9 @@ msgid "No tracks match your search."
 msgstr "検索に一致するトラックはありません。"
 
 msgid "No tracks without an album match these filters."
+msgstr ""
+
+msgid "No work tags in this selection. Composer credits are still available under Albums and Tracks."
 msgstr ""
 
 msgid "No year"
@@ -5415,6 +5469,9 @@ msgstr "ライブラリで最近再生したプレイリスト"
 msgid "Recording engineer"
 msgstr "録音エンジニア"
 
+msgid "Recordings"
+msgstr ""
+
 msgid "Records"
 msgstr "アルバム"
 
@@ -5961,6 +6018,9 @@ msgstr "この表示を検索…"
 
 msgid "Search title, artist or album"
 msgstr "タイトル、アーティスト、アルバムで検索"
+
+msgid "Search your library"
+msgstr ""
 
 msgid "Searching MusicBrainz for {genre} artists…"
 msgstr "MusicBrainzで{genre}のアーティストを検索しています…"
@@ -6516,6 +6576,9 @@ msgstr "Studio 24/48"
 msgid "Stumbling"
 msgstr "不安定"
 
+msgid "Subgenres"
+msgstr ""
+
 msgid "Subscribe"
 msgstr "購読"
 
@@ -6859,6 +6922,9 @@ msgstr "出力はまだ再生中です"
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "この出力ではChilpaだけが再生されます。他のプログラムは、解放されるまで待ちます。"
+
+msgid "The people behind the music in your library."
+msgstr ""
 
 msgid "The player is busy. Close the other file transfer application and try again."
 msgstr ""
@@ -7974,6 +8040,9 @@ msgstr "アルバム名とトラック名に含まれる語"
 
 msgid "Work"
 msgstr "作品"
+
+msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
+msgstr ""
 
 msgid "Write XML"
 msgstr "XMLを書き込み"
@@ -9474,6 +9543,10 @@ msgid "{} channel"
 msgid_plural "{} channels"
 msgstr[0] "{}チャンネル"
 
+msgid "{} composition"
+msgid_plural "{} compositions"
+msgstr[0] ""
+
 msgid "{} condition"
 msgid_plural "{} conditions"
 msgstr[0] "{} 件の条件"
@@ -9662,6 +9735,10 @@ msgstr "{} / {}個のフォーマットがそのまま出力されます"
 msgid "{} of {} tracks match this release"
 msgstr "{} / {}トラックがこのリリースに一致します"
 
+msgid "{} part"
+msgid_plural "{} parts"
+msgstr[0] ""
+
 msgid "{} play"
 msgid_plural "{} plays"
 msgstr[0] "{}回再生"
@@ -9714,6 +9791,10 @@ msgstr[0] "{}つ星"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} 読み込み中・件数は増える場合があります"
+
+msgid "{} style in your library"
+msgid_plural "{} styles in your library"
+msgstr[0] ""
 
 msgid "{} to copy · {} to update · {} to remove · {} already present"
 msgstr "コピー {} · 更新 {} · 削除 {} · 配置済み {}"
