@@ -281,10 +281,8 @@ impl Chilpa {
         if let Some(center) = &self.plugin_center { center.playback.store(playing, Ordering::Release); }
     }
     pub(crate) fn plugin_playback_active(&self) -> bool {
-        // Every play having ended takes precedence over cached playback and pause flags.
-        let local = self.player.as_ref().map_or(self.now.playing, |player| {
-            !self.plays.is_empty() && (self.now.playing || player.is_paused())
-        });
+        // A stopped window can still have a worker using a plugin.
+        let local = !self.plays.is_empty() || (self.player.is_none() && self.now.playing);
         local || self.listen.pending.is_some() || self.casting.local_start.is_some()
             || self.casting.active() && (self.now.playing || self.now.paused)
     }

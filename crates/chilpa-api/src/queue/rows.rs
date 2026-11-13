@@ -24,8 +24,8 @@ impl Chilpa {
             if let Some(player) = &self.player {
                 player.stop_for_handoff();
             }
-            self.now.playing = false;
         }
+        self.now.playing = false;
     }
 
     /// Adds rows behind the ones that stand. No position changes, so the

@@ -5,6 +5,8 @@ mod operations;
 mod snapshot;
 #[cfg(test)]
 mod snapshot_tests;
+#[cfg(test)]
+mod reset_tests;
 
 use crate::plays::{Fate, Replaced};
 use crate::{Chilpa, NowPlaying, QueueGroup, QueuePlacement, Repeat};
@@ -150,6 +152,7 @@ impl Chilpa {
             at
         };
         if !b.live(at) { return false; }
+        self.sleep_until = None;
         let seconds = if key.is_empty() { b.seconds } else { 0.0 };
         self.listen.pending = Some((id, at, seconds));
         // I wait for the plays asked so far to end without blocking Qt.
