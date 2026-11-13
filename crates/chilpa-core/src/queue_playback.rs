@@ -31,6 +31,7 @@ mod walk;
 use dsd_pcm::DsdPcmFrames;
 pub use order::{shuffled, shuffled_now, Order};
 use walk::next_live;
+pub(crate) use walk::first_live;
 pub use walk::StopAfter;
 
 /// What a track is read from after its route has been resolved.
@@ -776,6 +777,7 @@ where
         caps,
         policy,
         controls,
+        first_live(queue, controls, None),
         open_sink,
         &mut |_, index, path, delivery, about| {
             on_track(index, path, delivery, about);
@@ -801,6 +803,7 @@ pub(crate) fn play_queue_heard<F, K>(
     caps: &DeviceCaps,
     policy: Policy,
     controls: &Controls,
+    start: Option<(usize, PathBuf)>,
     mut open_sink: F,
     on_track: &mut dyn FnMut(u64, usize, &Path, &Delivery, &TrackAbout) -> bool,
     on_progress: &mut dyn FnMut(usize, Progress, u64),
@@ -822,11 +825,8 @@ where
     // The turn of the track in front, counted from one.
     let mut attempt = 0u64;
     let mut opened: Option<(StreamFormat, crate::playback_events::Measured<K>)> = None;
-    let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
-    let mut index = if requested < queue.len() { requested } else { order.first(queue.len()) };
-    // Where the play was asked to start, when it was: looked at once, as the
-    // queue settles on its first track.
-    let mut named_start = Some((requested < queue.len()).then_some(requested));
+    let Some((mut index, path)) = start else { return Ok(results) };
+    let mut first = Some(path);
     // A file that delivers not one frame plus repeat turned on would be a
     // loop that spins forever. How many tracks in a row did not play is
     // counted, and it cuts off after one full lap.
@@ -862,35 +862,18 @@ where
     loop {
         // A removed track is skipped without playing; if none are left, the
         // queue is over.
-        let Some(path) = next_live(queue, order, repeat, &mut index, Some(stop_after), &passed) else { break };
+        let Some(path) = first.take().or_else(|| next_live(queue, order, repeat, &mut index, Some(stop_after), &passed)) else { break };
         let path = &path;
-        // Whose a pending seek or Next is, now that the queue settled on a
-        // track. Whoever starts a play arms its start position in the seek
-        // slot, and a seek asked after that replaces it; a queue driven
-        // directly may have been handed a seek or a Next before it started.
-        // All of that is for the first track, unless the play named where it
-        // starts and that track was passed over: then neither its position
-        // nor what was asked for it reaches the track that plays instead.
-        // On every later track a seek still pending was for the one before,
-        // and goes with it. A Next still pending stays, as it always did: a
-        // track read ahead to its end no longer looks at Next, so one pressed
-        // in its last moments is only seen here. What the drain of the track
-        // before may take is that Next and no later one: a Next pressed while
-        // this track opens is for this track.
-        let carried = match named_start.take() {
-            Some(Some(named)) if named != index => {
-                let _ = (seek.take(), skip.take());
-                false
-            }
-            Some(_) => false,
-            None => {
-                let _ = seek.take();
-                let pending = skip.take();
-                if pending {
-                    skip.skip();
-                }
-                pending
-            }
+        // first_live already discarded controls for an omitted named start.
+        // Later tracks discard the previous seek and retain only the Next
+        // already pending here for the preceding track's tail drain.
+        let carried = if attempt == 0 {
+            false
+        } else {
+            let _ = seek.take();
+            let pending = skip.take();
+            if pending { skip.skip(); }
+            pending
         };
         attempt += 1;
         chilpa_audio::diagnostics::trace(

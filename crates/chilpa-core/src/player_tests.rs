@@ -495,3 +495,183 @@ fn a_disc_s_track_cut_by_a_bad_sector_is_closed_as_broken_and_the_next_as_comple
     assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "and ended once, as a disc that played out: {events:?}");
     assert_eq!(events.iter().filter(|event| matches!(event, PlayerEvent::Failed { .. })).count(), 0);
 }
+
+/// A real HTTP stream whose only output is the test's in-memory sink.
+struct StreamFixture {
+    path: PathBuf,
+    address: std::net::SocketAddr,
+    thread: Option<std::thread::JoinHandle<()>>,
+}
+
+impl StreamFixture {
+    fn wave(name: &str, frames: u32) -> Self {
+        let file = wav(name, frames);
+        let bytes = std::fs::read(&file).unwrap();
+        std::fs::remove_file(file).unwrap();
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let thread = std::thread::spawn(move || {
+            use std::io::BufRead;
+            let (mut peer, _) = listener.accept().unwrap();
+            peer.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+            peer.set_write_timeout(Some(Duration::from_secs(5))).unwrap();
+            let mut reader = std::io::BufReader::new(peer.try_clone().unwrap());
+            loop {
+                let mut line = String::new();
+                if reader.read_line(&mut line).unwrap_or(0) == 0 { return; }
+                if line == "\r\n" { break; }
+            }
+            let header = format!("HTTP/1.1 200 OK\r\nContent-Type: audio/wav\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", bytes.len());
+            let _ = peer.write_all(header.as_bytes()).and_then(|_| peer.write_all(&bytes));
+        });
+        Self { path: format!("http://{address}/audio.wav").into(), address, thread: Some(thread) }
+    }
+}
+
+impl Drop for StreamFixture {
+    fn drop(&mut self) {
+        let _ = std::net::TcpStream::connect_timeout(&self.address, Duration::from_secs(1));
+        self.thread.take().unwrap().join().unwrap();
+    }
+}
+
+fn finished_events(player: &Player) -> Vec<PlayerEvent> {
+    let events = wait(player, |events| events.iter().any(|event| matches!(event,
+        PlayerEvent::Finished { .. } | PlayerEvent::Failed { .. } | PlayerEvent::Stopped { .. })));
+    assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. } | PlayerEvent::Failed { .. } | PlayerEvent::Stopped { .. })), "no terminal before deadline: {events:?}");
+    events
+}
+
+fn invalid_start(index: usize, name: &str) {
+    let file = wav(name, 5_000);
+    {
+        let written = Arc::new(AtomicU64::new(0));
+        let p = player(written.clone());
+        p.launch(crate::launch::LaunchSpec {
+            paths: vec![file.clone()], device: "fake".into(), start_index: Some(index),
+            start_at: Some(Duration::from_millis(50)), ..Default::default()
+        });
+        let events = finished_events(&p);
+        assert_eq!(written.load(Ordering::Acquire), 5_000, "index {index}: {events:?}");
+        assert!(events.iter().any(|event| matches!(event, PlayerEvent::Started { index: 0, .. })));
+    }
+    std::fs::remove_file(file).unwrap();
+}
+
+#[test]
+fn an_out_of_range_start_does_not_seek_the_track_that_plays_instead() {
+    invalid_start(99, "invalid-start");
+}
+
+#[test]
+fn the_largest_explicit_start_is_not_an_unspecified_start() {
+    invalid_start(usize::MAX, "invalid-start-largest");
+}
+
+#[cfg(target_os = "linux")]
+fn check_initial_route(name: &str, remote: PathBuf, order: Vec<usize>, start_index: Option<usize>, removed: Vec<bool>, expected_remote: bool) {
+    let local = wav(name, 5_000);
+    let written = Arc::new(AtomicU64::new(0));
+    let output = written.clone();
+    let opened_drives = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let drives = opened_drives.clone();
+    let p = Player::spawn_with(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(move |_, stream, _| Ok(Box::new(NullSink { stream, written: output.clone() }) as Box<dyn AudioSink + Send>)),
+        Box::new(move |node| {
+            drives.lock().unwrap().push(node.to_path_buf());
+            Ok(Box::new(LongDisc) as Box<dyn chilpa_cd::CdDevice>)
+        }),
+    );
+    p.launch(crate::launch::LaunchSpec {
+        paths: vec![local.clone(), remote.clone()], device: "fake".into(), order, start_index, removed,
+        start_at: Some(Duration::from_millis(50)), stop_after: Some(if expected_remote { 1 } else { 0 }),
+        ..Default::default()
+    });
+    let events = finished_events(&p);
+    let starts: Vec<_> = events.iter().filter_map(|event| match event { PlayerEvent::Started { path, .. } => Some(path), _ => None }).collect();
+    let expected = if expected_remote { &remote } else { &local };
+    assert_eq!(starts, [expected], "{events:?}");
+    assert!(written.load(Ordering::Acquire) > 0, "the selected track reached the output");
+    if !expected_remote && start_index != Some(0) {
+        assert_eq!(written.load(Ordering::Acquire), 5_000, "the removed track's seek was discarded");
+    }
+    if expected_remote && is_cd(&remote) && start_index == Some(0) {
+        assert_eq!(written.load(Ordering::Acquire), 200 * 588, "the omitted local row's seek did not reach the disc");
+    }
+    assert_eq!(opened_drives.lock().unwrap().len(), usize::from(expected_remote && is_cd(&remote)));
+    std::fs::remove_file(local).unwrap();
+}
+
+#[cfg(target_os = "linux")]
+mod initial_routes {
+    use super::*;
+
+    macro_rules! route_case {
+        ($name:ident, $cd:expr, $order:expr, $start:expr, $removed:expr, $remote:expr) => {
+            #[test]
+            fn $name() {
+                let stream = (!$cd).then(|| StreamFixture::wave(concat!(stringify!($name), "-http"), 4_410));
+                let path = stream.as_ref().map_or_else(|| "cdda:/dev/fake-initial".into(), |stream| stream.path.clone());
+                check_initial_route(stringify!($name), path, $order, $start, $removed, $remote);
+            }
+        };
+    }
+
+    route_case!(initial_url_follows_reordered_rows, false, vec![1, 0], None, vec![false, false], true);
+    route_case!(initial_url_skips_a_removed_url, false, vec![1, 0], Some(1), vec![false, true], false);
+    route_case!(initial_url_follows_a_removed_local_row, false, vec![0, 1], Some(0), vec![true, false], true);
+    route_case!(initial_url_respects_a_named_local_row, false, vec![1, 0], Some(0), vec![false, false], false);
+    route_case!(initial_cd_follows_reordered_rows, true, vec![1, 0], None, vec![false, false], true);
+    route_case!(initial_cd_skips_a_removed_cd, true, vec![1, 0], Some(1), vec![false, true], false);
+    route_case!(initial_cd_follows_a_removed_local_row, true, vec![0, 1], Some(0), vec![true, false], true);
+    route_case!(initial_cd_respects_a_named_local_row, true, vec![1, 0], Some(0), vec![false, false], false);
+}
+
+#[test]
+fn an_invalid_named_start_discards_seek_and_next_asked_during_the_probe() {
+    let file = wav("invalid-start-probe", 5_000);
+    let written = Arc::new(AtomicU64::new(0));
+    let output = written.clone();
+    let (entered, seen) = channel();
+    let (release, released) = channel();
+    let p = Player::spawn(
+        Box::new(move |_| {
+            entered.send(()).unwrap();
+            released.recv_timeout(Duration::from_secs(5)).unwrap();
+            Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })
+        }),
+        Box::new(move |_, stream, _| Ok(Box::new(NullSink { stream, written: output.clone() }) as Box<dyn AudioSink + Send>)),
+    );
+    let launch = p.launch(crate::launch::LaunchSpec {
+        paths: vec![file.clone()], device: "fake".into(), start_index: Some(99),
+        start_at: Some(Duration::from_millis(50)), ..Default::default()
+    });
+    seen.recv_timeout(Duration::from_secs(5)).unwrap();
+    launch.seek(Duration::from_millis(75));
+    launch.next();
+    release.send(()).unwrap();
+    let events = finished_events(&p);
+    assert_eq!(written.load(Ordering::Acquire), 5_000, "the omitted start's controls were not transferred: {events:?}");
+    std::fs::remove_file(file).unwrap();
+}
+
+#[test]
+fn a_direct_queue_discards_controls_for_an_out_of_range_start() {
+    let file = wav("invalid-direct-start", 5_000);
+    let controls = crate::queue_playback::Controls::new();
+    controls.start_index.store(99, Ordering::Release);
+    controls.seek.request(Duration::from_millis(50));
+    controls.skip.skip();
+    let written = Arc::new(AtomicU64::new(0));
+    let results = crate::queue_playback::play_queue_told(
+        &crate::queue_playback::SharedQueue::new(vec![file.clone()]),
+        &DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true },
+        Policy::AllowAnything, &controls,
+        |stream| Ok(NullSink { stream, written: written.clone() }),
+        &mut |_, _, _, _| {}, &mut |_, _| {}, &mut |_, _, _, _| {},
+    ).unwrap();
+    assert_eq!(results.len(), 1);
+    assert_eq!(written.load(Ordering::Acquire), 5_000);
+    std::fs::remove_file(file).unwrap();
+}

@@ -2,7 +2,21 @@
 
 use std::path::PathBuf;
 
-use super::{Order, Repeat, RepeatMode, SharedQueue};
+use super::{Controls, Order, Repeat, RepeatMode, SharedQueue};
+
+/// Resolve the first live cursor once, before choosing a source route. A
+/// launch retains its explicit index separately, including usize::MAX;
+/// direct queue callers keep the atomic slot's unspecified sentinel.
+pub(crate) fn first_live(queue: &SharedQueue, controls: &Controls, named: Option<usize>) -> Option<(usize, PathBuf)> {
+    let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
+    let named = named.or_else(|| (requested != usize::MAX).then_some(requested));
+    let mut index = named.filter(|&index| index < queue.len()).unwrap_or_else(|| controls.order.first(queue.len()));
+    let path = next_live(queue, &controls.order, &controls.repeat, &mut index, Some(&controls.stop_after), &Default::default());
+    if named.is_some_and(|named| path.is_none() || named != index) {
+        let _ = (controls.seek.take(), controls.skip.take());
+    }
+    path.map(|path| (index, path))
+}
 
 /// A queue position after which playback stops. It is consumed when reached,
 /// so repeating does not inherit an old stop point. Every play has its own:

@@ -230,7 +230,7 @@ impl Player {
                             // where it starts came with it.
                             let events = Events { to: run.events(), generation };
                             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                                play(&launch, &run.device, &mut probe, &mut open, &mut drive, &events)
+                                play(&launch, &run.device, run.start_index, &mut probe, &mut open, &mut drive, &events)
                             }));
                             let result = match result {
                                 Ok(result) => result,
@@ -380,7 +380,7 @@ impl Player {
             ),
         );
         let launch = crate::launch::Launch::new(queue, controls);
-        let run = crate::launch::LaunchRun::new(Arc::clone(&launch), device, start_at, self.events_tx.clone());
+        let run = crate::launch::LaunchRun::new(Arc::clone(&launch), device, start_index, start_at, self.events_tx.clone());
         // A launch that is not taken ends as it is let go, once the lock is
         // released: the player closed, or its thread is gone.
         let not_taken = {
@@ -597,6 +597,7 @@ fn panic_text(panic: &(dyn std::any::Any + Send)) -> String {
 fn play(
     launch: &crate::launch::Launch,
     device: &str,
+    named_start: Option<usize>,
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
     drive: &mut OpenDrive,
@@ -670,11 +671,10 @@ fn play(
     );
     let total = paths.len();
 
-    let index = controls.start_index.load(Ordering::Acquire).min(paths.len().saturating_sub(1));
-    let index = if controls.start_index.load(Ordering::Acquire) == usize::MAX { 0 } else { index };
-    if let Some(first) = paths.get(index) {
+    let start = crate::queue_playback::first_live(queue, controls, named_start);
+    if let Some((index, first)) = &start {
         if is_url(first) {
-            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, index, total, &controls.dsp);
+            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp);
         }
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, controls, open, drive, events);
@@ -685,6 +685,7 @@ fn play(
         &caps,
         policy,
         controls,
+        start,
         |format| open(device, format, exclusive),
         &mut |attempt, index, path, delivery, about| {
             // The verdict, once: what Chilpa did to the samples, the road past
