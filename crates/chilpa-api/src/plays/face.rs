@@ -28,6 +28,8 @@ pub(crate) struct Cards {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Face {
     pub title: String,
+    /// The title is only a window label derived from the path.
+    title_from_path: bool,
     pub artist: String,
     pub album: String,
     /// The cover on disk, or empty.
@@ -38,6 +40,14 @@ pub(crate) struct Face {
     pub ai_generated: Option<bool>,
 }
 
+impl Face {
+    /// Names backed by event tags, a card or the catalog. A path-derived
+    /// window title is absent here, so it cannot replace a saved identity.
+    pub(crate) fn sourced(&self) -> [&str; 3] {
+        [if self.title_from_path { "" } else { &self.title }, &self.artist, &self.album]
+    }
+}
+
 /// The face of the track at `path`, with the tags and the cover its file
 /// gave.
 pub(crate) fn face(path: &Path, tags: Option<&chilpa_tags::Tags>, artwork: Option<&Path>, cards: &Cards, catalog: &Catalog) -> Face {
@@ -45,6 +55,7 @@ pub(crate) fn face(path: &Path, tags: Option<&chilpa_tags::Tags>, artwork: Optio
     let name = path.file_stem().map(|stem| stem.to_string_lossy().to_string()).unwrap_or_default();
     let mut face = Face {
         title: tags.and_then(|tags| tags.title.clone()).unwrap_or(name),
+        title_from_path: tags.and_then(|tags| tags.title.as_ref()).is_none(),
         artist: tags.map(|tags| tags.artist_line()).unwrap_or_default(),
         album: tags.and_then(|tags| tags.album.clone()).unwrap_or_default(),
         cover: artwork.map(|cover| cover.display().to_string()).unwrap_or_default(),
@@ -54,12 +65,14 @@ pub(crate) fn face(path: &Path, tags: Option<&chilpa_tags::Tags>, artwork: Optio
     // What came from a search already carries its card.
     if let Some((_, hit)) = cards.search.as_ref().filter(|(url, _)| *url == address) {
         face.title = hit.title.clone();
+        face.title_from_path = false;
         face.artist = hit.artist.clone();
         face.album = hit.album.clone();
     }
     // And what was started from a listing, the card it was listed with.
     if let Some(sounding) = cards.entry.as_ref().filter(|sounding| sounding.url == address) {
         face.title = sounding.entry.title.clone();
+        face.title_from_path = false;
         face.artist = sounding.entry.subtitle.clone();
         face.album = String::new();
         if face.cover.is_empty() {
@@ -97,6 +110,7 @@ mod tests {
         let cards = Cards { search: Some((address.into(), hit("The song"))), entry: None };
         let face = face(Path::new(address), None, None, &cards, &catalog());
         assert_eq!((face.title.as_str(), face.artist.as_str(), face.album.as_str()), ("The song", "Somebody", "A record"), "not the address, which is all the decoder knows");
+        assert_eq!(face.sourced(), ["The song", "Somebody", "A record"]);
         assert!(!face.live && face.cover.is_empty());
     }
 
@@ -107,6 +121,7 @@ mod tests {
         let tags = chilpa_tags::Tags { title: Some("icy".into()), album: Some("ignored".into()), ..Default::default() };
         let named = face(Path::new(address), Some(&tags), None, &cards, &catalog());
         assert_eq!((named.title.as_str(), named.artist.as_str(), named.album.as_str()), ("The station", "Its city", ""));
+        assert_eq!(named.sourced(), ["The station", "Its city", ""]);
         assert_eq!(named.cover, "/covers/station.jpg", "its own picture, when the file brings no cover");
         assert!(named.live);
         let with_cover = face(Path::new(address), None, Some(Path::new("/covers/embedded.jpg")), &cards, &catalog());
@@ -119,8 +134,10 @@ mod tests {
         let tags = chilpa_tags::Tags { title: Some("Tagged".into()), artists: vec!["A".into(), "B".into()], album: Some("Record".into()), ..Default::default() };
         let tagged = face(Path::new("/music/01 - file.flac"), Some(&tags), None, &cards, &catalog());
         assert_eq!((tagged.title.as_str(), tagged.artist.as_str(), tagged.album.as_str()), ("Tagged", "A, B", "Record"));
+        assert_eq!(tagged.sourced(), ["Tagged", "A, B", "Record"]);
         let bare = face(Path::new("/music/01 - file.flac"), None, None, &cards, &catalog());
         assert_eq!((bare.title.as_str(), bare.artist.as_str(), bare.cover.as_str()), ("01 - file", "", ""));
+        assert_eq!(bare.sourced(), ["", "", ""]);
         assert!(!bare.live);
     }
 }

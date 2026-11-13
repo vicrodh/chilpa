@@ -170,11 +170,17 @@ impl Chilpa {
             Some(frames) if rate > 0 => frames * 1000 / u64::from(rate),
             _ => 0,
         };
-        let listen = crate::scrobble::listen_of(tags, &face.title, &face.album, duration_ms, started_at);
+        let mut context = self.context_at_start(path, tags, started_at, face.cover.clone());
+        // Empty or path-derived fields keep the captured library/tag identity.
+        for (saved, sourced) in [&mut context.title, &mut context.artist, &mut context.album].into_iter().zip(face.sourced()) {
+            if !sourced.is_empty() {
+                *saved = sourced.to_string();
+            }
+        }
+        let listen = crate::scrobble::listen_of(tags, &context.title, &context.artist, &context.album, duration_ms, started_at);
         if let (true, Some(listen)) = (shown, &listen) {
             self.announce(listen);
         }
-        let context = self.context_at_start(path, tags, started_at, face.cover.clone());
         self.home.changed();
         let Some(play) = self.plays.get_mut(id) else { return };
         play.ledger.open(attempt, InProgress {

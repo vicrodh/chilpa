@@ -198,18 +198,17 @@ impl crate::Chilpa {
     }
 }
 
-/// The listen of a track under that title and record. None when the tags
-/// do not name it.
-pub(crate) fn listen_of(tags: Option<&chilpa_tags::Tags>, title: &str, release: &str, duration_ms: u64, started_at: i64) -> Option<Listen> {
-    let t = tags?;
+/// The listen uses the face's sourced names and the captured identity for
+/// absent fields. Tags retain optional recording identifiers.
+pub(crate) fn listen_of(tags: Option<&chilpa_tags::Tags>, title: &str, artist: &str, release: &str, duration_ms: u64, started_at: i64) -> Option<Listen> {
     let listen = Listen {
-        artist: t.artist_line(),
+        artist: artist.to_string(),
         track: title.to_string(),
         release: release.to_string(),
         duration_ms,
-        track_number: t.track_number,
-        recording_mbid: t.musicbrainz_recording_id.clone().unwrap_or_default(),
-        isrc: t.isrc.clone().unwrap_or_default(),
+        track_number: tags.and_then(|tags| tags.track_number),
+        recording_mbid: tags.and_then(|tags| tags.musicbrainz_recording_id.clone()).unwrap_or_default(),
+        isrc: tags.and_then(|tags| tags.isrc.clone()).unwrap_or_default(),
         listened_at: started_at,
     };
     (!listen.artist.is_empty() && !listen.track.is_empty()).then_some(listen)

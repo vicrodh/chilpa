@@ -519,11 +519,19 @@ fn a_track_that_starts_behind_the_window_is_named_by_the_card_of_its_own_play() 
     api.search.playing = Some(("https://radio.example/b".into(), card("Card of the second", "Another album")));
     api.launched(b, 0, Relaunch::Track);
     // The first play's track had started before it was replaced; it is read now.
-    let tags = chilpa_tags::Tags { artists: vec!["Tagged artist".into()], ..Default::default() };
+    let tags = chilpa_tags::Tags {
+        title: Some("Tagged title".into()), artists: vec!["Tagged artist".into()], album: Some("Tagged album".into()),
+        ..Default::default()
+    };
     let face = api.face_of(a, Path::new(address), Some(&tags), None);
     api.listen_started(a, 1, Path::new(address), Some(&tags), &face, RATE, Some(16), false, None, false);
     let listen = api.plays.get(a).and_then(|play| play.ledger.newest()).and_then(|listen| listen.listen.clone()).expect("a listen the services can be told of");
-    assert_eq!((listen.track.as_str(), listen.release.as_str()), ("Card of the first", "Its album"), "its own card, not the address and not the card in front");
+    let at = 1_810_000_221;
+    api.plays.get_mut(a).unwrap().ledger.listen_mut(1).unwrap().started_at = at;
+    say(&mut api, a, closed(seconds(3), How::Stopped));
+    let history = history_names(&mut api, at);
+    assert_eq!((listen.track.as_str(), listen.artist.as_str(), listen.release.as_str()), ("Card of the first", "Card artist", "Its album"));
+    assert_eq!(history, ["Card of the first", "Card artist", "Its album"], "the retired play persists the same identity");
 }
 
 #[test]
@@ -540,4 +548,119 @@ fn a_close_that_crosses_the_scrobble_threshold_is_counted_before_parking() {
     assert!(api.plays.get_mut(802).unwrap().ledger.waiting_mut().unwrap().scrobbled);
     start(&mut api, 802, "/carried.wav");
     assert!(api.plays.get(802).unwrap().ledger.newest().unwrap().scrobbled, "resuming must retain the once-only marker");
+}
+
+fn history_names(api: &mut Chilpa, started_at: i64) -> Vec<String> {
+    use crate::listening::{ListenDimension, ListenOrder};
+    let filter = ListenFilter { from: Some(started_at), until: Some(started_at + 1), ..Default::default() };
+    [ListenDimension::Track, ListenDimension::Artist, ListenDimension::Album].into_iter().map(|dimension| {
+        let buckets = api.listening_buckets(&filter, dimension, ListenOrder::Key, 10).unwrap();
+        assert_eq!(buckets.len(), 1, "one persisted listen per dimension: {buckets:?}");
+        buckets[0].label.clone()
+    }).collect()
+}
+
+#[test]
+fn a_url_without_a_station_name_logs_the_identity_shown_in_the_window() {
+    use chilpa_core::output_evidence::{Delivery, Route, SampleFormat, StreamFormat};
+    let mut api = facade();
+    let path = "https://radio.example/unnamed";
+    api.search.playing = Some((path.into(), crate::search::Hit {
+        title: "Named by its card".into(), artist: "Card artist".into(), album: "Card album".into(), ..Default::default()
+    }));
+    api.launched(811, 0, Relaunch::Track);
+    let opened = StreamFormat::new(SampleFormat::S16, RATE, 2);
+    let tags = chilpa_tags::Tags { title: Some(path.into()), album: Some("Radio".into()), ..Default::default() };
+    say(&mut api, 811, PlayerEvent::Started {
+        path: path.into(), opened,
+        route: Route { revision: 1, device: "file:capture".into(), delivery: Delivery { requested: opened, opened, transforms: Vec::new() },
+            planned_processing: Vec::new(), exclusive_requested: false, observation: Default::default() },
+        channels: 2, bits: Some(16), bit_perfect: false, total_frames: None, tags: Some(tags), artwork: None,
+        attempt: 1, index: 0, queue_len: 1, dsd_multiple: None, dsd_passthrough: false,
+    });
+    let visible = [api.now.title.clone(), api.now.artist.clone(), api.now.album.clone()];
+    assert_eq!(visible, ["Named by its card", "Card artist", "Card album"]);
+    let at = 1_810_000_811;
+    let listen = api.plays.get_mut(811).unwrap().ledger.listen_mut(1).unwrap();
+    listen.started_at = at;
+    let scrobble = listen.listen.clone();
+    say(&mut api, 811, closed(seconds(3), How::Completed));
+    assert_eq!(history_names(&mut api, at), visible, "the saved row must not fall back to URL/Radio");
+    let scrobble = scrobble.expect("a card with an artist supplies the scrobble identity without tag artists");
+    assert_eq!([scrobble.track, scrobble.artist, scrobble.release], visible);
+}
+
+fn station_history(play: u64, name: Option<&str>) {
+    let mut api = facade();
+    let address = "https://radio.example/stream";
+    let title = name.unwrap_or(address);
+    let tags = chilpa_tags::Tags { title: Some(title.into()), album: Some("Radio".into()), ..Default::default() };
+    api.launched(play, 0, Relaunch::Track);
+    let face = api.face_of(play, Path::new(address), Some(&tags), None);
+    assert_eq!([face.title.as_str(), face.artist.as_str(), face.album.as_str()], [title, "", "Radio"]);
+    api.listen_started(play, 1, Path::new(address), Some(&tags), &face, RATE, Some(16), false, None, false);
+    let at = 1_810_001_000 + play as i64;
+    let listen = api.plays.get_mut(play).unwrap().ledger.listen_mut(1).unwrap();
+    listen.started_at = at;
+    assert!(listen.listen.is_none(), "a station without an artist is not a scrobble");
+    assert_eq!([listen.context.title.as_str(), listen.context.artist.as_str(), listen.context.album.as_str()], [title, "", "Radio"]);
+    say(&mut api, play, closed(seconds(3), How::Completed));
+    let filter = ListenFilter { from: Some(at), until: Some(at + 1), ..Default::default() };
+    let (rows, _) = api.library().unwrap().listening_history(&filter, "", 0, 10).unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!([rows[0].title.as_str(), rows[0].artist.as_str(), rows[0].album.as_str()], [title, "", "Radio"]);
+}
+
+#[test]
+fn a_url_with_a_station_name_keeps_that_name_in_history() {
+    station_history(812, Some("The station"));
+}
+
+#[test]
+fn a_url_without_a_station_name_or_card_keeps_its_current_identity() {
+    station_history(813, None);
+}
+
+fn local_identity(play: u64, tags: Option<chilpa_tags::Tags>, card: Option<crate::search::Hit>, visible: [&str; 3], expected: [&str; 3]) {
+    let mut api = facade();
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(format!("history-{play}.wav")).display().to_string();
+    let lib = api.library().unwrap();
+    let source = lib.source_id("local", "default").unwrap();
+    let db = lib.connection();
+    db.execute("INSERT INTO albums(title, album_artist) VALUES ('Library album', 'Library artist')", []).unwrap();
+    let album = db.last_insert_rowid();
+    db.execute("INSERT INTO tracks(source_id, external_id, title, artist, album_id, added_at) VALUES (?1, ?2, 'Library title', 'Library artist', ?3, 0)",
+        rusqlite::params![source, path, album]).unwrap();
+    api.search.playing = card.map(|card| (path.clone(), card));
+    api.launched(play, 0, Relaunch::Track);
+    let face = api.face_of(play, Path::new(&path), tags.as_ref(), None);
+    assert_eq!([face.title.as_str(), face.artist.as_str(), face.album.as_str()], visible, "the window keeps its existing names");
+    api.listen_started(play, 1, Path::new(&path), tags.as_ref(), &face, RATE, Some(16), false, None, false);
+    let at = 1_810_002_000 + play as i64;
+    let listen = api.plays.get_mut(play).unwrap().ledger.listen_mut(1).unwrap();
+    listen.started_at = at;
+    let scrobble = listen.listen.as_ref().expect("the captured identity names the scrobble");
+    assert_eq!([scrobble.track.as_str(), scrobble.artist.as_str(), scrobble.release.as_str()], expected);
+    assert_eq!([listen.context.title.as_str(), listen.context.artist.as_str(), listen.context.album.as_str()], expected);
+    say(&mut api, play, closed(seconds(3), How::Completed));
+    assert_eq!(history_names(&mut api, at), expected);
+}
+
+#[test]
+fn a_path_derived_face_title_keeps_the_library_snapshot_for_history_and_scrobble() {
+    local_identity(814, None, None, ["history-814", "", ""], ["Library title", "Library artist", "Library album"]);
+}
+
+#[test]
+fn empty_face_fields_keep_the_library_snapshot_per_field() {
+    let tags = chilpa_tags::Tags { title: Some("Tagged title".into()), artists: vec!["Tagged artist".into()], album: Some("Tagged album".into()), ..Default::default() };
+    let card = crate::search::Hit { artist: "Card artist".into(), ..Default::default() };
+    local_identity(815, Some(tags), Some(card), ["", "Card artist", ""], ["Library title", "Card artist", "Library album"]);
+}
+
+#[test]
+fn event_tag_fields_override_the_library_snapshot() {
+    let tags = chilpa_tags::Tags { title: Some("Tagged title".into()), artists: vec!["Tagged artist".into()], album: Some("Tagged album".into()), ..Default::default() };
+    local_identity(816, Some(tags), None, ["Tagged title", "Tagged artist", "Tagged album"], ["Tagged title", "Tagged artist", "Tagged album"]);
 }
