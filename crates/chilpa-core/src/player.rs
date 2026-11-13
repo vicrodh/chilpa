@@ -336,18 +336,43 @@ impl Player {
 
     /// I launch the whole queue with an explicit cursor, keeping its earlier rows.
     /// Returns the play's generation, which every `Skipped` of it carries.
+    /// A play still running is not stopped by it: whoever replaces one stops
+    /// it first. Its order is the player's own, shared with every play asked
+    /// for this way.
     #[allow(clippy::too_many_arguments)]
     pub fn play_from_index(
         &self, paths: &[PathBuf], device: &str,
         start_at: Option<std::time::Duration>, paused: bool, start_index: Option<usize>,
         removed: &[bool], stop_after: Option<usize>,
     ) -> u64 {
+        let spec = crate::launch::LaunchSpec {
+            paths: paths.to_vec(), device: device.to_string(), start_index, start_at, paused,
+            removed: removed.to_vec(), stop_after, order: Vec::new(),
+        };
+        self.submit(spec, self.controls.order.clone(), false).id.get()
+    }
+
+    /// Asks for a play and hands back what reaches it alone: its seek, its
+    /// Next, its stop mark, its queue and its order. Every play asked for
+    /// before it and not over is told to stop for it, the ones still
+    /// waiting too. It ends with exactly one event, also when the player has
+    /// closed: then at once, as stopped.
+    pub fn launch(&self, spec: crate::launch::LaunchSpec) -> crate::launch::LaunchHandle {
+        let order = crate::queue_playback::Order::new();
+        order.set(spec.order.clone(), spec.paths.len());
+        crate::launch::LaunchHandle::of(self.submit(spec, order, true))
+    }
+
+    /// Sends a launch to the thread. `replaces` is whether the plays before
+    /// it are stopped for it, or only kept from starting.
+    fn submit(&self, spec: crate::launch::LaunchSpec, order: crate::queue_playback::Order, replaces: bool) -> Arc<crate::launch::Launch> {
+        let crate::launch::LaunchSpec { paths, device, start_index, start_at, paused, removed, stop_after, .. } = spec;
         // The queue and the pause are set as the order is sent, not as the
         // thread takes it: what the caller does right after this call --
         // pause, play next, queue more -- comes after it, and the thread,
         // taking the order later, would have undone it. A disc image goes
         // in as its tracks, one entry each, like any album.
-        let queue = crate::queue_playback::SharedQueue::new(crate::sacd_tracks::expand(paths));
+        let queue = crate::queue_playback::SharedQueue::new(crate::sacd_tracks::expand(&paths));
         for (index, removed) in removed.iter().enumerate() { if *removed { queue.remove(index); } }
         if let Ok(mut current) = self.queue.lock() {
             *current = queue.clone();
@@ -361,6 +386,7 @@ impl Player {
             start_index: Arc::new(std::sync::atomic::AtomicUsize::new(start_index.unwrap_or(usize::MAX))),
             stop_after: crate::queue_playback::StopAfter::new(),
             handoff: crate::queue_playback::Switch::new(false),
+            order,
             ..self.controls.clone()
         };
         controls.stop_after.set(stop_after);
@@ -375,27 +401,31 @@ impl Player {
             ),
         );
         let launch = crate::launch::Launch::new(queue, controls);
-        let generation = launch.id.get();
-        let run = crate::launch::LaunchRun::new(Arc::clone(&launch), device.to_string(), start_at, self.events_tx.clone());
+        let run = crate::launch::LaunchRun::new(Arc::clone(&launch), device, start_at, self.events_tx.clone());
         // A launch that is not taken ends as it is let go, once the lock is
         // released: the player closed, or its thread is gone.
         let not_taken = {
             let mut admission = self.admission();
             admission.unsettled.retain(|earlier| !earlier.settled());
-            // An earlier one that has not started will not: this is the
-            // newest request.
             for earlier in &admission.unsettled {
-                earlier.supersede();
+                if replaces {
+                    // Another play is about to take the device.
+                    earlier.cancel(true);
+                } else {
+                    // One that has not started will not: this is the newest
+                    // request.
+                    earlier.supersede();
+                }
             }
             if admission.open {
-                admission.unsettled.push(launch);
+                admission.unsettled.push(Arc::clone(&launch));
                 self.orders.send(Order::Play(run)).err().map(|refused| refused.0)
             } else {
                 Some(Order::Play(run))
             }
         };
         drop(not_taken);
-        generation
+        launch
     }
 
     /// Pauses or resumes. The track does not lose its place.

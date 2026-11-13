@@ -681,3 +681,124 @@ fn a_seek_left_pending_when_a_track_ends_does_not_move_the_next_one() {
     assert_eq!(samples(&kept[TRACK..], 4), [0, 0, 1, 1], "from its beginning");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+fn spec(paths: &[PathBuf]) -> chilpa_core::launch::LaunchSpec {
+    chilpa_core::launch::LaunchSpec { paths: paths.to_vec(), device: "fake".into(), ..Default::default() }
+}
+
+/// The positions the play started, in the order it said them.
+fn started_of(events: &[(u64, PlayerEvent)], play: u64) -> Vec<usize> {
+    events.iter().filter_map(|(of, event)| match event {
+        PlayerEvent::Started { index, .. } if *of == play => Some(*index),
+        _ => None,
+    }).collect()
+}
+
+#[test]
+fn a_launch_walks_the_order_it_was_given_from_its_first() {
+    let dir = folder("own-order");
+    let tracks = vec![wave(&dir, "01.wav"), wave(&dir, "02.wav"), wave(&dir, "03.wav")];
+    let player = player();
+    let launch = player.launch(chilpa_core::launch::LaunchSpec { order: vec![2, 0, 1], ..spec(&tracks) });
+    assert_eq!(launch.order(), [2, 0, 1]);
+    let play = launch.id().get();
+    let events = events_until_over(&player, &[play]);
+    assert_one_ending_each(&events, &[play]);
+    assert_eq!(started_of(&events, play), [2, 0, 1], "{events:?}");
+    assert!(launch.ended());
+    // An order that is no permutation of its queue is none.
+    let refused = player.launch(chilpa_core::launch::LaunchSpec { order: vec![0, 0, 1], ..spec(&tracks) });
+    assert!(refused.order().is_empty());
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// The order was the player's, one for every play: setting it for the play
+/// about to go out changed how the one on its way out walked what it had
+/// left, and what was set on the old one afterwards changed the new one.
+#[cfg(unix)]
+#[test]
+fn an_order_set_on_one_launch_is_not_the_order_of_another() {
+    let dir = folder("order-apart");
+    let (stuck, opened, go) = pipe(&dir, "01.flac");
+    let tracks = vec![wave(&dir, "02.wav"), wave(&dir, "03.wav")];
+    let player = player();
+    let old = player.launch(chilpa_core::launch::LaunchSpec { order: vec![0, 1], ..spec(&[stuck, tracks[0].clone()]) });
+    opened.recv_timeout(Duration::from_secs(10)).expect("the old play is opening its track");
+    let new = player.launch(chilpa_core::launch::LaunchSpec { order: vec![1, 0], ..spec(&tracks) });
+    assert_eq!(old.order(), [0, 1], "the launch after it did not write its order");
+    // What is asked of the old one from here on is not the new one's.
+    assert!(old.set_order(vec![0, 1], 2));
+    old.clear_order();
+    assert_eq!(new.order(), [1, 0]);
+    go.send(()).unwrap();
+    let plays = [old.id().get(), new.id().get()];
+    let events = events_until_over(&player, &plays);
+    assert_one_ending_each(&events, &plays);
+    assert_eq!(started_of(&events, plays[1]), [1, 0], "it walked its own order: {events:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_launch_stops_the_play_before_it_without_being_asked() {
+    let dir = folder("launch-replaces");
+    let player = slow_player(&Arc::default());
+    let long = long_wave(&dir, "long.wav", 400_000);
+    let old = player.launch(spec(&[long]));
+    let mut seen = Vec::new();
+    wait_started(&player, old.id().get(), &mut seen);
+    let new = player.launch(spec(&[wave(&dir, "short.wav")]));
+    let plays = [old.id().get(), new.id().get()];
+    seen.extend(events_until_over(&player, &plays));
+    assert_one_ending_each(&seen, &plays);
+    assert!(matches!(ending_of(&seen, plays[0]), PlayerEvent::Stopped { .. }), "the old one was stopped for it: {seen:?}");
+    assert!(matches!(ending_of(&seen, plays[1]), PlayerEvent::Finished { .. }), "{seen:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// A Next, a seek, a stop mark and a removed row asked through a launch
+/// reach that launch: the one replacing it plays whole, in its own order.
+#[cfg(unix)]
+#[test]
+fn what_is_asked_of_a_launch_reaches_no_other() {
+    let dir = folder("handle-apart");
+    let (stuck, opened, go) = pipe(&dir, "01.flac");
+    let tracks = vec![wave(&dir, "02.wav"), wave(&dir, "03.wav")];
+    let player = player();
+    let old = player.launch(spec(&[stuck, tracks[0].clone()]));
+    opened.recv_timeout(Duration::from_secs(10)).expect("the old play is opening its track");
+    let new = player.launch(spec(&tracks));
+    let plays = [old.id().get(), new.id().get()];
+    let mut seen = Vec::new();
+    // The new one waits behind the old open. Once it has been taken, what
+    // is asked of the old one must not move it.
+    go.send(()).unwrap();
+    wait_started(&player, plays[1], &mut seen);
+    old.next();
+    old.seek(Duration::from_millis(50));
+    old.set_stop_after(Some(0));
+    assert!(old.remove(1));
+    assert_eq!(old.enqueue(&[tracks[1].clone()]), 3);
+    assert_eq!(new.queue_len(), 2, "its queue is its own");
+    // The old one ended before the new one started: that is already read.
+    seen.extend(events_until_over(&player, &plays[1..]));
+    assert_one_ending_each(&seen, &plays);
+    assert_eq!(started_of(&seen, plays[1]), [0, 1], "{seen:?}");
+    assert_eq!(ending_of(&seen, plays[1]), PlayerEvent::Finished { frames: 4_410 }, "both tracks whole: {seen:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_stop_mark_and_a_removed_row_asked_of_a_launch_are_kept_by_it() {
+    let dir = folder("handle-own");
+    let player = slow_player(&Arc::default());
+    let tracks = vec![long_wave(&dir, "01.wav", 20_000), wave(&dir, "02.wav"), wave(&dir, "03.wav"), wave(&dir, "04.wav")];
+    let launch = player.launch(spec(&tracks));
+    let play = launch.id().get();
+    let mut seen = Vec::new();
+    wait_started(&player, play, &mut seen);
+    assert!(launch.remove(1));
+    launch.set_stop_after(Some(2));
+    seen.extend(events_until_over(&player, &[play]));
+    assert_eq!(started_of(&seen, play), [0, 2], "the removed row is passed and the mark ends it: {seen:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}

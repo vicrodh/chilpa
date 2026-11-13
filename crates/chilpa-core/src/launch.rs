@@ -9,6 +9,7 @@
 //! after it.
 
 use std::num::NonZeroU64;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex};
@@ -36,6 +37,95 @@ impl LaunchId {
 
     pub fn get(self) -> u64 {
         self.0.get()
+    }
+}
+
+/// What a play is asked with.
+#[derive(Clone, Debug, Default)]
+pub struct LaunchSpec {
+    /// The queue, whole: its earlier rows stay in it.
+    pub paths: Vec<PathBuf>,
+    pub device: String,
+    /// The position it starts from; the first of its order when there is
+    /// none.
+    pub start_index: Option<usize>,
+    /// Where the first track starts, when it is not at its beginning.
+    pub start_at: Option<std::time::Duration>,
+    pub paused: bool,
+    /// The positions it passes without opening.
+    pub removed: Vec<bool>,
+    /// The position it stops after.
+    pub stop_after: Option<usize>,
+    /// The order it walks the queue in; empty for the queue's own. One that
+    /// is not a permutation of the queue's positions is ignored.
+    pub order: Vec<usize>,
+}
+
+/// A launch, as whoever asked for it holds it: what is asked through it
+/// reaches that play and no other, and nothing once the play is over.
+#[derive(Clone)]
+pub struct LaunchHandle(Arc<Launch>);
+
+impl LaunchHandle {
+    pub(crate) fn of(launch: Arc<Launch>) -> Self {
+        Self(launch)
+    }
+
+    pub fn id(&self) -> LaunchId {
+        self.0.id
+    }
+
+    /// Whether it has said how it ended.
+    pub fn ended(&self) -> bool {
+        self.0.settled()
+    }
+
+    /// Asks to seek to that point of its playing track.
+    pub fn seek(&self, position: std::time::Duration) {
+        chilpa_audio::diagnostics::trace("player", "seek_requested", format_args!("launch={} position={position:?}", self.0.id.get()));
+        self.0.controls.seek.request(position);
+    }
+
+    /// Skips to its next track.
+    pub fn next(&self) {
+        chilpa_audio::diagnostics::trace("player", "skip_requested", format_args!("launch={}", self.0.id.get()));
+        self.0.controls.skip.skip();
+    }
+
+    /// Stops after this position of its queue, or clears the mark.
+    pub fn set_stop_after(&self, index: Option<usize>) {
+        self.0.controls.stop_after.set(index);
+    }
+
+    /// Adds tracks to the end of its queue, without cutting it off. Returns
+    /// how many it holds.
+    pub fn enqueue(&self, paths: &[PathBuf]) -> usize {
+        self.0.queue.extend(paths)
+    }
+
+    /// Takes a position out of its walk. The one playing is not removed.
+    pub fn remove(&self, index: usize) -> bool {
+        self.0.queue.remove(index)
+    }
+
+    pub fn queue_len(&self) -> usize {
+        self.0.queue.len()
+    }
+
+    /// Sets the order it walks its queue in, from the end of the playing
+    /// track on. One that is not a permutation of `0..len` is refused.
+    pub fn set_order(&self, order: Vec<usize>, len: usize) -> bool {
+        self.0.controls.order.set(order, len)
+    }
+
+    /// The order it walks its queue in; empty when it is the queue's own.
+    pub fn order(&self) -> Vec<usize> {
+        self.0.controls.order.get()
+    }
+
+    /// Goes back to the order things were queued in.
+    pub fn clear_order(&self) {
+        self.0.controls.order.clear();
     }
 }
 
