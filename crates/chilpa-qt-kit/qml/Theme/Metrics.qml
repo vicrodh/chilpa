@@ -10,6 +10,7 @@ QtObject {
     readonly property int discoveryPageSize: 60
     readonly property int discoveryPreview: 8
     readonly property int discoverySearchChars: 256
+    readonly property int discoveryTrackNarrow: 920
     readonly property int outputDetailsWidth: 700
     // The track information modal: room for three columns of facts, each no
     // narrower than a cell; a narrower window takes fewer columns.

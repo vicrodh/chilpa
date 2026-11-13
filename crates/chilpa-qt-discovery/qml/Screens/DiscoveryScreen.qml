@@ -213,7 +213,7 @@ Item {
         }
     }
     Component { id: tracks; DiscoveryTracks { key: discoveryPage.routeKey } }
-    Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.routeKey } }
+    Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.routeKey; recording: true } }
     Column {
         anchors.centerIn: content
         width: Math.min(content.width, Metrics.settingsMaxWidth)
