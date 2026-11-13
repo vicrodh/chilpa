@@ -51,6 +51,8 @@ mod browse_candidates;
 pub mod credits;
 pub mod metadata;
 pub mod compositions;
+mod discovery;
+mod track_durations;
 pub mod edit;
 pub mod favorites;
 pub mod features;

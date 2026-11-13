@@ -20,35 +20,71 @@ Column {
     readonly property var lookup: doc.lookup || ({})
     readonly property var hits: lookup.hits || []
     readonly property var release: lookup.release || null
+    readonly property bool beets: lookup.engine === "beets"
     readonly property int selectedDisc: lookup.selected_disc || 0
-    readonly property bool busy: lookup.searching === true || lookup.loading === true
+    readonly property bool busy: lookup.searching === true || lookup.loading === true || lookup.beets_busy === true || MetadataEditor.choosingBeetsRuntime === true
     property int chosen: -1
 
     spacing: Metrics.gap8
+    function refreshRuntime() { if (!runtime.editing) runtime.text = lookup.runtime || "" }
+    onLookupChanged: refreshRuntime()
+    Component.onCompleted: refreshRuntime()
 
     Connections {
         target: MetadataEditor
         function onOpenChanged() { root.chosen = -1 }
     }
 
-    Row {
+    Flow {
         width: parent.width
         spacing: Metrics.gap8
         SegmentedControl {
+            objectName:"metadataSearchEngine"
+            options:[{text:"Chilpa"},{text:"beets"}]
+            current:root.beets ? 1 : 0
+            enabled:!root.busy && root.doc.state === "ready"
+            Accessible.name:I18n.tr("Search engine",I18n.rev)
+            onActivated: index => MetadataEditor.setEngine(index === 1 ? "beets" : "native")
+        }
+        SegmentedControl {
             id: provider
+            visible:!root.beets
+            enabled:!root.busy && root.doc.state === "ready"
             options: [{ text: "MusicBrainz" }, { text: "Discogs" }]
             current: root.lookup.provider === "discogs" ? 1 : 0
             onActivated: (index) => MetadataEditor.setProvider(index === 1 ? "discogs" : "musicbrainz")
         }
         PillButton {
+            objectName:"metadataLookupSearch"
             glyph: Icons.search
-            text: root.lookup.searching ? I18n.tr("Searching…", I18n.rev) : I18n.tr("Look up", I18n.rev)
-            enabled: !root.busy && root.doc.state === "ready"
+            text: root.lookup.probing ? I18n.tr("Checking beets…", I18n.rev) : root.lookup.searching ? I18n.tr("Searching…", I18n.rev) : I18n.tr("Look up", I18n.rev)
+            enabled: !root.busy && root.doc.state === "ready" && (!root.beets || (root.lookup.runtime || "") !== "")
             onClicked: {
                 root.chosen = -1
                 root.forceActiveFocus()
                 MetadataEditor.search()
             }
+        }
+        PillButton {
+            objectName:"metadataLookupCancel"
+            text:I18n.tr("Cancel lookup",I18n.rev); kind:"ghost"; visible:root.lookup.searching === true || root.lookup.loading === true
+            onClicked:MetadataEditor.cancelLookup()
+        }
+    }
+    Column {
+        width:parent.width; visible:root.beets; spacing:Metrics.gap8
+        Text { width:parent.width; text:I18n.tr("Metadata source: MusicBrainz",I18n.rev); wrapMode:Text.WordWrap; font.pointSize:Type.meta; color:Theme.color.textSecondary }
+        Text { width:parent.width; text:I18n.tr("Select the Python executable from an environment with beets 2.14.1 installed.",I18n.rev); wrapMode:Text.WordWrap; font.pointSize:Type.meta; color:Theme.color.textSecondary }
+        TextField {
+            id:runtime; objectName:"metadataBeetsRuntime"; width:parent.width
+            enabled:!root.busy; placeholder:I18n.tr("Python executable",I18n.rev)
+            onEditingFinished:if (text !== (root.lookup.runtime || "")) MetadataEditor.setBeetsRuntime(text)
+        }
+        Row {
+            spacing:Metrics.gap8
+            PillButton { text:I18n.tr("Browse…",I18n.rev); enabled:!root.busy; onClicked:MetadataEditor.chooseBeetsRuntime() }
+            PillButton { objectName:"metadataBeetsCheck"; text:I18n.tr("Check",I18n.rev); enabled:!root.busy && runtime.text.trim() !== ""; onClicked:{ root.forceActiveFocus(); MetadataEditor.probeBeets() } }
+            Text { anchors.verticalCenter:parent.verticalCenter; visible:(root.lookup.engine_version || "") !== ""; text:"beets " + (root.lookup.engine_version || ""); font.pointSize:Type.meta; color:Theme.color.textSecondary }
         }
     }
 
@@ -61,10 +97,12 @@ Column {
         ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
         model: root.hits.length
         delegate: ReleaseHitRow {
+            objectName:"metadataReleaseHit" + index
             required property int index
             width: ListView.view.width
             rowIndex: index
             hit: root.hits[index]
+            showScore:root.beets
             chosen: index === root.chosen
             onChoose: {
                 root.chosen = index
@@ -122,12 +160,19 @@ Column {
             font.pointSize: Type.meta
             color: root.lookup.matched > 0 ? Theme.color.textSecondary : Theme.color.statusWarning
         }
-        Row {
+        MetadataChanges {
+            id:changes
+            width:parent.width; changes:root.lookup.changes || []; busy:root.busy
+            onChoose:(key,selected) => MetadataEditor.chooseChange(key,selected)
+        }
+        Flow {
+            width:parent.width
             spacing: Metrics.gap8
             PillButton {
                 kind: "primary"
-                text: I18n.tr("Apply to the form", I18n.rev)
-                enabled: root.doc.state === "ready" && root.lookup.matched > 0
+                objectName:"metadataApplySelected"
+                text: I18n.tr("Apply selected fields", I18n.rev)
+                enabled: !root.busy && root.doc.state === "ready" && root.lookup.matched > 0 && changes.selectedCount > 0
                 onClicked: {
                     // The field being typed in lets go, and shows what the release gave.
                     root.forceActiveFocus()

@@ -2,6 +2,7 @@
 //! Pages contain at most 60 small navigation entries. No network is started,
 //! no new cache/worker is retained, and hidden screens submit no queries.
 mod genres;
+mod genre_summary;
 mod works;
 #[cfg(test)]
 mod tests;
@@ -45,15 +46,18 @@ impl Reader {
     }
 
     fn discovery_names(&self, composers: bool) -> Vec<(String, usize)> {
+        // Genre spellings remain separate inputs to the derived index. SQL's
+        // NOCASE does not equate every Unicode case variant when filtering.
+        let key = |name: &str| if composers { name.to_lowercase() } else { name.to_string() };
         let local = if composers { self.lib.facet_composers(&Filter::default()) } else { self.lib.facet_genres(&Filter::default()) };
         let mut names: BTreeMap<String, (String, usize)> = local.unwrap_or_default().into_iter()
-            .map(|row| (row.label.to_lowercase(), (row.label, row.albums))).collect();
+            .map(|row| (key(&row.label), (row.label, row.albums))).collect();
         let (_, index) = self.source_index();
         let mut counted = HashSet::new();
         for item in &index.items {
             let tags = if composers { &item.composers } else { &item.genres };
             for tag in tags.iter().filter(|tag| !tag.trim().is_empty()) {
-                let key = tag.to_lowercase();
+                let key = key(tag);
                 if counted.insert((key.clone(), if item.album != 0 { item.album } else { item.track })) {
                     names.entry(key).or_insert_with(|| (tag.clone(), 0)).1 += 1;
                 }
@@ -64,8 +68,8 @@ impl Reader {
 
     fn discovery_filter(&self, selected: &Selection) -> Filter {
         match selected.kind.as_str() {
-            "genre" => Filter { genres: genres::matching(&selected.name,
-                &self.discovery_names(false).into_iter().map(|(name, _)| name).collect::<Vec<_>>()), ..Default::default() },
+            "genre" => Filter { genres: genres::Inventory::new(
+                &self.discovery_names(false).into_iter().map(|(name, _)| name).collect::<Vec<_>>()).matching(&selected.name), ..Default::default() },
             "composer" => Filter { composers: vec![selected.name.clone()], ..Default::default() },
             _ => Filter::default(),
         }
@@ -117,22 +121,33 @@ impl Reader {
             };
         }
         if kind == "composers" {
-            let mut items: Vec<_> = self.discovery_names(true).into_iter()
-                .filter(|(name, _)| chilpa_library::store::query::fold(name).contains(&text))
-                .map(|(name, albums)| json!({"kind":"composer", "name":name, "albums":albums})).collect();
-            let total = items.len();
-            return json!({"total":total,"items":items.drain(..).skip(page.saturating_mul(PAGE)).take(PAGE).collect::<Vec<_>>()});
+            let names: Vec<_> = self.discovery_names(true).into_iter()
+                .filter(|(name, _)| chilpa_library::store::query::fold(name).contains(&text)).collect();
+            let total = names.len();
+            let items: Vec<_> = names.into_iter().skip(page.saturating_mul(PAGE)).take(PAGE).map(|(name, albums)| {
+                let portrait = self.lib.artist_artwork(&name).ok().flatten().unwrap_or_default();
+                json!({"kind":"composer", "name":name, "albums":albums, "portrait":portrait})
+            }).collect();
+            return json!({"total":total,"items":items});
         }
         let tags: Vec<_> = self.discovery_names(false).into_iter().map(|(name, _)| name).collect();
-        let within = (selected.kind == "genre").then(|| genres::descendants(&selected.name));
-        let names = if !text.is_empty() { tags.iter().filter(|name| chilpa_library::store::query::fold(name).contains(&text) && within.as_ref().is_none_or(|keys| keys.contains(&crate::library_query::genre_key(name)))).cloned().collect() }
-            else if selected.kind == "genre" { genres::children(&selected.name) } else { genres::roots(&tags) };
-        let items: Vec<_> = names.into_iter().filter_map(|name| {
-            let styles = genres::matching(&name, &tags).len();
-            (styles > 0).then(|| json!({"kind":"genre", "name":name, "styles":styles}))
+        let inventory = genres::Inventory::new(&tags);
+        let names = inventory.names((selected.kind == "genre").then_some(selected.name.as_str()), &text);
+        let total = names.len();
+        let names: Vec<_> = names.into_iter().skip(page.saturating_mul(PAGE)).take(PAGE).collect();
+        let mut summarized = names.clone();
+        if selected.kind == "genre" { summarized.push(selected.name.clone()); }
+        let summaries = match self.genre_summaries(&summarized, &inventory) {
+            Ok(summaries) => summaries,
+            Err(error) => return json!({"error":error,"items":[],"total":0}),
+        };
+        let items: Vec<_> = names.into_iter().zip(&summaries).map(|(name, summary)| {
+            let styles = inventory.records_for(&name).len();
+            json!({"kind":"genre", "name":name, "styles":styles, "albums":summary.albums, "looseTracks":summary.loose_tracks, "images":summary.images})
         }).collect();
-        let total = items.len();
-        json!({"total":total, "parents":genres::parents(&selected.name), "breadcrumb":genres::breadcrumb(&selected.name),
-            "items":items.into_iter().skip(page.saturating_mul(PAGE)).take(PAGE).collect::<Vec<_>>()})
+        let resolutions = inventory.records_for(&selected.name);
+        json!({"total":total, "taxonomyVersion":genres::VERSION, "resolutions":resolutions.iter().take(PAGE).collect::<Vec<_>>(),
+            "resolutionTotal":resolutions.len(), "parents":genres::parents(&selected.name), "parentRelations":genres::parent_relations(&selected.name), "breadcrumb":genres::breadcrumb(&selected.name),
+            "summary":if selected.kind == "genre" { summaries.last() } else { None }, "items":items})
     }
 }

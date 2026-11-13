@@ -40,6 +40,7 @@ impl Chilpa {
         chilpa_core::settings::update_value(key, |_| Ok((value.to_owned(), ())))?;
         let saved = chilpa_core::settings::load();
         self.privacy_changed(previous, &saved);
+        self.metadata_preference_changed(key);
         self.lyrics_preference_changed(key);
         Ok(())
     }

@@ -7,3 +7,8 @@ part of the database's core data, which is released under CC0.
 genres-whole.txt lists genre names that catalogs publish with a separator
 inside them. They are names, used only to tell a tag that states one of
 them from a tag that states several genres.
+
+Genre aliases (crates/chilpa-api/data/genre-aliases.tsv) come from
+MusicBrainz genre names and aliases, also part of its CC0 core data.
+The navigation taxonomy identifies this bundled table by its content hash;
+the date above applies to genres-known.txt, not the alias download.

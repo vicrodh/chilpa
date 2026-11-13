@@ -648,6 +648,13 @@ impl Catalog {
         art
     }
 
+    /// A cover already on disk. Read-only discovery must not queue image or
+    /// metadata work while it groups the saved library's tags.
+    pub(crate) fn cached_art(&self, id: i64) -> String {
+        let inner = self.lock();
+        inner.store.cards.get(&id).map(|card| inner.store.shown_art(card)).unwrap_or_default()
+    }
+
     /// Takes in a record or a track a search found, which no listing showed:
     /// the search's handle is good for the worker's current load.
     pub fn adopt(&self, plugin: &str, epoch: Option<u64>, found: &crate::source_search::RemoteFound) -> i64 {

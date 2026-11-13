@@ -452,6 +452,9 @@ msgstr "アルバムは読み込みに合わせて順に表示されます"
 msgid "Albums from streaming services will not be synced."
 msgstr ""
 
+msgid "Albums in your library"
+msgstr ""
+
 msgid "All"
 msgstr "すべて"
 
@@ -665,14 +668,14 @@ msgstr "適用"
 msgid "Apply import"
 msgstr "インポートを適用"
 
+msgid "Apply selected fields"
+msgstr ""
+
 msgid "Apply system tint to the icon"
 msgstr "アイコンにシステムの色調を適用する"
 
 msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
 msgstr "同じグループ分けをすべてのソースに適用します。オフにすると、1つにまとめたプレイリスト一覧を表示します。"
-
-msgid "Apply to the form"
-msgstr "フォームに適用"
 
 msgid "Approve"
 msgstr "承認"
@@ -712,6 +715,9 @@ msgstr "アーティスト"
 
 msgid "Artists from this scene"
 msgstr "このシーンのアーティスト"
+
+msgid "Artists in your library"
+msgstr ""
 
 msgid "Artwork"
 msgstr "アートワーク"
@@ -1050,6 +1056,9 @@ msgstr "タイマーをキャンセル"
 msgid "Cancel download"
 msgstr "ダウンロードをキャンセル"
 
+msgid "Cancel lookup"
+msgstr ""
+
 msgid "Cancel stop after this track"
 msgstr "このトラックの後で停止をキャンセル"
 
@@ -1172,6 +1181,9 @@ msgstr "ユーザーとパスワード、または API キーを確認し、戻�
 
 msgid "Checking available space"
 msgstr "空き容量を確認中"
+
+msgid "Checking beets…"
+msgstr ""
 
 msgid "Checking destination files"
 msgstr "転送先のファイルを確認中"
@@ -1434,6 +1446,12 @@ msgstr "キューを選択して順序を並べ替えます。重複したトラ
 msgid "Choose storage"
 msgstr ""
 
+msgid "Choose the Python environment containing beets."
+msgstr ""
+
+msgid "Choose the Python executable for beets"
+msgstr ""
+
 msgid "Choose the connected player and its storage first."
 msgstr ""
 
@@ -1647,6 +1665,9 @@ msgstr ""
 msgid "Composers"
 msgstr "作曲者"
 
+msgid "Composition"
+msgstr ""
+
 msgid "Compositions"
 msgstr ""
 
@@ -1800,6 +1821,9 @@ msgstr "解析一覧を読み取れませんでした。"
 msgid "Could not read the library"
 msgstr ""
 
+msgid "Could not read track durations from the library."
+msgstr ""
+
 msgid "Could not remove the saved profile."
 msgstr ""
 
@@ -1853,6 +1877,9 @@ msgstr "評論家のおすすめ"
 
 msgid "Crossfeed · 0–50%"
 msgstr "クロスフィード · 0–50%"
+
+msgid "Current"
+msgstr ""
 
 msgid "Current signal path"
 msgstr "現在の信号経路"
@@ -2403,6 +2430,9 @@ msgstr "浮き出し"
 msgid "Embedded tags only"
 msgstr "埋め込みタグのみ"
 
+msgid "Empty"
+msgstr ""
+
 msgid "Empty folders"
 msgstr "空のフォルダー"
 
@@ -2516,6 +2546,9 @@ msgstr "排他モード"
 
 msgid "Exclusive mode was requested."
 msgstr "排他モードを要求しました。"
+
+msgid "Existing genres are unselected by default."
+msgstr ""
 
 msgid "Exit Immersive"
 msgstr "没入表示を終了"
@@ -3280,6 +3313,9 @@ msgstr "設定 → プラグインで、プレイリストインポーターを�
 msgid "Install and enable the Mood plugin first."
 msgstr "先にムードプラグインをインストールして有効にしてください。"
 
+msgid "Install beets {} in the selected Python environment."
+msgstr ""
+
 msgid "Install from ZIP…"
 msgstr "ZIPからインストール…"
 
@@ -3729,6 +3765,9 @@ msgstr "歌詞を探しています…"
 msgid "Looking for players…"
 msgstr ""
 
+msgid "Lookup cancelled."
+msgstr ""
+
 msgid "Lossless"
 msgstr "ロスレス"
 
@@ -3819,6 +3858,9 @@ msgstr "マスタリングエンジニア"
 msgid "Match"
 msgstr "一致条件"
 
+msgid "Match score: {}"
+msgstr ""
+
 msgid "Match {} exactly"
 msgstr "{} に完全一致"
 
@@ -3854,6 +3896,9 @@ msgstr "メッセージ"
 
 msgid "Metadata"
 msgstr "メタデータ"
+
+msgid "Metadata source: MusicBrainz"
+msgstr ""
 
 msgid "Micro"
 msgstr "マイクロ"
@@ -4205,6 +4250,9 @@ msgstr ""
 
 msgid "No audio output is known yet; try again in a moment."
 msgstr "まだ音声出力が見つかりません。少し待ってからもう一度お試しください。"
+
+msgid "No changes to apply."
+msgstr ""
 
 msgid "No composer"
 msgstr "作曲者なし"
@@ -4812,6 +4860,9 @@ msgstr "出力形式"
 msgid "Output identity could not be saved."
 msgstr "出力の識別情報を保存できませんでした。"
 
+msgid "Overview"
+msgstr ""
+
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCMサンプルはネイティブDSDストリームに書き込めません"
 
@@ -5199,6 +5250,9 @@ msgstr ""
 msgid "Pronunciation"
 msgstr "発音"
 
+msgid "Proposed"
+msgstr ""
+
 msgid "Provider identifiers"
 msgstr "プロバイダー識別子"
 
@@ -5216,6 +5270,9 @@ msgstr "購入"
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "プラグインのフォルダーをChilpaのプラグインディレクトリに置き、アプリを開き直してください。"
+
+msgid "Python executable"
+msgstr ""
 
 msgid "Qt version"
 msgstr "Qtのバージョン"
@@ -5965,6 +6022,9 @@ msgstr "もう一度検索"
 msgid "Search artists"
 msgstr "アーティストを検索"
 
+msgid "Search engine"
+msgstr ""
+
 msgid "Search folders"
 msgstr "フォルダーを検索"
 
@@ -6091,6 +6151,9 @@ msgstr "アーティストを選択してアルバムを表示します"
 
 msgid "Select folders"
 msgstr "フォルダーを選択"
+
+msgid "Select the Python executable from an environment with beets 2.14.1 installed."
+msgstr ""
 
 msgid "Select tracks"
 msgstr "トラックを選択"
@@ -6749,6 +6812,12 @@ msgstr "アカウントの有効期限が切れました。もう一度接続し
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "ブラウザでサーバーを開くときのアドレス（ポートを含む）と、Chilpa がサインインするユーザーです。"
 
+msgid "The beets lookup exceeded its metadata size limit."
+msgstr ""
+
+msgid "The beets lookup timed out. Try again."
+msgstr ""
+
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "内蔵テストは、ビット深度とサンプルレートが異なる4つのトラック（16/44.1、24/44.1、24/96、24/192）を再生し、DACの切り替わりを確認できます。各トラックは、ライブラリでそのフォーマットの最も再生回数が多いトラックで、ない場合は生成したテスト信号です。自分のキューを使いたい場合は、すべてのレートが試されるように、先に各種類のトラックを1つずつ追加してください。"
 
@@ -6950,6 +7019,9 @@ msgstr "プラグインが15秒以内に応答しませんでした。アカウ�
 msgid "The plugin interface could not be opened."
 msgstr ""
 
+msgid "The previous beets lookup is still stopping."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "チェック後に以前のサンプルレートが安定しませんでした。"
 
@@ -7030,6 +7102,9 @@ msgstr "スキャンを開始できませんでした: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "スキャン処理が予期せず停止しました。"
+
+msgid "The selected Python environment could not start beets."
+msgstr ""
 
 msgid "The selected hardware volume control is gone."
 msgstr "選択したハードウェア音量コントロールがなくなりました。"
@@ -8104,6 +8179,9 @@ msgstr "オーディオスタックはビットパーフェクト再生の準備
 msgid "Your distribution"
 msgstr "お使いのディストリビューション"
 
+msgid "Your genre tags"
+msgstr ""
+
 msgid "Your music"
 msgstr "あなたの音楽"
 
@@ -8265,6 +8343,15 @@ msgstr "承認待ち"
 
 msgid "be a plugin of another kind: {}"
 msgstr "別の種類のプラグインになる: {}"
+
+msgid "beets accepts up to {} tracks per lookup."
+msgstr ""
+
+msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets {} is ready."
+msgstr ""
 
 msgid "between"
 msgstr "範囲"
@@ -9508,6 +9595,14 @@ msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] "{}アルバム"
 
+msgid "{} album in your library"
+msgid_plural "{} albums in your library"
+msgstr[0] ""
+
+msgid "{} albumless track"
+msgid_plural "{} albumless tracks"
+msgstr[0] ""
+
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "解析済み{}件、ビートなし{}件、読み取り不可{}件"
 
@@ -9791,10 +9886,6 @@ msgstr[0] "{}つ星"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} 読み込み中・件数は増える場合があります"
-
-msgid "{} style in your library"
-msgid_plural "{} styles in your library"
-msgstr[0] ""
 
 msgid "{} to copy · {} to update · {} to remove · {} already present"
 msgstr "コピー {} · 更新 {} · 削除 {} · 配置済み {}"

@@ -23,6 +23,7 @@ impl crate::Chilpa {
         let next = policy(saved);
         if previous == next { return; }
         network::configure(next);
+        if next.offline || !next.musicbrainz { self.metadata_beets_network_changed(); }
         self.artist_scene.close();
         self.artist_network.clear();
         self.catalog.changed();

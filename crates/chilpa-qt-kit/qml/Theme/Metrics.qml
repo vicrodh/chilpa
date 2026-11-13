@@ -7,6 +7,14 @@ import QtQuick
 QtObject {
     readonly property int discoveryEntryWidth: 300
     readonly property int discoveryEntryHeight: 88
+    readonly property int discoveryGenreHeight: 220
+    readonly property int discoveryHeroHeight: 300
+    readonly property int metadataChangeHeight: 112
+    readonly property int metadataChangeInvalid: 36
+    readonly property int metadataPreviewRows: 3
+    readonly property int discoveryTableCountWidth: 76
+    readonly property int discoveryTableCountsMin: 620
+    readonly property real discoveryTableTitleRatio: 0.6
     readonly property int discoveryPageSize: 60
     readonly property int discoveryPreview: 8
     readonly property int discoverySearchChars: 256

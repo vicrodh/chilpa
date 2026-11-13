@@ -18,23 +18,32 @@ Item {
     readonly property bool detail: !!selected.kind
     readonly property bool work: selected.kind === "work"
     readonly property bool composer: selected.kind === "composer"
+    readonly property bool genre: selected.kind === "genre"
+    readonly property bool overview: genre && tab === 0
     readonly property string rootTitle: mode === "genres" ? I18n.tr("Genres", I18n.rev) : mode === "composers" ? I18n.tr("Composers", I18n.rev) : I18n.tr("Compositions", I18n.rev)
     property int tab: 0
     property int number: 0
     property real restoredPosition: 0
     property var positions: ({})
     property bool restoring: false
+    property bool playSelection: false
     readonly property string memory: "discovery." + mode + "." + routeKey
     readonly property var about: decode(results.document)
     readonly property var breadcrumb: (selected.trail || []).length > 1 ? selected.trail : about.breadcrumb || selected.trail || []
-    readonly property bool listing: !detail || composer && tab === 0 || work && tab === 0 || selected.kind === "genre" && tab === 3
+    readonly property bool listing: !detail || composer && tab === 0 || work && tab === 0 || genre && tab === 4
     readonly property string queryKind: work ? "recordings" : mode
     readonly property var choices: composer ? [I18n.tr("Compositions", I18n.rev), I18n.tr("Albums", I18n.rev), I18n.tr("Tracks", I18n.rev)]
         : work ? [I18n.tr("Recordings", I18n.rev), I18n.tr("Albums", I18n.rev)]
-        : [I18n.tr("Albums", I18n.rev), I18n.tr("Artists", I18n.rev), I18n.tr("Tracks", I18n.rev), I18n.tr("Subgenres", I18n.rev)]
+        : [I18n.tr("Overview", I18n.rev), I18n.tr("Albums", I18n.rev), I18n.tr("Artists", I18n.rev), I18n.tr("Tracks", I18n.rev), I18n.tr("Subgenres", I18n.rev)]
     function restore() {
         const state = Visit.recall("discovery.visits", {})[memory] || {}
-        positions = state.positions || {}; tab = state.tab || 0; find.text = state.text || ""; number = state.page || 0
+        positions = state.positions || {}; tab = state.tab || 0
+        if (genre && state.version !== 2 && Object.keys(state).length > 0) {
+            const shifted = {}
+            for (const key of Object.keys(positions)) shifted[Number(key) + 1] = positions[key]
+            positions = shifted; tab++
+        }
+        find.text = state.text || ""; number = state.page || 0
         restoredPosition = positions[tab] || state.position || 0; restoring = restoredPosition > 0
         schedule()
     }
@@ -43,7 +52,7 @@ Item {
         const previous = Visit.recall("discovery.visits", {})
         const next = {}
         for (const key of Object.keys(previous).filter(key => key !== memory).slice(-63)) next[key] = previous[key]
-        next[memory] = {tab:tab, page:number, text:find.text, positions:positions, position:positions[tab] || 0}
+        next[memory] = {version:2, tab:tab, page:number, text:find.text, positions:positions, position:positions[tab] || 0}
         Visit.keep("discovery.visits", next)
     }
     function changeTab(next) {
@@ -65,7 +74,7 @@ Item {
     Connections { target: content.item; function onReadyChanged() { Qt.callLater(discoveryPage.restoreViewport) } }
     Component.onCompleted: { restore(); settle.triggered() }
     Component.onDestruction: remember()
-    onRouteKeyChanged: { tab = 0; number = 0; find.text = ""; schedule() }
+    onRouteKeyChanged: { playSelection = false; tab = 0; number = 0; find.text = ""; schedule() }
     function schedule() { if (visible) settle.restart() }
     onVisibleChanged: { if (visible) schedule(); else { settle.stop(); results.cancel() } }
     Connections { target: Library; function onContentRevChanged() { discoveryPage.schedule() } function onRemoteRevChanged() { discoveryPage.schedule() } }
@@ -73,7 +82,7 @@ Item {
     Timer {
         id: settle
         interval: Motion.searchSettle
-        onTriggered: if (discoveryPage.visible && !discoveryPage.selected.recording && (discoveryPage.listing || discoveryPage.selected.kind === "genre")) results.request(discoveryPage.queryKind, discoveryPage.routeKey, discoveryPage.selected.kind === "genre" && discoveryPage.tab !== 3 ? "" : find.text, discoveryPage.number, Library.contentRev + Library.remoteRev)
+        onTriggered: if (discoveryPage.visible && !discoveryPage.selected.recording && (discoveryPage.listing || discoveryPage.genre)) results.request(discoveryPage.queryKind, discoveryPage.routeKey, discoveryPage.genre && discoveryPage.tab !== 4 ? "" : find.text, discoveryPage.number, Library.contentRev + Library.remoteRev)
     }
     function open(entry) {
         if (entry.kind === "recording") {
@@ -108,6 +117,7 @@ Item {
         ScreenHead {
             id: head
             width: parent.width
+            visible: !discoveryPage.overview
             title: discoveryPage.detail ? discoveryPage.selected.name || discoveryPage.rootTitle : discoveryPage.rootTitle
             flexible: find
             SearchField {
@@ -116,13 +126,14 @@ Item {
                 maximumLength: Metrics.discoverySearchChars
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.max(0, Math.min(Metrics.screenSearch, head.flexibleRoom))
-                visible: !discoveryPage.selected.recording && !(discoveryPage.detail && discoveryPage.tab === 2)
+                visible: !discoveryPage.selected.recording && !(discoveryPage.detail && discoveryPage.tab === (discoveryPage.genre ? 3 : 2))
                 placeholder: discoveryPage.work ? I18n.tr("Filter recordings", I18n.rev) : I18n.tr("Search your library", I18n.rev)
                 onTextChanged: { discoveryPage.number = 0; discoveryPage.schedule() }
                 onEscaped: text = ""
             }
         }
         Text {
+            visible: !discoveryPage.overview
             width: parent.width
             text: discoveryPage.work ? I18n.tr("Available parts, grouped by album and performer. Work tags do not confirm a complete recording.", I18n.rev)
                 : discoveryPage.composer ? I18n.tr("Explore works, recordings and albums credited to this composer.", I18n.rev)
@@ -132,46 +143,12 @@ Item {
             wrapMode: Text.WordWrap; textFormat: Text.PlainText
             font.pointSize: Type.body; color: Theme.color.textSecondary
         }
-        Flow {
-            width: parent.width; spacing: Metrics.gap8
-            visible: discoveryPage.work && (discoveryPage.selected.composers || []).length > 0
-            Repeater { model: discoveryPage.selected.composers || []; PillButton { required property string modelData; text: modelData; maximumWidth: parent.width; onClicked: discoveryPage.open({kind:"composer",name:modelData}) } }
-        }
-        Flow {
-            objectName: "discoverySubgenres"
-            width: parent.width; spacing: Metrics.gap8
-            visible: discoveryPage.detail && !discoveryPage.composer && !discoveryPage.work && discoveryPage.tab !== 3 && !results.loading
-            Repeater { model: (discoveryPage.about.items || []).slice(0, Metrics.discoveryPreview); PillButton { required property var modelData; text: modelData.name; maximumWidth: parent.width; onClicked: discoveryPage.open(modelData) } }
-        }
-        Row {
-            visible: discoveryPage.selected.kind === "genre" && discoveryPage.tab !== 3 && (discoveryPage.about.total || 0) > Metrics.discoveryPreview
-            PillButton { text: I18n.tr("All subgenres", I18n.rev); kind: "ghost"; onClicked: { discoveryPage.changeTab(3) } }
-        }
-        Flow {
+        DiscoveryActions {
             width: parent.width
-            visible: !!discoveryPage.selected.recording
-            spacing: Metrics.gap8
-            PillButton { text: I18n.tr("All recordings", I18n.rev); kind: "ghost"; onClicked: Navigation.goKey("compositions", JSON.stringify(Object.assign({}, discoveryPage.selected, {recording:"",recordingTitle:"",performer:"",album:0}))) }
-            PillButton { objectName: "discoveryRecordingAlbum"; maximumWidth: parent.width; text: discoveryPage.selected.recordingTitle || ""; visible: (discoveryPage.selected.album || 0) !== 0; onClicked: Navigation.go("album", discoveryPage.selected.album) }
-            Text { width: Math.min(implicitWidth, parent.width); elide: Text.ElideRight; text: discoveryPage.selected.performer || ""; textFormat: Text.PlainText; font.pointSize: Type.body; color: Theme.color.textSecondary }
-        }
-        SegmentedControl {
-            objectName: "discoveryTabs"
-            visible: discoveryPage.detail && !discoveryPage.selected.recording
-            options: discoveryPage.choices.map(text => ({text:text}))
-            current: discoveryPage.tab
-            onActivated: index => discoveryPage.changeTab(index)
-        }
-        Row {
-            spacing: Metrics.gap8
-            visible: discoveryPage.composer
-            PillButton {
-                text: I18n.tr("About this composer", I18n.rev); kind: "ghost"
-                onClicked: {
-                    Visit.keep("artist.aboutIntent", {name:discoveryPage.selected.name || "", at:Date.now()})
-                    Navigation.openArtist(discoveryPage.selected.name || "")
-                }
-            }
+            selected:discoveryPage.selected; about:discoveryPage.about; choices:discoveryPage.choices
+            tab:discoveryPage.tab; overview:discoveryPage.overview; loading:results.loading
+            onOpenRequested: entry => discoveryPage.open(entry)
+            onTabRequested: tab => discoveryPage.changeTab(tab)
         }
     }
     Loader {
@@ -181,11 +158,37 @@ Item {
         anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.contentBottom
         active: discoveryPage.visible
         onLoaded: Qt.callLater(discoveryPage.restoreViewport)
-        sourceComponent: discoveryPage.selected.recording ? recordingParts : discoveryPage.listing ? navigationList : discoveryPage.composer || discoveryPage.work ? discoveryPage.tab === 1 ? albums : tracks : discoveryPage.tab === 0 ? albums : discoveryPage.tab === 1 ? artists : tracks
+        sourceComponent: discoveryPage.selected.recording ? recordingParts : discoveryPage.overview ? genreOverview : discoveryPage.listing ? (discoveryPage.mode === "compositions" || discoveryPage.composer) && !discoveryPage.work ? workTable : navigationList : discoveryPage.composer || discoveryPage.work ? discoveryPage.tab === 1 ? albums : tracks : discoveryPage.tab === 1 ? albums : discoveryPage.tab === 2 ? artists : tracks
+    }
+    Component {
+        id: genreOverview
+        GenreOverview {
+            key:discoveryPage.routeKey; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:results.loading
+            artistsContent: Component {
+                Item {
+                    AlbumGridModel { id:people; kind:"discoveryArtists"; key:discoveryPage.routeKey; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
+                    ArtistUi.ArtistCardGrid { id:grid; anchors.fill:parent; artists:people; flow:GridView.FlowTopToBottom; flickableDirection:Flickable.HorizontalFlick }
+                    Text { anchors.centerIn:parent; visible:people.ready && people.albums === 0; text:I18n.tr("No artists in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
+                }
+            }
+            onActivated: entry => discoveryPage.open(entry)
+            onBrowseRequested: section => { discoveryPage.playSelection = false; discoveryPage.changeTab(({albums:1,artists:2,tracks:3,subgenres:4})[section] || 0) }
+            onPlayRequested: { discoveryPage.playSelection = true; discoveryPage.changeTab(3) }
+        }
     }
     Component {
         id: navigationList
         DiscoveryIndex {
+            kind: discoveryPage.work ? "recordings" : discoveryPage.mode
+            ready: !results.loading && Array.isArray(discoveryPage.about.items)
+            entries: results.loading ? [] : discoveryPage.about.items || []; total: discoveryPage.about.total || 0; page: discoveryPage.number; loading: results.loading
+            onActivated: entry => discoveryPage.open(entry)
+            onPageRequested: number => { discoveryPage.number = number; discoveryPage.positions[discoveryPage.tab] = 0; discoveryPage.restoring = false; discoveryPage.schedule() }
+        }
+    }
+    Component {
+        id: workTable
+        DiscoveryWorkTable {
             ready: !results.loading && Array.isArray(discoveryPage.about.items)
             entries: results.loading ? [] : discoveryPage.about.items || []; total: discoveryPage.about.total || 0; page: discoveryPage.number; loading: results.loading
             onActivated: entry => discoveryPage.open(entry)
@@ -212,7 +215,7 @@ Item {
             Text { anchors.centerIn: parent; visible: people.ready && people.albums === 0; text: I18n.tr("No artists in this selection", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
         }
     }
-    Component { id: tracks; DiscoveryTracks { key: discoveryPage.routeKey } }
+    Component { id: tracks; DiscoveryTracks { key: discoveryPage.routeKey; autoPlay:discoveryPage.playSelection; onPlayed:discoveryPage.playSelection = false } }
     Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.routeKey; recording: true } }
     Column {
         anchors.centerIn: content

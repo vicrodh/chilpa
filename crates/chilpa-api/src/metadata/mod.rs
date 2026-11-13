@@ -11,9 +11,11 @@
 mod apply;
 pub(crate) use apply::said as failure_message;
 mod artwork;
+mod beets;
 mod draft;
 mod fields;
 mod hosted;
+mod preview;
 mod save;
 mod server;
 pub mod view;
@@ -92,6 +94,9 @@ pub(crate) struct Editor {
     id3: Id3Version,
     secondary_layers: bool,
     provider: Provider,
+    beets: beets::BeetsState,
+    changes: Vec<preview::Change>,
+    preview_matched: usize,
     searching: bool,
     loading: bool,
     hits: Vec<Hit>,
@@ -139,6 +144,9 @@ impl Default for Editor {
             id3: Id3Version::V24,
             secondary_layers: false,
             provider: Provider::MusicBrainz,
+            beets: beets::BeetsState::default(),
+            changes: Vec::new(),
+            preview_matched: 0,
             searching: false,
             loading: false,
             hits: Vec::new(),
@@ -193,6 +201,7 @@ impl Editor {
     /// Forgets the record that was open. What it was waiting for comes
     /// back to nobody.
     fn forget(&mut self) {
+        self.beets.cancel(); self.changes.clear(); self.preview_matched = 0;
         self.session += 1;
         self.state = State::Closed;
         self.draft = None;
@@ -215,6 +224,7 @@ impl Editor {
         self.server = None;
         self.progress = (0, 0);
         self.focus = -1;
+        if let Some(worker) = &self.worker { for done in worker.finished() { artwork::discard(&done); } }
         artwork::sweep();
     }
 }
@@ -255,6 +265,7 @@ impl Chilpa {
             _ if !self.musicbrainz_enabled() => Provider::Discogs,
             _ => Provider::MusicBrainz,
         };
+        let beets_runtime = self.preference("metadata.beetsPython").unwrap_or_default();
 
         if self.metadata.worker.is_none() {
             (self.metadata.credential,self.metadata.credential_epoch)=self.discogs_provider();
@@ -267,6 +278,8 @@ impl Chilpa {
         editor.cover = album.artwork_path.clone().unwrap_or_default();
         editor.album = Some(album);
         editor.provider = chosen;
+        editor.beets.runtime = beets_runtime;
+        if editor.beets.enabled { editor.provider = Provider::MusicBrainz; }
         editor.artwork_provider = chosen;
         editor.error.clear();
         editor.notice.clear();
@@ -392,6 +405,7 @@ impl Chilpa {
         for done in finished {
             self.metadata_take(done);
         }
+        if self.metadata.view.lookup.beets_busy != self.metadata.beets.busy() { self.metadata.refresh(); }
         &self.metadata.view
     }
 
@@ -459,8 +473,25 @@ impl Chilpa {
                         let total = editor.draft.as_ref().map_or(0, |d| d.rows.len());
                         editor.notice = chilpa_i18n::t_args("{} of {} tracks match this release", &[&matched.to_string(), &total.to_string()]);
                         editor.release = Some(release);
+                        editor.rebuild_preview();
                     }
                     Err(failure) => editor.error = apply::said(editor.provider, &failure),
+                }
+            }
+            Done::Beets { turn, slot, .. } if turn == editor.lookup_turn => {
+                editor.searching = false;
+                let probing = editor.beets.probing;
+                editor.beets.probing = false;
+                if let Some(result) = slot.take() {
+                    match result {
+                        Ok(response) => {
+                            editor.beets.accept(response);
+                            editor.hits = editor.beets.candidates.iter().map(beets::hit).collect();
+                            if probing { editor.notice = chilpa_i18n::t_args("beets {} is ready.", &[&editor.beets.version]); }
+                            else if editor.hits.is_empty() { editor.error = chilpa_i18n::t("nothing was found"); }
+                        }
+                        Err(error) => editor.error = beets::said(error),
+                    }
                 }
             }
             Done::Candidates { turn, candidates, .. } if turn == editor.artwork_turn => {

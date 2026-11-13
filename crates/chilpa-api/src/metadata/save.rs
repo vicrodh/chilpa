@@ -437,6 +437,9 @@ impl Chilpa {
         if self.metadata.state != State::Ready {
             return false;
         }
+        // Saving the current form supersedes an outstanding proposal. Stop
+        // its child before the shared metadata worker reaches the save job.
+        if self.metadata.beets.busy() { self.metadata_cancel_lookup(); }
         match self.metadata.mode {
             Mode::Undecided => return self.metadata.refuse(chilpa_i18n::t("choose where to save the changes: the server cannot take them, the sidecar keeps them on this device")),
             Mode::Server => {

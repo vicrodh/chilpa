@@ -453,6 +453,9 @@ msgstr "Les albums apparaissent au fur et à mesure de la lecture"
 msgid "Albums from streaming services will not be synced."
 msgstr ""
 
+msgid "Albums in your library"
+msgstr ""
+
 msgid "All"
 msgstr "Tout"
 
@@ -666,14 +669,14 @@ msgstr "Appliquer"
 msgid "Apply import"
 msgstr "Appliquer l'import"
 
+msgid "Apply selected fields"
+msgstr ""
+
 msgid "Apply system tint to the icon"
 msgstr "Appliquer la teinte du système à l'icône"
 
 msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
 msgstr "Applique le même regroupement à chaque source. Désactivez-le pour afficher une seule liste de playlists combinée."
-
-msgid "Apply to the form"
-msgstr "Appliquer au formulaire"
 
 msgid "Approve"
 msgstr "Approuver"
@@ -713,6 +716,9 @@ msgstr "Artistes"
 
 msgid "Artists from this scene"
 msgstr "Artistes de cette scène"
+
+msgid "Artists in your library"
+msgstr ""
 
 msgid "Artwork"
 msgstr "Illustration"
@@ -1052,6 +1058,9 @@ msgstr "Annuler le minuteur"
 msgid "Cancel download"
 msgstr "Annuler le téléchargement"
 
+msgid "Cancel lookup"
+msgstr ""
+
 msgid "Cancel stop after this track"
 msgstr "Annuler l'arrêt après cette piste"
 
@@ -1174,6 +1183,9 @@ msgstr "Vérifiez l'utilisateur et le mot de passe ou la clé API, puis revenez 
 
 msgid "Checking available space"
 msgstr "Vérification de l’espace disponible"
+
+msgid "Checking beets…"
+msgstr ""
 
 msgid "Checking destination files"
 msgstr "Vérification des fichiers de destination"
@@ -1436,6 +1448,12 @@ msgstr "Choisissez les files d'attente et organisez leur ordre. Les pistes rép�
 msgid "Choose storage"
 msgstr ""
 
+msgid "Choose the Python environment containing beets."
+msgstr ""
+
+msgid "Choose the Python executable for beets"
+msgstr ""
+
 msgid "Choose the connected player and its storage first."
 msgstr ""
 
@@ -1649,6 +1667,9 @@ msgstr ""
 msgid "Composers"
 msgstr "Compositeurs"
 
+msgid "Composition"
+msgstr ""
+
 msgid "Compositions"
 msgstr ""
 
@@ -1802,6 +1823,9 @@ msgstr "Impossible de lire l'inventaire des analyses."
 msgid "Could not read the library"
 msgstr ""
 
+msgid "Could not read track durations from the library."
+msgstr ""
+
 msgid "Could not remove the saved profile."
 msgstr ""
 
@@ -1855,6 +1879,9 @@ msgstr "Choix des critiques"
 
 msgid "Crossfeed · 0–50%"
 msgstr "Crossfeed · 0–50%"
+
+msgid "Current"
+msgstr ""
 
 msgid "Current signal path"
 msgstr "Parcours audio actuel"
@@ -2405,6 +2432,9 @@ msgstr "Surélevé"
 msgid "Embedded tags only"
 msgstr "Étiquettes intégrées uniquement"
 
+msgid "Empty"
+msgstr ""
+
 msgid "Empty folders"
 msgstr "Dossiers vides"
 
@@ -2518,6 +2548,9 @@ msgstr "Mode exclusif"
 
 msgid "Exclusive mode was requested."
 msgstr "Le mode exclusif a été demandé."
+
+msgid "Existing genres are unselected by default."
+msgstr ""
 
 msgid "Exit Immersive"
 msgstr "Quitter le mode immersif"
@@ -3283,6 +3316,9 @@ msgstr "Installez et activez un importateur de playlists dans Paramètres → Pl
 msgid "Install and enable the Mood plugin first."
 msgstr "Installez et activez d'abord le plugin Humeur."
 
+msgid "Install beets {} in the selected Python environment."
+msgstr ""
+
 msgid "Install from ZIP…"
 msgstr "Installer depuis un ZIP…"
 
@@ -3734,6 +3770,9 @@ msgstr "Recherche des paroles…"
 msgid "Looking for players…"
 msgstr ""
 
+msgid "Lookup cancelled."
+msgstr ""
+
 msgid "Lossless"
 msgstr "Sans perte"
 
@@ -3824,6 +3863,9 @@ msgstr "Ingénieur de mastering"
 msgid "Match"
 msgstr "Correspondre à"
 
+msgid "Match score: {}"
+msgstr ""
+
 msgid "Match {} exactly"
 msgstr "Chercher {} exactement"
 
@@ -3859,6 +3901,9 @@ msgstr "Message"
 
 msgid "Metadata"
 msgstr "Métadonnées"
+
+msgid "Metadata source: MusicBrainz"
+msgstr ""
 
 msgid "Micro"
 msgstr "Micro"
@@ -4210,6 +4255,9 @@ msgstr ""
 
 msgid "No audio output is known yet; try again in a moment."
 msgstr "Aucune sortie audio n’est encore connue ; réessayez dans un instant."
+
+msgid "No changes to apply."
+msgstr ""
 
 msgid "No composer"
 msgstr "Sans compositeur"
@@ -4817,6 +4865,9 @@ msgstr "Format de sortie"
 msgid "Output identity could not be saved."
 msgstr "Impossible d’enregistrer l’identité de la sortie."
 
+msgid "Overview"
+msgstr ""
+
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "Les échantillons PCM ne peuvent pas être écrits dans un flux DSD natif"
 
@@ -5204,6 +5255,9 @@ msgstr ""
 msgid "Pronunciation"
 msgstr "Prononciation"
 
+msgid "Proposed"
+msgstr ""
+
 msgid "Provider identifiers"
 msgstr "Identifiants des fournisseurs"
 
@@ -5221,6 +5275,9 @@ msgstr "Achats"
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Placez un dossier de plugin dans le dossier des plugins de Chilpa, puis rouvrez l'application."
+
+msgid "Python executable"
+msgstr ""
 
 msgid "Qt version"
 msgstr "Version de Qt"
@@ -5971,6 +6028,9 @@ msgstr "Chercher à nouveau"
 msgid "Search artists"
 msgstr "Rechercher des artistes"
 
+msgid "Search engine"
+msgstr ""
+
 msgid "Search folders"
 msgstr "Rechercher des dossiers"
 
@@ -6098,6 +6158,9 @@ msgstr "Sélectionnez un artiste pour voir ses albums"
 
 msgid "Select folders"
 msgstr "Sélectionner des dossiers"
+
+msgid "Select the Python executable from an environment with beets 2.14.1 installed."
+msgstr ""
 
 msgid "Select tracks"
 msgstr "Sélectionner des pistes"
@@ -6759,6 +6822,12 @@ msgstr "Le compte a expiré ; reconnectez-le."
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "L'adresse où vous ouvrez le serveur dans un navigateur, avec son port, et l'utilisateur avec lequel Chilpa se connecte."
 
+msgid "The beets lookup exceeded its metadata size limit."
+msgstr ""
+
+msgid "The beets lookup timed out. Try again."
+msgstr ""
+
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "Le test intégré lit quatre pistes de profondeurs de bits et de fréquences d'échantillonnage différentes (16/44.1, 24/44.1, 24/96, 24/192) pour que vous voyiez votre DAC changer de fréquence. Chacune est la piste la plus lue de votre bibliothèque dans ce format, ou un signal de test généré si vous n'en avez aucune. Si vous préférez utiliser votre propre file d'attente, ajoutez d'abord une piste de chaque type pour que toutes les fréquences soient testées."
 
@@ -6960,6 +7029,9 @@ msgstr "Le plugin n'a pas répondu en 15 secondes. L'état de son compte est inc
 msgid "The plugin interface could not be opened."
 msgstr ""
 
+msgid "The previous beets lookup is still stopping."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "La fréquence d’échantillonnage précédente ne s’est pas stabilisée après la vérification."
 
@@ -7040,6 +7112,9 @@ msgstr "Impossible de démarrer l’analyse : {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "Le processus d’analyse s’est arrêté de façon inattendue."
+
+msgid "The selected Python environment could not start beets."
+msgstr ""
 
 msgid "The selected hardware volume control is gone."
 msgstr "Le contrôle de volume matériel sélectionné a disparu."
@@ -8116,6 +8191,9 @@ msgstr "Votre pile audio est prête pour la lecture bit-perfect."
 msgid "Your distribution"
 msgstr "Votre distribution"
 
+msgid "Your genre tags"
+msgstr ""
+
 msgid "Your music"
 msgstr "Votre musique"
 
@@ -8277,6 +8355,15 @@ msgstr "en attente d'approbation"
 
 msgid "be a plugin of another kind: {}"
 msgstr "être un plugin d'un autre type : {}"
+
+msgid "beets accepts up to {} tracks per lookup."
+msgstr ""
+
+msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets {} is ready."
+msgstr ""
 
 msgid "between"
 msgstr "entre"
@@ -9523,6 +9610,16 @@ msgid_plural "{} albums"
 msgstr[0] "{} album"
 msgstr[1] "{} albums"
 
+msgid "{} album in your library"
+msgid_plural "{} albums in your library"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} albumless track"
+msgid_plural "{} albumless tracks"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "{} analysées, {} sans pulsation, {} illisibles"
 
@@ -9835,11 +9932,6 @@ msgstr[1] "{} étoiles"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} se charge encore · les nombres peuvent augmenter"
-
-msgid "{} style in your library"
-msgid_plural "{} styles in your library"
-msgstr[0] ""
-msgstr[1] ""
 
 msgid "{} to copy · {} to update · {} to remove · {} already present"
 msgstr "{} à copier · {} à mettre à jour · {} à supprimer · {} déjà présents"

@@ -9,10 +9,19 @@ Item {
     id: section
     property string key: ""
     property bool recording: false
+    property bool autoPlay: false
+    signal played()
+    function tryPlay() {
+        if (!autoPlay || !parts.ready || parts.count === 0) return
+        autoPlay = false; parts.playAll(false); played()
+    }
+    onAutoPlayChanged: Qt.callLater(tryPlay)
+    Component.onCompleted: Qt.callLater(tryPlay)
     readonly property bool narrow: width < Metrics.discoveryTrackNarrow
     readonly property alias scrollView: list.rows
     readonly property bool ready: parts.ready
     TrackListModel { id: parts; kind: "discovery"; key: section.key; filterRev: Library.contentRev + Library.remoteRev; playingPath: Player.path }
+    Connections { target:parts; function onReadyChanged() { section.tryPlay() } function onCountChanged() { section.tryPlay() } }
     Row {
         id: actions
         spacing: Metrics.gap8

@@ -54,6 +54,8 @@ impl Cell {
         self.now = self.start.clone();
         self.mixed = self.start_mixed;
     }
+
+    pub fn initial(&self) -> (&str, bool) { (&self.start, self.start_mixed) }
 }
 
 /// What a file's tags said when the record was opened.

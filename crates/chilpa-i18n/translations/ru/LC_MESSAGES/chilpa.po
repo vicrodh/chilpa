@@ -454,6 +454,9 @@ msgstr "Альбомы появляются по мере чтения"
 msgid "Albums from streaming services will not be synced."
 msgstr ""
 
+msgid "Albums in your library"
+msgstr ""
+
 msgid "All"
 msgstr "Все"
 
@@ -667,14 +670,14 @@ msgstr "Применить"
 msgid "Apply import"
 msgstr "Применить импорт"
 
+msgid "Apply selected fields"
+msgstr ""
+
 msgid "Apply system tint to the icon"
 msgstr "Применять системный оттенок к значку"
 
 msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
 msgstr "Применять одинаковую группировку ко всем источникам. Выключите, чтобы показывать один общий список плейлистов."
-
-msgid "Apply to the form"
-msgstr "Применить к форме"
 
 msgid "Approve"
 msgstr "Одобрить"
@@ -714,6 +717,9 @@ msgstr "Исполнители"
 
 msgid "Artists from this scene"
 msgstr "Исполнители этой сцены"
+
+msgid "Artists in your library"
+msgstr ""
 
 msgid "Artwork"
 msgstr "Обложка"
@@ -1054,6 +1060,9 @@ msgstr "Отменить таймер"
 msgid "Cancel download"
 msgstr "Отменить загрузку"
 
+msgid "Cancel lookup"
+msgstr ""
+
 msgid "Cancel stop after this track"
 msgstr "Отменить остановку после этого трека"
 
@@ -1176,6 +1185,9 @@ msgstr "Проверьте пользователя и пароль или API-�
 
 msgid "Checking available space"
 msgstr "Проверка свободного места"
+
+msgid "Checking beets…"
+msgstr ""
 
 msgid "Checking destination files"
 msgstr "Проверка файлов назначения"
@@ -1438,6 +1450,12 @@ msgstr "Выберите очереди и расположите их по по
 msgid "Choose storage"
 msgstr ""
 
+msgid "Choose the Python environment containing beets."
+msgstr ""
+
+msgid "Choose the Python executable for beets"
+msgstr ""
+
 msgid "Choose the connected player and its storage first."
 msgstr ""
 
@@ -1651,6 +1669,9 @@ msgstr ""
 msgid "Composers"
 msgstr "Композиторы"
 
+msgid "Composition"
+msgstr ""
+
 msgid "Compositions"
 msgstr ""
 
@@ -1804,6 +1825,9 @@ msgstr "Не удалось прочитать перечень анализа."
 msgid "Could not read the library"
 msgstr ""
 
+msgid "Could not read track durations from the library."
+msgstr ""
+
 msgid "Could not remove the saved profile."
 msgstr ""
 
@@ -1857,6 +1881,9 @@ msgstr "Выбор критиков"
 
 msgid "Crossfeed · 0–50%"
 msgstr "Кроссфид · 0–50%"
+
+msgid "Current"
+msgstr ""
 
 msgid "Current signal path"
 msgstr "Текущий путь сигнала"
@@ -2407,6 +2434,9 @@ msgstr "Приподнятый"
 msgid "Embedded tags only"
 msgstr "Только встроенные теги"
 
+msgid "Empty"
+msgstr ""
+
 msgid "Empty folders"
 msgstr "Пустые папки"
 
@@ -2520,6 +2550,9 @@ msgstr "Эксклюзивный режим"
 
 msgid "Exclusive mode was requested."
 msgstr "Запрошен исключительный режим."
+
+msgid "Existing genres are unselected by default."
+msgstr ""
 
 msgid "Exit Immersive"
 msgstr "Выйти из иммерсивного режима"
@@ -3286,6 +3319,9 @@ msgstr "Установите и включите импортёр плейлис
 msgid "Install and enable the Mood plugin first."
 msgstr "Сначала установите и включите плагин настроения."
 
+msgid "Install beets {} in the selected Python environment."
+msgstr ""
+
 msgid "Install from ZIP…"
 msgstr "Установить из ZIP…"
 
@@ -3739,6 +3775,9 @@ msgstr "Поиск текста песни…"
 msgid "Looking for players…"
 msgstr ""
 
+msgid "Lookup cancelled."
+msgstr ""
+
 msgid "Lossless"
 msgstr "Lossless"
 
@@ -3829,6 +3868,9 @@ msgstr "Мастеринг-инженер"
 msgid "Match"
 msgstr "Совпадение"
 
+msgid "Match score: {}"
+msgstr ""
+
 msgid "Match {} exactly"
 msgstr "Искать {} точно"
 
@@ -3864,6 +3906,9 @@ msgstr "Сообщение"
 
 msgid "Metadata"
 msgstr "Метаданные"
+
+msgid "Metadata source: MusicBrainz"
+msgstr ""
 
 msgid "Micro"
 msgstr "Микро"
@@ -4215,6 +4260,9 @@ msgstr ""
 
 msgid "No audio output is known yet; try again in a moment."
 msgstr "Аудиовывод пока неизвестен; попробуйте ещё раз через мгновение."
+
+msgid "No changes to apply."
+msgstr ""
 
 msgid "No composer"
 msgstr "Без композитора"
@@ -4822,6 +4870,9 @@ msgstr "Формат вывода"
 msgid "Output identity could not be saved."
 msgstr "Не удалось сохранить идентификатор выхода."
 
+msgid "Overview"
+msgstr ""
+
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "Сэмплы PCM нельзя записать в нативный поток DSD"
 
@@ -5209,6 +5260,9 @@ msgstr ""
 msgid "Pronunciation"
 msgstr "Произношение"
 
+msgid "Proposed"
+msgstr ""
+
 msgid "Provider identifiers"
 msgstr "Идентификаторы поставщиков"
 
@@ -5226,6 +5280,9 @@ msgstr "Покупки"
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Поместите папку плагина в каталог плагинов Chilpa и снова откройте приложение."
+
+msgid "Python executable"
+msgstr ""
 
 msgid "Qt version"
 msgstr "Версия Qt"
@@ -5977,6 +6034,9 @@ msgstr "Искать снова"
 msgid "Search artists"
 msgstr "Поиск исполнителей"
 
+msgid "Search engine"
+msgstr ""
+
 msgid "Search folders"
 msgstr "Поиск папок"
 
@@ -6105,6 +6165,9 @@ msgstr "Выберите исполнителя, чтобы увидеть ег�
 
 msgid "Select folders"
 msgstr "Выбрать папки"
+
+msgid "Select the Python executable from an environment with beets 2.14.1 installed."
+msgstr ""
 
 msgid "Select tracks"
 msgstr "Выбрать треки"
@@ -6769,6 +6832,12 @@ msgstr "Срок действия учётной записи истёк; под
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "Адрес, по которому вы открываете сервер в браузере, с портом, и пользователь, под которым входит Chilpa."
 
+msgid "The beets lookup exceeded its metadata size limit."
+msgstr ""
+
+msgid "The beets lookup timed out. Try again."
+msgstr ""
+
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "Встроенный тест воспроизводит четыре трека с разной разрядностью и частотой дискретизации (16/44.1, 24/44.1, 24/96, 24/192), чтобы вы увидели, как переключается DAC. Каждый из них — самый часто воспроизводимый трек вашей библиотеки в этом формате, а если такого нет, — сгенерированный тестовый сигнал. Если хотите использовать собственную очередь, сначала добавьте по одному треку каждого вида, чтобы проверить все частоты."
 
@@ -6970,6 +7039,9 @@ msgstr "Плагин не ответил за 15 секунд. Состояни�
 msgid "The plugin interface could not be opened."
 msgstr ""
 
+msgid "The previous beets lookup is still stopping."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "Прежняя частота дискретизации не стабилизировалась после проверки."
 
@@ -7050,6 +7122,9 @@ msgstr "Не удалось начать сканирование: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "Процесс сканирования неожиданно остановился."
+
+msgid "The selected Python environment could not start beets."
+msgstr ""
 
 msgid "The selected hardware volume control is gone."
 msgstr "Выбранный регулятор аппаратной громкости исчез."
@@ -8128,6 +8203,9 @@ msgstr "Ваш аудиостек готов к воспроизведению b
 msgid "Your distribution"
 msgstr "Ваш дистрибутив"
 
+msgid "Your genre tags"
+msgstr ""
+
 msgid "Your music"
 msgstr "Ваша музыка"
 
@@ -8289,6 +8367,15 @@ msgstr "ожидает одобрения"
 
 msgid "be a plugin of another kind: {}"
 msgstr "быть плагином другого вида: {}"
+
+msgid "beets accepts up to {} tracks per lookup."
+msgstr ""
+
+msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets {} is ready."
+msgstr ""
 
 msgid "between"
 msgstr "между"
@@ -9538,6 +9625,18 @@ msgstr[0] "{} альбом"
 msgstr[1] "{} альбома"
 msgstr[2] "{} альбомов"
 
+msgid "{} album in your library"
+msgid_plural "{} albums in your library"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "{} albumless track"
+msgid_plural "{} albumless tracks"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "Проанализировано: {}, без пульса: {}, нечитаемых: {}"
 
@@ -9879,12 +9978,6 @@ msgstr[2] "{} звёзд"
 
 msgid "{} still loading · counts may grow"
 msgstr "{} ещё загружается · числа могут вырасти"
-
-msgid "{} style in your library"
-msgid_plural "{} styles in your library"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
 
 msgid "{} to copy · {} to update · {} to remove · {} already present"
 msgstr "{} к копированию · {} к обновлению · {} к удалению · {} уже на месте"

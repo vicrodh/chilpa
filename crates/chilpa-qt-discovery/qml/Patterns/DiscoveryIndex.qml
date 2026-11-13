@@ -13,11 +13,16 @@ Item {
     property int page: 0
     property bool loading: false
     property bool ready: true
+    property string kind: "genres"
+    readonly property bool composers: kind === "composers"
+    readonly property int entryWidth: composers ? Metrics.sceneCardWidth : Metrics.discoveryEntryWidth
+    readonly property int entryHeight: composers ? Metrics.sceneCardHeight : kind === "genres" ? Metrics.discoveryGenreHeight : Metrics.discoveryEntryHeight
     readonly property alias scrollView: grid
     signal activated(var entry)
     signal pageRequested(int page)
     function detail(entry) {
-        if (entry.kind === "genre") return I18n.trCount("{} style in your library", "{} styles in your library", entry.styles || 0, I18n.rev)
+        if (entry.kind === "genre") return [I18n.trCount("{} album", "{} albums", entry.albums || 0, I18n.rev),
+            (entry.looseTracks || 0) > 0 ? I18n.trCount("{} albumless track", "{} albumless tracks", entry.looseTracks, I18n.rev) : ""].filter(Boolean).join(" · ")
         if (entry.kind === "recording") {
             const seconds = Math.floor((entry.duration || 0) / 1000)
             const duration = Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0")
@@ -31,9 +36,9 @@ Item {
         objectName: "discoveryEntries"
         anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: paging.top
         anchors.bottomMargin: Metrics.gap12
-        readonly property int columns: Math.max(1, Math.floor((width + Metrics.gap12) / Metrics.discoveryEntryWidth))
+        readonly property int columns: Math.max(1, Math.floor((width + Metrics.gap12) / index.entryWidth))
         cellWidth: width / columns
-        cellHeight: Metrics.discoveryEntryHeight + Metrics.gap12
+        cellHeight: index.entryHeight + Metrics.gap12
         model: index.entries
         clip: true
         reuseItems: true
@@ -41,10 +46,13 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {}
         delegate: Item {
+            id: cell
             required property var modelData
             width: grid.cellWidth; height: grid.cellHeight
             DiscoveryEntry {
-                width: parent.width - Metrics.gap12; height: Metrics.discoveryEntryHeight
+                objectName: "discoveryEntry:" + (cell.modelData.name || "")
+                width: parent.width - Metrics.gap12; height: index.entryHeight
+                activeImages: grid.visible && cell.y + cell.height > grid.contentY && cell.y < grid.contentY + grid.height
                 entry: modelData; detail: index.detail(modelData)
                 onClicked: index.activated(modelData)
             }
