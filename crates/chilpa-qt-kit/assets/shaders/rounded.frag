@@ -15,6 +15,7 @@ layout(std140, binding = 0) uniform buf {
     vec2 dims;
     // Top left, top right, bottom right, bottom left.
     vec4 corners;
+    vec2 sourceDims;
 };
 
 layout(binding = 1) uniform sampler2D source;
@@ -30,5 +31,10 @@ void main() {
     // One device pixel of antialiasing, whatever the scale.
     float aa = max(fwidth(d), 0.0001);
     float inside = clamp(0.5 - d / aa, 0.0, 1.0);
-    fragColor = texture(source, qt_TexCoord0) * inside * qt_Opacity;
+    // Match Image.PreserveAspectCrop: fill the tile with the center of the
+    // source, preserving a photograph's proportions on rectangular mosaics.
+    vec2 span = dims / max(sourceDims, vec2(1.0));
+    vec2 crop = span / max(max(span.x, span.y), 0.0001);
+    vec2 uv = (qt_TexCoord0 - vec2(0.5)) * crop + vec2(0.5);
+    fragColor = texture(source, uv) * inside * qt_Opacity;
 }

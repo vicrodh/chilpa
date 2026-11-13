@@ -38,11 +38,24 @@ ListRowSurface {
     HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: root.choose() }
 
+    Text {
+        id: score
+        objectName:"metadataReleaseHitScore"
+        anchors.right:parent.right; anchors.rightMargin:Metrics.gap8
+        anchors.verticalCenter:parent.verticalCenter
+        visible:root.showScore
+        text:String(root.hit.score || 0) + " / 100"
+        textFormat:Text.PlainText
+        font.pointSize:Type.meta; font.weight:Type.semibold
+        color:Theme.color.textPrimary
+        Accessible.name:I18n.trArgs("Match score: {}",[String(root.hit.score || 0)],I18n.rev)
+    }
+
     Column {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.leftMargin: Metrics.gap8
-        anchors.rightMargin: Metrics.gap8
+        anchors.rightMargin: score.visible ? score.width + Metrics.gap8 * 2 : Metrics.gap8 // derived: score and padding on both sides
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap2
 

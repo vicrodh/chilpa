@@ -66,12 +66,24 @@ TestCase {
         compare(MetadataEditor.saved,0)
     }
     function test_release_choices_expose_the_match_score_and_open_by_keyboard() {
-        MetadataEditor.show(document("beets"))
+        const doc=document("beets")
+        doc.lookup.hits[0].label="A long release label ".repeat(10)
+        doc.lookup.hits[0].catalog_number="A long catalog number ".repeat(10)
+        MetadataEditor.show(doc)
         const page=createTemporaryObject(maker,this)
+        page.width=260
         let hit
         tryVerify(() => {hit=findChild(page,"metadataReleaseHit0"); return !!hit})
         verify(hit.detail.includes("93"))
-        compare(findChild(hit,"metadataReleaseHitTitle").textFormat,Text.PlainText)
+        const title=findChild(hit,"metadataReleaseHitTitle")
+        compare(title.textFormat,Text.PlainText)
+        const score=findChild(hit,"metadataReleaseHitScore")
+        waitForRendering(hit)
+        verify(score.visible)
+        compare(score.text,"93 / 100")
+        verify(!score.truncated)
+        verify(score.x + score.width <= hit.width)
+        verify(title.mapToItem(hit,0,0).x + title.width <= score.x)
         hit.forceActiveFocus(); keyClick(Qt.Key_Return)
         compare(MetadataEditor.loadedHits,[0])
     }
