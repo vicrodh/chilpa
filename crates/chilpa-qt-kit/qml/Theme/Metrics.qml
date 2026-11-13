@@ -176,6 +176,9 @@ QtObject {
     readonly property int menuMaxWidth: 310
     readonly property int trackFilterWidth: 320
     readonly property int trackFilterHeight: 440
+    readonly property real trackFilterHeightShare: 0.4
+    readonly property int trackFilterShortHeight: 200
+    readonly property int trackSkeletonMaxRows: 64
     readonly property int trackFilterTagWidth: 240
     readonly property int menuIconColumn: 18
     readonly property int menuItem: 30

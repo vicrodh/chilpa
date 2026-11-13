@@ -11,6 +11,8 @@ QtObject {
     property var sourceNames: visits.recall("tracks.sourceNames", ({}))
     property var columns: readColumns(settings.kept("ui.tracks.columns"))
     readonly property var defaults: ["index", "art", "source", "time", "rating", "quality", "favorite"]
+    readonly property bool marksFiltered: typeof effective.favorite === "boolean"
+        || Array.isArray(effective.rating) && effective.rating.length > 0
     readonly property bool filtered: Object.keys(effective).some(key => {
         const value = effective[key]
         return typeof value === "boolean" || Array.isArray(value) && value.length > 0

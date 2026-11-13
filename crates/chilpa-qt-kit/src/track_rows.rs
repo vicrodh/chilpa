@@ -23,6 +23,14 @@ pub enum At<'a> {
 }
 
 impl Rows {
+    /// Loaded rows only; snapshots keep their bounded page cache.
+    pub fn loaded_tracks(&self) -> Vec<&TrackRow> {
+        match self {
+            Self::Loaded(rows) => rows.iter().filter_map(|entry| if let Entry::Track(track) = entry { Some(track) } else { None }).collect(),
+            Self::Snapshot { .. } => Vec::new(),
+        }
+    }
+
     pub fn len(&self) -> usize {
         match self { Self::Loaded(rows) => rows.len(), Self::Snapshot { ids, .. } => ids.ids.len() }
     }
@@ -37,7 +45,10 @@ impl Rows {
                 let page = row / PAGE;
                 let rows = pages.borrow_mut().read(page, PAGES_KEPT, || {
                     let end = ((page + 1) * PAGE).min(ids.ids.len());
-                    app::with(|api| api.track_rows(&ids.ids[page * PAGE..end]))
+                    let started = std::env::var_os("CHILPA_TRACK_TIMINGS").map(|_| std::time::Instant::now());
+                    let rows = app::with(|api| api.track_rows(&ids.ids[page * PAGE..end]));
+                    if let Some(started) = started { eprintln!("tracks hydrate_page={} rows={} elapsed_us={}", page, rows.len(), started.elapsed().as_micros()); }
+                    rows
                 });
                 (row % PAGE < rows.len()).then(|| At::Track(rows, row % PAGE))
             }

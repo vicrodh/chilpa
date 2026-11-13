@@ -15,6 +15,7 @@ TestCase {
     width: 1100
     height: 800
     Component { id: screenMaker; Screens.TracksScreen {} }
+    Component { id: viewportMaker; Item {} }
     Component {
         id: playerCoverMaker
         Rectangle {
@@ -60,16 +61,19 @@ TestCase {
         columns.rich = false
         Prefs.ratings = true
         Metrics.playerSpace = Metrics.playerHeight
+        Library.busy = false
         backend.requests = []
         applied.clear()
         requested.clear()
     }
     function cleanup() {
         popup.close()
+        popup.contentViewport = null
         test.Window.window.height = 800
         anchor.y = 720
         Library.sourceKeys = []; Library.sourceLabels = []
         Prefs.ratings = true
+        Library.busy = false
         wait(1)
     }
     function visibleChoice(list) {
@@ -293,7 +297,7 @@ TestCase {
         popup.show("title", "Title", [], anchor); backend.answerPage()
         wait(1)
         const tall = popup.height
-        verify(tall > Math.max(popup.anchorTop, popup.parent.height - popup.anchorBottom), "a long list can cross its anchor")
+        verify(tall <= popup.parent.height * 0.4 + 0.5, "the entire flyout uses at most forty percent of the viewport")
         verify(popup.y >= popup.margins && popup.y + popup.height <= popup.parent.height - popup.margins + 0.5)
         test.Window.window.height = 360
         tryVerify(() => popup.parent.height <= 360)
@@ -308,6 +312,104 @@ TestCase {
         mouseClick(cancel, cancel.width / 2, cancel.height / 2)
         compare(popup.opened, false)
         compare(applied.count, 0)
+    }
+    function test_popup_long_lists_keep_actions_and_scroll_within_content_budget_data() {
+        const rows = []
+        for (const field of ["artist", "album"])
+            for (const height of [800, 1350, 360]) rows.push({tag:field + "-" + height, field, height, contentHeight:0})
+        rows.push({tag:"artist-smaller-content",field:"artist",height:1350,contentHeight:480})
+        rows.push({tag:"album-smaller-content",field:"album",height:800,contentHeight:360})
+        return rows
+    }
+    function test_popup_long_lists_keep_actions_and_scroll_within_content_budget(data) {
+        test.Window.window.height = data.height
+        if (data.contentHeight) popup.contentViewport = createTemporaryObject(viewportMaker, test, {width:1000,height:data.contentHeight})
+        anchor.y = 30
+        popup.show(data.field, data.field, [], anchor)
+        backend.answerPage()
+        const list = findChild(popup.contentItem, "tracksFilterChoices")
+        const apply = findChild(popup.contentItem, "tracksFilterApply")
+        const cancel = findChild(popup.contentItem, "tracksFilterCancel")
+        verify(waitForRendering(list))
+        const available = data.contentHeight || popup.parent.height
+        verify(popup.height <= available * 0.4 + 0.5, "popup height " + popup.height + " exceeds forty percent of " + available)
+        verify(list.height >= Metrics.hitMin, "at least one actionable option remains visible")
+        verify(list.contentHeight > list.height)
+        compare(apply.height, 24); compare(cancel.height, 24)
+        verify(apply.mapToItem(popup.contentItem, 0, 0).y >= 0)
+        verify(apply.mapToItem(popup.contentItem, 0, apply.height).y <= popup.contentItem.height + 0.5, "Apply remains inside the panel")
+        verify(cancel.mapToItem(popup.contentItem, 0, cancel.height).y <= popup.contentItem.height + 0.5)
+        list.positionViewAtEnd(); list.forceLayout()
+        mouseMove(list, list.width / 2, list.height / 2)
+        mouseWheel(list, list.width / 2, list.height / 2, 0, -120)
+        tryCompare(backend, "columnBusy", true)
+        compare(backend.requests.length, 2, "the compact viewport can reach the next page")
+        backend.answerPage()
+        compare(popup.choiceWindow.count, 200)
+        mouseClick(cancel, cancel.width / 2, cancel.height / 2)
+        compare(popup.opened, false)
+    }
+    function test_loading_skeleton_precedes_results_and_never_claims_empty() {
+        const started = Date.now()
+        let page = createTemporaryObject(screenMaker, test, {width:1000,height:700})
+        let model = page.scrollView.model
+        model.ready = false
+        let skeleton = findChild(page, "tracksLoadingSkeleton")
+        let empty = findChild(page, "tracksEmptyState")
+        compare(empty.visible, false)
+        tryVerify(() => skeleton.active && skeleton.item !== null, 450)
+        verify(skeleton.item.count > 0 && skeleton.item.count <= Metrics.trackSkeletonMaxRows)
+        verify(waitForRendering(skeleton.item, 450))
+        verify(Date.now() - started < 500, "the loading surface renders before the half-second deadline")
+        wait(650)
+        compare(empty.visible, false)
+        verify(skeleton.active && skeleton.item !== null)
+        model.append({trackId:1,rowKind:0,number:1,title:"Arrived",artist:"Artist",album:"Album",duration:"3:00",plays:0,
+            quality:"FLAC",tier:2,available:true,playing:false,selected:false,headerLabel:"",headerMeta:"",art:""})
+        tryCompare(skeleton, "active", false)
+        compare(skeleton.item, null)
+        compare(empty.visible, false)
+        model.ready = true
+        model.clear()
+        tryCompare(empty, "visible", true, 500, "only a completed empty query displays the empty state")
+        Library.busy = true
+        compare(empty.visible, false)
+        tryVerify(() => skeleton.active && skeleton.item !== null)
+        wait(650)
+        compare(empty.visible, false)
+        Library.busy = false
+        compare(empty.visible, true)
+        page.destroy(); wait(1)
+        const returning = Date.now()
+        page = createTemporaryObject(screenMaker, test, {width:1000,height:700})
+        model = page.scrollView.model; model.ready = false
+        skeleton = findChild(page, "tracksLoadingSkeleton")
+        empty = findChild(page, "tracksEmptyState")
+        compare(empty.visible, false)
+        tryVerify(() => skeleton.item !== null, 450)
+        verify(waitForRendering(skeleton.item, 450))
+        verify(Date.now() - returning < 500, "re-entering Tracks restores its loading surface immediately")
+    }
+    function test_marks_only_refresh_queries_that_filter_marks() {
+        const page = createTemporaryObject(screenMaker, test, {width:1000,height:700})
+        const model = page.scrollView.model
+        for (const filters of [{}, {artist:["Band"]}]) {
+            page.columnFilters = filters
+            const before = model.filterRev
+            Ratings.rev++
+            compare(model.filterRev, before, "unfiltered marks do not resubmit Tracks")
+        }
+        for (const filters of [{rating:["5"]}, {favorite:false}, {favorite:true}]) {
+            page.columnFilters = filters
+            const before = model.filterRev
+            Ratings.rev++
+            compare(model.filterRev, before + 1, "active marks filters follow their revision")
+        }
+        page.columnFilters = {rating:["5"]}
+        Prefs.ratings = false
+        const before = model.filterRev
+        Ratings.rev++
+        compare(model.filterRev, before, "disabled ratings do not resubmit Tracks")
     }
     function test_global_clear_cancels_the_pending_search() {
         const page = createTemporaryObject(screenMaker, test, {width:1000, height:700})

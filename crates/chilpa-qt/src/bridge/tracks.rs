@@ -234,12 +234,7 @@ impl TrackListRust {
     fn at(&self, row: usize) -> Option<At<'_>> { self.rows.at(row) }
 
     /// Every track's file and id, in list order, when they are loaded.
-    fn loaded_tracks(&self) -> Vec<&TrackRow> {
-        match &self.rows {
-            Rows::Loaded(v) => v.iter().filter_map(|e| if let Entry::Track(t) = e { Some(t) } else { None }).collect(),
-            Rows::Snapshot { .. } => Vec::new(),
-        }
-    }
+    fn loaded_tracks(&self) -> Vec<&TrackRow> { self.rows.loaded_tracks() }
 
     fn track(&self, row: usize) -> Option<TrackRow> {
         match self.at(row)? {
@@ -743,6 +738,7 @@ impl qobject::TrackListModel {
     /// Asks for a reload once this turn of the event loop is over, however
     /// many inputs changed in it.
     fn schedule(mut self: Pin<&mut Self>) {
+        if self.rust().kind.to_string() == "tracks" { self.as_mut().set_ready(false); }
         self.as_mut().rust_mut().asked = self.rust().asked.wrapping_add(1);
         if self.rust().pending {
             return;
@@ -784,22 +780,23 @@ impl qobject::TrackListModel {
             return;
         }
         if kind == "tracks" {
-            app::with(|api| api.prepare_track_libraries());
             // Found on the worker; what is shown stays until it is back.
             let query = self.rust().key.to_string();
-            let extras = app::with(|api| api.track_sheet_extras(&query, "", browse::read(|s| s.filter.clone())));
+            let extras = browse::read(|s| s.filter.clone());
             let asked = self.rust().asked + 1;
             self.as_mut().rust_mut().asked = asked;
             let thread = self.qt_thread();
-            worker::submit(move |reader| reader.tracks_progressive(&query, &extras, |found| {
+            chilpa_qt_kit::track_loading::submit(query, extras, move |found, timing| {
                 let _ = thread.queue(move |mut model| {
                     if model.rust().asked == asked {
+                        let timing = timing.next("delivery");
                         let ms = found.snapshot.totals.duration_ms;
                         (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
-                        model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
+                        model.as_mut().show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
+                        timing.published(*model.count());
                     }
                 });
-            }));
+            });
             return;
         }
         if kind == "album" && id != 0 {
@@ -893,11 +890,12 @@ impl qobject::TrackListModel {
                         self.as_mut().data_changed(&first, &last, &QVector::<i32>::default());
                     }
                     if let Some(ms) = length { let count = *self.count() as usize; self.as_mut().set_summary(QString::from(&format::track_summary(count, ms))); }
+                    self.as_mut().set_ready(true);
                     return;
                 }
             }
         }
-        if same && self.rust().queue_keys == keys && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { return; }
+        if same && self.rust().queue_keys == keys && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { self.as_mut().set_ready(true); return; }
         let plan = if same && self.rust().len() > 0 { match (&self.rust().rows, &rows) {
             (Rows::Loaded(old), Rows::Loaded(new)) => list_changes::tracks(old, new, &self.rust().queue_keys, &keys),
             _ => None,

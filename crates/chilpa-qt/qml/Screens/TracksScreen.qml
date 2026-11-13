@@ -37,7 +37,7 @@ Item {
         id: tracks
         kind: "tracks"
         key: [page.order === "default" ? "" : page.order, page.group, page.typed, "", JSON.stringify(tableState.effective)].join("\u001f")
-        filterRev: Library.rev + Library.contentRev + Library.remoteRev + Ratings.rev
+        filterRev: Library.rev + Library.contentRev + Library.remoteRev + (tableState.marksFiltered ? Ratings.rev : 0)
         playingPath: Player.path
     }
 
@@ -170,6 +170,7 @@ Item {
     TrackColumnFilter {
         id: columnFilter
         model: choices
+        contentViewport: page
         sourceNames: page.sourceNames
         onApplied: (field, values, labels) => tableState.apply(field, values, labels)
     }
@@ -197,8 +198,21 @@ Item {
         onJumped: (row) => list.jumpTo(row)
     }
 
+    Loader {
+        objectName: "tracksLoadingSkeleton"
+        x: sheet.x; y: sheet.y + sheetHead.height
+        width: sheet.width; height: list.height
+        active: tracks.count === 0 && (!tracks.ready || Library.busy)
+        sourceComponent: ShelfSkeleton {
+            tracks: true
+            headerHeight: 0
+            trackRowHeight: list.rich ? Metrics.rowRich : Metrics.rowCompact
+            count: Math.min(Metrics.trackSkeletonMaxRows, Math.ceil(list.height / trackRowHeight))
+        }
+    }
     Text {
-        visible: tracks.count === 0
+        objectName: "tracksEmptyState"
+        visible: tracks.ready && !Library.busy && tracks.count === 0
         anchors.centerIn: sheet
         text: page.typed !== "" || tableState.filtered ? I18n.tr("No tracks match your search.", I18n.rev) : I18n.tr("No tracks in the selected libraries yet.", I18n.rev)
         font.pointSize: Type.body

@@ -17,19 +17,23 @@ Controls.Popup {
     // Selected source labels only; no title, album or artist catalog is cached.
     property var labels: ({})
     property Item anchorItem: null
+    property Item contentViewport: null
     property real anchorTop: margins
     property real anchorBottom: margins
     property real anchorLeft: margins
     readonly property bool below: !parent || anchorBottom + height + margins <= parent.height
-    readonly property real panelRoom: parent ? Math.max(0, parent.height - margins * 2) : Metrics.trackFilterHeight
+    readonly property real panelRoom: Math.max(0, Math.min((contentViewport ? contentViewport.height : parent ? parent.height : Metrics.trackFilterHeight) * Metrics.trackFilterHeightShare,
+        parent ? parent.height - margins * 2 : Metrics.trackFilterHeight)) // derived: the whole flyout is at most 40% of the content
+    readonly property bool compact: panelRoom < Metrics.trackFilterShortHeight
     readonly property alias choiceWindow: optionsWindow
     signal applied(string field, var values, var labels)
     parent: Controls.Overlay.overlay
     modal: true
     dim: false
     focus: true
-    padding: Metrics.gap12
+    padding: compact ? Metrics.gap8 : Metrics.gap12
     margins: Metrics.gap10
+    height: Math.min(panelRoom, contents.implicitHeight + topPadding + bottomPadding)
     width: Math.min(Metrics.trackFilterWidth, parent ? parent.width - margins * 2 : Metrics.menuWidth) // derived: outer margins
     closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnReleaseOutside
     function fit() {
@@ -51,9 +55,7 @@ Controls.Popup {
     function show(column, title, selected, anchor) {
         field = column; label = title
         draft = Array.isArray(selected) ? selected.slice() : typeof selected === "boolean" ? [String(selected)] : []
-        const names = ({})
-        for (const key of draft.slice(0, 256)) if (sourceNames[key]) names[key] = sourceNames[key]
-        labels = names
+        labels = names.selectedSources(sourceNames, draft)
         search.text = ""; searched = ""
         anchorItem = anchor
         fit(); open(); fit()
@@ -89,11 +91,7 @@ Controls.Popup {
         onAboutToChange: choices.capture()
         onShifted: rows => choices.shift += rows
         onPageArrived: items => {
-            if (popup.field === "source") {
-                const next = Object.assign({}, popup.labels)
-                for (const item of items) if (popup.draft.indexOf(item.key) >= 0 && (Object.keys(next).length < 256 || next[item.key])) next[item.key] = item.label
-                popup.labels = next
-            }
+            if (popup.field === "source") popup.labels = names.rememberSources(popup.labels, popup.draft, items)
             choices.restore()
         }
     }
@@ -118,11 +116,13 @@ Controls.Popup {
     background: Rectangle { radius: Metrics.radiusMenu; color: Theme.color.surfaceRaised; Edge {} }
     contentItem: Column {
         id: contents
-        readonly property real fixedHeight: heading.height + search.height + allRow.height + footer.height
-            + (status.visible ? status.height + spacing : 0) + spacing * 4 // derived: fixed controls and list gaps
-        spacing: Metrics.gap8
+        readonly property real fixedHeight: (heading.visible ? heading.height : 0) + search.height + allRow.height + footer.height
+            + (status.visible ? status.height + spacing : 0) + spacing * (heading.visible ? 4 : 3) // derived: gaps between the visible fixed controls and list
+        spacing: popup.compact ? Metrics.gap4 : Metrics.gap8
+        clip: true
         Text {
             id: heading
+            visible: !popup.compact
             width: parent.width
             text: popup.label
             font.pointSize: Type.body

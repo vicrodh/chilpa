@@ -163,6 +163,9 @@ impl Reader {
 }
 
 #[cfg(test)]
+mod measurement;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

@@ -16,6 +16,16 @@ QtObject {
         if (field === "source") return label || sourceNames[key] || I18n.tr("Source", I18n.rev)
         return label || key || I18n.tr("Unknown", I18n.rev)
     }
+    function selectedSources(current, selected) {
+        const names = ({})
+        for (const key of selected.slice(0, 256)) if (current[key]) names[key] = current[key]
+        return names
+    }
+    function rememberSources(current, selected, items) {
+        const next = Object.assign({}, current)
+        for (const item of items) if (selected.indexOf(item.key) >= 0 && (Object.keys(next).length < 256 || next[item.key])) next[item.key] = item.label
+        return next
+    }
     function summary(field, selected) {
         const values = Array.isArray(selected) ? selected : [selected]
         return values.slice(0, 2).map(key => value(field, String(key), "")).join(", ")
