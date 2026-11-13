@@ -97,6 +97,36 @@ struct Ahead {
     rewind: Option<Option<bool>>,
     /// The loop is done with the source.
     done: bool,
+    /// The thread reading the source died. It stays said: whoever waits on
+    /// that thread, now or later, is not kept waiting for an answer that
+    /// will never come.
+    failed: bool,
+}
+
+/// What a wait on a reader that died is answered with. The loop does not
+/// carry it far: it joins the reader next and hands its panic on.
+const READER_DIED: &str = "the thread reading the source died";
+
+/// Lets the reader go once the loop is done with it, and when the loop
+/// unwinds: a reader left waiting for room keeps the scope from ever joining.
+struct Finish<'a>(&'a Cushion);
+
+impl Drop for Finish<'_> {
+    fn drop(&mut self) {
+        self.0.finish();
+    }
+}
+
+/// Says the reader died, when it unwinds, so the loop stops waiting on it.
+struct Reading<'a>(&'a Cushion);
+
+impl Drop for Reading<'_> {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            self.0.lock().failed = true;
+            self.0.changed.notify_all();
+        }
+    }
 }
 
 struct Cushion {
@@ -109,7 +139,7 @@ struct Cushion {
 impl Cushion {
     fn new(fill: usize) -> Self {
         Self {
-            ahead: std::sync::Mutex::new(Ahead { blocks: Default::default(), bytes: 0, end: None, rewind: None, done: false }),
+            ahead: std::sync::Mutex::new(Ahead { blocks: Default::default(), bytes: 0, end: None, rewind: None, done: false, failed: false }),
             changed: std::sync::Condvar::new(),
             fill,
         }
@@ -200,6 +230,9 @@ impl Cushion {
         let mut ahead = self.lock();
         let mut starved: Option<std::time::Instant> = None;
         loop {
+            if ahead.failed {
+                return Err(READER_DIED.into());
+            }
             if let Some((block, moved)) = ahead.blocks.pop_front() {
                 ahead.bytes -= block.len();
                 self.changed.notify_all();
@@ -235,6 +268,12 @@ impl Cushion {
                 ahead.rewind = None;
                 return answer;
             }
+            // Nobody is left to answer: checked on every turn, so a wait
+            // that starts after the reader died ends too.
+            if ahead.failed {
+                ahead.rewind = None;
+                return false;
+            }
             if stop.is_stopped() {
                 ahead.rewind = None;
                 return false;
@@ -246,6 +285,11 @@ impl Cushion {
     fn finish(&self) {
         self.lock().done = true;
         self.changed.notify_all();
+    }
+
+    /// Whether the thread reading the source died.
+    fn failed(&self) -> bool {
+        self.lock().failed
     }
 }
 
@@ -403,11 +447,22 @@ pub fn render_with_volume<S: FrameSource + Send, K: AudioSink>(
     let started = std::time::Instant::now();
     std::thread::scope(|threads| {
         let reader = std::thread::Builder::new().name("chilpa-read-ahead".into());
-        let outcome = match reader.spawn_scoped(threads, || cushion.read(source, stop)) {
-            Ok(_) => deliver(&cushion, sink, stop, pause, on_progress, frame_bytes, started, processor, volume, Some(source_format)),
-            Err(_) => Outcome::Failed { frames: 0, error: SinkError::Backend(chilpa_i18n::t("the read-ahead thread could not start")) },
+        let reading = reader.spawn_scoped(threads, || {
+            let _reading = Reading(&cushion);
+            cushion.read(source, stop)
+        });
+        let Ok(reading) = reading else {
+            return Outcome::Failed { frames: 0, error: SinkError::Backend(chilpa_i18n::t("the read-ahead thread could not start")) };
         };
-        cushion.finish();
+        let outcome = {
+            let _finish = Finish(&cushion);
+            deliver(&cushion, sink, stop, pause, on_progress, frame_bytes, started, processor, volume, Some(source_format))
+        };
+        // A reader that panicked is not a track that ended: whoever plays
+        // hears of it as the panic it was.
+        if let Err(panic) = reading.join() {
+            std::panic::resume_unwind(panic);
+        }
         outcome
     })
 }
@@ -504,6 +559,10 @@ fn deliver<K: AudioSink>(
                 return Outcome::Stopped { frames };
             }
             if pause.is_paused() {
+                // A pause is waited out, but not on a reader that died.
+                if cushion.failed() {
+                    return Outcome::Stopped { frames };
+                }
                 if !warned {
                     crate::diagnostics::trace("render", "pause_entered", format_args!("frames={frames}"));
                     let _ = sink.set_paused(true);
@@ -655,6 +714,97 @@ mod tests {
     use super::*;
     use crate::format::{SampleFormat, StreamFormat};
     use std::time::Duration;
+
+    /// Whether `run` panicked, and did so in time: a render that waits on a
+    /// thread that died never returns, and that is the failure looked for.
+    fn panicked_in_time(run: impl FnOnce() + Send + 'static) -> bool {
+        let (done, seen) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(run));
+            let _ = done.send(result.is_err());
+        });
+        seen.recv_timeout(Duration::from_secs(15)).expect("the render never returned")
+    }
+
+    /// Blocks without end, so the reader fills the cushion and waits for room.
+    struct Endless;
+
+    impl FrameSource for Endless {
+        fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+            Ok(Some(block(64)))
+        }
+    }
+
+    /// A device that panics the first time it is written to.
+    struct PanickingSink;
+
+    impl AudioSink for PanickingSink {
+        fn format(&self) -> StreamFormat {
+            StreamFormat::new(SampleFormat::S16, 44_100, 2)
+        }
+        fn write(&mut self, _: &[u8]) -> Result<usize, SinkError> {
+            panic!("the device panicked");
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+    }
+
+    /// One block, then a panic: on the next read, or when asked to go back.
+    struct DiesReading {
+        given: bool,
+        on_rewind: bool,
+    }
+
+    impl FrameSource for DiesReading {
+        fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+            if !std::mem::replace(&mut self.given, true) {
+                return Ok(Some(block(8)));
+            }
+            if self.on_rewind {
+                return Ok(None);
+            }
+            panic!("the source panicked reading");
+        }
+        fn rewind(&mut self) -> bool {
+            panic!("the source panicked going back");
+        }
+    }
+
+    #[test]
+    fn a_device_that_panics_lets_the_reader_go_and_the_panic_out() {
+        assert!(panicked_in_time(|| {
+            render(&mut Endless, &mut PanickingSink, &StopSignal::new());
+        }));
+    }
+
+    #[test]
+    fn a_reader_that_panics_while_playing_ends_the_render_as_a_panic() {
+        assert!(panicked_in_time(|| {
+            let mut source = DiesReading { given: false, on_rewind: false };
+            render(&mut source, &mut FakeSink::new(100), &StopSignal::new());
+        }));
+    }
+
+    #[test]
+    fn a_reader_that_panics_during_a_pause_ends_the_render_with_no_stop() {
+        assert!(panicked_in_time(|| {
+            let pause = PauseSignal::new();
+            pause.set(true);
+            let mut source = DiesReading { given: false, on_rewind: false };
+            render_paused(&mut source, &mut FakeSink::new(100), &StopSignal::new(), &pause, &mut |_| {});
+        }));
+    }
+
+    #[test]
+    fn a_reader_that_panics_going_back_ends_the_wait_for_its_answer() {
+        assert!(panicked_in_time(|| {
+            let pause = PauseSignal::new();
+            pause.set(true);
+            let mut source = DiesReading { given: false, on_rewind: true };
+            render_paused(&mut source, &mut FakeSink::new(100), &StopSignal::new(), &pause, &mut |_| {});
+        }));
+    }
 
     #[test]
     fn paused_nothing_is_written_and_resuming_picks_up_where_it_was() {
