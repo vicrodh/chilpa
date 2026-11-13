@@ -121,6 +121,7 @@ pub use marks::Marks;
 mod ratings;
 pub use ratings::{RatingTarget, Ratings};
 mod player_events;
+mod plays;
 mod queue;
 mod listen;
 mod mood;
@@ -409,6 +410,8 @@ struct InProgress {
     /// The play that opened it, or that picked it up on another output: the
     /// only one whose events are about it.
     play: u64,
+    /// The track's turn in that play: what its `Closed` names.
+    attempt: u64,
     resuming: bool,
     carried_ms: u64,
     started_at: i64,

@@ -15,8 +15,11 @@
 //! of one that waits to be picked up on another output, nor take the mark
 //! that says how another play's listen is settled.
 
+use chilpa_core::attempts::How;
 use chilpa_core::player::PlayerEvent;
 
+use crate::plays::ledger::{self, Verdict};
+use crate::plays::{Fate, Replaced};
 use crate::{Chilpa, Relaunch};
 
 impl Chilpa {
@@ -74,6 +77,39 @@ impl Chilpa {
                 }
             }
             _ => self.log_play(cut_short),
+        }
+    }
+
+    /// A track that started is over: `heard` frames of it left the device
+    /// and it ended as `how`. If the open listen is that track's, it is
+    /// settled here, by how the track ended and what became of its play:
+    /// written, or kept to be picked up on another output. A listen that was
+    /// already closed the older way -- by the track after it starting, or by
+    /// a break said first -- is not this one any more, and nothing happens.
+    pub(crate) fn listen_closed(&mut self, generation: u64, attempt: u64, heard: u64, how: How) {
+        let Some(listen) = self.in_progress.as_mut().filter(|listen| !listen.resuming && listen.play == generation && listen.attempt == attempt) else { return };
+        listen.played_frames = heard;
+        self.scrobble_if_heard();
+        let fate = self.fate_of(generation);
+        chilpa_core::trace_playback("facade", "listen_closed", format_args!("generation={generation} attempt={attempt} heard={heard} how={how:?} fate={fate:?}"));
+        match ledger::verdict(how, fate) {
+            Verdict::Write { skipped } => self.log_play(skipped),
+            Verdict::Park => {
+                if let Some(listen) = self.in_progress.as_mut() {
+                    listen.resuming = true;
+                }
+            }
+        }
+    }
+
+    /// What became of a play, as the mark of a relaunch and the launch in
+    /// flight say it.
+    fn fate_of(&self, generation: u64) -> Fate {
+        match self.relaunching {
+            Some((Relaunch::Output, owner)) if owner == generation => Fate::Replaced(Replaced::Output { by: self.launch_generation().unwrap_or(0) }),
+            Some((Relaunch::Track, owner)) if owner == generation => Fate::Replaced(Replaced::Track),
+            _ if self.launch_generation().is_none_or(|current| current == generation) => Fate::Current,
+            _ => Fate::Replaced(Replaced::Track),
         }
     }
 

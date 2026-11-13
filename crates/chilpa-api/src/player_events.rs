@@ -8,7 +8,16 @@ use crate::{channels, lyrics_service, now_unix, Chilpa, InProgress, Quality, Rel
 impl Chilpa {
     /// Applies one event the player said, by the play that said it.
     pub(crate) fn apply_player_event(&mut self, generation: u64, event: PlayerEvent, started: &mut bool) {
-        if self.listen.active == 0 || self.from_replaced_play(generation, &event) {
+        if self.listen.active == 0 {
+            return;
+        }
+        // How a track ended and what of it left the device closes its listen,
+        // whichever play it belongs to.
+        if let PlayerEvent::Closed { attempt, heard, how, .. } = event {
+            self.listen_closed(generation, attempt, heard, how);
+            return;
+        }
+        if self.from_replaced_play(generation, &event) {
             return;
         }
         self.player_event(generation, event, started);
@@ -20,7 +29,7 @@ impl Chilpa {
     /// neither (`queue/replaced.rs`).
     fn player_event(&mut self, generation: u64, event: PlayerEvent, started: &mut bool) {
     match event {
-        PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, attempt: _, index, queue_len, dsd_multiple, dsd_passthrough } => {
+        PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, attempt, index, queue_len, dsd_multiple, dsd_passthrough } => {
             let requested_rate = route.delivery.requested.sample_rate_hz;
             self.audio_output.route = Some(route);
             self.dsp.passthrough = dsd_passthrough;
@@ -78,7 +87,7 @@ impl Chilpa {
                 (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
                 _ => 0,
             };
-            if !self.resume_listen(&path, opened.sample_rate_hz, bits, bit_perfect, generation) {
+            if !self.resume_listen(&path, opened.sample_rate_hz, bits, bit_perfect, generation, attempt) {
                 self.log_play(false);
                 let listen = self.announce(tags.as_ref(), duration_ms, started_at);
                 let context = self.context_at_start(&path, tags.as_ref(), started_at);
@@ -87,6 +96,7 @@ impl Chilpa {
                     context,
                     path: path.clone(),
                     play: generation,
+                    attempt,
                     resuming: false,
                     carried_ms: 0,
                     started_at,
@@ -196,8 +206,7 @@ impl Chilpa {
         // failure it used to be said as, while the disc goes on.
         PlayerEvent::Notice { message, .. } => self.player_failed(message),
         PlayerEvent::Skipped { generation, index, path, message, played, .. } => self.player_skipped(generation, index, &path, message, played),
-        // How a track ended and what of it was heard, as the device counted
-        // it. Nothing reads it yet: the listen is still closed as before.
+        // Dealt with before the event got here.
         PlayerEvent::Closed { .. } => {}
     }
     }
