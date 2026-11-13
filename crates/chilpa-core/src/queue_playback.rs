@@ -1208,6 +1208,10 @@ where
         if let Outcome::Unreadable { frames, reason } = &outcome {
             on_passed(index, path, reason, Some(*frames));
             queue.remove(index);
+            // A seek or a Next asked for while its last read was failing was
+            // meant for it, as when it will not open: the source looked at
+            // them before that read and never again.
+            let _ = (seek.take(), skip.take());
         }
         let finished_ok = outcome.may_advance_queue() || broken;
         ended_by_itself = finished_ok && !skipped;
