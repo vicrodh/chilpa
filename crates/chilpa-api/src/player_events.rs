@@ -172,6 +172,9 @@ impl Chilpa {
             }
         }
         PlayerEvent::Failed { message } => self.player_failed(message),
+        // A disc's track cut by a sector that would not read: handled as the
+        // failure it used to be said as, while the disc goes on.
+        PlayerEvent::Notice { message, .. } => self.player_failed(message),
         PlayerEvent::Skipped { generation, index, path, message, played } => self.player_skipped(generation, index, &path, message, played),
     }
     }

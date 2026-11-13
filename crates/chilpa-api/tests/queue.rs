@@ -1134,3 +1134,23 @@ fn tracks_of_a_replaced_queue_read_late_are_not_logged_as_played_through() {
     );
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn stopping_a_replacement_that_still_waits_behind_the_old_play_shows_stopped() {
+    let dir = folder("stop-waiting");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&strings(&[wave(&dir, "01.wav", SHORT * 50)]), OUTPUT, true);
+    assert!(wait_started(&mut chilpa), "the first queue plays");
+    // Another queue replaces it and is stopped at once: its order is still
+    // waiting behind the play it replaced. It never starts, and it has to
+    // say so, or nothing ever tells the window it is not playing.
+    chilpa.play_tracks(&strings(&[wave(&dir, "02.wav", SHORT * 50)]), OUTPUT, true);
+    chilpa.stop();
+    assert!(wait_until_stopped(&mut chilpa), "the window shows it stopped");
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    assert!(!chilpa.poll().playing, "and stays so");
+    let _ = std::fs::remove_dir_all(dir);
+}

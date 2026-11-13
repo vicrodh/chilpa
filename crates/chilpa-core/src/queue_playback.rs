@@ -27,8 +27,11 @@ use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
 
 mod dsd_pcm;
 mod order;
+mod walk;
 use dsd_pcm::DsdPcmFrames;
 pub use order::{shuffled, shuffled_now, Order};
+use walk::next_live;
+pub use walk::StopAfter;
 
 /// What a track is read from after its route has been resolved.
 pub(crate) enum Source {
@@ -240,67 +243,6 @@ impl RepeatMode {
     }
 }
 
-/// A queue position after which playback stops, and the play it was set
-/// for. It is consumed when reached, so repeating or starting another order
-/// does not inherit an old stop point. A play takes only the mark set for
-/// it: one that is being replaced, still failing to open a track or walking
-/// past removed positions, cannot spend the mark of the play that replaces
-/// it.
-#[derive(Clone)]
-pub struct StopAfter {
-    /// The play the mark is for, and the position; `NONE` for no mark.
-    mark: std::sync::Arc<std::sync::Mutex<(u64, usize)>>,
-    /// The play this handle takes the mark for. `None` takes any: a queue
-    /// driven directly, with no player handing plays over.
-    play: Option<u64>,
-}
-
-impl Default for StopAfter {
-    fn default() -> Self {
-        Self { mark: std::sync::Arc::new(std::sync::Mutex::new((0, Self::NONE))), play: None }
-    }
-}
-
-impl StopAfter {
-    const NONE: usize = usize::MAX;
-
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    fn lock(&self) -> std::sync::MutexGuard<'_, (u64, usize)> {
-        self.mark.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
-    }
-
-    /// Sets or clears the mark of the play it is already for.
-    pub fn set(&self, index: Option<usize>) {
-        self.lock().1 = index.unwrap_or(Self::NONE);
-    }
-
-    /// Sets or clears the mark, for `play` from now on.
-    pub fn set_for(&self, play: u64, index: Option<usize>) {
-        *self.lock() = (play, index.unwrap_or(Self::NONE));
-    }
-
-    /// The same mark, as `play` sees it: taken only while it is for it.
-    pub fn of(&self, play: u64) -> Self {
-        Self { mark: std::sync::Arc::clone(&self.mark), play: Some(play) }
-    }
-
-    pub fn take_at(&self, index: usize) -> bool {
-        let mut mark = self.lock();
-        let mine = index != Self::NONE && mark.1 == index && self.play.is_none_or(|play| play == mark.0);
-        if mine {
-            mark.1 = Self::NONE;
-        }
-        mine
-    }
-
-    pub fn clear(&self) {
-        self.set(None);
-    }
-}
-
 /// The list of tracks, shared with whoever drives the queue.
 ///
 /// Things can be added while it plays: queueing something should not cut
@@ -403,6 +345,9 @@ pub struct Controls {
     pub order: Order,
     /// I arm the first cursor only after the preceding request has stopped.
     pub start_index: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    /// Where in the first track the play starts, for the track it was asked
+    /// to start on and no other.
+    pub start_at: std::sync::Arc<std::sync::Mutex<Option<std::time::Duration>>>,
     /// Stops cleanly after this queue position finishes.
     pub stop_after: StopAfter,
     /// One track straight into the next, with the device kept open. Off,
@@ -489,6 +434,7 @@ impl Default for Controls {
             repeat: RepeatMode::default(),
             order: Order::default(),
             start_index: std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(usize::MAX)),
+            start_at: std::sync::Arc::new(std::sync::Mutex::new(None)),
             stop_after: StopAfter::new(),
             gapless: Switch::new(true),
             normalize: Switch::new(false),
@@ -835,6 +781,9 @@ where
     let mut opened: Option<(StreamFormat, crate::playback_events::Measured<K>)> = None;
     let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
     let mut index = if requested < queue.len() { requested } else { order.first(queue.len()) };
+    // Where the play was asked to start, when it was, and the position in
+    // that track: looked at once, as the queue settles on its first track.
+    let mut start = Some(((requested < queue.len()).then_some(requested), controls.start_at.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).take()));
     // A file that delivers not one frame plus repeat turned on would be a
     // loop that spins forever. How many tracks in a row did not play is
     // counted, and it cuts off after one full lap.
@@ -872,6 +821,21 @@ where
         // queue is over.
         let Some(path) = next_live(queue, order, repeat, &mut index, Some(stop_after), &passed) else { break };
         let path = &path;
+        // The start position is for the track the play was asked to start on.
+        // When that one was passed over, neither its position nor a seek or a
+        // Next asked for it reaches the track that plays instead.
+        if let Some((named, at)) = start.take() {
+            match named {
+                Some(named) if named != index => {
+                    let _ = (seek.take(), skip.take());
+                }
+                _ => {
+                    if let Some(at) = at {
+                        seek.request(at);
+                    }
+                }
+            }
+        }
         chilpa_audio::diagnostics::trace(
             "queue",
             "track_selected",
@@ -1321,36 +1285,6 @@ where
         return Err(error);
     }
     Ok(results)
-}
-
-/// The track at `index`, skipping the removed ones.
-///
-/// Advances `index` until it finds a live one. Returns `None` when none
-/// are left, counting laps so as not to spin forever if the whole queue
-/// was removed with repeat turned on, and at a removed one that carries the
-/// `stop_after` mark: a position passed without opening still holds it. A
-/// copy of an entry in `passed` is removed here, as it is reached.
-fn next_live(
-    queue: &SharedQueue,
-    order: &Order,
-    repeat: &RepeatMode,
-    index: &mut usize,
-    stop_after: Option<&StopAfter>,
-    passed: &std::collections::HashSet<PathBuf>,
-) -> Option<PathBuf> {
-    let wrap = repeat.get() == Repeat::All;
-    for _ in 0..=queue.len() {
-        match queue.get(*index) {
-            Some(path) if passed.contains(&path) => { queue.remove(*index); }
-            Some(path) => return Some(path),
-            None => {}
-        }
-        if *index >= queue.len() || stop_after.is_some_and(|mark| mark.take_at(*index)) {
-            return None;
-        }
-        *index = order.next(*index, queue.len(), wrap)?;
-    }
-    None
 }
 
 /// How many times the device was reopened over an already played queue.
