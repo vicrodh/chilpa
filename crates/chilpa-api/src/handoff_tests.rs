@@ -525,3 +525,19 @@ fn a_track_that_starts_behind_the_window_is_named_by_the_card_of_its_own_play() 
     let listen = api.plays.get(a).and_then(|play| play.ledger.newest()).and_then(|listen| listen.listen.clone()).expect("a listen the services can be told of");
     assert_eq!((listen.track.as_str(), listen.release.as_str()), ("Card of the first", "Its album"), "its own card, not the address and not the card in front");
 }
+
+#[test]
+fn a_close_that_crosses_the_scrobble_threshold_is_counted_before_parking() {
+    let mut api = playing(801, "/carried.wav", 1_810_000_801);
+    say(&mut api, 801, PlayerEvent::Progress { frames: seconds(239), played: seconds(239) });
+    assert!(!api.plays.get(801).unwrap().ledger.newest().unwrap().scrobbled);
+    relaunch(&mut api, Relaunch::Output, 802);
+    say(&mut api, 801, closed(seconds(240), How::Stopped));
+    let parked = api.plays.get_mut(801).unwrap().ledger.waiting_mut().unwrap();
+    assert_eq!(parked.heard_ms(), 240_000);
+    assert!(parked.scrobbled, "the final count must scrobble before any successor event arrives");
+    say(&mut api, 801, PlayerEvent::Stopped { frames: seconds(240) });
+    assert!(api.plays.get_mut(802).unwrap().ledger.waiting_mut().unwrap().scrobbled);
+    start(&mut api, 802, "/carried.wav");
+    assert!(api.plays.get(802).unwrap().ledger.newest().unwrap().scrobbled, "resuming must retain the once-only marker");
+}

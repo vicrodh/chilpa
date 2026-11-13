@@ -875,7 +875,7 @@ fn play_stream(
     // A stream is one track, the play's first and only attempt. Once it is
     // announced it is owed an ending, also when the device then fails to
     // open or the play unwinds.
-    let owed = Owed { events: &events, index, announced: std::cell::Cell::new(false) };
+    let owed = Owed { events: &events, index, announced: std::cell::Cell::new(false), report: Default::default() };
     let tag = chilpa_tags::Tags {
         title: station.clone().or_else(|| Some(address.clone())),
         album: Some("Radio".into()),
@@ -889,6 +889,7 @@ fn play_stream(
         stop,
         pause,
         Some(dsp.clone()),
+        owed.report.clone(),
         |format| open(device, format, exclusive),
         &mut |delivery, bits| {
             owed.announced.set(true);
@@ -918,11 +919,12 @@ fn play_stream(
 
 /// The ending a stream is owed once it was announced. Let go of without one
 /// -- the device would not open, the play unwound -- it says the stream
-/// failed, with nothing known of what was heard.
+/// failed, with the last count retained outside the fallible playback.
 struct Owed<'a> {
     events: &'a Events,
     index: usize,
     announced: std::cell::Cell<bool>,
+    report: crate::playback_events::Report,
 }
 
 impl Owed<'_> {
@@ -935,7 +937,9 @@ impl Owed<'_> {
 
 impl Drop for Owed<'_> {
     fn drop(&mut self) {
-        self.close(0, crate::attempts::How::Failed);
+        let heard = self.report.take().into_iter().find(|retired| retired.attempt == 1)
+            .map(|retired| retired.played).or_else(|| self.report.played(1)).unwrap_or(0);
+        self.close(heard, crate::attempts::How::Failed);
     }
 }
 

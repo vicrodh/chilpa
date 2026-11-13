@@ -103,6 +103,10 @@ impl Chilpa {
             // A track that started is over: how it ended and what of it left
             // the device settle its listen.
             PlayerEvent::Closed { attempt, heard, how, .. } => {
+                if let Some(listen) = self.plays.get_mut(id).and_then(|play| play.ledger.listen_mut(attempt)) {
+                    listen.played_frames = heard;
+                    crate::scrobble::if_heard(self.scrobbler.as_ref(), listen);
+                }
                 let written = self.plays.get_mut(id).map(|play| play.ledger.closed(attempt, heard, how, fate)).unwrap_or_default();
                 for written in written {
                     self.record(written, shown);

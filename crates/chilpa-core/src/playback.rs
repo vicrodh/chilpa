@@ -209,7 +209,7 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_stream_told(stream, caps, policy, stop, pause, dsp, open_sink,
+    play_stream_told(stream, caps, policy, stop, pause, dsp, crate::playback_events::Report::default(), open_sink,
         &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, _, _)| played)
 }
 
@@ -221,6 +221,7 @@ pub(crate) fn play_stream_told<F, K>(
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
     dsp: Option<chilpa_audio::dsp::Control>,
+    report: crate::playback_events::Report,
     open_sink: F,
     on_delivery: &mut dyn FnMut(&Delivery, Option<u8>),
     on_progress: &mut dyn FnMut(u64),
@@ -236,8 +237,6 @@ where
         delivery.transforms.push(chilpa_audio::negotiate::Transform::DspApplied);
     }
     on_delivery(&delivery, signal_bits(&decoded, &delivery));
-    // What of the stream left the device, counted by the device's meter.
-    let report = crate::playback_events::Report::default();
     let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(PlayError::Sink)?, report.clone());
     sink.begin_attempt(1, None);
     let mut frames = Frames {

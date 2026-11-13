@@ -454,16 +454,16 @@ fn a_stream_that_was_announced_is_closed_once_whether_or_not_it_got_to_play() {
     let events = Events { to, generation: 9 };
     // Announced, and then let go of with nothing said: the device would not
     // open, or the play unwound.
-    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false) };
+    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() };
     owed.announced.set(true);
     drop(owed);
     // Announced and played.
-    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false) };
+    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() };
     owed.announced.set(true);
     owed.close(480, crate::attempts::How::Stopped);
     drop(owed);
     // Never announced: nothing is owed.
-    drop(Owed { events: &events, index: 3, announced: std::cell::Cell::new(false) });
+    drop(Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() });
     let said: Vec<PlayerEvent> = heard.try_iter().map(|(_, event)| event).collect();
     assert_eq!(said, [
         PlayerEvent::Closed { attempt: 1, index: 3, heard: 0, how: crate::attempts::How::Failed },
@@ -674,4 +674,125 @@ fn a_direct_queue_discards_controls_for_an_out_of_range_start() {
     assert_eq!(results.len(), 1);
     assert_eq!(written.load(Ordering::Acquire), 5_000);
     std::fs::remove_file(file).unwrap();
+}
+
+#[derive(Clone, Copy)]
+enum StreamFailure { Drain, Close, DrainPanic, ClosePanic, WritePanic, DeviceLost }
+
+struct FailingStreamSink {
+    format: StreamFormat,
+    failure: StreamFailure,
+    written: Arc<AtomicU64>,
+    discarded: bool,
+}
+
+impl AudioSink for FailingStreamSink {
+    fn format(&self) -> StreamFormat { self.format }
+    fn write(&mut self, bytes: &[u8]) -> Result<usize, SinkError> {
+        if self.written.load(Ordering::Acquire) > 0 {
+            match self.failure {
+                StreamFailure::WritePanic => { self.discarded = true; panic!("stream output write panicked"); }
+                StreamFailure::DeviceLost => { self.discarded = true; return Err(SinkError::DeviceLost); }
+                _ => {}
+            }
+        }
+        let frames = (bytes.len() / self.format.frame_bytes()).min(64);
+        self.written.fetch_add(frames as u64, Ordering::Release);
+        Ok(frames)
+    }
+    fn held(&self) -> u64 {
+        if self.discarded { 0 } else { self.written.load(Ordering::Acquire).min(5) }
+    }
+    fn drain(&mut self, _: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        self.discarded = true;
+        match self.failure {
+            StreamFailure::Drain => Err(SinkError::DeviceLost),
+            StreamFailure::DrainPanic => panic!("stream output drain panicked"),
+            _ => Ok(()),
+        }
+    }
+    fn close(&mut self) -> Result<(), SinkError> {
+        match self.failure {
+            StreamFailure::Close => Err(SinkError::DeviceLost),
+            StreamFailure::ClosePanic => panic!("stream output close panicked"),
+            _ => Ok(()),
+        }
+    }
+}
+
+fn stream_failure(failure: StreamFailure, name: &str) {
+    let stream = StreamFixture::wave(name, 4_410);
+    let written = Arc::new(AtomicU64::new(0));
+    let output = written.clone();
+    let p = Player::spawn(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(move |_, format, _| Ok(Box::new(FailingStreamSink { format, failure, written: output.clone(), discarded: false }) as Box<dyn AudioSink + Send>)),
+    );
+    p.play(&stream.path, "fake");
+    let events = finished_events(&p);
+    let progress = events.iter().filter_map(|event| match event { PlayerEvent::Progress { played, .. } => Some(*played), _ => None }).max().unwrap_or(0);
+    assert!(progress > 0, "real decoded stream audio reached the output: {events:?}");
+    let closed: Vec<_> = events.iter().filter_map(|event| match event {
+        PlayerEvent::Closed { heard, how, .. } => Some((*heard, *how)), _ => None,
+    }).collect();
+    let sent = written.load(Ordering::Acquire);
+    let expected = if matches!(failure, StreamFailure::Close | StreamFailure::ClosePanic) { sent } else { sent - 5 };
+    assert_eq!(closed, [(expected, crate::attempts::How::Failed)], "keep the meter's last sample, including on unwind: {events:?}");
+    assert!(closed[0].0 >= progress);
+    assert!(matches!(events.last(), Some(PlayerEvent::Failed { .. })), "{events:?}");
+    assert_eq!(events.iter().filter(|event| matches!(event, PlayerEvent::Started { .. })).count(), 1);
+}
+
+#[test]
+fn a_real_stream_keeps_its_heard_count_when_drain_fails() { stream_failure(StreamFailure::Drain, "stream-drain-error"); }
+#[test]
+fn a_real_stream_keeps_its_heard_count_when_close_fails() { stream_failure(StreamFailure::Close, "stream-close-error"); }
+#[test]
+fn a_real_stream_keeps_its_last_sample_when_drain_panics() { stream_failure(StreamFailure::DrainPanic, "stream-drain-panic"); }
+#[test]
+fn a_real_stream_keeps_its_heard_count_when_close_panics() { stream_failure(StreamFailure::ClosePanic, "stream-close-panic"); }
+#[test]
+fn a_real_stream_keeps_its_last_sample_when_write_panics() { stream_failure(StreamFailure::WritePanic, "stream-write-panic"); }
+#[test]
+fn a_real_stream_keeps_its_heard_count_when_the_device_is_lost() { stream_failure(StreamFailure::DeviceLost, "stream-device-lost"); }
+
+#[test]
+fn a_panic_releasing_pending_audio_marks_every_release_path_as_failed() {
+    use crate::playback_events::Measured;
+    struct PanickingRelease { format: StreamFormat, discarded: bool }
+    impl AudioSink for PanickingRelease {
+        fn format(&self) -> StreamFormat { self.format }
+        fn write(&mut self, bytes: &[u8]) -> Result<usize, SinkError> { Ok(bytes.len() / self.format.frame_bytes()) }
+        fn held(&self) -> u64 { if self.discarded { 0 } else { 5 } }
+        fn close(&mut self) -> Result<(), SinkError> { self.discarded = true; panic!("close panicked"); }
+        fn handoff(&mut self) -> Result<(), SinkError> { self.discarded = true; panic!("handoff panicked"); }
+        fn flush(&mut self) -> Result<(), SinkError> { self.discarded = true; panic!("flush panicked"); }
+        fn suspend(&mut self) -> Result<(), SinkError> { self.discarded = true; panic!("suspend panicked"); }
+        fn set_paused(&mut self, _: bool) -> Result<(), SinkError> { self.discarded = true; panic!("pause panicked"); }
+        fn wake(&mut self) -> Result<(), SinkError> { self.discarded = true; panic!("wake panicked"); }
+    }
+    let mut results = Vec::new();
+    for operation in ["close", "handoff", "flush", "suspend", "pause", "wake"] {
+        let mut said = Vec::new();
+        {
+            let mut tell = |closed| said.push(closed);
+            let mut attempts = crate::attempts::Attempts::new(&mut tell, StopSignal::new());
+            attempts.open(1, 0);
+            let mut sink = Measured::reporting(PanickingRelease { format: StreamFormat::new(SampleFormat::S16, 44_100, 2), discarded: false }, attempts.report());
+            sink.begin_attempt(1, None);
+            sink.write(&[0; 256]).unwrap();
+            sink.end("finished");
+            attempts.ended(1, crate::attempts::How::Completed);
+            assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+                match operation {
+                    "close" => sink.close(), "handoff" => sink.handoff(),
+                    "flush" => sink.flush(), "suspend" => sink.suspend(),
+                    "pause" => sink.set_paused(true), _ => sink.wake(),
+                }.unwrap();
+            })).is_err());
+        }
+        assert_eq!(said.len(), 1);
+        results.push((operation, said[0].heard, said[0].how));
+    }
+    assert_eq!(results, ["close", "handoff", "flush", "suspend", "pause", "wake"].map(|operation| (operation, 59, crate::attempts::How::Failed)));
 }

@@ -147,17 +147,19 @@ impl Meter {
 /// counted as the next track. Discarded buffers never become listening time.
 pub(crate) struct Measured<K: AudioSink> {
     inner: K,
+    // A drop during unwinding must not call the failed device again.
+    rate: u32,
     meter: RefCell<Meter>,
 }
 impl<K: AudioSink> Measured<K> {
-    pub(crate) fn new(inner: K) -> Self { Self { inner, meter: RefCell::new(Meter::default()) } }
+    pub(crate) fn new(inner: K) -> Self { Self { rate: inner.format().sample_rate_hz, inner, meter: RefCell::new(Meter::default()) } }
     /// The same, saying in `report` which tracks are accounted for.
     pub(crate) fn reporting(inner: K, report: Report) -> Self {
-        Self { inner, meter: RefCell::new(Meter { report: Some(report), ..Meter::default() }) }
+        Self { rate: inner.format().sample_rate_hz, inner, meter: RefCell::new(Meter { report: Some(report), ..Meter::default() }) }
     }
     fn sample(&self, state: &'static str) {
         if self.meter.borrow().segments.is_empty() { return; }
-        self.meter.borrow_mut().sample(self.inner.held(), self.inner.format().sample_rate_hz, state);
+        self.meter.borrow_mut().sample(self.inner.held(), self.rate, state);
     }
     pub(crate) fn begin(&mut self, observer: Option<Arc<dyn Observer>>) {
         self.sample("playing");
@@ -185,16 +187,20 @@ impl<K: AudioSink> Measured<K> {
         self.sample("playing");
     }
     fn discard(&mut self, reason: &'static str, close: bool, lost: Lost) {
-        self.meter.get_mut().discard(self.inner.format().sample_rate_hz, reason, close, lost);
+        self.meter.get_mut().discard(self.rate, reason, close, lost);
     }
     /// What `fallible` let go of went with the device's failure, if it failed.
     fn letting_go(&mut self, reason: &'static str, close: bool, fallible: impl FnOnce(&mut K) -> Result<(), SinkError>) -> Result<(), SinkError> {
-        let mark = self.meter.get_mut().report.as_ref().map(Report::len);
+        struct Release(Option<(Report, usize)>);
+        impl Drop for Release {
+            fn drop(&mut self) {
+                if let Some((report, mark)) = &self.0 { report.failed_from(*mark); }
+            }
+        }
+        let mut release = Release(self.meter.get_mut().report.as_ref().map(|report| (report.clone(), report.len())));
         self.discard(reason, close, Lost::Cut);
         let result = fallible(&mut self.inner);
-        if let (Err(_), Some(mark), Some(report)) = (&result, mark, &self.meter.get_mut().report) {
-            report.failed_from(mark);
-        }
+        if result.is_ok() { release.0 = None; }
         result
     }
 }
@@ -234,7 +240,7 @@ impl<K: AudioSink> AudioSink for Measured<K> {
     fn held(&self) -> u64 {
         let held = self.inner.held();
         if !self.meter.borrow().segments.is_empty() {
-            self.meter.borrow_mut().sample(held, self.inner.format().sample_rate_hz, "playing");
+            self.meter.borrow_mut().sample(held, self.rate, "playing");
         }
         held
     }
@@ -252,7 +258,7 @@ impl<K: AudioSink> AudioSink for Measured<K> {
     /// afterwards: some throw it away as they give up and read as empty.
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         self.sample("playing");
-        let rate = self.inner.format().sample_rate_hz;
+        let rate = self.rate;
         let (gave_up, told) = (std::cell::Cell::new(false), std::cell::Cell::new(false));
         let started = std::time::Instant::now();
         let meter = &self.meter;
@@ -309,7 +315,9 @@ impl<K: AudioSink> AudioSink for Measured<K> {
 }
 impl<K: AudioSink> Drop for Measured<K> {
     fn drop(&mut self) {
-        self.sample("playing");
+        // A failed operation may already have thrown away its buffers.
+        // During unwind only the last confirmed sample is evidence.
+        if !std::thread::panicking() { self.sample("playing"); }
         self.discard("error", true, Lost::Error);
     }
 }
