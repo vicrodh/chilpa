@@ -43,7 +43,12 @@ pub(crate) fn of_plugin(path: &str) -> Option<(String, String)> {
 /// lasts minutes; this is well inside that.
 const AHEAD_FOR: Duration = Duration::from_secs(120);
 
+#[cfg(test)]
+type TestLocator = Arc<dyn Fn(&RemoteEntry) -> Result<Located, String> + Send + Sync>;
+
 pub(crate) struct Openers {
+    #[cfg(test)]
+    locator: Mutex<Option<TestLocator>>,
     pub(crate) servers: Option<Arc<dyn RemoteOpener>>,
     pub(crate) plugins: Option<Arc<Mutex<Plugins>>>,
     catalog: Arc<crate::source_catalog::Catalog>,
@@ -59,7 +64,7 @@ pub(crate) struct Openers {
 
 impl Openers {
     pub(crate) fn new(servers: Option<Arc<dyn RemoteOpener>>, plugins: Option<Arc<Mutex<Plugins>>>, catalog: Arc<crate::source_catalog::Catalog>, reports: crate::queue::unavailable::Reports) -> Self {
-        Self { servers, plugins, catalog, library: Mutex::new(None), ahead: Mutex::new(std::collections::HashMap::new()), reports }
+        Self { #[cfg(test)] locator: Mutex::new(None), servers, plugins, catalog, library: Mutex::new(None), ahead: Mutex::new(std::collections::HashMap::new()), reports }
     }
 
     /// Resolves a plugin's queue entry on a thread of its own and keeps the
@@ -114,6 +119,11 @@ impl Openers {
     }
 
     fn locate_in_plugin(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        #[cfg(test)]
+        {
+            let locator = self.locator.lock().unwrap().clone();
+            if let Some(locator) = locator { return locator(entry); }
+        }
         let plugin = &entry.source.instance;
         if let Some(natives) = self.catalog.natives().filter(|natives| natives.is_native(plugin)) {
             return self.locate_in_native(&natives, plugin, &entry.external_id);
@@ -278,40 +288,6 @@ impl RemoteOpener for Openers {
 mod tests {
     use super::*;
 
-    fn located(address: &str) -> Located {
-        Located {
-            normalization: None,
-            playback: None,
-            media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url: address.to_string(), headers: Vec::new() }),
-            extension: None,
-            server: String::new(),
-        }
-    }
-
-    /// The one thing of an open that outlives the play it was asked for: an
-    /// address resolved ahead, which may arrive after that play was replaced.
-    /// It is an address and nothing else, kept for whoever opens that entry
-    /// next, once; it marks no row and says nothing to the window.
-    #[test]
-    fn an_address_resolved_late_is_kept_for_the_next_open_of_its_entry_and_nothing_else() {
-        let mut api = crate::Chilpa::with_listed(Vec::new(), Vec::new());
-        let entry = RemoteEntry::new(SourceId::new(PROVIDER, "app.example.shows"), "ep-1");
-        let path = entry.to_entry();
-        api.swap_rows(vec![path.clone(), entry_of("app.example.shows", "ep-2")]);
-        // A play that replaced the one the address was asked for.
-        api.launched(7, 1, crate::Relaunch::Track);
-        let openers = Openers::new(None, None, api.catalog.clone(), api.unavailable.reports());
-        // The late answer of a resolve asked ahead, as its thread keeps it.
-        openers.ahead.lock().unwrap().insert(path.clone(), (std::time::Instant::now(), located("https://a.example/ep-1.mp3")));
-        api.poll();
-        assert!(!api.marked_at(0) && !api.marked_at(1), "it marks no row");
-        assert!(api.now.error.is_empty(), "{}", api.now.error);
-        assert_eq!(api.plays.current().map(|play| play.id), Some(7), "the play in front is not touched");
-        let found = openers.take_ahead(&entry).expect("the next open of the entry takes it");
-        assert!(matches!(found.media, chilpa_core::remote::Media::Remote(ref request) if request.url == "https://a.example/ep-1.mp3"));
-        assert!(openers.take_ahead(&entry).is_none(), "once");
-    }
-
     /// An open the player started for a play that is gone, failing late:
     /// the opener hears of it for its pacing and nothing else does.
     #[test]
@@ -387,3 +363,7 @@ impl crate::Chilpa {
             })
     }
 }
+
+#[cfg(test)]
+#[path = "source_opener_race_tests.rs"]
+mod race_tests;

@@ -1207,34 +1207,62 @@ fn stop_shows_stopped_as_it_returns_while_the_player_still_unwinds() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+#[cfg(unix)]
 #[test]
 fn moving_the_output_while_another_queue_waits_to_play_does_not_start_the_old_one_again() {
+    use std::sync::mpsc::channel;
+    use std::time::{Duration, Instant};
     let dir = folder("move-during-switch");
     other_library(&dir);
     english();
     let _realtime = Realtime::on();
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.use_output(OUTPUT, false);
-    let (old, new) = (wave(&dir, "01.wav", SHORT * 50), wave(&dir, "02.wav", SHORT * 50));
-    chilpa.play_tracks(&strings(&[old]), OUTPUT, true);
-    assert!(wait_started(&mut chilpa), "the first queue plays");
+    let old = dir.join("blocked.wav");
+    assert!(std::process::Command::new("mkfifo").arg(&old).status().unwrap().success());
+    let (entered, seen) = channel();
+    let (release, released) = channel::<()>();
+    let pipe = old.clone();
+    let writer = std::thread::spawn(move || {
+        let mut pipe = std::fs::OpenOptions::new().write(true).open(pipe).unwrap();
+        entered.send(()).unwrap();
+        // Even a failed assertion releases the blocked player within a deadline.
+        let _ = released.recv_timeout(Duration::from_secs(10));
+        let _ = pipe.write_all(&b"this is text and no audio. ".repeat(256));
+    });
+    chilpa.play_from(&strings(&[old.clone()]), 0);
+    seen.recv_timeout(Duration::from_secs(10)).expect("the old worker is held in its decoder open");
+    let new = wave(&dir, "next.wav", SHORT * 50);
     let other = chilpa.listen_create("Other", &strings(&[new.clone()]));
-    assert!(chilpa.listen_play(other, ""), "another queue is asked for");
-    // The output is moved before the old play has let go: there is no play
-    // in front of the window to move, and the queue that waits starts on
-    // the chosen output when its turn comes.
-    chilpa.move_output(OUTPUT, true);
-    let limit = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    assert!(chilpa.listen_play(other, ""));
+    const NEXT_OUTPUT: &str = "file:switched";
+    chilpa.use_output(NEXT_OUTPUT, false);
+    let before_release = chilpa.poll().clone();
+    release.send(()).unwrap();
+    writer.join().unwrap();
+    assert!(!before_release.playing && before_release.path == old.display().to_string(), "the switch really waited behind the blocked old play: {before_release:?}");
+
+    let limit = Instant::now() + Duration::from_secs(10);
     let wanted = new.display().to_string();
-    while std::time::Instant::now() < limit {
+    let mut started = false;
+    while Instant::now() < limit {
         let now = chilpa.poll();
-        if now.path == wanted && now.total_seconds > 0.0 {
+        // spawn_from sets the path early; duration and progress require Started
+        // and actual writes by the successor.
+        if now.path == wanted && now.total_seconds > 0.0 && now.frames > 0 && now.playing {
+            started = true;
             break;
         }
-        std::thread::sleep(std::time::Duration::from_millis(10));
+        std::thread::sleep(Duration::from_millis(10));
     }
-    assert_eq!(chilpa.now_playing().path, wanted, "the queue that was asked for plays");
+    assert!(started, "the waiting queue emitted Started and delivered audio: {:?}", chilpa.now_playing());
+    chilpa.audio_output_command("open", "");
+    let (_, document) = chilpa.audio_output_doc(0).unwrap();
+    let document: serde_json::Value = serde_json::from_str(&document).unwrap();
+    assert_eq!(document["now"]["route"]["device"], NEXT_OUTPUT, "the actual Started route uses the newly chosen output");
     chilpa.stop();
+    drop(chilpa);
+    assert!(std::fs::metadata(chilpa_core::capture_path()).unwrap().len() > 0, "the closed capture contains the delivered audio");
     let _ = std::fs::remove_dir_all(dir);
 }
 
