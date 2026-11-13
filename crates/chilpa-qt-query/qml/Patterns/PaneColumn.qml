@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
@@ -19,7 +20,7 @@ Rectangle {
     FacetModel {
         id: facets
         column: pane.column
-        rev: Library.rev
+        rev: Library.rev + I18n.rev
         appliedQuery: Library.queryText
         query: input.text
     }

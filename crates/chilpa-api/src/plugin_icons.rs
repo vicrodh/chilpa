@@ -103,7 +103,12 @@ pub(crate) fn set(root: &Path, id: &str, path: Option<&Path>) -> Result<(), Stri
 }
 
 pub(crate) fn tint(root: &Path, id: &str) -> bool {
-    root.join(".icons").join(format!("{id}.tint")).is_file()
+    // Missing preferences and legacy enabled markers use the core default.
+    let mut value = [b'1'];
+    if let Ok(mut file) = std::fs::File::open(root.join(".icons").join(format!("{id}.tint"))) {
+        let _ = file.read(&mut value);
+    }
+    value[0] != b'0'
 }
 
 pub(crate) fn set_tint(root: &Path, id: &str, enabled: bool) -> Result<(), String> {
@@ -111,9 +116,12 @@ pub(crate) fn set_tint(root: &Path, id: &str, enabled: bool) -> Result<(), Strin
         || !root.join(id).join("manifest.json").is_file() { return Err("The plugin is not installed.".into()); }
     let directory = root.join(".icons");
     std::fs::create_dir_all(&directory).map_err(|_| "The icon preference could not be saved.")?;
-    let path = directory.join(format!("{id}.tint"));
-    if enabled { std::fs::write(path, b"1").map_err(|_| "The icon preference could not be saved.".into()) }
-    else { match std::fs::remove_file(path) { Ok(()) => Ok(()), Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()), Err(_) => Err("The icon preference could not be saved.".into()) } }
+    use std::io::Write;
+    let mut temporary = tempfile::NamedTempFile::new_in(&directory).map_err(|_| "The icon preference could not be saved.")?;
+    temporary.write_all(if enabled { b"1" } else { b"0" }).and_then(|_| temporary.as_file().sync_all())
+        .map_err(|_| "The icon preference could not be saved.")?;
+    temporary.persist(directory.join(format!("{id}.tint"))).map_err(|_| "The icon preference could not be saved.")?;
+    Ok(())
 }
 
 impl crate::Chilpa {
@@ -135,17 +143,31 @@ mod tests {
         std::fs::write(guest.join("manifest.json"), b"{}").unwrap();
         let input = root.path().join("picked.png");
         image::RgbaImage::new(8, 8).save(&input).unwrap();
-        assert!(!tint(root.path(), id));
+        assert!(tint(root.path(), id), "sidebar icon tint is enabled by default");
         set(root.path(), id, Some(&input)).unwrap();
         assert!(selected(root.path(), id).unwrap().starts_with(root.path().join(".icons")));
         set_tint(root.path(), id, true).unwrap();
         assert!(tint(root.path(), id));
         set_tint(root.path(), id, false).unwrap();
         assert!(!tint(root.path(), id));
+        assert_eq!(std::fs::read(root.path().join(".icons").join(format!("{id}.tint"))).unwrap(), b"0");
+        set_tint(root.path(), id, true).unwrap();
+        assert!(tint(root.path(), id));
         set(root.path(), id, None).unwrap();
         assert!(selected(root.path(), id).is_none());
         assert!(set(root.path(), "../outside", Some(&input)).is_err());
         assert!(set_tint(root.path(), "not-installed", true).is_err());
+    }
+
+    #[test]
+    fn legacy_enabled_icon_markers_keep_their_meaning() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir(root.path().join(".icons")).unwrap();
+        let path = root.path().join(".icons/org.example.guest.tint");
+        for marker in [b"".as_slice(), b"1"] {
+            std::fs::write(&path, marker).unwrap();
+            assert!(tint(root.path(), "org.example.guest"));
+        }
     }
 
     #[test]

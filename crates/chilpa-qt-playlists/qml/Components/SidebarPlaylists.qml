@@ -99,21 +99,29 @@ Item {
         // The rows end before the bar's strip, so the bar never covers a
         // row's count or chevron; the bar sits in the middle of the strip.
         readonly property int barStrip: Metrics.scrollbarWidth + Metrics.gap4 // derived: the bar and a margin
-        ScrollBar.vertical: ViewportScrollBar { gutter: -view.barStrip / 2 } // derived: the middle of the strip
+        ScrollBar.vertical: ViewportScrollBar { objectName: "sidebarPlaylistScrollBar"; gutter: -view.barStrip / 2 } // derived: the middle of the strip
 
-        delegate: Loader {
+        delegate: Item {
             id: host
             required property int index
             required property var entry
 
-            x: entry.depth * Metrics.gap8 // derived: one small inset per folder depth
-            width: ListView.view.width - x - view.barStrip
+            readonly property alias item: body.item
+            readonly property real indent: Math.max(0, entry.depth || 0) * Metrics.playlistIndent
+            width: ListView.view.width - view.barStrip
             height: Metrics.playlistRowHeight
-            sourceComponent: entry.rowKind === 2 ? groupDelegate : entry.rowKind === 1 ? folderDelegate : playlistDelegate
+            // ListView owns the host position; only its contents carry depth.
+            Loader {
+                id: body
+                x: host.indent
+                width: Math.max(0, host.width - x)
+                height: host.height
+                sourceComponent: host.entry.rowKind === 2 ? groupDelegate : host.entry.rowKind === 1 ? folderDelegate : playlistDelegate
+            }
             Component {
                 id: groupDelegate
                 PlaylistGroupHeader {
-                    width: host.width
+                    width: body.width
                     height: host.height
                     title: host.entry.name
                     sourceName: host.entry.sourceName
@@ -127,7 +135,7 @@ Item {
             Component {
                 id: folderDelegate
                 PlaylistFolderRow {
-                    width: host.width
+                    width: body.width
                     index: host.index
                     folderId: host.entry.folderId
                     name: host.entry.name
@@ -147,7 +155,7 @@ Item {
                 id: playlistDelegate
                 PlaylistRow {
                     id: row
-                    width: host.width
+                    width: body.width
                     index: host.index
                     playlistId: host.entry.playlistId
                     name: host.entry.name
@@ -160,7 +168,6 @@ Item {
                     artwork: host.entry.artwork
                     folderId: host.entry.folderId
                     visibleInSidebar: host.entry.visibleInSidebar
-                    nested: host.entry.nested === true
                     renamable: host.entry.server === true && host.entry.writable === true
                     unsent: host.entry.unsent === true
                     covers: host.entry.covers

@@ -149,7 +149,7 @@ TestCase {
     // The rows end before a strip at the list's edge; the bar sits in its middle.
     function test_the_bar_stands_clear_of_the_rows_chevrons() {
         const list = findChild(sidebar, "sidebarPlaylistList")
-        const bar = list.children.find(child => child.hasOwnProperty("gutter"))
+        const bar = findChild(list,"sidebarPlaylistScrollBar")
         const strip = Metrics.scrollbarWidth + Metrics.gap4
         verify(bar !== undefined && bar.gutter === -strip / 2)
         tryVerify(() => bar.x + bar.width / 2 === list.width - strip / 2 && list.itemAtIndex(0) !== null && list.itemAtIndex(0).x + list.itemAtIndex(0).width <= bar.x, 1000, "bar at " + bar.x)

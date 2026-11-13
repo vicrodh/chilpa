@@ -20,14 +20,16 @@ Item {
     SourceIcon {
         id: logo
         x: Metrics.navItemPadding; anchors.verticalCenter: parent.verticalCenter
+        width: Metrics.iconMd; height: width
         sourceInfo: ({icon:parent.sourceIcon,label:parent.sourceName})
     }
     Text {
+        objectName: "playlistGroupTitle"
         anchors.left: logo.right; anchors.leftMargin: Metrics.navItemPadding
         anchors.right: countLabel.left; anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
         text: parent.title; elide: Text.ElideRight
-        font.pointSize: Type.small; font.weight: Type.semibold; color: Theme.color.textTertiary
+        font.pointSize: Type.body; font.weight: Type.semibold; color: Theme.color.textSecondary
     }
     Text {
         id: countLabel

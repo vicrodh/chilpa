@@ -28,8 +28,6 @@ Item {
     property bool editing: false
     property string sourceIcon: ""
     property bool showSourceBadge: false
-    // A playlist inside a folder, local or from a source, steps in under it.
-    property bool nested: false
     // A server's own that the account may change there: renamed there.
     property bool renamable: false
     // A server's own made here and not sent yet: it waits for its first
@@ -54,7 +52,7 @@ Item {
     // is, so the names stay in line with the folders'.
     Item {
         id: icon
-        x: Metrics.navItemPadding + (row.nested ? Metrics.playlistIndent : 0) - (width - Metrics.iconMd) / 2 // derived: centered on the icon
+        x: Metrics.navItemPadding - (width - Metrics.iconMd) / 2 // derived: centered on the icon; the tree owns indentation
         width: Metrics.playlistCollage
         height: parent.height
 
@@ -103,6 +101,7 @@ Item {
         }
     }
     Text {
+        objectName: "playlistTitle"
         visible: !row.editing
         anchors.left: icon.right
         anchors.leftMargin: Metrics.navItemPadding - (icon.width - Metrics.iconMd) / 2 // derived: where the name was
@@ -111,7 +110,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         text: row.name
         elide: Text.ElideRight
-        font.pointSize: Type.body
+        font.pointSize: Type.small
         font.weight: row.active ? Type.semibold : Type.regular
         color: Theme.color.textPrimary
     }

@@ -70,11 +70,12 @@ Item {
             onClicked: sources.opened ? sources.close() : sources.open()
 
             SourcesPopover {
-                id: sources
+                id: sources; objectName: "librarySources"
                 x: sourceButton.width - width
                 y: sourceButton.height + Metrics.gap6
                 panes: page.panes
                 onPaneToggled: (column) => page.togglePane(column)
+                onPanesReordered: columns => { page.panes = ColumnChoices.reorder(page.panes, columns, SettingsModel) }
             }
         }
         SortButton {
