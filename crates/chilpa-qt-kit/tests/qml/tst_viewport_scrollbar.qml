@@ -93,7 +93,17 @@ TestCase {
             }
         }
     }
-    function init() { failOnWarning(/ReferenceError|TypeError|Binding loop detected/) }
+    Component {
+        id: galleryExampleMaker
+        Column {
+            width: 200
+            spacing: 8
+            Rectangle { width: 20; height: 20 }
+            ViewportScrollBar { objectName: "galleryScrollbar"; visible: false }
+            Rectangle { width: 20; height: 20 }
+        }
+    }
+    function init() { failOnWarning(/ReferenceError|TypeError|Binding loop detected|Cannot specify.*anchors/) }
     function cleanup() { Metrics.playerSpace = Metrics.playerHeight; mouseMove(test, 790, 390) }
     function assertVisibleThumb(scrollbar) {
         tryVerify(() => scrollbar.contentItem.width > 0 && scrollbar.contentItem.height > 0)
@@ -221,6 +231,14 @@ TestCase {
         mouseDrag(horizontal, startX, horizontal.height / 2, horizontal.width - startX, 0)
         tryVerify(() => frame.view.atXEnd, 1000, "horizontal dragging still reaches the last column")
         compare(frame.blockedPresses, 0)
+    }
+    function test_standalone_gallery_example_keeps_positioner_layout() {
+        const example = createTemporaryObject(galleryExampleMaker, test)
+        const scrollbar = findChild(example, "galleryScrollbar")
+        wait(1)
+        compare(example.height, 48)
+        compare(scrollbar.insetLayer, null)
+        compare(scrollbar.parent, example)
     }
     function test_destroying_viewport_before_deferred_positioning_is_safe() {
         const before = test.children.length

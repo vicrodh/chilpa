@@ -55,7 +55,7 @@ ScrollBar {
             // Keep the bar inside clipped pages. A positive gutter uses a
             // free margin beside the viewport.
             const surface = overlayParent || (gutter < 0 ? viewport : viewport.parent)
-            if (surface === viewport) {
+            if (surface === viewport && viewport.contentY !== undefined) {
                 // The attached control otherwise restores the full viewport size.
                 insetLayer = layerComponent.createObject(viewport)
                 insetLayer.z = Qt.binding(function() { return bar.z })
