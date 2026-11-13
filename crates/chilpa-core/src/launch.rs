@@ -102,12 +102,14 @@ impl Launch {
 pub(crate) struct LaunchRun {
     pub launch: Arc<Launch>,
     pub device: String,
+    /// Where the first track starts, when it is not at its beginning.
+    pub start_at: Option<std::time::Duration>,
     events: Sender<(u64, PlayerEvent)>,
 }
 
 impl LaunchRun {
-    pub fn new(launch: Arc<Launch>, device: String, events: Sender<(u64, PlayerEvent)>) -> Self {
-        Self { launch, device, events }
+    pub fn new(launch: Arc<Launch>, device: String, start_at: Option<std::time::Duration>, events: Sender<(u64, PlayerEvent)>) -> Self {
+        Self { launch, device, start_at, events }
     }
 
     /// Where this launch says what happens while it plays.
@@ -158,7 +160,7 @@ mod tests {
         let (to, heard) = channel();
         let launch = Launch::new(SharedQueue::default(), Controls::new());
         let id = launch.id.get();
-        let run = LaunchRun::new(Arc::clone(&launch), "fake".into(), to);
+        let run = LaunchRun::new(Arc::clone(&launch), "fake".into(), None, to);
         run.settle(PlayerEvent::Finished { frames: 3 });
         run.settle(PlayerEvent::Failed { message: "late".into() });
         drop(run);
@@ -172,7 +174,7 @@ mod tests {
         let (to, heard) = channel();
         let launch = Launch::new(SharedQueue::default(), Controls::new());
         let id = launch.id.get();
-        drop(LaunchRun::new(launch, "fake".into(), to));
+        drop(LaunchRun::new(launch, "fake".into(), None, to));
         assert_eq!(heard.try_iter().collect::<Vec<_>>(), [(id, PlayerEvent::Stopped { frames: 0 })]);
     }
 

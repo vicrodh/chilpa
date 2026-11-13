@@ -410,3 +410,40 @@ fn a_disc_with_a_sector_that_will_not_read_says_so_goes_on_and_ends_once() {
     assert!(!said.iter().any(|event| matches!(event, PlayerEvent::Failed { .. } | PlayerEvent::Finished { .. } | PlayerEvent::Stopped { .. })), "nothing here ends the play: the thread says that once, after: {said:?}");
     assert!(matches!(outcome, Ok(Outcome::Finished { .. })), "{outcome:?}");
 }
+
+/// One track of 200 sectors of silence: a little over two and a half
+/// seconds.
+#[cfg(target_os = "linux")]
+struct LongDisc;
+
+#[cfg(target_os = "linux")]
+impl chilpa_cd::CdDevice for LongDisc {
+    fn read_toc(&mut self) -> Result<(Vec<chilpa_cd::TocEntry>, u32), chilpa_cd::CdError> {
+        Ok((vec![chilpa_cd::TocEntry { number: 1, start_lsn: 0, is_audio: true, session: 1 }], 200))
+    }
+    fn read_audio(&mut self, _: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), chilpa_cd::CdError> {
+        out.clear();
+        out.resize(sectors as usize * chilpa_cd::SECTOR_BYTES, 0);
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_disc_launched_with_a_start_position_starts_there() {
+    let p = Player::spawn_with(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(|_, stream, _| Ok(Box::new(NullSink { stream, written: Arc::default() }) as Box<dyn AudioSink + Send>)),
+        Box::new(|_| Ok(Box::new(LongDisc) as Box<dyn chilpa_cd::CdDevice>)),
+    );
+    // A second and a half in. The first block of a disc is a second long,
+    // so a start at the beginning reports 44,100 first, never this much.
+    p.play_from_index(&[PathBuf::from("cdda:/dev/fake")], "fake", Some(Duration::from_millis(1_500)), false, Some(0), &[], None);
+    let events = wait(&p, |events| events.iter().any(|event| matches!(event, PlayerEvent::Progress { .. })));
+    let first = events.iter().find_map(|event| match event {
+        PlayerEvent::Progress { frames, .. } => Some(*frames),
+        _ => None,
+    });
+    assert!(first.is_some_and(|at| at >= 66_150), "the disc started where it was asked to: {first:?}");
+    p.stop();
+}

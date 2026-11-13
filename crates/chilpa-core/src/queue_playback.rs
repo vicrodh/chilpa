@@ -345,9 +345,6 @@ pub struct Controls {
     pub order: Order,
     /// I arm the first cursor only after the preceding request has stopped.
     pub start_index: std::sync::Arc<std::sync::atomic::AtomicUsize>,
-    /// Where in the first track the play starts, for the track it was asked
-    /// to start on and no other.
-    pub start_at: std::sync::Arc<std::sync::Mutex<Option<std::time::Duration>>>,
     /// Stops cleanly after this queue position finishes.
     pub stop_after: StopAfter,
     /// One track straight into the next, with the device kept open. Off,
@@ -434,7 +431,6 @@ impl Default for Controls {
             repeat: RepeatMode::default(),
             order: Order::default(),
             start_index: std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(usize::MAX)),
-            start_at: std::sync::Arc::new(std::sync::Mutex::new(None)),
             stop_after: StopAfter::new(),
             gapless: Switch::new(true),
             normalize: Switch::new(false),
@@ -781,9 +777,9 @@ where
     let mut opened: Option<(StreamFormat, crate::playback_events::Measured<K>)> = None;
     let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
     let mut index = if requested < queue.len() { requested } else { order.first(queue.len()) };
-    // Where the play was asked to start, when it was, and the position in
-    // that track: looked at once, as the queue settles on its first track.
-    let mut start = Some(((requested < queue.len()).then_some(requested), controls.start_at.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).take()));
+    // Where the play was asked to start, when it was: looked at once, as the
+    // queue settles on its first track.
+    let mut named_start = Some((requested < queue.len()).then_some(requested));
     // A file that delivers not one frame plus repeat turned on would be a
     // loop that spins forever. How many tracks in a row did not play is
     // counted, and it cuts off after one full lap.
@@ -821,21 +817,34 @@ where
         // queue is over.
         let Some(path) = next_live(queue, order, repeat, &mut index, Some(stop_after), &passed) else { break };
         let path = &path;
-        // The start position is for the track the play was asked to start on.
-        // When that one was passed over, neither its position nor a seek or a
-        // Next asked for it reaches the track that plays instead.
-        if let Some((named, at)) = start.take() {
-            match named {
-                Some(named) if named != index => {
-                    let _ = (seek.take(), skip.take());
-                }
-                _ => {
-                    if let Some(at) = at {
-                        seek.request(at);
-                    }
-                }
+        // Whose a pending seek or Next is, now that the queue settled on a
+        // track. Whoever starts a play arms its start position in the seek
+        // slot, and a seek asked after that replaces it; a queue driven
+        // directly may have been handed a seek or a Next before it started.
+        // All of that is for the first track, unless the play named where it
+        // starts and that track was passed over: then neither its position
+        // nor what was asked for it reaches the track that plays instead.
+        // On every later track a seek still pending was for the one before,
+        // and goes with it. A Next still pending stays, as it always did: a
+        // track read ahead to its end no longer looks at Next, so one pressed
+        // in its last moments is only seen here. What the drain of the track
+        // before may take is that Next and no later one: a Next pressed while
+        // this track opens is for this track.
+        let carried = match named_start.take() {
+            Some(Some(named)) if named != index => {
+                let _ = (seek.take(), skip.take());
+                false
             }
-        }
+            Some(_) => false,
+            None => {
+                let _ = seek.take();
+                let pending = skip.take();
+                if pending {
+                    skip.skip();
+                }
+                pending
+            }
+        };
         chilpa_audio::diagnostics::trace(
             "queue",
             "track_selected",
@@ -932,7 +941,7 @@ where
                         "sink_drain_started",
                         format_args!("format={old_format:?}"),
                     );
-                    if let Err(error) = old.drain(&give_up) {
+                    if let Err(error) = old.drain(&|| stop.is_stopped() || (carried && skip.take())) {
                         chilpa_audio::diagnostics::trace(
                             "queue",
                             "sink_drain_failed",

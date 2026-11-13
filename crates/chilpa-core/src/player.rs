@@ -123,6 +123,27 @@ pub type OpenSink =
 /// Measures a device by its name.
 pub type ProbeDevice = Box<dyn FnMut(&str) -> Result<DeviceCaps, SinkError> + Send>;
 
+/// Opens the disc drive at a device node. It is injected so a test plays a
+/// disc through a launch without a drive.
+#[cfg(target_os = "linux")]
+pub(crate) type OpenDrive = Box<dyn FnMut(&Path) -> Result<Box<dyn chilpa_cd::CdDevice>, String> + Send>;
+/// Discs are not read outside Linux yet: there is no drive to open.
+#[cfg(not(target_os = "linux"))]
+pub(crate) type OpenDrive = ();
+
+/// The drive as this platform opens it.
+#[cfg(target_os = "linux")]
+fn real_drive() -> OpenDrive {
+    Box::new(|node| {
+        chilpa_cd::linux::LinuxDrive::open(node)
+            .map(|drive| Box::new(drive) as Box<dyn chilpa_cd::CdDevice>)
+            .map_err(|error| error.to_string())
+    })
+}
+
+#[cfg(not(target_os = "linux"))]
+fn real_drive() -> OpenDrive {}
+
 /// The player, as the interface sees it.
 pub struct Player {
     orders: Sender<Order>,
@@ -147,7 +168,12 @@ impl Player {
     pub fn gain_active(&self) -> bool { self.controls.gain_active.load(Ordering::Acquire) }
     pub fn dsp(&self) -> chilpa_audio::dsp::Control { self.controls.dsp.clone() }
     /// Starts the player thread.
-    pub fn spawn(mut probe: ProbeDevice, mut open: OpenSink) -> Self {
+    pub fn spawn(probe: ProbeDevice, open: OpenSink) -> Self {
+        Self::spawn_with(probe, open, real_drive())
+    }
+
+    /// The same, with what opens a disc drive given.
+    pub(crate) fn spawn_with(mut probe: ProbeDevice, mut open: OpenSink, mut drive: OpenDrive) -> Self {
         let (orders_tx, orders_rx) = channel::<Order>();
         let (events_tx, events_rx) = channel::<(u64, PlayerEvent)>();
         let controls = crate::queue_playback::Controls::new();
@@ -192,6 +218,17 @@ impl Player {
                                 ),
                             );
                             launch.controls.gain_active.store(false, Ordering::Release);
+                            // Whatever seek or Next was asked before the play
+                            // was taken is not for it: serving it would drop
+                            // somebody into the middle of a track they just
+                            // chose from the start. Then where the first track
+                            // starts, before the device is measured and before
+                            // the route is chosen, so a disc gets it too and a
+                            // seek asked from here on replaces it.
+                            let _ = (launch.controls.skip.take(), launch.controls.seek.take());
+                            if let Some(at) = run.start_at {
+                                launch.controls.seek.request(at);
+                            }
                             let started = std::time::Instant::now();
                             // What is this play's alone: its events and the
                             // remote opens it asks for. Its stop, its seek,
@@ -199,7 +236,7 @@ impl Player {
                             let events = Events { to: run.events(), generation };
                             crate::remote::opening_for(Some(generation));
                             let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                                play(&launch, &run.device, &mut probe, &mut open, &events)
+                                play(&launch, &run.device, &mut probe, &mut open, &mut drive, &events)
                             }));
                             let result = match result {
                                 Ok(result) => result,
@@ -313,7 +350,6 @@ impl Player {
             seek: Default::default(),
             skip: Default::default(),
             start_index: Arc::new(std::sync::atomic::AtomicUsize::new(start_index.unwrap_or(usize::MAX))),
-            start_at: Arc::new(Mutex::new(start_at)),
             stop_after: crate::queue_playback::StopAfter::new(),
             handoff: crate::queue_playback::Switch::new(false),
             ..self.controls.clone()
@@ -331,7 +367,7 @@ impl Player {
         );
         let launch = crate::launch::Launch::new(queue, controls);
         let generation = launch.id.get();
-        let run = crate::launch::LaunchRun::new(Arc::clone(&launch), device.to_string(), self.events_tx.clone());
+        let run = crate::launch::LaunchRun::new(Arc::clone(&launch), device.to_string(), start_at, self.events_tx.clone());
         // A launch that is not taken ends as it is let go, once the lock is
         // released: the player closed, or its thread is gone.
         let not_taken = {
@@ -573,6 +609,7 @@ fn play(
     device: &str,
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
+    drive: &mut OpenDrive,
     events: &Events,
 ) -> Result<Outcome, PlayError> {
     let (queue, controls, generation) = (&launch.queue, &launch.controls, launch.id.get());
@@ -650,7 +687,7 @@ fn play(
             return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, index, total, &controls.dsp);
         }
         if is_cd(first) {
-            return play_cd(first, device, exclusive, &caps, controls, open, events);
+            return play_cd(first, device, exclusive, &caps, controls, open, drive, events);
         }
     }
     let results = crate::queue_playback::play_queue_told(
@@ -898,6 +935,7 @@ pub fn cd_device_of(path: &Path) -> Option<PathBuf> {
 }
 
 #[cfg(target_os = "linux")]
+#[allow(clippy::too_many_arguments)]
 fn play_cd(
     path: &Path,
     device: &str,
@@ -905,13 +943,13 @@ fn play_cd(
     caps: &chilpa_audio::negotiate::DeviceCaps,
     controls: &crate::queue_playback::Controls,
     open: &mut OpenSink,
+    drive: &mut OpenDrive,
     events: &Events,
 ) -> Result<Outcome, PlayError> {
     let node = cd_device_of(path)
         .ok_or_else(|| PlayError::Sink(SinkError::Backend(chilpa_i18n::t("the drive is missing"))))?;
-    let mut unit = chilpa_cd::linux::LinuxDrive::open(&node)
-        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-    play_cd_drive(&mut unit, &node, path, device, exclusive, caps, controls, open, events)
+    let mut unit = drive(&node).map_err(|error| PlayError::Sink(SinkError::Backend(error)))?;
+    play_cd_drive(unit.as_mut(), &node, path, device, exclusive, caps, controls, open, events)
 }
 
 /// Plays the disc in a drive that is already open.
@@ -992,6 +1030,7 @@ fn play_cd_drive(
 }
 
 #[cfg(not(target_os = "linux"))]
+#[allow(clippy::too_many_arguments)]
 fn play_cd(
     _path: &Path,
     _device: &str,
@@ -999,6 +1038,7 @@ fn play_cd(
     _caps: &chilpa_audio::negotiate::DeviceCaps,
     _controls: &crate::queue_playback::Controls,
     _open: &mut OpenSink,
+    _drive: &mut OpenDrive,
     _events: &Events,
 ) -> Result<Outcome, PlayError> {
     Err(PlayError::Sink(SinkError::Backend(

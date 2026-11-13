@@ -166,6 +166,10 @@ where
             ended_by_itself = false;
             break;
         }
+        // A seek still pending was for the track before, and goes with it.
+        if index > 0 {
+            let _ = controls.seek.take();
+        }
         if skipped_before {
             sink.flush().map_err(CdPlayError::Sink)?;
             processor.reset();
@@ -530,5 +534,62 @@ mod tests {
         assert_eq!(errors.len(), 1, "the error was reported: {errors:?}");
         assert_eq!(errors[0].0, 0, "against the first track");
         assert!(sink.frames < 200 * 588, "the first track did not come out whole");
+    }
+
+    /// A device that counts what it is handed and asks for a seek as the
+    /// last frames of the first track go in.
+    struct SeeksAtTheEnd {
+        frames: Arc<AtomicU64>,
+        at: u64,
+        seek: Option<SeekSignal>,
+    }
+
+    impl AudioSink for SeeksAtTheEnd {
+        fn format(&self) -> StreamFormat {
+            CDDA_FORMAT
+        }
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            let n = frames.len() / CDDA_FORMAT.frame_bytes();
+            if self.frames.fetch_add(n as u64, Ordering::AcqRel) + n as u64 >= self.at {
+                if let Some(seek) = self.seek.take() {
+                    seek.request(Duration::from_millis(500));
+                }
+            }
+            Ok(n)
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+    }
+
+    /// Best effort: the disc's reader may still serve the seek to its own
+    /// track before the track is over, and then this passes either way. What
+    /// it catches is the seek left pending and served to the second track.
+    #[test]
+    fn a_seek_left_pending_when_a_track_ends_does_not_move_the_next_one() {
+        let mut disc = Disc { fail_at: None };
+        let toc = read_toc(&mut disc).unwrap();
+        let tracks: Vec<Track> = toc.audio_tracks().copied().collect();
+        let controls = Controls::new();
+        let whole = 100 * chilpa_cd::FRAMES_PER_SECTOR as u64;
+        let sent = Arc::new(AtomicU64::new(0));
+        let mut before_second = None;
+        play_disc(
+            &mut disc,
+            &tracks,
+            &caps(),
+            &controls,
+            |_| Ok(SeeksAtTheEnd { frames: Arc::clone(&sent), at: whole, seek: Some(controls.seek.clone()) }),
+            &mut |index, _| {
+                if index == 1 {
+                    before_second = Some(sent.load(Ordering::Acquire));
+                }
+            },
+            &mut |_, _| {},
+            &mut |_, _| {},
+        )
+        .unwrap();
+        let before_second = before_second.expect("the second track played");
+        assert_eq!(sent.load(Ordering::Acquire) - before_second, whole, "the second track was sent whole, from its beginning");
     }
 }

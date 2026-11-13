@@ -9,14 +9,18 @@
 //! came up when the one it was for had been left out.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
-use chilpa_audio::negotiate::DeviceCaps;
-use chilpa_audio::sink::{AudioSink, SinkError};
+use chilpa_audio::negotiate::{DeviceCaps, Policy};
+use chilpa_audio::sink::{AudioSink, SinkError, SkipSignal};
 use chilpa_core::player::{Player, PlayerEvent};
-use std::io::Write;
+use chilpa_core::queue_playback::{play_queue_told, Controls, SharedQueue};
+use chilpa_core::remote::{Described, Located, Media, RemoteOpener};
+use chilpa_models::{RemoteEntry, SourceId};
+use std::collections::HashMap;
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 fn folder(name: &str) -> PathBuf {
@@ -317,5 +321,363 @@ fn a_start_position_is_not_served_to_the_track_after_a_start_that_was_left_out()
     let kept = kept.lock().unwrap();
     assert_eq!(samples(&kept, 4), [0, 0, 1, 1], "the second track plays from its beginning");
     assert_eq!(kept.len(), 4_410 * 4, "and whole");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// A player whose device keeps what it is given in `kept`, and whose probe
+/// says it was entered and waits to be let go when `held` is given.
+fn keeping_player(kept: &Arc<Mutex<Vec<u8>>>, held: Option<(Sender<()>, Arc<AtomicBool>)>) -> Player {
+    let device = Arc::clone(kept);
+    Player::spawn(
+        Box::new(move |_| {
+            if let Some((entered, go)) = &held {
+                let _ = entered.send(());
+                let limit = Instant::now() + Duration::from_secs(20);
+                while !go.load(Ordering::Acquire) && Instant::now() < limit {
+                    std::thread::sleep(Duration::from_millis(2));
+                }
+            }
+            Ok(caps_16())
+        }),
+        Box::new(move |_, format, _| Ok(Box::new(Keep { format, kept: Arc::clone(&device) }) as Box<dyn AudioSink + Send>)),
+    )
+}
+
+#[test]
+fn a_seek_asked_after_the_play_was_taken_wins_over_its_start_position() {
+    let dir = folder("start-then-seek");
+    let kept = Arc::new(Mutex::new(Vec::new()));
+    let (entered, entered_seen) = channel();
+    let go = Arc::new(AtomicBool::new(false));
+    let player = keeping_player(&kept, Some((entered, Arc::clone(&go))));
+    let play = player.play_from_index(&[wave(&dir, "01.wav")], "fake", Some(Duration::from_millis(30)), false, Some(0), &[], None);
+    entered_seen.recv_timeout(Duration::from_secs(10)).expect("the play was taken and is measuring the device");
+    player.seek(Duration::from_millis(60));
+    go.store(true, Ordering::Release);
+    let events = events_until_over(&player, &[play]);
+    assert!(matches!(ending_of(&events, play), PlayerEvent::Finished { .. }), "{events:?}");
+    // Sixty milliseconds at 44.1 kHz is frame 2,646.
+    assert_eq!(samples(&kept.lock().unwrap(), 4), [2_646, 2_646, 2_647, 2_647], "the later seek is where it starts");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_seek_asked_for_a_start_that_was_left_out_does_not_reach_the_track_after_it() {
+    let dir = folder("start-left-out-then-seek");
+    let kept = Arc::new(Mutex::new(Vec::new()));
+    let (entered, entered_seen) = channel();
+    let go = Arc::new(AtomicBool::new(false));
+    let player = keeping_player(&kept, Some((entered, Arc::clone(&go))));
+    let tracks = [wave(&dir, "01.wav"), wave(&dir, "02.wav")];
+    let play = player.play_from_index(&tracks, "fake", Some(Duration::from_millis(30)), false, Some(0), &[true, false], None);
+    entered_seen.recv_timeout(Duration::from_secs(10)).expect("the play was taken and is measuring the device");
+    player.seek(Duration::from_millis(60));
+    go.store(true, Ordering::Release);
+    let events = events_until_over(&player, &[play]);
+    assert!(matches!(ending_of(&events, play), PlayerEvent::Finished { .. }), "{events:?}");
+    let kept = kept.lock().unwrap();
+    assert_eq!(samples(&kept, 4), [0, 0, 1, 1], "the second track plays from its beginning");
+    assert_eq!(kept.len(), 4_410 * 4, "and whole");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// Asks for a play while the player is held by another that is stuck opening
+/// its track, lets `press` act on the player before the new play is taken,
+/// and gives back what the device was handed.
+#[cfg(unix)]
+fn pressed_before_the_play_was_taken(name: &str, press: impl FnOnce(&Player)) -> Vec<u8> {
+    let dir = folder(name);
+    let kept = Arc::new(Mutex::new(Vec::new()));
+    let (stuck, opened, go) = pipe(&dir, "01.flac");
+    let player = keeping_player(&kept, None);
+    let old = player.play_from_index(&[stuck], "fake", None, false, None, &[], None);
+    opened.recv_timeout(Duration::from_secs(10)).expect("the old play is opening its track");
+    player.stop_for_handoff();
+    let new = player.play_from_index(&[wave(&dir, "02.wav")], "fake", None, false, None, &[], None);
+    press(&player);
+    go.send(()).unwrap();
+    let events = events_until_over(&player, &[old, new]);
+    assert!(matches!(ending_of(&events, new), PlayerEvent::Finished { .. }), "{events:?}");
+    let _ = std::fs::remove_dir_all(dir);
+    let kept = kept.lock().unwrap().clone();
+    kept
+}
+
+#[cfg(unix)]
+#[test]
+fn a_seek_asked_before_the_play_was_taken_reaches_nobody() {
+    let kept = pressed_before_the_play_was_taken("seek-before-taken", |player| player.seek(Duration::from_millis(50)));
+    assert_eq!(samples(&kept, 4), [0, 0, 1, 1], "the track plays from its beginning");
+    assert_eq!(kept.len(), 4_410 * 4);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_next_asked_before_the_play_was_taken_reaches_nobody() {
+    let kept = pressed_before_the_play_was_taken("next-before-taken", |player| player.next());
+    assert_eq!(kept.len(), 4_410 * 4, "the track plays whole");
+}
+
+/// The fake of the facade's opener: an entry's `locate` says it was entered,
+/// waits to be let go, and then answers with where its file is served.
+#[derive(Default)]
+struct Opener {
+    gated: Mutex<HashMap<String, (Sender<()>, Arc<AtomicBool>, String)>>,
+}
+
+impl RemoteOpener for Opener {
+    fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        let (entered, go, url) = self.gated.lock().unwrap().get(&entry.external_id).cloned().ok_or("nobody serves this entry")?;
+        let _ = entered.send(());
+        let limit = Instant::now() + Duration::from_secs(20);
+        while !go.load(Ordering::Acquire) && Instant::now() < limit {
+            std::thread::sleep(Duration::from_millis(2));
+        }
+        Ok(Located {
+            normalization: None,
+            playback: None,
+            media: Media::Remote(chilpa_core::RangedRequest { url, headers: Vec::new() }),
+            extension: Some("wav".into()),
+            server: "Lab".into(),
+        })
+    }
+    fn describe(&self, _: &RemoteEntry) -> Described {
+        Described::default()
+    }
+}
+
+fn opener() -> &'static Opener {
+    static OPENER: OnceLock<&'static Opener> = OnceLock::new();
+    OPENER.get_or_init(|| {
+        let opener: &'static Opener = Box::leak(Box::default());
+        struct Shared(&'static Opener);
+        impl RemoteOpener for Shared {
+            fn locate(&self, e: &RemoteEntry) -> Result<Located, String> { self.0.locate(e) }
+            fn describe(&self, e: &RemoteEntry) -> Described { self.0.describe(e) }
+        }
+        chilpa_core::remote::install(Arc::new(Shared(opener)));
+        opener
+    })
+}
+
+fn entry(id: &str) -> PathBuf {
+    PathBuf::from(RemoteEntry::new(SourceId::new("example-server", "one"), id).to_entry())
+}
+
+/// Serves `file` by `Range`.
+fn serve(file: Vec<u8>) -> String {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://127.0.0.1:{}/audio/file", listener.local_addr().unwrap().port());
+    let file = Arc::new(file);
+    std::thread::spawn(move || {
+        for peer in listener.incoming() {
+            let Ok(mut peer) = peer else { break };
+            let file = Arc::clone(&file);
+            std::thread::spawn(move || {
+                let mut reader = BufReader::new(peer.try_clone().unwrap());
+                let mut range = (0usize, file.len() - 1);
+                loop {
+                    let mut line = String::new();
+                    if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" { break; }
+                    if let Some(v) = line.to_ascii_lowercase().strip_prefix("range: bytes=") {
+                        let (a, b) = v.trim().split_once('-').unwrap();
+                        range = (a.parse().unwrap(), b.parse::<usize>().unwrap().min(file.len() - 1));
+                    }
+                }
+                let (a, b) = range;
+                let mut reply = format!(
+                    "HTTP/1.1 206 Partial Content\r\nContent-Type: audio/wav\r\nContent-Range: bytes {a}-{b}/{}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                    file.len(), b + 1 - a
+                ).into_bytes();
+                reply.extend_from_slice(&file[a..=b]);
+                let _ = peer.write_all(&reply);
+            });
+        }
+    });
+    url
+}
+
+/// A device that keeps what it is given, and whose drain waits a little for
+/// a reason to give up and writes down whether it got one. Once `press_at`
+/// frames have gone in, it presses Next.
+struct Draining {
+    format: StreamFormat,
+    kept: Arc<Mutex<Vec<u8>>>,
+    drains: Arc<Mutex<Vec<bool>>>,
+    press_at: Option<(usize, SkipSignal)>,
+}
+
+impl AudioSink for Draining {
+    fn format(&self) -> StreamFormat {
+        self.format
+    }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        let mut kept = self.kept.lock().unwrap();
+        kept.extend_from_slice(frames);
+        if self.press_at.as_ref().is_some_and(|(at, _)| kept.len() >= at * self.format.frame_bytes()) {
+            if let Some((_, next)) = self.press_at.take() {
+                // Long enough for the source, read ahead, to have ended.
+                std::thread::sleep(Duration::from_millis(60));
+                next.skip();
+            }
+        }
+        Ok(frames.len() / self.format.frame_bytes())
+    }
+    fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        let gave_up = (0..10).any(|_| {
+            std::thread::sleep(Duration::from_millis(2));
+            give_up()
+        });
+        self.drains.lock().unwrap().push(gave_up);
+        Ok(())
+    }
+    fn close(&mut self) -> Result<(), SinkError> {
+        Ok(())
+    }
+}
+
+/// What a queue left behind: the bytes the device was given, whether each
+/// drain was given up, and the frames of each track that played.
+struct Ran {
+    kept: Vec<u8>,
+    drains: Vec<bool>,
+    frames: Vec<u64>,
+}
+
+/// Plays `tracks`, gapless or with every track drained before the next,
+/// pressing Next once `press_at` frames went in, and calling `during` with
+/// the controls once the queue is running.
+fn run_queue(tracks: Vec<PathBuf>, gapless: bool, press_at: Option<usize>, feed: Option<Arc<dyn chilpa_audio::seek_waveform::Feed>>, during: impl FnOnce(&Controls)) -> Ran {
+    let controls = Controls::new();
+    controls.gapless.set(gapless);
+    *controls.waveform.lock().unwrap() = feed;
+    let (kept, drains) = (Arc::new(Mutex::new(Vec::new())), Arc::new(Mutex::new(Vec::new())));
+    let (device, drained, driven) = (Arc::clone(&kept), Arc::clone(&drains), controls.clone());
+    let (tx, rx) = channel();
+    std::thread::spawn(move || {
+        let mut press = press_at.map(|at| (at, driven.skip.clone()));
+        let result = play_queue_told(
+            &SharedQueue::new(tracks),
+            &caps_16(),
+            Policy::AllowAnything,
+            &driven,
+            |format| Ok(Draining { format, kept: Arc::clone(&device), drains: Arc::clone(&drained), press_at: press.take() }),
+            &mut |_, _, _, _| {},
+            &mut |_, _| {},
+            &mut |_, _, _, _| {},
+        );
+        let _ = tx.send(result.map(|results| results.iter().map(|result| result.frames()).collect::<Vec<u64>>()));
+    });
+    during(&controls);
+    let frames = rx.recv_timeout(Duration::from_secs(20)).expect("the queue ended").expect("the queue ran");
+    let kept = kept.lock().unwrap().clone();
+    let drains = drains.lock().unwrap().clone();
+    Ran { kept, drains, frames }
+}
+
+const TRACK: usize = 4_410 * 4;
+
+#[test]
+fn a_next_asked_while_the_next_track_opens_is_not_taken_by_the_drain_of_the_one_before() {
+    let dir = folder("next-while-opening");
+    let (entered, entered_seen) = channel();
+    let go = Arc::new(AtomicBool::new(false));
+    opener().gated.lock().unwrap().insert("slow-to-open".into(), (entered, Arc::clone(&go), serve(wave_bytes(4_410))));
+    let ran = run_queue(vec![wave(&dir, "01.wav"), entry("slow-to-open")], false, None, None, |controls| {
+        entered_seen.recv_timeout(Duration::from_secs(10)).expect("the second track is being opened");
+        controls.skip.skip();
+        go.store(true, Ordering::Release);
+    });
+    assert_eq!(ran.drains.first(), Some(&false), "what was left of the first track played out: {:?}", ran.drains);
+    assert_eq!(ran.kept.len(), TRACK, "the second track was skipped: it was the one in front when Next was asked");
+    assert_eq!(ran.frames.len(), 2, "{:?}", ran.frames);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_next_asked_in_a_track_s_last_moments_skips_the_one_that_follows_gapless() {
+    let dir = folder("next-read-ahead-gapless");
+    // Pressed as the last frames of the first track go in: its source ended
+    // long before, read ahead, and never sees it.
+    let tracks = vec![wave(&dir, "01.wav"), wave(&dir, "02.wav"), wave(&dir, "03.wav")];
+    let ran = run_queue(tracks, true, Some(4_410), None, |_| {});
+    assert_eq!(ran.frames, [4_410, 0, 4_410], "the second track was skipped, the third played");
+    assert_eq!(ran.kept.len(), 2 * TRACK);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_next_asked_in_a_track_s_last_moments_cuts_its_drain_when_there_is_one() {
+    let dir = folder("next-read-ahead-drained");
+    let ran = run_queue(vec![wave(&dir, "01.wav"), wave(&dir, "02.wav")], false, Some(4_410), None, |_| {});
+    assert_eq!(ran.drains, [true, false], "the first track's drain was given up, the second's was not");
+    assert_eq!(ran.kept.len(), 2 * TRACK, "the second track played whole");
+    assert_eq!(samples(&ran.kept[TRACK..], 4), [0, 0, 1, 1], "from its beginning");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn a_next_asked_while_a_track_fails_to_open_cuts_nothing_and_skips_nothing() {
+    let dir = folder("next-while-failing");
+    let (stuck, opened, go) = pipe(&dir, "02.flac");
+    let ran = run_queue(vec![wave(&dir, "01.wav"), stuck, wave(&dir, "03.wav")], false, None, None, |controls| {
+        opened.recv_timeout(Duration::from_secs(10)).expect("the second track is being opened");
+        controls.skip.skip();
+        go.send(()).unwrap();
+    });
+    assert_eq!(ran.drains, [false, false], "what was left of the first track played out");
+    assert_eq!(ran.kept.len(), 2 * TRACK, "the third track played whole");
+    assert_eq!(samples(&ran.kept[TRACK..], 4), [0, 0, 1, 1], "from its beginning");
+    assert_eq!(ran.frames.len(), 2, "the second never played: {:?}", ran.frames);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+/// A waveform feed that asks for a seek the first time a track is over: the
+/// queue says so right after the track's render has returned, when the
+/// thread that read it is gone and nothing is left to serve the seek.
+struct SeeksWhenATrackIsOver {
+    seek: chilpa_audio::seek::SeekSignal,
+    pressed: AtomicBool,
+}
+
+impl chilpa_audio::seek_waveform::Feed for SeeksWhenATrackIsOver {
+    fn begin(&self, _: &Path, _: u16, _: Option<u64>) {}
+    fn feed_float(&self, _: u64, _: &[f32]) {}
+    fn feed_int(&self, _: u64, _: &[i32], _: u8) {}
+    fn end(&self, _: bool) {
+        if !self.pressed.swap(true, Ordering::AcqRel) {
+            self.seek.request(Duration::from_millis(50));
+        }
+    }
+}
+
+#[test]
+fn a_seek_left_pending_when_a_track_ends_does_not_move_the_next_one() {
+    let dir = folder("seek-pending");
+    let controls_seek = chilpa_audio::seek::SeekSignal::default();
+    let feed = Arc::new(SeeksWhenATrackIsOver { seek: controls_seek.clone(), pressed: AtomicBool::new(false) });
+    let tracks = vec![wave(&dir, "01.wav"), wave(&dir, "02.wav")];
+    // The queue's own seek slot is the one the feed presses.
+    let controls = Controls { seek: controls_seek, ..Controls::new() };
+    *controls.waveform.lock().unwrap() = Some(feed.clone());
+    let kept = Arc::new(Mutex::new(Vec::new()));
+    let device = Arc::clone(&kept);
+    let results = play_queue_told(
+        &SharedQueue::new(tracks),
+        &caps_16(),
+        Policy::AllowAnything,
+        &controls,
+        |format| Ok(Keep { format, kept: Arc::clone(&device) }),
+        &mut |_, _, _, _| {},
+        &mut |_, _| {},
+        &mut |_, _, _, _| {},
+    )
+    .expect("the queue ran");
+    assert!(feed.pressed.load(Ordering::Acquire), "the seek was asked for");
+    assert_eq!(results[0].frames(), 4_410, "the first track's own reader did not serve it: it was left pending");
+    let kept = kept.lock().unwrap();
+    assert_eq!(kept.len(), 2 * TRACK, "the second track played whole");
+    assert_eq!(samples(&kept[TRACK..], 4), [0, 0, 1, 1], "from its beginning");
     let _ = std::fs::remove_dir_all(dir);
 }
