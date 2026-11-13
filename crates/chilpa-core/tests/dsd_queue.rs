@@ -23,8 +23,19 @@ fn dsf(name: &str, seconds: u32) -> PathBuf {
 
 /// A two channel DSF of DSD64 silence, `samples` one-bit samples long.
 fn dsf_of(name: &str, samples: u64) -> PathBuf {
+    dsf_with(name, RATE, samples, 4096, &|_| 0x69)
+}
+
+/// A byte for each place of a track, so that a part of it lost, repeated or
+/// moved does not compare equal to the track.
+fn pattern(place: usize) -> u8 {
+    ((place * 7 + 3) % 251) as u8
+}
+
+/// A two channel DSF at `rate`, `samples` one-bit samples long, in blocks of
+/// `block` bytes a channel, each byte of its audio as `fill` says.
+fn dsf_with(name: &str, rate: u32, samples: u64, block: u32, fill: &dyn Fn(usize) -> u8) -> PathBuf {
     let channels = 2u32;
-    let block = 4096u32;
     let per_channel = ((samples / 8) as usize).div_ceil(block as usize) * block as usize;
     let data_len = per_channel * channels as usize;
     let data_chunk = 12 + data_len as u64;
@@ -39,15 +50,41 @@ fn dsf_of(name: &str, samples: u64) -> PathBuf {
     out.extend_from_slice(&0u32.to_le_bytes());
     out.extend_from_slice(&2u32.to_le_bytes());
     out.extend_from_slice(&channels.to_le_bytes());
-    out.extend_from_slice(&RATE.to_le_bytes());
+    out.extend_from_slice(&rate.to_le_bytes());
     out.extend_from_slice(&1u32.to_le_bytes());
     out.extend_from_slice(&samples.to_le_bytes());
     out.extend_from_slice(&block.to_le_bytes());
     out.extend_from_slice(&0u32.to_le_bytes());
     out.extend_from_slice(b"data");
     out.extend_from_slice(&data_chunk.to_le_bytes());
-    out.resize(out.len() + data_len, 0x69);
+    out.extend((0..data_len).map(fill));
     let path = std::env::temp_dir().join(format!("chilpa-dsd-queue-{name}.dsf"));
+    std::fs::write(&path, out).unwrap();
+    path
+}
+
+/// Sixteen bit stereo at 44.1 kHz, each frame carrying its own number.
+fn wave(name: &str, frames: u32) -> PathBuf {
+    let data = frames * 4;
+    let mut out = Vec::new();
+    out.extend_from_slice(b"RIFF");
+    out.extend_from_slice(&(36 + data).to_le_bytes());
+    out.extend_from_slice(b"WAVEfmt ");
+    out.extend_from_slice(&16u32.to_le_bytes());
+    out.extend_from_slice(&1u16.to_le_bytes());
+    out.extend_from_slice(&2u16.to_le_bytes());
+    out.extend_from_slice(&44_100u32.to_le_bytes());
+    out.extend_from_slice(&176_400u32.to_le_bytes());
+    out.extend_from_slice(&4u16.to_le_bytes());
+    out.extend_from_slice(&16u16.to_le_bytes());
+    out.extend_from_slice(b"data");
+    out.extend_from_slice(&data.to_le_bytes());
+    for i in 0..frames {
+        let v = (i % 3_000) as i16;
+        out.extend_from_slice(&v.to_le_bytes());
+        out.extend_from_slice(&v.to_le_bytes());
+    }
+    let path = std::env::temp_dir().join(format!("chilpa-dsd-queue-{name}.wav"));
     std::fs::write(&path, out).unwrap();
     path
 }
@@ -145,6 +182,16 @@ struct Openings {
     bytes: Vec<Vec<u8>>,
     drained: Vec<bool>,
     flushed: Vec<bool>,
+    /// How many frames each track says went out, track by track.
+    frames: Vec<u64>,
+    frame_bytes: usize,
+}
+
+impl Openings {
+    /// Every byte the device got is a frame some track counted.
+    fn every_frame_is_counted(&self) -> bool {
+        self.bytes.iter().map(Vec::len).sum::<usize>() == self.frames.iter().sum::<u64>() as usize * self.frame_bytes
+    }
 }
 
 struct Record(StreamFormat, Arc<Mutex<Openings>>, usize);
@@ -178,7 +225,7 @@ fn record(tracks: &[PathBuf], mode: DsdMode, format: SampleFormat, rate: u32, ga
     controls.direct_dsd.set(true);
     controls.gapless.set(gapless);
     let kept = Arc::new(Mutex::new(Openings::default()));
-    play_queue_with(
+    let results = play_queue_with(
         &SharedQueue::new(tracks.to_vec()),
         &caps,
         Policy::AllowAnything,
@@ -188,14 +235,22 @@ fn record(tracks: &[PathBuf], mode: DsdMode, format: SampleFormat, rate: u32, ga
             openings.bytes.push(Vec::new());
             openings.drained.push(false);
             openings.flushed.push(false);
+            openings.frame_bytes = opened.frame_bytes();
             Ok(Record(opened, Arc::clone(&kept), openings.bytes.len() - 1))
         },
         &mut |_, _, _| {},
         &mut |_, _| {},
     )
     .expect("the queue reports each track");
-    let openings = std::mem::take(&mut *kept.lock().unwrap());
+    let mut openings = std::mem::take(&mut *kept.lock().unwrap());
+    openings.frames = results.iter().map(|result| result.frames()).collect();
     openings
+}
+
+/// Cuts the last byte off a file: its last block cannot be read whole.
+fn cut_short(path: &PathBuf) {
+    let file = std::fs::OpenOptions::new().write(true).open(path).unwrap();
+    file.set_len(file.metadata().unwrap().len() - 1).unwrap();
 }
 
 /// The DoP marker of each frame: the top byte of each left-justified 24 bit
@@ -219,9 +274,12 @@ fn alternates(markers: &[u8]) -> bool {
 #[test]
 fn after_a_truncated_track_the_next_one_is_heard_whole_in_every_delivery_mode() {
     let broken = dsf("transition-truncated", 1);
-    let next = dsf_of("transition-next", u64::from(RATE) / 4);
-    let file = std::fs::OpenOptions::new().write(true).open(&broken).unwrap();
-    file.set_len(file.metadata().unwrap().len() - 1).unwrap();
+    // Not the broken track's silence: a frame of the next one lost at the
+    // break cannot hide behind an equal one of the track before it.
+    let next = dsf_with("transition-next", RATE, u64::from(RATE) / 4, 4096, &pattern);
+    cut_short(&broken);
+    // Every block but the last, which the cut left short, in bytes a channel.
+    let whole = (u64::from(RATE) / 8).div_ceil(4096) * 4096 - 4096;
     for (mode, format, rate) in [
         (DsdMode::Pcm, SampleFormat::S24In32, 88_200),
         (DsdMode::Dop, SampleFormat::S24In32, 176_400),
@@ -229,6 +287,8 @@ fn after_a_truncated_track_the_next_one_is_heard_whole_in_every_delivery_mode() 
     ] {
         let alone = record(std::slice::from_ref(&next), mode, format, rate, true);
         assert_eq!(alone.bytes.len(), 1, "{mode:?}");
+        assert!(alone.every_frame_is_counted(), "{mode:?}");
+        let alone_frames = alone.frames[0];
         let alone = &alone.bytes[0];
         assert!(!alone.is_empty(), "{mode:?}");
 
@@ -239,12 +299,25 @@ fn after_a_truncated_track_the_next_one_is_heard_whole_in_every_delivery_mode() 
         let bytes = &kept.bytes[0];
         assert!(bytes.len() > alone.len(), "{mode:?}: the broken track delivered its first part");
         assert!(!kept.flushed[0], "{mode:?}: what the broken track delivered is heard, not thrown away");
-        let tail = &bytes[bytes.len() - alone.len()..];
-        if mode == DsdMode::Dop {
-            assert_eq!(payload(tail), payload(alone), "{mode:?}: every frame of the next track");
-            assert!(alternates(&markers(bytes)), "{mode:?}: the marker carries on across the break");
-        } else {
-            assert!(tail == &alone[..], "{mode:?}: every frame of the next track, unchanged");
+        // Counted track by track: the broken one's frames, then every frame
+        // of the next, and not one byte more or less.
+        assert!(kept.every_frame_is_counted(), "{mode:?}: {:?} frames for {} bytes", kept.frames, bytes.len());
+        assert_eq!(kept.frames[1], alone_frames, "{mode:?}: the next track delivers what it delivers alone");
+        let (head, tail) = bytes.split_at(kept.frames[0] as usize * kept.frame_bytes);
+        match mode {
+            DsdMode::Dop => {
+                assert_eq!(kept.frames[0], whole / 2, "{mode:?}: every whole block of the broken track, sixteen bits a frame");
+                let own = payload(head);
+                assert!(own.iter().all(|byte| *byte == own[0]), "{mode:?}: the broken track's part is all its own");
+                assert_eq!(payload(tail), payload(alone), "{mode:?}: every frame of the next track");
+                assert!(alternates(&markers(bytes)), "{mode:?}: the marker carries on across the break");
+            }
+            DsdMode::Native => {
+                assert_eq!(kept.frames[0], whole / 4, "{mode:?}: every whole block of the broken track, thirty-two bits a frame");
+                assert!(head.iter().all(|byte| *byte == head[0]), "{mode:?}: the broken track's part is all its own");
+                assert!(tail == &alone[..], "{mode:?}: every frame of the next track, unchanged");
+            }
+            DsdMode::Pcm => assert!(tail == &alone[..], "{mode:?}: every frame of the next track, unchanged"),
         }
 
         // Without gapless: what the device held of the broken track is played
@@ -252,6 +325,9 @@ fn after_a_truncated_track_the_next_one_is_heard_whole_in_every_delivery_mode() 
         let reopened = record(&[broken.clone(), next.clone()], mode, format, rate, false);
         assert_eq!(reopened.bytes.len(), 2, "{mode:?}: the device is opened again");
         assert!(reopened.drained[0], "{mode:?}: the broken track's last part was played out");
+        assert!(reopened.every_frame_is_counted(), "{mode:?}");
+        assert_eq!(reopened.frames, kept.frames, "{mode:?}: each track delivers the same frames either way");
+        assert_eq!(reopened.bytes[0].len(), reopened.frames[0] as usize * reopened.frame_bytes, "{mode:?}: the first opening got the broken track and nothing else");
         assert!(reopened.bytes[1] == *alone, "{mode:?}: the next track from a fresh opening, as when alone");
         if mode == DsdMode::Dop {
             assert_eq!(markers(&reopened.bytes[1]).first(), Some(&0x05), "the marker starts over with the opening");
@@ -259,6 +335,91 @@ fn after_a_truncated_track_the_next_one_is_heard_whole_in_every_delivery_mode() 
     }
     std::fs::remove_file(broken).unwrap();
     std::fs::remove_file(next).unwrap();
+}
+
+#[test]
+fn after_an_odd_count_of_dop_frames_the_marker_carries_on_into_the_next_track() {
+    // Blocks of 4098 bytes are 2049 DoP frames each. Four of them, the last
+    // cut: three go out, an odd count, so the broken track ends on 0x05 and
+    // the next has to start on 0xFA. A packer that started over at the break
+    // would put 0x05 twice in a row, which an even count never shows.
+    let broken = dsf_with("odd-truncated", RATE, 4098 * 8 * 4, 4098, &|_| 0x69);
+    let next = dsf_with("odd-next", RATE, u64::from(RATE) / 4, 4096, &pattern);
+    cut_short(&broken);
+    let alone = record(std::slice::from_ref(&next), DsdMode::Dop, SampleFormat::S24In32, 176_400, true);
+    let kept = record(&[broken.clone(), next.clone()], DsdMode::Dop, SampleFormat::S24In32, 176_400, true);
+    assert_eq!(kept.bytes.len(), 1, "the device stays open across the break");
+    assert_eq!(kept.frames, [3 * 2049, alone.frames[0]], "an odd count of frames, then the next track whole");
+    assert!(kept.every_frame_is_counted());
+    let bytes = &kept.bytes[0];
+    let marks = markers(bytes);
+    assert_eq!((marks[3 * 2049 - 1], marks[3 * 2049]), (0x05, 0xFA), "the next track takes the marker up where the broken one left it");
+    assert!(alternates(&marks), "and it alternates all the way");
+    assert_eq!(payload(&bytes[3 * 2049 * 8..]), payload(&alone.bytes[0]), "every frame of the next track");
+    std::fs::remove_file(broken).unwrap();
+    std::fs::remove_file(next).unwrap();
+}
+
+#[test]
+fn after_a_truncated_track_a_next_one_at_another_rate_reopens_the_device_with_gapless_on() {
+    let broken = dsf("rate-change-truncated", 1);
+    // DSD128: another carrier rate and another native rate. Converted to
+    // PCM it comes out at the rate DSD64 does, so there a file at 44.1 kHz
+    // is what changes the rate.
+    let faster = dsf_with("rate-change-next", RATE * 2, u64::from(RATE) / 2, 4096, &pattern);
+    let slower = wave("rate-change-next", 11_025);
+    cut_short(&broken);
+    for (mode, format, rates, next) in [
+        (DsdMode::Pcm, SampleFormat::S24In32, [88_200, 44_100], &slower),
+        (DsdMode::Dop, SampleFormat::S24In32, [176_400, 352_800], &faster),
+        (DsdMode::Native, SampleFormat::DsdU32Be, [88_200, 176_400], &faster),
+    ] {
+        let play = |tracks: &[PathBuf]| {
+            let caps = DeviceCaps { sample_rates: rates.to_vec(), formats: vec![format], channels: vec![2], probed: true };
+            let controls = Controls::new();
+            controls.dsd_mode.set(mode);
+            controls.direct_dsd.set(true);
+            let kept = Arc::new(Mutex::new(Openings::default()));
+            let mut opened_at = Vec::new();
+            let results = play_queue_with(
+                &SharedQueue::new(tracks.to_vec()),
+                &caps,
+                Policy::AllowAnything,
+                &controls,
+                |opened| {
+                    let mut openings = kept.lock().unwrap();
+                    openings.bytes.push(Vec::new());
+                    openings.drained.push(false);
+                    openings.flushed.push(false);
+                    opened_at.push(opened.sample_rate_hz);
+                    Ok(Record(opened, Arc::clone(&kept), openings.bytes.len() - 1))
+                },
+                &mut |_, _, _| {},
+                &mut |_, _| {},
+            )
+            .expect("the queue reports each track");
+            let mut openings = std::mem::take(&mut *kept.lock().unwrap());
+            openings.frames = results.iter().map(|result| result.frames()).collect();
+            (openings, opened_at)
+        };
+        let (alone, alone_at) = play(std::slice::from_ref(next));
+        let (both, both_at) = play(&[broken.clone(), next.clone()]);
+        assert_eq!(both.bytes.len(), 2, "{mode:?}: gapless is on and the rate still changes, so the device is opened again");
+        assert_ne!(both_at[0], both_at[1], "{mode:?}: at another rate");
+        assert_eq!(both_at[1], alone_at[0], "{mode:?}");
+        assert!(both.drained[0] && !both.flushed[0], "{mode:?}: what the broken track delivered is played out, not thrown away");
+        assert!(!both.bytes[0].is_empty(), "{mode:?}: the broken track delivered its first part");
+        assert_eq!(both.bytes[0].len(), both.frames[0] as usize * format.bytes() * 2, "{mode:?}: the first opening got the broken track and nothing else");
+        assert_eq!(both.frames[1], alone.frames[0], "{mode:?}: the next track delivers what it delivers alone");
+        assert!(both.bytes[1] == alone.bytes[0], "{mode:?}: every frame of the next track, from a fresh opening");
+        if mode == DsdMode::Dop {
+            assert_eq!(markers(&both.bytes[1]).first(), Some(&0x05), "the marker starts over with the opening");
+            assert!(alternates(&markers(&both.bytes[1])));
+        }
+    }
+    for file in [broken, faster, slower] {
+        std::fs::remove_file(file).unwrap();
+    }
 }
 
 #[test]
