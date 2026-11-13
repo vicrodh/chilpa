@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Chilpa\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2026-11-11 19:37+0800\n"
+"PO-Revision-Date: 2026-11-13 16:55+0800\n"
 "Last-Translator: Lushih Hsieh <bruce@mail.kh.edu.tw>\n"
 "Language-Team: bruce at mail.kh.edu.tw\n"
 "Language: zh_TW\n"
@@ -70,10 +70,10 @@ msgid "1 hr"
 msgstr "1 小時"
 
 msgid "1. Back up your current PipeWire/WirePlumber config"
-msgstr "1. 備份您目前的 PipeWire/WirePlumber 設定"
+msgstr "1. 備份你目前的 PipeWire/WirePlumber 設定"
 
 msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
-msgstr "1. 在「音訊 > 接收端」中找到您的 DAC，並記下其編號"
+msgstr "1. 在「音訊 > 接收端」中找到你的 DAC，並記下其編號"
 
 msgid "1. Origin"
 msgstr "1. 來源"
@@ -121,13 +121,13 @@ msgid "5 hr"
 msgstr "5 小時"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
-msgstr "JACK 連線圖以單一取樣率運作，所有程式都必須使用該取樣率——目前為 {} Hz。以其它取樣率錄製的曲目會在 Chilpa 播放前被重新取樣，此處的設定無法改變此種行為。JACK 用於在程式間路由音訊；若要將檔案原樣傳送至 DAC，請直接選擇音效卡本身。"
+msgstr "JACK 連線圖以單一取樣率運作，所有程式都必須使用該取樣率——目前為 {} Hz。以其他取樣率錄製的曲目會在 Chilpa 播放前被重新取樣，此處的設定無法改變此種行為。JACK 用於在程式間路由音訊；若要將檔案原樣傳送至 DAC，請直接選擇音效卡本身。"
 
 msgid "A PCM carrier does not verify DoP. No tone or library track will play."
-msgstr "PCM 載體不會驗證 DoP。任何測試音或音樂庫音軌都不會被播放。"
+msgstr "PCM 載體不會驗證 DoP。任何測試音或音樂庫曲目都不會播放。"
 
 msgid "A Plex Media Server. You sign in with your Plex account, with a code at plex.tv/link."
-msgstr "Plex 媒體伺服器。您可以透過在 plex.tv/link 輸入代碼並使用 Plex 帳號登入。"
+msgstr "Plex 媒體伺服器。你可在 plex.tv/link 輸入代碼，並使用 Plex 帳號登入。"
 
 msgid "A bar or OR: either is enough"
 msgstr "使用 | 或 OR：符合其中一項即可"
@@ -154,7 +154,7 @@ msgid "A media server on this network, such as MiniDLNA, Gerbera or the DLNA sid
 msgstr "此網路上的媒體伺服器，例如 MiniDLNA、Gerbera 或 Plex 的 DLNA 功能。無需登入。"
 
 msgid "A media server you run yourself. You sign in with its user and password, or with Quick Connect."
-msgstr "您自己維運的媒體伺服器。您可以使用其使用者名稱和密碼登錄，或使用快速連線登入。"
+msgstr "你自行架設的媒體伺服器。你可以使用其使用者名稱和密碼登入，或使用快速連線登入。"
 
 msgid "A name for this memory"
 msgstr "此記憶的名稱"
@@ -163,7 +163,7 @@ msgid "A new version of Chilpa is available."
 msgstr "Chilpa 有新版本可用。"
 
 msgid "A player for your own music"
-msgstr "專屬於你擁有的音樂的播放器"
+msgstr "專為你自己的音樂打造的播放器"
 
 msgid "A playlist member could not be resolved."
 msgstr "無法解析播放清單中的成員。"
@@ -1053,7 +1053,7 @@ msgid "Change the address if the server moved."
 msgstr "如果伺服器遷移，請更改位址。"
 
 msgid "Change the address if the server moved. Its sign-in stays as it is unless you change it."
-msgstr "如果伺服器遷移，請更改位址。除非您手動更改，否則登入資訊將保持不變。"
+msgstr "如果伺服器遷移，請更改位址。除非你手動更改，否則登入資訊將保持不變。"
 
 msgid "Change the sign-in"
 msgstr "變更登入方式"
@@ -1206,10 +1206,10 @@ msgid "Chilpa proxy"
 msgstr "Chilpa 代理"
 
 msgid "Chilpa reads its music now and lists it with yours as it arrives, with its playlists. Nothing on the server changes unless you change one of its playlists."
-msgstr "Chilpa 正在讀取其音樂，並在讀取完成時連同其播放清單一起與您的音樂一同列出。除非您修改伺服器上的播放清單，否則伺服器上的內容不會改變。"
+msgstr "Chilpa 正在讀取其音樂，並在讀取完成時連同其播放清單一起與你的音樂一同列出。除非你修改伺服器上的播放清單，否則伺服器上的內容不會改變。"
 
 msgid "Chilpa reads its music now and lists it with yours as it arrives. Nothing on the server changes, and a DLNA / UPnP server has no playlists to bring."
-msgstr "Chilpa 正在讀取其音樂，並在讀取完成時與您的音樂一同列出。伺服器上的內容不會改變，且 DLNA 或 UPnP 伺服器不提供播放清單。"
+msgstr "Chilpa 正在讀取其音樂，並在讀取完成時與你的音樂一同列出。伺服器上的內容不會改變，且 DLNA 或 UPnP 伺服器不提供播放清單。"
 
 msgid "Chilpa requesting {} · {}-bit"
 msgstr "Chilpa 請求 {} · {} 位元"
@@ -1227,16 +1227,16 @@ msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "需要時 Chilpa 會重新產生較小的封面與背景。"
 
 msgid "Chilpa {} is available"
-msgstr "Chilpa {} 可用"
+msgstr "Chilpa {} 已可更新"
 
 msgid "Chilpa {} is ready"
-msgstr "Chilpa {} 已就緒"
+msgstr "Chilpa {} 已準備就緒"
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "面板上的 Chilpa 圖示：點擊可顯示或隱藏視窗，中鍵可播放或暫停，滾輪可調整音量。"
 
 msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
-msgstr "Chilpatl 在納瓦特爾語中意為黃蜂。Chilpa 是一款桌面音樂播放器，本機檔案、自架伺服器與外掛都只是來源。"
+msgstr "Chilpatl 在納瓦特語中意為黃蜂。Chilpa 是一款桌面音樂播放器，本機檔案、自架伺服器與外掛都只是音樂來源。"
 
 msgid "Chinese"
 msgstr "中文"
@@ -1563,7 +1563,7 @@ msgid "Connect"
 msgstr "連線"
 
 msgid "Connect Jellyfin, Navidrome or another OpenSubsonic server, Plex, or a DLNA / UPnP media server to add its music to your library."
-msgstr "線 OpenSubsonic、Jellyfin 或 Plex，將其音樂加入你的音樂庫。"
+msgstr "連線 Jellyfin、Navidrome 或其他 OpenSubsonic 伺服器、Plex，或是 DLNA / UPnP 媒體伺服器，將其音樂加入你的音樂庫。"
 
 msgid "Connect a player or memory card. Save a profile for each storage."
 msgstr "連線播放器或記憶卡。為每個儲存空間儲存設定檔。"
@@ -2954,7 +2954,7 @@ msgid "Identity and provenance"
 msgstr "識別與來源出處"
 
 msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
-msgstr "如果這是您的第一個音樂來源，建議等待讀取完成。已顯示的內容在此期間可以正常播放。"
+msgstr "如果這是你的第一個音樂來源，建議等待讀取完成。已顯示的內容在此期間可以正常播放。"
 
 msgid "Image"
 msgstr "圖片"
@@ -2999,7 +2999,7 @@ msgid "Imported"
 msgstr "已匯入"
 
 msgid "In a Jellyfin app where you are signed in, open Quick Connect and type this code. Chilpa notices by itself."
-msgstr "在您已登入的 Jellyfin 應用程式中開啟「快速連線」並輸入此代碼，Chilpa 會自動偵測。"
+msgstr "在你已登入的 Jellyfin 應用程式中開啟「快速連線」並輸入此代碼，Chilpa 會自動偵測。"
 
 msgid "In library"
 msgstr "在音樂庫中"
@@ -3185,7 +3185,7 @@ msgid "It does not answer now; try again when it is back"
 msgstr "目前無回應；請待其恢復後再試"
 
 msgid "It is not read, and saving leaves it out. Take it out and choose the folder that holds your songs."
-msgstr "該內容未被讀取，且儲存時會予以排除。請將其移除並選擇存放您歌曲的資料夾。"
+msgstr "該內容未被讀取，且儲存時會予以排除。請將其移除並選擇存放你歌曲的資料夾。"
 
 msgid "It offers {} music library."
 msgid_plural "It offers {} music libraries."
@@ -3194,8 +3194,8 @@ msgstr[1] "它提供 {} 個音樂庫。"
 
 msgid "It shows {} folder at its top. Next, open the one that holds your music."
 msgid_plural "It shows {} folders at its top. Next, open the one that holds your music."
-msgstr[0] "頂層顯示了 {} 個資料夾。接下來，請開啟存放您音樂的資料夾。"
-msgstr[1] "頂層顯示了 {} 個資料夾。接下來，請開啟存放您音樂的資料夾。"
+msgstr[0] "頂層顯示了 {} 個資料夾。接下來，請開啟存放你音樂的資料夾。"
+msgstr[1] "頂層顯示了 {} 個資料夾。接下來，請開啟存放你音樂的資料夾。"
 
 msgid "Italian"
 msgstr "義大利文"
@@ -3219,7 +3219,7 @@ msgid "Its playlists could not be read: {}."
 msgstr "無法讀取其播放清單：{}。"
 
 msgid "Its songs, albums and playlists are leaving your library. This can take a moment; you can keep using Chilpa meanwhile."
-msgstr "其歌曲、專輯與播放清單正在從您的音樂庫中移除。這可能需要一點時間，期間您可以繼續使用 Chilpa。"
+msgstr "其歌曲、專輯與播放清單正在從你的音樂庫中移除。這可能需要一點時間，期間你可以繼續使用 Chilpa。"
 
 msgid "Its {} leave too."
 msgstr "其 {} 也會一併移除。"
@@ -3264,7 +3264,7 @@ msgid "Keep words literal and match a genre without expanding it"
 msgstr "保持字面精確，不展開比對音樂類型"
 
 msgid "Kept in Chilpa until you add its first tracks, then sent to {}"
-msgstr "保留於 Chilpa 中，直到您加入第一首曲目後才會傳送至 {}"
+msgstr "保留於 Chilpa 中，直到你加入第一首曲目後才會傳送至 {}"
 
 msgid "Kept in Chilpa; tracks from any source mix in it"
 msgstr "保留於 Chilpa 中；來自任何來源的曲目皆可混入其中"
@@ -3837,7 +3837,7 @@ msgid "Name a personal preset"
 msgstr "命名個人預設值"
 
 msgid "Name in Chilpa"
-msgstr "在 Chilpa 中的名稱"
+msgstr "在 Chilpa 中顯示的名稱"
 
 msgid "Name this preset."
 msgstr "為此預設值命名。"
@@ -3870,7 +3870,7 @@ msgid "Native — {} — {}"
 msgstr "原生 — {} — {}"
 
 msgid "Navidrome, gonic or another server that speaks Subsonic. You sign in with its user and password, or an API key."
-msgstr "Navidrome、gonic 或其他支援 Subsonic 協定的伺服器。您可以使用其使用者名稱與密碼，或 API 金鑰進行登入。"
+msgstr "Navidrome、gonic 或其他支援 Subsonic 協定的伺服器。你可以使用其使用者名稱與密碼，或 API 金鑰進行登入。"
 
 msgid "Navigation"
 msgstr "導覽"
@@ -4264,7 +4264,7 @@ msgid "Nothing saved yet."
 msgstr "尚無儲存內容。"
 
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
-msgstr "此處無需輸入任何內容。您需要使用一款支援登入 Plex 帳戶的瀏覽器。"
+msgstr "此處無需輸入任何內容。你需要使用一款支援登入 Plex 帳戶的瀏覽器。"
 
 msgid "Nov"
 msgstr "11 月"
@@ -4456,7 +4456,7 @@ msgid "Open plex.tv/link"
 msgstr "開啟 plex.tv/link"
 
 msgid "Open plex.tv/link in a browser, signed in to your Plex account, and type this code. Chilpa notices by itself."
-msgstr "在瀏覽器中開啟 plex.tv/link，登入您的 Plex 帳號並輸入此代碼，Chilpa 會自動偵測。"
+msgstr "在瀏覽器中開啟 plex.tv/link，登入你的 Plex 帳號並輸入此代碼，Chilpa 會自動偵測。"
 
 msgid "Open plugins"
 msgstr "開啟外掛"
@@ -4477,7 +4477,7 @@ msgid "Open view"
 msgstr "開闊視野"
 
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin, Plex or DLNA / UPnP. Its music joins the library."
-msgstr "OpenSubsonic（Navidrome、gonic 等）、Jellyfin、Plex 或 DLNA / UPnP。其中的音樂會被加入媒體庫。"
+msgstr "OpenSubsonic（Navidrome、gonic…）、Jellyfin、Plex 或 DLNA / UPnP。其音樂會加入音樂庫。"
 
 msgid "Opened by Chilpa"
 msgstr "由 Chilpa 開啟"
@@ -5035,7 +5035,7 @@ msgid "Radio"
 msgstr "電台"
 
 msgid "Radio and DSD fixes"
-msgstr "收音機與 DSD 修正"
+msgstr "廣播與 DSD 修正"
 
 msgid "Radio asks for each song's cover once, and the cover stays on screen. Native DSD through PipeWire now plays on a real DAC, with PipeWire 1.6 or later."
 msgstr "電台模式只會請求一次每首歌曲的封面，且封面會保持顯示在螢幕上。在 PipeWire 1.6 或更新版本中，原生 DSD 透過 PipeWire 已可在實體 DAC 上播放。"
@@ -5569,7 +5569,7 @@ msgid "Saved for the displayed inspection. Refresh after changing equipment or c
 msgstr "已為顯示的檢查進行儲存。更換設備或設定後請重新整理。"
 
 msgid "Saved in your account there; only its own tracks"
-msgstr "已儲存至您在該處的帳號；僅限其本身的曲目"
+msgstr "已儲存至你在該處的帳號；僅限其本身的曲目"
 
 msgid "Saved lyrics and translations will be fetched again when needed."
 msgstr "已儲存的歌詞與翻譯將會在需要時重新取得。"
@@ -5963,13 +5963,13 @@ msgid "Sign in with Plex"
 msgstr "使用 Plex 登入"
 
 msgid "Sign in with Quick Connect: approve a code in a Jellyfin app where you are signed in"
-msgstr "使用快速連線登入：在您已登入的 Jellyfin 應用程式中批准驗證碼"
+msgstr "使用快速連線登入：在你已登入的 Jellyfin 應用程式中核准代碼"
 
 msgid "Sign in with an API key instead (OpenSubsonic servers that offer one)"
 msgstr "請改用 API 金鑰登入（OpenSubsonic 伺服器提供此功能）。"
 
 msgid "Sign in with your Plex account"
-msgstr "使用您的 Plex 帳戶登入"
+msgstr "使用你的 Plex 帳戶登入"
 
 msgid "Signed out"
 msgstr "已登出"
@@ -6337,7 +6337,7 @@ msgid "The account expired; connect it again."
 msgstr "帳號已過期；請重新連線。"
 
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
-msgstr "您在瀏覽器中開啟伺服器的位址（包括連接埠）以及 Chilpa 登入的使用者名稱。"
+msgstr "你在瀏覽器中開啟伺服器的位址（包括連接埠）以及 Chilpa 登入的使用者名稱。"
 
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "內建測試會播放四首涵蓋不同位元深度與取樣率（16/44.1、24/44.1、24/96、24/192）的曲目，讓你能看到 DAC 的切換過程。每首均為音樂庫中該格式最多播放的曲目，若無對應檔案則使用產生的測試訊號。若你希望使用自己的佇列，請先新增每種格式各一首曲目以測試所有取樣率。"
@@ -6649,7 +6649,7 @@ msgid "The view the mini player opens with. Remember keeps the one it was last o
 msgstr "迷你播放器開啟時顯示的頁面。「記住設定」會保留上次離開時的檢視。"
 
 msgid "Their music joins yours. With all of them chosen, a library added later on the server comes in too."
-msgstr "它們的音樂會加入您的音樂庫。全選時，伺服器日後新增的音樂庫也會自動加入。"
+msgstr "它們的音樂會加入你的音樂庫。全選時，伺服器日後新增的音樂庫也會自動加入。"
 
 msgid "Theme"
 msgstr "主題"
@@ -6664,7 +6664,7 @@ msgid "There is not enough space for this selection and its temporary files."
 msgstr "沒有足夠的空間存放此選取內容及其暫存檔案。"
 
 msgid "These answered a search of this network. Choose yours, or type its address."
-msgstr "這些是在此網路搜尋中獲得回應的項目。請選擇您的伺服器，或直接輸入其位址。"
+msgstr "這些是在此網路搜尋中獲得回應的項目。請選擇你的伺服器，或直接輸入其位址。"
 
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "這些紀錄的條碼會發送至 MusicBrainz。"
@@ -7511,7 +7511,7 @@ msgid "Your DAC is ready for bit-perfect playback. If you applied the config fil
 msgstr "你的 DAC 已就緒可進行位元完美播放。若你套用了設定檔，請重新啟動音訊服務（或登出並重新登入）以使其生效。"
 
 msgid "Your Plex account reaches more than one server."
-msgstr "您的 Plex 帳戶可以連接到多台伺服器。"
+msgstr "你的 Plex 帳戶可以連接到多台伺服器。"
 
 msgid "Your audio stack is ready for bit-perfect playback."
 msgstr "你的音訊堆疊已就緒可進行位元完美播放。"
@@ -7541,10 +7541,10 @@ msgid "Your shows"
 msgstr "你的節目"
 
 msgid "Your {} and {} of them are removed too."
-msgstr "您的 {} 以及其中的 {} 個也會一併移除。"
+msgstr "你的 {} 以及其中的 {} 個也會一併移除。"
 
 msgid "Your {} of them are removed too."
-msgstr "您的 {} 中的該項目也會一併移除。"
+msgstr "你的 {} 中的該項目也會一併移除。"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "DASH 清單檔，Chilpa 目前尚無法讀取"
@@ -7727,7 +7727,7 @@ msgid "could not: {}"
 msgstr "無法：{}"
 
 msgid "create playlists in destinations you select for an import"
-msgstr "在您選擇的匯入目標位置建立播放清單"
+msgstr "在你選擇的匯入目標位置建立播放清單"
 
 msgid "damaged DSD file: {}"
 msgstr "損壞的 DSD 檔案：{}"
@@ -8788,7 +8788,7 @@ msgid "what was saved could not be written down in the library: {}; rescan to se
 msgstr "儲存的內容無法寫入音樂庫：{}; 請重新掃描以進行檢視"
 
 msgid "write downloaded files into the folder you select for this plugin"
-msgstr "將下載的檔案寫入您為此外掛程式所選的資料夾中"
+msgstr "將下載的檔案寫入你為此外掛程式所選的資料夾中"
 
 msgid "write the address alone: no user, password or query in it"
 msgstr "僅填寫網址本身：請勿包含使用者、密碼或查詢參數"
@@ -8939,7 +8939,7 @@ msgid "{} is busy; try again in {} seconds"
 msgstr "{} 忙碌中；請於 {} 秒後再試"
 
 msgid "{} is in your library now. Its music appears as it is read."
-msgstr "{} 現已加入您的音樂庫中。其音樂將在讀取時陸續顯示。"
+msgstr "{} 現已加入你的音樂庫中。其音樂將在讀取時陸續顯示。"
 
 msgid "{} is missing"
 msgstr "缺少 {}"
@@ -9014,7 +9014,7 @@ msgid "{} no longer accepts the account; connect again"
 msgstr "{} 不再接受該帳號；請重新連線"
 
 msgid "{} no longer has this playlist; it left your playlists here too."
-msgstr "{} 已不再擁有此播放清單；該清單也已從您在此處的播放清單中移除。"
+msgstr "{} 已不再擁有此播放清單；該清單也已從你在此處的播放清單中移除。"
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "其 {} 首曲目將從你的 {} 個播放清單中移除。"
@@ -9114,8 +9114,8 @@ msgstr[1] "{} 首曲目"
 
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
-msgstr[0] "其播放清單中有 {} 首曲目不在您的音樂庫中，已予以排除。"
-msgstr[1] "其播放清單中有 {} 首曲目不在您的音樂庫中，已予以排除。"
+msgstr[0] "其播放清單中有 {} 首曲目不在你的音樂庫中，已予以排除。"
+msgstr[1] "其播放清單中有 {} 首曲目不在你的音樂庫中，已予以排除。"
 
 msgid "{} track on the server is not in your library"
 msgid_plural "{} tracks on the server are not in your library"
