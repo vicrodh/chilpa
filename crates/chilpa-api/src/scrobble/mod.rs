@@ -189,19 +189,12 @@ impl crate::Chilpa {
         }
     }
 
-    /// The listen a track that just started would be, told to the services
-    /// as what is playing now. None when the tags do not name it.
-    pub(crate) fn announce(
-        &self,
-        tags: Option<&chilpa_tags::Tags>,
-        duration_ms: u64,
-        started_at: i64,
-    ) -> Option<Listen> {
-        let listen = listen_of(tags, &self.now.title, &self.now.album, duration_ms, started_at)?;
+    /// Tells the services the listen of the track that just started in
+    /// front of the window, as what is playing now.
+    pub(crate) fn announce(&self, listen: &Listen) {
         if let Some(s) = &self.scrobbler {
             s.both(|| Order::Playing(listen.clone()));
         }
-        Some(listen)
     }
 }
 

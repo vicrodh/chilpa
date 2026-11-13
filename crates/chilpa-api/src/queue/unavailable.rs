@@ -622,7 +622,7 @@ mod tests {
         let mut api = crate::Chilpa::new();
         // The queue that replaced the one play 8 was opening `late` for.
         api.queue = vec![entry("other"), entry("late")];
-        api.plays.push(9, 0, 0);
+        api.plays.push(9, 0, 0, Default::default());
         api.unavailable.reports.failed(entry("late"), "timed out", false, Some(8));
         api.take_unavailable_reports();
         assert!(api.unavailable.marked.is_empty(), "the old play's failure is not this queue's");

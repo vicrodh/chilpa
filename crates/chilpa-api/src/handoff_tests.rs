@@ -61,7 +61,8 @@ fn relaunch(api: &mut Chilpa, why: Relaunch, new: u64) {
 /// A track starts in `play`, behind the window or in front of it alike: what
 /// its start does to the listens.
 fn start(api: &mut Chilpa, play: u64, path: &str) {
-    api.listen_started(play, 1, Path::new(path), None, None, RATE, Some(16), false, Some(seconds(600)), false);
+    let face = api.face_of(play, Path::new(path), None, None);
+    api.listen_started(play, 1, Path::new(path), None, &face, RATE, Some(16), false, Some(seconds(600)), false);
 }
 
 fn say(api: &mut Chilpa, play: u64, event: PlayerEvent) {
@@ -504,4 +505,23 @@ fn nothing_else_empties_the_player() {
         }
     }
     assert!(found.is_empty(), "the player is emptied outside plays.rs: {found:?}");
+}
+
+#[test]
+fn a_track_that_starts_behind_the_window_is_named_by_the_card_of_its_own_play() {
+    let (a, b) = (221, 222);
+    let mut api = facade();
+    let address = "https://radio.example/a";
+    let card = |title: &str, album: &str| crate::search::Hit { title: title.into(), artist: "Card artist".into(), album: album.into(), ..Default::default() };
+    api.search.playing = Some((address.into(), card("Card of the first", "Its album")));
+    api.launched(a, 0, Relaunch::Track);
+    // The listener picks something else: the card in front is another one.
+    api.search.playing = Some(("https://radio.example/b".into(), card("Card of the second", "Another album")));
+    api.launched(b, 0, Relaunch::Track);
+    // The first play's track had started before it was replaced; it is read now.
+    let tags = chilpa_tags::Tags { artists: vec!["Tagged artist".into()], ..Default::default() };
+    let face = api.face_of(a, Path::new(address), Some(&tags), None);
+    api.listen_started(a, 1, Path::new(address), Some(&tags), &face, RATE, Some(16), false, None, false);
+    let listen = api.plays.get(a).and_then(|play| play.ledger.newest()).and_then(|listen| listen.listen.clone()).expect("a listen the services can be told of");
+    assert_eq!((listen.track.as_str(), listen.release.as_str()), ("Card of the first", "Its album"), "its own card, not the address and not the card in front");
 }

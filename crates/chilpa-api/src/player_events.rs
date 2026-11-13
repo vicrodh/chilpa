@@ -7,7 +7,7 @@ use std::path::Path;
 use chilpa_core::attempts::How;
 use chilpa_core::player::PlayerEvent;
 
-use crate::plays::Fate;
+use crate::plays::face::Face;
 use crate::{channels, lyrics_service, now_unix, Chilpa, InProgress, Quality};
 
 impl Chilpa {
@@ -33,22 +33,22 @@ impl Chilpa {
             return;
         };
         let (fate, from, had_started) = (play.fate, play.from, play.started);
-        // In front of the window, and launched on the rows that stand: what
-        // it says of a position is about the track the window has there.
-        let shown = fate == Fate::Current && play.epoch == self.rows_epoch;
+        let shown = self.play_shown(id);
         match event {
             PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, attempt, index, queue_len, dsd_multiple, dsd_passthrough } => {
                 let rate = opened.sample_rate_hz;
+                // One face for the window and for the listen.
+                let face = self.face_of(id, &path, tags.as_ref(), artwork.as_deref());
                 if shown {
                     *started = true;
                     if let Some(play) = self.plays.get_mut(id) {
                         play.started = true;
                     }
-                    self.show_started(&path, opened, route, music_channels, bits, bit_perfect, total_frames, tags.as_ref(), artwork.as_deref(), index, queue_len, dsd_multiple, dsd_passthrough);
+                    self.show_started(&path, &face, opened, route, music_channels, bits, bit_perfect, total_frames, index, queue_len, dsd_multiple, dsd_passthrough);
                 } else {
                     chilpa_core::trace_playback("facade", "started_behind_the_window", format_args!("play={id} fate={fate:?} index={index}"));
                 }
-                self.listen_started(id, attempt, &path, tags.as_ref(), artwork.as_deref(), rate, bits, bit_perfect, total_frames, shown);
+                self.listen_started(id, attempt, &path, tags.as_ref(), &face, rate, bits, bit_perfect, total_frames, shown);
             }
             PlayerEvent::StreamTitle { title } if shown => {
                 // On a radio the title is sent by the station and
@@ -144,10 +144,11 @@ impl Chilpa {
 
     /// A track started in the play `id`: the listen carried in from another
     /// output goes on if it is this track's, and a new one is opened
-    /// otherwise. A play in front of the window names the listen as the
-    /// window does; one behind it, by the track's own tags.
+    /// otherwise, named by the track's `face` whether the play is in front
+    /// of the window or not. Only one in front of it is told to the services
+    /// as what plays now.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn listen_started(&mut self, id: u64, attempt: u64, path: &Path, tags: Option<&chilpa_tags::Tags>, artwork: Option<&Path>, rate: u32, bits: Option<u8>, bit_perfect: bool, total_frames: Option<u64>, shown: bool) {
+    pub(crate) fn listen_started(&mut self, id: u64, attempt: u64, path: &Path, tags: Option<&chilpa_tags::Tags>, face: &Face, rate: u32, bits: Option<u8>, bit_perfect: bool, total_frames: Option<u64>, shown: bool) {
         let Some(play) = self.plays.get_mut(id) else { return };
         let began = play.ledger.started(attempt, path);
         if began.resumed {
@@ -165,14 +166,11 @@ impl Chilpa {
             Some(frames) if rate > 0 => frames * 1000 / u64::from(rate),
             _ => 0,
         };
-        let (listen, cover) = if shown {
-            (self.announce(tags, duration_ms, started_at), self.now.artwork_path.clone())
-        } else {
-            let title = tags.and_then(|t| t.title.clone()).unwrap_or_else(|| path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default());
-            let album = tags.and_then(|t| t.album.clone()).unwrap_or_default();
-            (crate::scrobble::listen_of(tags, &title, &album, duration_ms, started_at), artwork.map(|p| p.display().to_string()).unwrap_or_default())
-        };
-        let context = self.context_at_start(path, tags, started_at, cover);
+        let listen = crate::scrobble::listen_of(tags, &face.title, &face.album, duration_ms, started_at);
+        if let (true, Some(listen)) = (shown, &listen) {
+            self.announce(listen);
+        }
+        let context = self.context_at_start(path, tags, started_at, face.cover.clone());
         self.home.changed();
         let Some(play) = self.plays.get_mut(id) else { return };
         play.ledger.open(attempt, InProgress {
@@ -193,7 +191,7 @@ impl Chilpa {
 
     /// A track started in front of the window: what the window shows of it.
     #[allow(clippy::too_many_arguments)]
-    fn show_started(&mut self, path: &Path, opened: chilpa_core::output_evidence::StreamFormat, route: chilpa_core::output_evidence::Route, music_channels: u16, bits: Option<u8>, bit_perfect: bool, total_frames: Option<u64>, tags: Option<&chilpa_tags::Tags>, artwork: Option<&Path>, index: usize, queue_len: usize, dsd_multiple: Option<u32>, dsd_passthrough: bool) {
+    fn show_started(&mut self, path: &Path, face: &Face, opened: chilpa_core::output_evidence::StreamFormat, route: chilpa_core::output_evidence::Route, music_channels: u16, bits: Option<u8>, bit_perfect: bool, total_frames: Option<u64>, index: usize, queue_len: usize, dsd_multiple: Option<u32>, dsd_passthrough: bool) {
         let requested_rate = route.delivery.requested.sample_rate_hz;
         self.audio_output.route = Some(route);
         self.dsp.passthrough = dsd_passthrough;
@@ -201,25 +199,14 @@ impl Chilpa {
         self.keep_place(true);
         self.sample_rate = opened.sample_rate_hz;
         self.now.path = path.display().to_string();
-        let name = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
-        self.now.artwork_path = artwork.as_ref().map(|p| p.display().to_string()).unwrap_or_default();
-        match tags {
-            Some(t) => {
-                self.now.title = t.title.clone().unwrap_or(name);
-                self.now.artist = t.artist_line();
-                self.now.album = t.album.clone().unwrap_or_default();
-            }
-            None => {
-                self.now.title = name;
-                self.now.artist = String::new();
-                self.now.album = String::new();
-            }
-        }
-        // What came from a source already carries its card from
-        // the search. Without this the window would show the raw
-        // URL, which is all the decoder knows about it.
-        self.name_from_source(path);
-        self.now.live = self.name_from_entry(path);
+        // What came from a source already carries its card: without it the
+        // window would show the raw URL, which is all the decoder knows.
+        self.now.artwork_path = face.cover.clone();
+        self.now.title = face.title.clone();
+        self.now.artist = face.artist.clone();
+        self.now.album = face.album.clone();
+        self.now.ai_generated = face.ai_generated;
+        self.now.live = face.live;
         self.load_album_context();
         if dsd_multiple.is_none() && crate::source_opener::of_plugin(&self.now.path).is_some() {
             // What a source's track turned out to be, measured, for its row.

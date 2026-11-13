@@ -92,7 +92,7 @@ fn a_station_flooding_its_title_goes_to_the_network_once_and_the_cover_returns_a
         while api.now.artwork_path != *COVER.get().unwrap() {
             assert!(Instant::now() < deadline, "the cover did not come");
             match api.sources.rx.try_recv() {
-                Ok(Answer::Picture { url, song, path }) => api.take_picture(url, song, path),
+                Ok(Answer::Picture { play, url, song, path }) => api.take_picture(play, url, song, path),
                 _ => std::thread::sleep(Duration::from_millis(2)),
             }
         }
@@ -108,4 +108,56 @@ fn a_station_flooding_its_title_goes_to_the_network_once_and_the_cover_returns_a
     take_until_cover(&mut api);
     assert_eq!(api.now.artwork_path, cover);
     assert_eq!(ASKED.load(Ordering::SeqCst), 1);
+}
+
+/// A facade where `play` was launched for a station listed at `url`.
+fn station(play: u64, url: &str) -> Chilpa {
+    let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+    api.sources.looked_back = true;
+    api.sources.sounding = Some(Sounding { url: url.into(), source: "example.radio".into(), entry: Entry { title: "The station".into(), live: true, ..Entry::default() }, picture: String::new() });
+    api.launched(play, 0, crate::Relaunch::Track);
+    api.now.path = url.into();
+    api.now.playing = true;
+    api
+}
+
+#[test]
+fn a_station_picture_that_arrives_before_its_track_starts_is_on_the_face_it_starts_with() {
+    let url = "https://radio.example/early";
+    let mut api = station(31, url);
+    api.take_picture(Some(31), url.into(), String::new(), "/covers/early.jpg".into());
+    let face = api.face_of(31, std::path::Path::new(url), None, None);
+    assert_eq!(face.cover, "/covers/early.jpg", "what the window is given as the track starts");
+    assert_eq!(face.title, "The station");
+}
+
+#[test]
+fn a_station_picture_that_arrives_after_its_track_started_is_shown_at_once() {
+    let url = "https://radio.example/late";
+    let mut api = station(32, url);
+    api.take_picture(Some(32), url.into(), String::new(), "/covers/late.jpg".into());
+    assert_eq!(api.now.artwork_path, "/covers/late.jpg");
+}
+
+#[test]
+fn a_picture_for_a_replaced_play_changes_neither_the_window_nor_the_card_of_the_play_that_replaced_it() {
+    let url = "https://radio.example/again";
+    let mut api = station(33, url);
+    // The same station is started again: another play, with its own card.
+    api.launched(34, 0, crate::Relaunch::Track);
+    api.take_picture(Some(33), url.into(), String::new(), "/covers/of-the-first.jpg".into());
+    assert_eq!(api.now.artwork_path, "", "the window is the new play's");
+    assert_eq!(api.face_of(34, std::path::Path::new(url), None, None).cover, "", "and so is its card");
+    assert_eq!(api.face_of(33, std::path::Path::new(url), None, None).cover, "/covers/of-the-first.jpg", "the play it was asked for keeps it");
+    // The new play's own picture is its own, and shown.
+    api.take_picture(Some(34), url.into(), String::new(), "/covers/of-the-second.jpg".into());
+    assert_eq!(api.now.artwork_path, "/covers/of-the-second.jpg");
+}
+
+#[test]
+fn a_picture_asked_for_with_no_play_is_shown_as_before() {
+    let url = "https://radio.example/cast";
+    let mut api = station(35, url);
+    api.take_picture(None, url.into(), String::new(), "/covers/no-play.jpg".into());
+    assert_eq!(api.now.artwork_path, "/covers/no-play.jpg");
 }

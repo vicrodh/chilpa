@@ -15,10 +15,12 @@
 //! settled by it, whatever plays now: written, or handed to the play that
 //! took the output over (`ledger.rs`).
 
+pub(crate) mod face;
 pub(crate) mod ledger;
 
 use std::collections::VecDeque;
 
+use face::{Cards, Face};
 use ledger::{Ledger, Written};
 
 use crate::{Chilpa, InProgress, Relaunch};
@@ -58,6 +60,8 @@ pub(crate) struct Play {
     pub started: bool,
     pub fate: Fate,
     pub ledger: Ledger<InProgress>,
+    /// What names its tracks, as it was when the play was launched.
+    pub cards: Cards,
 }
 
 /// The plays not yet seen to end, oldest first. At most one is in front of
@@ -97,8 +101,8 @@ impl Plays {
     }
 
     /// A launch went out: it is the play in front of the window.
-    pub fn push(&mut self, id: u64, from: usize, epoch: u64) {
-        self.0.push_back(Play { id, epoch, from, started: false, fate: Fate::Current, ledger: Ledger::default() });
+    pub fn push(&mut self, id: u64, from: usize, epoch: u64, cards: Cards) {
+        self.0.push_back(Play { id, epoch, from, started: false, fate: Fate::Current, ledger: Ledger::default(), cards });
     }
 
     fn take(&mut self, id: u64) -> Option<Play> {
@@ -120,8 +124,25 @@ impl Chilpa {
             Relaunch::Track => Replaced::Track,
         };
         self.plays.retire(Fate::Replaced(replaced));
-        self.plays.push(id, from, self.rows_epoch);
+        // The cards in front of the window now are this play's from here on.
+        let cards = Cards { search: self.search.playing.clone(), entry: self.sounding_card() };
+        self.plays.push(id, from, self.rows_epoch, cards);
         self.launch_counted();
+    }
+
+    /// Whether the play is in front of the window, launched on the rows that
+    /// stand: what it says of a position is about the track the window has
+    /// there.
+    pub(crate) fn play_shown(&self, id: u64) -> bool {
+        self.plays.get(id).is_some_and(|play| play.fate == Fate::Current && play.epoch == self.rows_epoch)
+    }
+
+    /// How a track of the play `id` is shown and logged: by its file and by
+    /// the cards of its own play.
+    pub(crate) fn face_of(&self, id: u64, path: &std::path::Path, tags: Option<&chilpa_tags::Tags>, artwork: Option<&std::path::Path>) -> Face {
+        let none = Cards::default();
+        let cards = self.plays.get(id).map_or(&none, |play| &play.cards);
+        face::face(path, tags, artwork, cards, &self.catalog)
     }
 
     /// Writes a listen the ledger closed. `shown` is whether its play is in
