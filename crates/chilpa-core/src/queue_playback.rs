@@ -762,7 +762,7 @@ pub fn play_queue_told<F, K>(
     caps: &DeviceCaps,
     policy: Policy,
     controls: &Controls,
-    mut open_sink: F,
+    open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery, &TrackAbout),
     on_progress: &mut dyn FnMut(usize, Progress),
     on_passed: &mut dyn FnMut(usize, &Path, &str, Option<u64>),
@@ -771,9 +771,56 @@ where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
+    play_queue_heard(
+        queue,
+        caps,
+        policy,
+        controls,
+        open_sink,
+        &mut |_, index, path, delivery, about| {
+            on_track(index, path, delivery, about);
+            true
+        },
+        &mut |index, progress, _| on_progress(index, progress),
+        &mut |_, index, path, why, played| on_passed(index, path, why, played),
+        &mut |_| {},
+    )
+}
+
+/// The same, with each track's turn in the play and its ending. `on_track`
+/// is given the attempt's number and says whether it announced the track;
+/// one that was announced is closed exactly once through `on_closed`, with
+/// how it ended and how many frames of it left the device, which may be
+/// after the next one started: the last of a track is still in the device
+/// when the queue moves on. `on_progress` is also given how many frames of
+/// the track have left the device, as the device's own meter counts them:
+/// what was heard, and what is logged.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn play_queue_heard<F, K>(
+    queue: &SharedQueue,
+    caps: &DeviceCaps,
+    policy: Policy,
+    controls: &Controls,
+    mut open_sink: F,
+    on_track: &mut dyn FnMut(u64, usize, &Path, &Delivery, &TrackAbout) -> bool,
+    on_progress: &mut dyn FnMut(usize, Progress, u64),
+    on_passed: &mut dyn FnMut(u64, usize, &Path, &str, Option<u64>),
+    on_closed: &mut dyn FnMut(crate::attempts::Closed),
+) -> Result<Vec<TrackResult>, PlayError>
+where
+    F: FnMut(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
     // `exclusive` was read when the output was chosen, before the queue.
     let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, normalize_target, prevent_clipping, volume, .. } = controls;
     let mut results = Vec::new();
+    // The tracks announced and still owed an ending. Declared before the
+    // device: however this returns, the device is let go first, its meter
+    // says what of each track left it, and then they are closed.
+    let mut attempts = crate::attempts::Attempts::new(on_closed, stop.clone());
+    let report = attempts.report();
+    // The turn of the track in front, counted from one.
+    let mut attempt = 0u64;
     let mut opened: Option<(StreamFormat, crate::playback_events::Measured<K>)> = None;
     let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
     let mut index = if requested < queue.len() { requested } else { order.first(queue.len()) };
@@ -845,6 +892,7 @@ where
                 pending
             }
         };
+        attempt += 1;
         chilpa_audio::diagnostics::trace(
             "queue",
             "track_selected",
@@ -871,7 +919,7 @@ where
                 // Left out of the laps that follow by the queue itself, not
                 // only once whoever drives it reads the word.
                 if error.is_track() {
-                    on_passed(index, path, &error.to_string(), None);
+                    on_passed(attempt, index, path, &error.to_string(), None);
                     queue.remove(index);
                     passed.insert(path.clone());
                 }
@@ -992,9 +1040,11 @@ where
                 "sink_opened",
                 format_args!("after={:?} format={:?}", started.elapsed(), delivery.opened),
             );
-            opened = Some((delivery.opened, crate::playback_events::Measured::new(new)));
+            opened = Some((delivery.opened, crate::playback_events::Measured::reporting(new, report.clone())));
             packer = DopPacker::new();
         }
+        // What the device let go of on the way here is accounted for.
+        attempts.settle();
         let (_, sink) = opened.as_mut().expect("freshly opened");
         if skipped_before && keep_open {
             chilpa_audio::diagnostics::trace("queue", "sink_flush_started", format_args!("reason=skip"));
@@ -1044,7 +1094,7 @@ where
         else if dsp.is_none() || !keep_open { dsp = Some(chilpa_audio::dsp::Processor::new(controls.dsp.clone(), delivery.opened)); }
         else if skipped_before { if let Some(dsp) = &mut dsp { dsp.reset(); } }
         sink.set_dop(matches!(&source, Source::Dop(_)));
-        sink.begin(observer);
+        sink.begin_attempt(attempt, observer);
         // The next track, opened ahead for gapless: a file at once, a track
         // over the network once this one has played a while (`Preload::at`).
         if gapless.get() {
@@ -1066,13 +1116,19 @@ where
                 }
             }
         }
-        let on_progress = &mut |index: usize, progress: Progress| {
-            preload.reached(progress.delivered);
-            on_progress(index, progress)
-        };
         controls.dsp.begin_stream();
         controls.gain_active.store(false, std::sync::atomic::Ordering::Release);
-        on_track(index, path, &delivery, &about);
+        if on_track(attempt, index, path, &delivery, &about) {
+            attempts.open(attempt, index);
+        }
+        // What was heard is the meter's count; and as this track plays, the
+        // ones before it whose last audio has now left the device are closed.
+        let on_progress = &mut |index: usize, progress: Progress| {
+            preload.reached(progress.delivered);
+            let heard = attempts.heard(attempt).unwrap_or(progress.delivered);
+            attempts.settle();
+            on_progress(index, progress, heard)
+        };
         chilpa_audio::diagnostics::trace(
             "queue",
             "render_started",
@@ -1203,6 +1259,9 @@ where
                 render_started.elapsed()
             ),
         );
+        // How it ended is known here; how much of it was heard, only once
+        // what it left in the device has played or been thrown away.
+        attempts.ended(attempt, crate::attempts::How::of(&outcome, skipped));
         sink.end(if skipped { "skipped" } else {
             match &outcome {
                 Outcome::Finished { .. } => "finished",
@@ -1217,7 +1276,7 @@ where
         // played whole ends the queue.
         let broken = matches!(outcome, Outcome::Unreadable { .. });
         if let Outcome::Unreadable { frames, reason } = &outcome {
-            on_passed(index, path, reason, Some(*frames));
+            on_passed(attempt, index, path, reason, Some(*frames));
             queue.remove(index);
             passed.insert(path.clone());
             // A seek or a Next asked for while its last read was failing was

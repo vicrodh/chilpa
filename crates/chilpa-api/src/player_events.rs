@@ -20,7 +20,7 @@ impl Chilpa {
     /// neither (`queue/replaced.rs`).
     fn player_event(&mut self, generation: u64, event: PlayerEvent, started: &mut bool) {
     match event {
-        PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
+        PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, attempt: _, index, queue_len, dsd_multiple, dsd_passthrough } => {
             let requested_rate = route.delivery.requested.sample_rate_hz;
             self.audio_output.route = Some(route);
             self.dsp.passthrough = dsd_passthrough;
@@ -195,7 +195,10 @@ impl Chilpa {
         // A disc's track cut by a sector that would not read: handled as the
         // failure it used to be said as, while the disc goes on.
         PlayerEvent::Notice { message, .. } => self.player_failed(message),
-        PlayerEvent::Skipped { generation, index, path, message, played } => self.player_skipped(generation, index, &path, message, played),
+        PlayerEvent::Skipped { generation, index, path, message, played, .. } => self.player_skipped(generation, index, &path, message, played),
+        // How a track ended and what of it was heard, as the device counted
+        // it. Nothing reads it yet: the listen is still closed as before.
+        PlayerEvent::Closed { .. } => {}
     }
     }
 }

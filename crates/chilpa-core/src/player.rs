@@ -38,6 +38,9 @@ pub enum PlayerEvent {
         tags: Option<chilpa_tags::Tags>,
         /// The cover already extracted to disk, when the file carries one.
         artwork: Option<PathBuf>,
+        /// Its turn in the play, counted from one: the attempt its `Closed`
+        /// names.
+        attempt: u64,
         /// Its place in the queue, and out of how many.
         index: usize,
         queue_len: usize,
@@ -66,7 +69,13 @@ pub enum PlayerEvent {
     /// interface can show. `played` is how many frames of it went out before
     /// it broke, and `None` when it never opened: a track heard partway is a
     /// listen cut short.
-    Skipped { generation: u64, index: usize, path: PathBuf, message: String, played: Option<u64> },
+    Skipped { generation: u64, attempt: u64, index: usize, path: PathBuf, message: String, played: Option<u64> },
+    /// A track that started is over: how it ended and how many frames of it
+    /// left the device, which is what was heard. Said once for every
+    /// `Started`, before the play ends, and possibly after the next track
+    /// started: the last of a track is still in the device when the queue
+    /// moves on.
+    Closed { attempt: u64, index: usize, heard: u64, how: crate::attempts::How },
     /// Something went wrong that did not end the play: an unreadable sector
     /// cut a track of a disc, and the disc goes on. `attempt` is the track's
     /// turn in the play, counted from one; `message` is text the interface
@@ -690,13 +699,13 @@ fn play(
             return play_cd(first, device, exclusive, &caps, controls, open, drive, events);
         }
     }
-    let results = crate::queue_playback::play_queue_told(
+    let results = crate::queue_playback::play_queue_heard(
         queue,
         &caps,
         policy,
         controls,
         |format| open(device, format, exclusive),
-        &mut |index, path, delivery, about| {
+        &mut |attempt, index, path, delivery, about| {
             // The verdict, once: what Chilpa did to the samples, the road past
             // it, and the device as it opened.
             let bit_perfect = delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery);
@@ -723,7 +732,7 @@ fn play(
                 launch.refuse(chilpa_i18n::t(
                     "this output would not take DSD untouched, so none was sent; choose Convert to PCM for DSD playback",
                 ));
-                return;
+                return false;
             }
             // Tags and the cover are read as each track starts, not as it is
             // queued: a long queue must not read hundreds of files before the
@@ -746,6 +755,7 @@ fn play(
                     }),
                     tags: about.map(|(tags, _)| tags),
                     artwork: chilpa_tags::artwork_for(&image, &crate::artwork_cache()),
+                    attempt,
                     index,
                     queue_len: total,
                     dsd_multiple: Some(64),
@@ -753,7 +763,7 @@ fn play(
                         .transforms
                         .contains(&chilpa_audio::negotiate::Transform::DsdToPcm),
                 });
-                return;
+                return true;
             }
             if let Some(entry) = crate::remote::entry(path) {
                 // Its tags are on the server; the library's copy of them
@@ -770,12 +780,13 @@ fn play(
                     total_frames: frames,
                     tags: Some(about.tags),
                     artwork: about.artwork,
+                    attempt,
                     index,
                     queue_len: total,
                     dsd_multiple: None,
                     dsd_passthrough: false,
                 });
-                return;
+                return true;
             }
             // What the track says of itself was read as it was opened, and
             // ahead of its turn when it was opened ahead: nothing is read
@@ -798,19 +809,24 @@ fn play(
                 total_frames,
                 tags: about.tags.clone(),
                 artwork: about.artwork.clone(),
+                attempt,
                 index: index,
                 queue_len: total,
                 dsd_multiple: dsd.as_ref().map(|info| info.multiple()),
                 dsd_passthrough: dsd.is_some()
                     && !delivery.transforms.contains(&chilpa_audio::negotiate::Transform::DsdToPcm),
             });
+            true
         },
-        &mut |_, progress| {
-            let _ = events.send(PlayerEvent::Progress { frames: progress.position, played: progress.delivered });
+        &mut |_, progress, heard| {
+            let _ = events.send(PlayerEvent::Progress { frames: progress.position, played: heard });
         },
-        &mut |index, path, why, played| {
+        &mut |attempt, index, path, why, played| {
             chilpa_audio::diagnostics::trace("player", "track_passed_over", format_args!("index={index}/{total} path={path:?} played={played:?} why={why}"));
-            let _ = events.send(PlayerEvent::Skipped { generation, index, path: path.to_path_buf(), message: why.to_string(), played });
+            let _ = events.send(PlayerEvent::Skipped { generation, attempt, index, path: path.to_path_buf(), message: why.to_string(), played });
+        },
+        &mut |closed| {
+            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how });
         },
     )?;
 
@@ -874,6 +890,10 @@ fn play_stream(
 
     let path = url.to_path_buf();
     let events = events.clone();
+    // A stream is one track, the play's first and only attempt. Once it is
+    // announced it is owed an ending, also when the device then fails to
+    // open or the play unwinds.
+    let owed = Owed { events: &events, index, announced: std::cell::Cell::new(false) };
     let tag = chilpa_tags::Tags {
         title: station.clone().or_else(|| Some(address.clone())),
         album: Some("Radio".into()),
@@ -889,6 +909,7 @@ fn play_stream(
         Some(dsp.clone()),
         |format| open(device, format, exclusive),
         &mut |delivery, bits| {
+            owed.announced.set(true);
             let _ = events.send(PlayerEvent::Started {
                 path: path.clone(),
                 opened: delivery.opened,
@@ -899,6 +920,7 @@ fn play_stream(
                 total_frames: None,
                 tags: Some(tag.clone()),
                 artwork: None,
+                attempt: 1,
                 index,
                 queue_len,
                 dsd_multiple: None,
@@ -907,7 +929,32 @@ fn play_stream(
         },
         &mut |frames| publish_progress(&events, &mut titles, frames),
     )?;
+    let (played, heard, how) = played;
+    owed.close(heard, how);
     Ok(played.outcome)
+}
+
+/// The ending a stream is owed once it was announced. Let go of without one
+/// -- the device would not open, the play unwound -- it says the stream
+/// failed, with nothing known of what was heard.
+struct Owed<'a> {
+    events: &'a Events,
+    index: usize,
+    announced: std::cell::Cell<bool>,
+}
+
+impl Owed<'_> {
+    fn close(&self, heard: u64, how: crate::attempts::How) {
+        if self.announced.replace(false) {
+            let _ = self.events.send(PlayerEvent::Closed { attempt: 1, index: self.index, heard, how });
+        }
+    }
+}
+
+impl Drop for Owed<'_> {
+    fn drop(&mut self) {
+        self.close(0, crate::attempts::How::Failed);
+    }
 }
 
 /// Runs after every write to the output. The station title changes with every
@@ -983,7 +1030,7 @@ fn play_cd_drive(
     // bit-perfect while the samples went into a mixer.
     let bit_perfect = crate::path_is_exact(device, exclusive) && !controls.dsp.requested();
 
-    crate::cd_playback::play_disc(
+    crate::cd_playback::play_disc_heard(
         unit,
         &tracks,
         caps,
@@ -1007,14 +1054,15 @@ fn play_cd_drive(
                     ..chilpa_tags::Tags::default()
                 }),
                 artwork: None,
+                attempt: index as u64 + 1,
                 index,
                 queue_len: total,
                 dsd_multiple: None,
                 dsd_passthrough: false,
             });
         },
-        &mut |_, progress| {
-            let _ = events.send(PlayerEvent::Progress { frames: progress.position, played: progress.delivered });
+        &mut |_, progress, heard| {
+            let _ = events.send(PlayerEvent::Progress { frames: progress.position, played: heard });
         },
         // An unreadable sector cuts the track, and it is said instead of
         // padding with silence. The disc goes on: this is no ending, and the
@@ -1024,6 +1072,9 @@ fn play_cd_drive(
                 attempt: index as u64 + 1,
                 message: chilpa_i18n::t_args("track {}: {}", &[&tracks[index].number.to_string(), &problem]),
             });
+        },
+        &mut |closed| {
+            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how });
         },
     )
     .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))

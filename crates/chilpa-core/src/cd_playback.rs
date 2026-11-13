@@ -150,9 +150,36 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
+    play_disc_heard(drive, tracks, caps, controls, open_sink, on_track, &mut |index, progress, _| on_progress(index, progress), on_read_error, &mut |_| {})
+}
+
+/// The same, with each track's ending: every track that started is closed
+/// once through `on_closed`, with how it ended and how many frames of it
+/// left the device. A track is the attempt of its place on the disc, counted
+/// from one. One cut by a sector that would not read broke, though its
+/// source simply ran out; the disc goes on.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn play_disc_heard<F, K>(
+    drive: &mut dyn CdDevice,
+    tracks: &[Track],
+    caps: &DeviceCaps,
+    controls: &Controls,
+    open_sink: F,
+    on_track: &mut dyn FnMut(usize, &Delivery),
+    on_progress: &mut dyn FnMut(usize, Progress, u64),
+    on_read_error: &mut dyn FnMut(usize, String),
+    on_closed: &mut dyn FnMut(crate::attempts::Closed),
+) -> Result<Outcome, CdPlayError>
+where
+    F: FnOnce(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
     let delivery =
         negotiate(CDDA_FORMAT, caps, Policy::BitPerfect).map_err(|_| CdPlayError::Unsupported)?;
-    let mut sink = open_sink(delivery.opened).map_err(CdPlayError::Sink)?;
+    // Declared before the device, so the device is let go first and its
+    // meter says what of each track left it before they are closed.
+    let mut attempts = crate::attempts::Attempts::new(on_closed, controls.stop.clone());
+    let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(CdPlayError::Sink)?, attempts.report());
     let mut processor = chilpa_audio::dsp::Processor::new(controls.dsp.clone(), delivery.opened);
     let mut last = Outcome::Finished { frames: 0 };
     // Whether the last track ended by itself: then what is still in the
@@ -175,7 +202,10 @@ where
             processor.reset();
         }
         controls.dsp.begin_stream();
+        let attempt = index as u64 + 1;
+        sink.begin_attempt(attempt, None);
         on_track(index, &delivery);
+        attempts.open(attempt, index);
         let base = Arc::new(AtomicI64::new(0));
         let delivered = Arc::new(AtomicU64::new(0));
         let mut reader = TrackReader::new(drive, track);
@@ -194,14 +224,27 @@ where
             let outcome = render_with_processor(&mut laid, &mut sink, &controls.stop, &controls.pause, Some(&mut processor), &mut |f| {
                 delivered.store(f, Ordering::Relaxed);
                 let at = f as i64 + base.load(Ordering::Relaxed);
-                on_progress(index, Progress { position: at.max(0) as u64, delivered: f });
+                let heard = attempts.heard(attempt).unwrap_or(f);
+                attempts.settle();
+                on_progress(index, Progress { position: at.max(0) as u64, delivered: f }, heard);
             });
             (outcome, laid.skipped)
         };
+        attempts.ended(attempt, crate::attempts::How::of(&outcome, skipped));
         if let Some(problem) = reader.error.as_ref() {
+            // Its source ran out, as far as the render knows; the track was
+            // cut.
+            attempts.ended(attempt, crate::attempts::How::Broken);
             on_read_error(index, problem.to_string());
             processor.reset();
         }
+        sink.end(if skipped { "skipped" } else {
+            match &outcome {
+                Outcome::Finished { .. } => "finished",
+                Outcome::Stopped { .. } => "stopped",
+                _ => "error",
+            }
+        });
         ended_by_itself = matches!(outcome, Outcome::Finished { .. }) && !skipped;
         skipped_before = skipped;
         last = outcome;

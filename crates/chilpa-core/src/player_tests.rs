@@ -446,4 +446,52 @@ fn a_disc_launched_with_a_start_position_starts_there() {
     });
     assert!(first.is_some_and(|at| at >= 66_150), "the disc started where it was asked to: {first:?}");
     p.stop();
+
+#[test]
+fn a_stream_that_was_announced_is_closed_once_whether_or_not_it_got_to_play() {
+    let (to, heard) = channel();
+    let events = Events { to, generation: 9 };
+    // Announced, and then let go of with nothing said: the device would not
+    // open, or the play unwound.
+    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false) };
+    owed.announced.set(true);
+    drop(owed);
+    // Announced and played.
+    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false) };
+    owed.announced.set(true);
+    owed.close(480, crate::attempts::How::Stopped);
+    drop(owed);
+    // Never announced: nothing is owed.
+    drop(Owed { events: &events, index: 3, announced: std::cell::Cell::new(false) });
+    let said: Vec<PlayerEvent> = heard.try_iter().map(|(_, event)| event).collect();
+    assert_eq!(said, [
+        PlayerEvent::Closed { attempt: 1, index: 3, heard: 0, how: crate::attempts::How::Failed },
+        PlayerEvent::Closed { attempt: 1, index: 3, heard: 480, how: crate::attempts::How::Stopped },
+    ]);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_disc_s_track_cut_by_a_bad_sector_is_closed_as_broken_and_the_next_as_completed() {
+    let p = Player::spawn_with(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(|_, stream, _| Ok(Box::new(NullSink { stream, written: Arc::default() }) as Box<dyn AudioSink + Send>)),
+        Box::new(|_| Ok(Box::new(ScratchedDisc) as Box<dyn chilpa_cd::CdDevice>)),
+    );
+    p.play(Path::new("cdda:/dev/fake"), "fake");
+    let events = wait(&p, |events| events.iter().any(|event| matches!(event, PlayerEvent::Finished { .. } | PlayerEvent::Failed { .. } | PlayerEvent::Stopped { .. })));
+    let started: Vec<u64> = events.iter().filter_map(|event| match event {
+        PlayerEvent::Started { attempt, .. } => Some(*attempt),
+        _ => None,
+    }).collect();
+    assert_eq!(started, [1, 2], "the disc went on: {events:?}");
+    let closed: Vec<(u64, crate::attempts::How)> = events.iter().filter_map(|event| match event {
+        PlayerEvent::Closed { attempt, how, .. } => Some((*attempt, *how)),
+        _ => None,
+    }).collect();
+    assert_eq!(closed, [(1, crate::attempts::How::Broken), (2, crate::attempts::How::Completed)], "{events:?}");
+    assert!(events.iter().any(|event| matches!(event, PlayerEvent::Notice { attempt: 1, .. })), "{events:?}");
+    assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "and ended once, as a disc that played out: {events:?}");
+    assert_eq!(events.iter().filter(|event| matches!(event, PlayerEvent::Failed { .. })).count(), 0);
+}
 }
