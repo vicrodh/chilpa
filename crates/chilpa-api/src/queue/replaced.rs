@@ -8,6 +8,12 @@
 //! window: a failure of the old play is not the new one's, its end is not the
 //! new queue running out, and a track it started is not what plays now. What
 //! it still settles is the listen that was open when it was replaced.
+//!
+//! Every play ends with one event, the ones that never started too. So the
+//! listen that is open and the mark of a relaunch each name the play they
+//! belong to: a play that never opened a listen cannot write over the count
+//! of one that waits to be picked up on another output, nor take the mark
+//! that says how another play's listen is settled.
 
 use chilpa_core::player::PlayerEvent;
 
@@ -24,7 +30,7 @@ impl Chilpa {
         }
         // A listen carried to another output waits for the new play's first
         // track; the old play has nothing more to say about it.
-        let listening = self.in_progress.as_ref().is_some_and(|listen| !listen.resuming);
+        let listening = self.in_progress.as_ref().is_some_and(|listen| !listen.resuming && listen.play == generation);
         match event {
             // The old play went on to another track: the one the listen was
             // open for had ended. The new one was replaced before anybody
@@ -43,9 +49,9 @@ impl Chilpa {
                 if listening {
                     self.set_played(*frames);
                 }
-                self.replaced_play_ended(listening, !matches!(event, PlayerEvent::Finished { .. }));
+                self.replaced_play_ended(generation, listening, !matches!(event, PlayerEvent::Finished { .. }));
             }
-            PlayerEvent::Failed { .. } => self.replaced_play_ended(listening, true),
+            PlayerEvent::Failed { .. } => self.replaced_play_ended(generation, listening, true),
             _ => {}
         }
         chilpa_core::trace_playback("facade", "replaced_play_event", format_args!("generation={generation} listening={listening}"));
@@ -55,8 +61,8 @@ impl Chilpa {
     /// The replaced play is over, however it ended: the relaunch that
     /// replaced it is settled here and waits for no `Stopped`, which a play
     /// that failed or ran out by itself never says.
-    fn replaced_play_ended(&mut self, listening: bool, cut_short: bool) {
-        let why = self.relaunching.take();
+    fn replaced_play_ended(&mut self, generation: u64, listening: bool, cut_short: bool) {
+        let why = self.take_relaunch(generation);
         if !listening {
             return;
         }
@@ -69,5 +75,35 @@ impl Chilpa {
             }
             _ => self.log_play(cut_short),
         }
+    }
+
+    /// Marks why what plays is being replaced, for the play whose ending
+    /// settles the listen: the one that owns the listen while it is open,
+    /// and otherwise the launch being replaced. Replacing a launch that
+    /// never opened a listen does not take the mark away from the play
+    /// whose listen still waits for its own ending; the reason is always
+    /// the newest request's.
+    pub(crate) fn mark_relaunch(&mut self, why: Relaunch) {
+        let owner = match &self.in_progress {
+            Some(listen) if !listen.resuming => listen.play,
+            _ => self.launch_generation().unwrap_or(0),
+        };
+        self.relaunching = Some((why, owner));
+    }
+
+    /// The mark, if it is this play's to take.
+    pub(crate) fn take_relaunch(&mut self, generation: u64) -> Option<Relaunch> {
+        match self.relaunching {
+            Some((why, owner)) if owner == generation => {
+                self.relaunching = None;
+                Some(why)
+            }
+            _ => None,
+        }
+    }
+
+    /// Whether the open listen is this play's.
+    pub(crate) fn owns_listen(&self, generation: u64) -> bool {
+        self.in_progress.as_ref().is_some_and(|listen| listen.play == generation)
     }
 }

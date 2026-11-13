@@ -341,7 +341,7 @@ impl Chilpa {
         // Heard up to where it broke: the listen closes here, with what was
         // heard, and is not taken for one that played through when the next
         // track starts or the queue runs out.
-        if let Some(frames) = played.filter(|_| self.in_progress.as_ref().is_some_and(|listen| listen.path == path)) {
+        if let Some(frames) = played.filter(|_| self.in_progress.as_ref().is_some_and(|listen| listen.path == path && listen.play == generation)) {
             self.set_played(frames);
             self.log_play(true);
         }

@@ -1154,3 +1154,28 @@ fn stopping_a_replacement_that_still_waits_behind_the_old_play_shows_stopped() {
     assert!(!chilpa.poll().playing, "and stays so");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_move_to_another_output_stopped_at_once_keeps_what_was_heard() {
+    let dir = folder("move-then-stop");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&strings(&[wave(&dir, "01.wav", SHORT * 50)]), OUTPUT, true);
+    assert!(wait_started(&mut chilpa), "the track plays");
+    let limit = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while chilpa.poll().seconds < 0.5 && std::time::Instant::now() < limit {
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+    // Moved and stopped in one breath: the play on the new output is most
+    // likely still waiting behind the old one, and ends without having
+    // started. What was heard before the move is one listen, cut short.
+    chilpa.move_output(OUTPUT, true);
+    chilpa.stop();
+    assert!(wait_until_stopped(&mut chilpa), "the window shows it stopped");
+    let logged = chilpa.listening_summary(&chilpa_api::listening::ListenFilter::default()).unwrap();
+    assert_eq!((logged.events, logged.skips), (1, 1), "one listen, cut short: {logged:?}");
+    assert!(logged.listened_ms >= 400, "with what was heard: {logged:?}");
+    let _ = std::fs::remove_dir_all(dir);
+}

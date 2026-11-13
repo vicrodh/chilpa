@@ -21,6 +21,7 @@ impl Chilpa {
         rate: u32,
         bits: Option<u8>,
         perfect: bool,
+        play: u64,
     ) -> bool {
         let Some(current) = self
             .in_progress
@@ -35,6 +36,7 @@ impl Chilpa {
         current.bit_depth = bits;
         current.bit_perfect &= perfect;
         current.resuming = false;
+        current.play = play;
         true
     }
     pub fn listening_summary(&mut self, filter: &ListenFilter) -> Result<ListenMetrics, String> {

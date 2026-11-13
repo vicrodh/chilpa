@@ -6,9 +6,19 @@ use chilpa_core::player::PlayerEvent;
 use crate::{channels, lyrics_service, now_unix, Chilpa, InProgress, Quality, Relaunch};
 
 impl Chilpa {
+    /// Applies one event the player said, by the play that said it.
+    pub(crate) fn apply_player_event(&mut self, generation: u64, event: PlayerEvent, started: &mut bool) {
+        if self.listen.active == 0 || self.from_replaced_play(generation, &event) {
+            return;
+        }
+        self.player_event(generation, event, started);
+    }
+
     /// Applies one event of the play in front of the window. `started` is
-    /// raised when a track started.
-    pub(crate) fn player_event(&mut self, event: PlayerEvent, started: &mut bool) {
+    /// raised when a track started. The listen that is open and the mark of
+    /// a relaunch each belong to one play: what another play says changes
+    /// neither (`queue/replaced.rs`).
+    fn player_event(&mut self, generation: u64, event: PlayerEvent, started: &mut bool) {
     match event {
         PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
             let requested_rate = route.delivery.requested.sample_rate_hz;
@@ -68,7 +78,7 @@ impl Chilpa {
                 (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
                 _ => 0,
             };
-            if !self.resume_listen(&path, opened.sample_rate_hz, bits, bit_perfect) {
+            if !self.resume_listen(&path, opened.sample_rate_hz, bits, bit_perfect, generation) {
                 self.log_play(false);
                 let listen = self.announce(tags.as_ref(), duration_ms, started_at);
                 let context = self.context_at_start(&path, tags.as_ref(), started_at);
@@ -76,6 +86,7 @@ impl Chilpa {
                 self.in_progress = Some(InProgress {
                     context,
                     path: path.clone(),
+                    play: generation,
                     resuming: false,
                     carried_ms: 0,
                     started_at,
@@ -128,7 +139,9 @@ impl Chilpa {
         }
         PlayerEvent::Progress { frames, played } => {
             self.now.frames = frames;
-            self.set_played(played);
+            if self.owns_listen(generation) {
+                self.set_played(played);
+            }
             if self.sample_rate > 0 {
                 self.now.seconds = frames as f64 / f64::from(self.sample_rate);
             }
@@ -137,7 +150,9 @@ impl Chilpa {
         PlayerEvent::Finished { frames } => {
             // What the renderer counted: what went out, not where
             // the track was.
-            self.set_played(frames);
+            if self.owns_listen(generation) {
+                self.set_played(frames);
+            }
             self.now.frames = frames;
             if self.sample_rate > 0 {
                 self.now.seconds = frames as f64 / f64::from(self.sample_rate);
@@ -147,14 +162,19 @@ impl Chilpa {
             self.finish_queue();
         }
         PlayerEvent::Stopped { frames } => {
-            self.set_played(frames);
-            self.now.frames = frames;
+            // A play that never started says it stopped with nothing played:
+            // that is not the count of a listen another play left open to be
+            // picked up, nor where the window was.
+            if self.owns_listen(generation) {
+                self.set_played(frames);
+                self.now.frames = frames;
+            }
             // A stop we asked for in order to start again is not the
             // listener stopping. Saying `playing = false` here would
             // blink the window to stopped on its way to the new
             // device, and the play that is already queued behind this
             // event is what decides what happens next.
-            match self.relaunching.take() {
+            match self.take_relaunch(generation) {
                 // Going back: the track that was left is a skip,
                 // because somebody chose to leave it.
                 Some(Relaunch::Track) => self.log_play(true),

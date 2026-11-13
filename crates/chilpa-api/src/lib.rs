@@ -406,6 +406,9 @@ fn channels(n: u16) -> String {
 struct InProgress {
     context: listening::ListenContext,
     path: PathBuf,
+    /// The play that opened it, or that picked it up on another output: the
+    /// only one whose events are about it.
+    play: u64,
     resuming: bool,
     carried_ms: u64,
     started_at: i64,
@@ -700,7 +703,7 @@ pub struct Chilpa {
     /// without this the `Stopped` that comes back would be filed as a skip
     /// and the window would blink to "not playing" on its way to the new
     /// device. What it holds is what to do with the interrupted listen.
-    relaunching: Option<Relaunch>,
+    relaunching: Option<(Relaunch, u64)>,
     /// The stacks and outputs as last listed, on a thread of their own. The
     /// window reads what was found and never asks the stacks itself: on
     /// PipeWire asking starts a process, and it froze the window.
@@ -1271,8 +1274,7 @@ impl Chilpa {
         self.take_unavailable_reports();
         let events = self.player.as_ref().map(|p| p.poll_tagged()).unwrap_or_default();
         for (generation, event) in events {
-            if self.listen.active == 0 || self.from_replaced_play(generation, &event) { continue; }
-            self.player_event(event, &mut started);
+            self.apply_player_event(generation, event, &mut started);
         }
         // A new track's verdict cannot see the volume moved after it. The
         // level the player holds, not the settings: this runs every tick.
@@ -1331,5 +1333,7 @@ impl Drop for Chilpa {
 mod albumless_tests;
 #[cfg(test)]
 mod lib_tests;
+#[cfg(test)]
+mod handoff_tests;
 #[cfg(test)]
 mod test_support;

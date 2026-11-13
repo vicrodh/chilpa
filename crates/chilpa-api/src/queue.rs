@@ -256,7 +256,7 @@ impl Chilpa {
             return;
         }
         if self.player.is_some() && self.now.playing {
-            self.relaunching = Some(why);
+            self.mark_relaunch(why);
             if let Some(player) = &self.player {
                 player.stop_for_handoff();
             }
