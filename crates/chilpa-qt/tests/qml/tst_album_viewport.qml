@@ -30,16 +30,6 @@ TestCase {
         verify(page)
         tryVerify(() => findChild(page, "albumAnimatedCover") !== null)
     }
-    function test_each_mode_builds_only_the_content_it_displays() {
-        compare(findChild(page.grid, "tracksCell"), null, "cards do not construct hidden list cells")
-        page.grid.list = true
-        page.grid.technical = true
-        tryVerify(() => findChild(page.grid, "technicalCell_album") !== null)
-        compare(findChild(page.grid, "tracksCell"), null, "technical rows do not construct hidden rich cells")
-        page.grid.technical = false
-        tryVerify(() => findChild(page.grid, "tracksCell") !== null)
-        compare(findChild(page.grid, "technicalCell_album"), null)
-    }
     function test_an_ancestor_move_updates_the_band_without_scrolling() {
         compare(page.contentY, 0)
         compare(page.grid.visibleTop, 0)

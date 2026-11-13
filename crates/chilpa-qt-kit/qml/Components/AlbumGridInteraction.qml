@@ -25,10 +25,6 @@ QtObject {
         }
     }
 
-    function menu(menu, available, albumId, title, subtitle, at, point) {
-        if (available) menu.show(albumId, title, subtitle, at, point.x, point.y)
-    }
-
     function toggleQuick(at) {
         grid.model.prepareOpen(at)
         grid.model.expanded = grid.model.expanded === at ? -1 : at

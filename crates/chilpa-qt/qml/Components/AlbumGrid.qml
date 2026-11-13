@@ -128,7 +128,6 @@ Item {
             AlbumRow {
                 readonly property bool shown: grid.list && row.nearby
 
-                active: grid.list
                 visible: shown
                 x: Metrics.cardRing
                 y: row.lead
@@ -168,7 +167,7 @@ Item {
 
                 AlbumCard {
                     required property int index
-                    readonly property bool occupied: row.nearby && index < row.span
+                    readonly property bool occupied: index < row.span
                     readonly property int at: row.first + index
                     readonly property int rev: row.revision
 
@@ -196,7 +195,12 @@ Item {
                     // A record that stops playing closes its quick view too.
                     onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
                     onQuick: interaction.toggleQuick(at)
-                    onMenu: (x, y) => interaction.menu(albumMenu, !round && available, albumId, title, subtitle, at, mapToItem(grid, x, y))
+                    onMenu: (x, y) => {
+                        if (round || !available)
+                            return
+                        const p = mapToItem(grid, x, y)
+                        albumMenu.show(albumId, title, subtitle, at, p.x, p.y)
+                    }
                 }
             }
 

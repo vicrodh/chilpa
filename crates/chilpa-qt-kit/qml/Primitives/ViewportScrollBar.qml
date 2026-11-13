@@ -41,13 +41,15 @@ ScrollBar {
         color: Theme.color.textTertiary
         opacity: bar.pressed ? 1 : 0.85
     }
+    // A default sibling already shares the viewport's coordinate space.
+    function mappedOrigin(surface) { return overlayParent ? Viewport.pointIn(viewport, surface) : Qt.point(viewport.x, viewport.y) }
     Component.onCompleted: {
         viewport = parent
         viewportArea = hoverComponent.createObject(viewport)
         if (gutter >= 0) {
             area = bridgeComponent.createObject(overlayParent || viewport.parent)
-            area.x = Qt.binding(function() { return Viewport.pointIn(viewport, area.parent).x + (sideways ? 0 : isNaN(rightEdge) ? viewport.width : rightEdge) })
-            area.y = Qt.binding(function() { return Viewport.pointIn(viewport, area.parent).y + (sideways ? Math.max(0, viewport.height - bar.reservedBottom + (bar.reservedBottom > 0 ? bar.horizontalGutter - bar.height / 2 : 0)) : 0) })
+            area.x = Qt.binding(function() { return bar.mappedOrigin(area.parent).x + (sideways ? 0 : isNaN(rightEdge) ? viewport.width : rightEdge) })
+            area.y = Qt.binding(function() { return bar.mappedOrigin(area.parent).y + (sideways ? Math.max(0, viewport.height - bar.reservedBottom + (bar.reservedBottom > 0 ? bar.horizontalGutter - bar.height / 2 : 0)) : 0) })
             area.width = Qt.binding(function() { return sideways ? viewport.width : gutter + bar.width })
             area.height = Qt.binding(function() { return sideways ? (bar.reservedBottom > 0 ? bar.height : gutter + bar.height) : Math.max(0, viewport.height - bar.reservedBottom) })
         }
@@ -70,13 +72,13 @@ ScrollBar {
             } else bar.parent = surface
             active = Qt.binding(function() { return hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewportArea && viewportArea.hovered) || !!(viewport && viewport.moving) })
             if (sideways) {
-                x = Qt.binding(function() { return inset ? 0 : Viewport.pointIn(viewport, bar.parent).x })
-                y = Qt.binding(function() { return (inset ? 0 : Viewport.pointIn(viewport, bar.parent).y) + Math.max(0, viewport.height - bar.reservedBottom + bar.horizontalGutter - height / 2) }) // derived: center the control in the margin
+                x = Qt.binding(function() { return inset ? 0 : bar.mappedOrigin(bar.parent).x })
+                y = Qt.binding(function() { return (inset ? 0 : bar.mappedOrigin(bar.parent).y) + Math.max(0, viewport.height - bar.reservedBottom + bar.horizontalGutter - height / 2) }) // derived: center the control in the margin
                 width = Qt.binding(function() { return viewport.width })
                 height = Qt.binding(function() { return Metrics.gap4 })
             } else {
-                x = Qt.binding(function() { return (inset ? 0 : Viewport.pointIn(viewport, bar.parent).x) + (isNaN(rightEdge) ? viewport.width : rightEdge) + gutter - width / 2 }) // derived: center the control in the margin
-                y = Qt.binding(function() { return inset ? 0 : Viewport.pointIn(viewport, bar.parent).y })
+                x = Qt.binding(function() { return (inset ? 0 : bar.mappedOrigin(bar.parent).x) + (isNaN(rightEdge) ? viewport.width : rightEdge) + gutter - width / 2 }) // derived: center the control in the margin
+                y = Qt.binding(function() { return inset ? 0 : bar.mappedOrigin(bar.parent).y })
                 height = Qt.binding(function() { return Math.max(0, viewport.height - bar.reservedBottom) })
             }
         }
