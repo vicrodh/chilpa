@@ -11,6 +11,7 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::render::Outcome;
 use chilpa_audio::sink::{AudioSink, SinkError};
+use chilpa_core::player::{Player, PlayerEvent};
 use chilpa_core::queue_playback::{play_queue_told, Controls, DsdMode, Repeat, SharedQueue, TrackResult};
 use chilpa_core::remote::{Described, Located, Media, RemoteOpener};
 use chilpa_models::{RemoteEntry, SourceId};
@@ -59,6 +60,13 @@ fn wave_bytes(frames: u32) -> Vec<u8> {
 fn wave(dir: &Path, name: &str) -> PathBuf {
     let path = dir.join(name);
     std::fs::write(&path, wave_bytes(4_410)).unwrap();
+    path
+}
+
+/// A file with an audio name and bytes that are no audio at all.
+fn garbage(dir: &Path, name: &str) -> PathBuf {
+    let path = dir.join(name);
+    std::fs::write(&path, b"this is text and no audio at all. ".repeat(256)).unwrap();
     path
 }
 
@@ -370,5 +378,48 @@ fn under_repeat_one_a_copy_of_a_track_that_broke_is_not_opened_again() {
     assert!(result.is_ok(), "{:?}", result.err());
     assert_eq!(started, [0, 1, 3], "the copy at the third position is passed unopened: its audible part is not heard again");
     assert_eq!(passed, [0], "and it is said once");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+fn player() -> Player {
+    Player::spawn(
+        Box::new(|_| Ok(caps_16())),
+        Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
+    )
+}
+
+/// What the player said, each event with its play, until `play` was over.
+fn events_until_over(player: &Player, play: u64) -> Vec<(u64, PlayerEvent)> {
+    let limit = Instant::now() + Duration::from_secs(20);
+    let mut seen = Vec::new();
+    while Instant::now() < limit {
+        for (generation, event) in player.poll_tagged() {
+            let over = generation == play && matches!(event, PlayerEvent::Finished { .. } | PlayerEvent::Failed { .. } | PlayerEvent::Stopped { .. });
+            seen.push((generation, event));
+            if over {
+                return seen;
+            }
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    panic!("the play never ended: {seen:?}");
+}
+
+#[test]
+fn every_event_says_which_play_it_belongs_to() {
+    let dir = folder("tagged");
+    let player = player();
+    // A queue where nothing opens: it says what it passed over and fails.
+    let first = player.play_from_index(&[garbage(&dir, "01.flac")], "fake", None, false, None, &[], None);
+    let first_events = events_until_over(&player, first);
+    assert!(matches!(first_events.last(), Some((_, PlayerEvent::Failed { .. }))), "{first_events:?}");
+    let second = player.play_from_index(&[wave(&dir, "02.wav")], "fake", None, false, None, &[], None);
+    let second_events = events_until_over(&player, second);
+    assert_ne!(first, second);
+    assert!(first_events.iter().all(|(generation, _)| *generation == first), "{first_events:?}");
+    assert!(second_events.iter().all(|(generation, _)| *generation == second), "{second_events:?}");
+    for wanted in ["Started", "Progress", "Finished"] {
+        assert!(second_events.iter().any(|(_, event)| format!("{event:?}").starts_with(wanted)), "{wanted} is among them: {second_events:?}");
+    }
     let _ = std::fs::remove_dir_all(dir);
 }

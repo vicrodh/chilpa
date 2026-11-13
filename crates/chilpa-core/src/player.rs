@@ -69,6 +69,21 @@ pub enum PlayerEvent {
     Skipped { generation: u64, index: usize, path: PathBuf, message: String, played: Option<u64> },
 }
 
+/// Where a play says what happens, each event under the play's generation:
+/// `Player::poll_tagged` hands it over with the event, so whoever started
+/// another play since can tell an event is not about the one in front of them.
+#[derive(Clone)]
+struct Events {
+    to: Sender<(u64, PlayerEvent)>,
+    generation: u64,
+}
+
+impl Events {
+    fn send(&self, event: PlayerEvent) -> Result<(), ()> {
+        self.to.send((self.generation, event)).map_err(|_| ())
+    }
+}
+
 enum Order {
     /// Plays this request's queue. A queue belongs to one launch so a delayed
     /// order can never observe tracks from a newer click.
@@ -112,7 +127,7 @@ pub type ProbeDevice = Box<dyn FnMut(&str) -> Result<DeviceCaps, SinkError> + Se
 /// The player, as the interface sees it.
 pub struct Player {
     orders: Sender<Order>,
-    events: Receiver<PlayerEvent>,
+    events: Receiver<(u64, PlayerEvent)>,
     controls: crate::queue_playback::Controls,
     /// The queue that is playing. It is shared with the thread so things
     /// can be added without cutting off what is playing.
@@ -130,7 +145,7 @@ impl Player {
     /// Starts the player thread.
     pub fn spawn(mut probe: ProbeDevice, mut open: OpenSink) -> Self {
         let (orders_tx, orders_rx) = channel::<Order>();
-        let (events_tx, events_rx) = channel::<PlayerEvent>();
+        let (events_tx, events_rx) = channel::<(u64, PlayerEvent)>();
         let controls = crate::queue_playback::Controls::new();
         let controls_thread = controls.clone();
         let queue = Arc::new(Mutex::new(crate::queue_playback::SharedQueue::default()));
@@ -193,13 +208,15 @@ impl Player {
                             }
                             controls_thread.start_index.store(start_index.unwrap_or(usize::MAX), Ordering::Release);
                             let started = std::time::Instant::now();
+                            // What this play says goes out under its generation.
+                            let events = Events { to: events_tx.clone(), generation };
                             let result = play(
                                 &queue,
                                 &device,
                                 &controls_thread,
                                 &mut probe,
                                 &mut open,
-                                &events_tx,
+                                &events,
                                 generation,
                             );
                             chilpa_audio::diagnostics::trace(
@@ -219,7 +236,7 @@ impl Player {
                                 Ok(Outcome::Unreadable { reason, .. }) => PlayerEvent::Failed { message: reason },
                                 Err(e) => PlayerEvent::Failed { message: e.to_string() },
                             };
-                            let _ = events_tx.send(event);
+                            let _ = events.send(event);
                         }
                     }
                 }
@@ -456,6 +473,12 @@ impl Player {
 
     /// Whatever events there are, without blocking.
     pub fn poll(&self) -> Vec<PlayerEvent> {
+        self.poll_tagged().into_iter().map(|(_, event)| event).collect()
+    }
+
+    /// The same, each with the generation of the play that said it, as
+    /// `play_from_index` returned it.
+    pub fn poll_tagged(&self) -> Vec<(u64, PlayerEvent)> {
         let mut out = Vec::new();
         loop {
             match self.events.try_recv() {
@@ -488,7 +511,7 @@ fn play(
     controls: &crate::queue_playback::Controls,
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
-    events: &Sender<PlayerEvent>,
+    events: &Events,
     generation: u64,
 ) -> Result<Outcome, PlayError> {
     let exclusive = controls.exclusive.get();
@@ -737,7 +760,7 @@ fn play_stream(
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
     open: &mut OpenSink,
-    events: &Sender<PlayerEvent>,
+    events: &Events,
     index: usize,
     queue_len: usize,
     dsp: &chilpa_audio::dsp::Control,
@@ -792,7 +815,7 @@ fn play_stream(
 /// Runs after every write to the output. The station title changes with every
 /// song; it is looked at here, the only thing that travels often, and published
 /// only when it changed: what listens to it goes to the network.
-fn publish_progress(events: &Sender<PlayerEvent>, titles: &mut chilpa_stream::TitleChanges, frames: u64) {
+fn publish_progress(events: &Events, titles: &mut chilpa_stream::TitleChanges, frames: u64) {
     if let Some(title) = titles.next_change() {
         let _ = events.send(PlayerEvent::StreamTitle { title });
     }
@@ -821,7 +844,7 @@ fn play_cd(
     caps: &chilpa_audio::negotiate::DeviceCaps,
     controls: &crate::queue_playback::Controls,
     open: &mut OpenSink,
-    events: &Sender<PlayerEvent>,
+    events: &Events,
 ) -> Result<Outcome, PlayError> {
     let node = cd_device_of(path)
         .ok_or_else(|| PlayError::Sink(SinkError::Backend(chilpa_i18n::t("the drive is missing"))))?;
@@ -896,7 +919,7 @@ fn play_cd(
     _caps: &chilpa_audio::negotiate::DeviceCaps,
     _controls: &crate::queue_playback::Controls,
     _open: &mut OpenSink,
-    _events: &Sender<PlayerEvent>,
+    _events: &Events,
 ) -> Result<Outcome, PlayError> {
     Err(PlayError::Sink(SinkError::Backend(
         chilpa_i18n::t("CDs are not read outside Linux yet"),
@@ -909,7 +932,8 @@ mod tests {
 
     #[test]
     fn a_station_title_is_published_once_and_every_progress_still_is() {
-        let (events, heard) = channel();
+        let (to, heard) = channel();
+        let events = Events { to, generation: 1 };
         let now_playing = chilpa_stream::NowPlaying::new();
         now_playing.set(Some("A - One".into()));
         let mut titles = now_playing.changes();
@@ -918,7 +942,7 @@ mod tests {
         }
         now_playing.set(Some("B - Two".into()));
         publish_progress(&events, &mut titles, 1_000);
-        let heard: Vec<PlayerEvent> = heard.try_iter().collect();
+        let heard: Vec<PlayerEvent> = heard.try_iter().map(|(_, event)| event).collect();
         let songs: Vec<&str> = heard.iter().filter_map(|event| match event {
             PlayerEvent::StreamTitle { title } => Some(title.as_str()),
             _ => None,

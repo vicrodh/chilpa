@@ -254,6 +254,11 @@ impl Chilpa {
         }
     }
 
+    /// The player's generation of the launch in flight.
+    pub(crate) fn launch_generation(&self) -> Option<u64> {
+        self.unavailable.launch.as_ref().map(|launch| launch.generation)
+    }
+
     /// The rows the player passes without opening: the ones the listener
     /// removed and the ones found unavailable.
     pub(crate) fn removed_for_player(&self) -> Vec<bool> {

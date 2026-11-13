@@ -1088,3 +1088,49 @@ fn a_stop_mark_put_on_a_copy_already_left_out_still_stops_the_queue() {
     assert!(!chilpa.now_playing().playing, "the queue stopped at the mark");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_failure_left_over_from_a_replaced_queue_is_not_the_new_one_s() {
+    let dir = folder("failure-stale");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let mut chilpa = chilpa_api::Chilpa::new();
+    // A queue of one track that is no audio: the player passes over it and
+    // fails, since nothing could play. Nobody reads either word yet.
+    chilpa.play_tracks(&strings(&[garbage_file(&dir, "01.flac")]), OUTPUT, true);
+    std::thread::sleep(std::time::Duration::from_millis(500));
+    // Another queue starts before the old play's end is read.
+    chilpa.play_tracks(&strings(&[wave(&dir, "02.wav", SHORT * 20)]), OUTPUT, true);
+    assert!(wait_started(&mut chilpa), "the new queue plays");
+    let now = chilpa.now_playing();
+    assert!(now.playing, "the old play's failure did not stop the new one");
+    assert!(now.error.is_empty(), "nor is it said of the new queue: {}", now.error);
+    // The old play ended by itself and never says it stopped: the relaunch
+    // must not be left waiting for that, or this stop is taken for it.
+    chilpa.stop();
+    assert!(wait_until_stopped(&mut chilpa), "a stop asked for afterwards stops the window too");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn tracks_of_a_replaced_queue_read_late_are_not_logged_as_played_through() {
+    let dir = folder("listens-stale");
+    other_library(&dir);
+    english();
+    let _realtime = Realtime::on();
+    let mut chilpa = chilpa_api::Chilpa::new();
+    // The first track breaks half a second in and the second starts; nobody
+    // reads any of it before another queue replaces this one.
+    chilpa.play_tracks(&strings(&[broken_dsf(&dir, "01.dsf"), wave(&dir, "02.wav", SHORT * 20)]), OUTPUT, true);
+    std::thread::sleep(std::time::Duration::from_millis(1_500));
+    chilpa.play_tracks(&strings(&[wave(&dir, "03.wav", SHORT)]), OUTPUT, true);
+    assert!(wait_until_stopped(&mut chilpa), "the new queue ran out");
+    let logged = chilpa.listening_summary(&chilpa_api::listening::ListenFilter::default()).unwrap();
+    assert_eq!(
+        logged.events - logged.skips,
+        1,
+        "only the new queue's track played through; the one that broke and the one cut off by the new queue did not: {logged:?}"
+    );
+    let _ = std::fs::remove_dir_all(dir);
+}

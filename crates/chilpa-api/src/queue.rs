@@ -20,6 +20,7 @@ use super::*;
 pub(crate) mod back_button;
 pub(crate) mod ended;
 pub(crate) mod normalization;
+pub(crate) mod replaced;
 pub(crate) mod unavailable;
 
 /// Where the playback switches are kept.

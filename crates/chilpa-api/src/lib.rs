@@ -1269,9 +1269,9 @@ impl Chilpa {
         self.follow_playing_documents();
         let mut started = false;
         self.take_unavailable_reports();
-        let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
-        for event in events {
-            if self.listen.active == 0 { continue; }
+        let events = self.player.as_ref().map(|p| p.poll_tagged()).unwrap_or_default();
+        for (generation, event) in events {
+            if self.listen.active == 0 || self.from_replaced_play(generation, &event) { continue; }
             match event {
                 PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
                     let requested_rate = route.delivery.requested.sample_rate_hz;
