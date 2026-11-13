@@ -1454,6 +1454,9 @@ msgstr "Quitar todo"
 msgid "Clear filter"
 msgstr "Limpiar filtro"
 
+msgid "Clear filters"
+msgstr "Limpiar filtros"
+
 msgid "Clear generated images"
 msgstr "Borrar imágenes generadas"
 
@@ -5649,9 +5652,6 @@ msgstr "Restablecer EQ"
 
 msgid "Reset counter"
 msgstr "Reiniciar contador"
-
-msgid "Reset filters"
-msgstr "Restablecer filtros"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Resolución reducida de {} a {} bits"

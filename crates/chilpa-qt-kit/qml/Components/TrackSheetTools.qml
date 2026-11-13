@@ -10,14 +10,15 @@ ScreenHead {
     property string order: "default"
     property string group: "off"
     property var shownColumns: []
-    property bool filtered: false
     property bool selectionMode: false
     signal searched(string text)
     signal ordered(string value)
     signal grouped(string value)
     signal columned(var columns)
-    signal reset()
     signal selectionToggled()
+    function focusSearch() { find.focusInput() }
+    function clearSearch() { find.text = ""; settle.stop() }
+    onTypedChanged: if (find.text.trim() !== typed) { find.text = typed; settle.stop() }
     flexible: find
     Timer {
         id: settle
@@ -91,16 +92,6 @@ ScreenHead {
         onChosen: columns => {
             tools.columned(columns)
         }
-    }
-    IconButton {
-        objectName: "tracksResetFilters"
-        anchors.verticalCenter: parent.verticalCenter
-        visible: tools.filtered
-        tip: I18n.tr("Reset filters", I18n.rev)
-        glyph: Icons.filter
-        round: true
-        checked: true
-        onClicked: tools.reset()
     }
     IconButton {
         anchors.verticalCenter: parent.verticalCenter

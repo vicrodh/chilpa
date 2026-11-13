@@ -1,93 +1,107 @@
 import QtQuick
 import QtQuick.Controls.Basic as Controls
 import app.chilpa.kit
-import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "../Theme"
+import "../Primitives"
 
 Controls.Popup {
     id: popup
+    objectName: "tracksColumnFilter"
     PopupInput { surface: popup }
     property var model
     property string field: ""
     property string label: ""
     property var draft: []
-    property var options: []
-    // One page of 100 entries and at most 64 back cursors live until close.
-    property var cursors: [""]
-    property string requestedCursor: ""
-    property string next: ""
-    property bool more: false
-    property string error: ""
     property string searched: ""
-    signal applied(string field, var values)
+    property var sourceNames: ({})
+    // Selected source labels only; no title, album or artist catalog is cached.
+    property var labels: ({})
+    property Item anchorItem: null
+    property real anchorTop: margins
+    property real anchorBottom: margins
+    property real anchorLeft: margins
+    readonly property bool below: !parent || anchorBottom + height + margins <= parent.height
+    readonly property real panelRoom: parent ? Math.max(0, parent.height - margins * 2) : Metrics.trackFilterHeight
+    readonly property alias choiceWindow: optionsWindow
+    signal applied(string field, var values, var labels)
     parent: Controls.Overlay.overlay
     modal: true
     dim: false
     focus: true
     padding: Metrics.gap12
     margins: Metrics.gap10
-    width: Math.min(Metrics.menuMaxWidth, parent ? parent.width - margins * 2 : Metrics.menuWidth) // derived: a margin on each side
+    width: Math.min(Metrics.trackFilterWidth, parent ? parent.width - margins * 2 : Metrics.menuWidth) // derived: outer margins
     closePolicy: Controls.Popup.CloseOnEscape | Controls.Popup.CloseOnReleaseOutside
     function fit() {
         if (!parent) return
-        x = Math.max(margins, Math.min(x, parent.width - width - margins))
-        y = Math.max(margins, Math.min(y, parent.height - height - margins))
+        if (anchorItem) {
+            const at = anchorItem.mapToItem(parent, 0, 0)
+            anchorTop = at.y; anchorBottom = at.y + anchorItem.height; anchorLeft = at.x
+        }
+        x = Math.max(margins, Math.min(anchorLeft, parent.width - width - margins))
+        const wanted = below ? anchorBottom : height + margins <= anchorTop ? anchorTop - height : anchorBottom
+        y = Math.max(margins, Math.min(wanted, parent.height - height - margins))
     }
     onHeightChanged: if (opened) fit()
-    function show(field, label, selected, anchor) {
-        popup.field = field
-        popup.label = label
-        draft = Array.isArray(selected) ? selected.slice() : typeof selected === "boolean" ? [String(selected)] : []
-        search.text = ""
-        searched = ""
-        options = []
-        error = ""
-        more = false
-        cursors = [""]
-        const at = anchor.mapToItem(parent, 0, anchor.height)
-        x = Math.max(margins, Math.min(at.x, parent.width - width - margins))
-        open()
-        y = Math.max(margins, Math.min(at.y, parent.height - height - margins))
-        ask("")
-        search.focusInput()
+    Connections {
+        target: popup.parent
+        function onWidthChanged() { if (popup.opened) popup.fit() }
+        function onHeightChanged() { if (popup.opened) popup.fit() }
     }
-    function ask(cursor) {
-        requestedCursor = cursor
-        if (opened && model) model.requestColumn(field, searched, cursor)
+    function show(column, title, selected, anchor) {
+        field = column; label = title
+        draft = Array.isArray(selected) ? selected.slice() : typeof selected === "boolean" ? [String(selected)] : []
+        const names = ({})
+        for (const key of draft.slice(0, 256)) if (sourceNames[key]) names[key] = sourceNames[key]
+        labels = names
+        search.text = ""; searched = ""
+        anchorItem = anchor
+        fit(); open(); fit()
+        optionsWindow.reset(field, "")
+        search.focusInput()
     }
     function toggle(key) {
         if (draft.indexOf(key) >= 0) draft = draft.filter(value => value !== key)
         else draft = field === "favorite" ? [key] : draft.concat([key])
+        if (field === "source") {
+            const next = Object.assign({}, labels)
+            if (draft.indexOf(key) < 0) delete next[key]
+            else if (Object.keys(next).length < 256) {
+                for (let i = 0; i < optionsWindow.count; ++i) {
+                    const option = optionsWindow.optionAt(i)
+                    if (option.key === key) { next[key] = option.label; break }
+                }
+            }
+            labels = next
+        }
     }
     function apply() {
-        applied(field, field === "favorite" ? (draft.length ? draft[0] === "true" : null) : draft)
+        const column = field, selected = field === "favorite" ? (draft.length ? draft[0] === "true" : null) : draft.slice()
+        const names = labels
         close()
+        applied(column, selected, names)
     }
-    function display(key, label) {
-        if (field === "favorite") return key === "true" ? I18n.tr("Yes", I18n.rev) : I18n.tr("No", I18n.rev)
-        if (field === "rating") return key === "0" ? I18n.tr("Unrated", I18n.rev) : key + " / 5"
-        if (field === "quality") return ({lossy: I18n.tr("Lossy", I18n.rev), lossless: I18n.tr("Lossless", I18n.rev), hires: I18n.tr("Hi-Res", I18n.rev), dsd: "DSD"})[key] || I18n.tr("Unknown", I18n.rev)
-        if (field === "format") return key ? key.toUpperCase() : I18n.tr("Unknown", I18n.rev)
-        return label || I18n.tr("Unknown", I18n.rev)
-    }
-    function refresh() {
-        if (!opened) return
-        options = []; more = false; cursors = [""]; ask("")
+    function display(key, label) { return names.value(field, key, label) }
+    TrackFilterNames { id: names; sourceNames: popup.labels }
+    TrackChoiceWindow {
+        id: optionsWindow
+        model: popup.model
+        onAboutToChange: choices.capture()
+        onShifted: rows => choices.shift += rows
+        onPageArrived: items => {
+            if (popup.field === "source") {
+                const next = Object.assign({}, popup.labels)
+                for (const item of items) if (popup.draft.indexOf(item.key) >= 0 && (Object.keys(next).length < 256 || next[item.key])) next[item.key] = item.label
+                popup.labels = next
+            }
+            choices.restore()
+        }
     }
     Connections {
         target: popup.model
         ignoreUnknownSignals: true
-        function onKeyChanged() { popup.refresh() }
-        function onFilterRevChanged() { popup.refresh() }
-        function onColumnResultChanged() {
-            if (!popup.opened) return
-            const result = JSON.parse(popup.model.columnResult || "{}")
-            if (result.field !== popup.field || result.search !== popup.searched || result.cursor !== popup.requestedCursor) return
-            popup.options = result.items || []
-            popup.next = result.next || ""
-            popup.more = result.more === true
-            popup.error = result.error || ""
-        }
+        function onKeyChanged() { if (popup.opened) optionsWindow.reset(popup.field, popup.searched) }
+        function onFilterRevChanged() { if (popup.opened) optionsWindow.reset(popup.field, popup.searched) }
     }
     Timer {
         id: settle
@@ -95,15 +109,17 @@ Controls.Popup {
         onTriggered: {
             const next = search.text.trim()
             if (next === popup.searched) return
-            popup.searched = next; popup.options = []; popup.more = false; popup.cursors = [""]; popup.ask("")
+            popup.searched = next
+            optionsWindow.reset(popup.field, next)
+            choices.positionViewAtBeginning()
         }
     }
-    onClosed: { settle.stop(); if (model) model.closeColumn(); options = []; draft = []; cursors = [""]; error = "" }
+    onClosed: { settle.stop(); optionsWindow.close(); draft = []; labels = ({}); anchorItem = null }
     background: Rectangle { radius: Metrics.radiusMenu; color: Theme.color.surfaceRaised; Edge {} }
     contentItem: Column {
         id: contents
         readonly property real fixedHeight: heading.height + search.height + allRow.height + footer.height
-            + (pager.visible ? pager.height + spacing : 0) + (status.visible ? status.height + spacing : 0) + spacing * 4 // derived: gaps between the four fixed controls and the list
+            + (status.visible ? status.height + spacing : 0) + spacing * 4 // derived: fixed controls and list gaps
         spacing: Metrics.gap8
         Text {
             id: heading
@@ -121,71 +137,66 @@ Controls.Popup {
             onTextChanged: if (popup.opened) settle.restart()
             onEscaped: popup.close()
             onAccepted: popup.apply()
-            onStepped: by => { choices.forceActiveFocus(); choices.currentIndex = Math.max(0, Math.min(choices.count - 1, choices.currentIndex + by)); choices.positionViewAtIndex(choices.currentIndex, ListView.Contain) }
+            onStepped: by => { choices.forceActiveFocus(); choices.currentIndex = Math.max(0, Math.min(choices.count - 1, choices.currentIndex + by)); choices.positionViewAtIndex(choices.currentIndex, ListView.Contain); choices.prefetch(by) }
         }
         MenuEntry {
             id: allRow
             objectName: "tracksFilterAll"
             width: parent.width
             entry: ({text: I18n.tr("All", I18n.rev), checked: popup.draft.length === 0})
-            onClicked: popup.draft = []
-        }
-        ListView {
-            id: choices
-            objectName: "tracksFilterChoices"
-            width: parent.width
-            height: Math.min(contentHeight, Math.max(0, (popup.parent ? popup.parent.height : Metrics.menuMaxWidth) - popup.padding * 2 - popup.margins * 2 - contents.fixedHeight)) // derived: panel padding and outer margins on both sides
-            clip: true
-            reuseItems: true
             activeFocusOnTab: true
-            Keys.onReturnPressed: popup.apply()
-            Keys.onEnterPressed: popup.apply()
-            model: popup.options
-            boundsBehavior: Flickable.StopAtBounds
-            Controls.ScrollBar.vertical: Controls.ScrollBar {}
-            Keys.onSpacePressed: if (currentIndex >= 0 && currentIndex < popup.options.length) popup.toggle(popup.options[currentIndex].key)
-            delegate: MenuEntry {
-                required property var modelData
-                required property int index
-                width: choices.width
-                entry: ({text: popup.display(modelData.key, modelData.label), hint: String(modelData.count), checked: popup.draft.indexOf(modelData.key) >= 0, glyph: popup.field === "rating" && modelData.key !== "0" ? Icons.starFilled : "", filled: popup.field === "rating", focused: choices.activeFocus && index === choices.currentIndex})
-                onClicked: popup.toggle(modelData.key)
-            }
+            Accessible.role: Accessible.Button
+            Accessible.name: entry.text
+            Accessible.onPressAction: popup.draft = []
+            Keys.onReturnPressed: popup.draft = []
+            Keys.onSpacePressed: popup.draft = []
+            onClicked: popup.draft = []
+            FocusRing {}
+        }
+        TrackFilterChoices {
+            id: choices
+            width: parent.width
+            height: Math.min(contentHeight, Math.max(0, popup.panelRoom - popup.padding * 2 - contents.fixedHeight)) // derived: panel padding
+            choiceWindow: popup.choiceWindow
+            surfaceOpen: popup.opened
+            field: popup.field
+            draft: popup.draft
+            formatter: names
+            onToggled: key => popup.toggle(key)
+            onAccepted: popup.apply()
         }
         Text {
             id: status
             width: parent.width
-            visible: popup.error !== "" || popup.options.length === 0
-            text: popup.error || (popup.model && popup.model.columnBusy ? I18n.tr("Loading…", I18n.rev) : I18n.tr("No matches", I18n.rev))
+            visible: optionsWindow.error !== "" || optionsWindow.count === 0
+            text: optionsWindow.error || (optionsWindow.loading ? I18n.tr("Loading…", I18n.rev) : I18n.tr("No matches", I18n.rev))
             wrapMode: Text.WordWrap
             font.pointSize: Type.small
             color: Theme.color.textSecondary
         }
-        Row {
-            id: pager
-            visible: popup.more || popup.cursors.length > 1
-            spacing: Metrics.gap8
-            PillButton {
-                objectName: "tracksFilterPrevious"
-                visible: popup.cursors.length > 1
-                enabled: popup.model && !popup.model.columnBusy
-                text: I18n.tr("Previous", I18n.rev)
-                onClicked: { popup.cursors = popup.cursors.slice(0, -1); popup.ask(popup.cursors[popup.cursors.length - 1]) }
-            }
-            PillButton {
-                objectName: "tracksFilterMore"
-                visible: popup.more
-                enabled: popup.model && !popup.model.columnBusy
-                text: I18n.tr("Next", I18n.rev)
-                onClicked: { popup.cursors = popup.cursors.concat([popup.next]).slice(-64); popup.ask(popup.next) }
-            }
-        }
-        Row {
+        Item {
             id: footer
-            anchors.right: parent.right
-            spacing: Metrics.gap8
-            PillButton { text: I18n.tr("Cancel", I18n.rev); onClicked: popup.close() }
-            PillButton { objectName: "tracksFilterApply"; kind: "primary"; text: I18n.tr("Apply", I18n.rev); onClicked: popup.apply() }
+            width: parent.width
+            height: Metrics.hitMin
+            Rectangle { y: -Metrics.gap4; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
+            Text {
+                anchors.left: parent.left
+                anchors.right: actions.left
+                anchors.rightMargin: Metrics.gap8
+                anchors.verticalCenter: parent.verticalCenter
+                text: optionsWindow.loading && optionsWindow.count > 0 ? I18n.tr("Loading…", I18n.rev) : popup.draft.length ? I18n.trCount("{} selection", "{} selections", popup.draft.length, I18n.rev) : I18n.tr("All", I18n.rev)
+                elide: Text.ElideRight
+                font.pointSize: Type.small
+                color: Theme.color.textTertiary
+            }
+            Row {
+                id: actions
+                anchors.right: parent.right
+                spacing: Metrics.gap6
+                CompactButton { visible: optionsWindow.error !== ""; text: I18n.tr("Retry", I18n.rev); onClicked: optionsWindow.retry() }
+                CompactButton { objectName: "tracksFilterCancel"; text: I18n.tr("Cancel", I18n.rev); quiet: true; onClicked: popup.close() }
+                CompactButton { objectName: "tracksFilterApply"; text: I18n.tr("Apply", I18n.rev); primary: true; onClicked: popup.apply() }
+            }
         }
     }
 }

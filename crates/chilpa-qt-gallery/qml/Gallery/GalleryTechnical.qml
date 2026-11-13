@@ -52,12 +52,30 @@ Column {
         settings: ({kept: function(key) { return "" }, keep: function(key, value) {}})
         visits: ({recall: function(key, fallback) { return fallback }, keep: function(key, value) {}})
     }
+    TrackChoiceWindow { model: sheetFilter.model }
+    TrackFilterNames { id: filterNames }
+    Row {
+        spacing: Metrics.gap8
+        CompactButton { text: "Apply"; primary: true }
+        TrackFilterTag { label: filterNames.fields.artist; value: "The Quartet" }
+    }
+    TrackFilterTrail {
+        width: section.width
+        filters: ({artist:["The Quartet"], rating:["5"]})
+        onEdited: (field, label, anchor) => sheetFilter.show(field, label, filters[field], anchor)
+    }
     TrackColumns { id: sheetCols; width: section.width; sheet: true; optionalColumns: sheetState.columns }
     TrackSheetTools { width: section.width; count: "24 tracks"; shownColumns: sheetState.columns; onColumned: columns => sheetState.keepColumns(columns) }
     TrackSheetHeader {
         width: section.width; cols: sheetCols; filters: sheetState.effective
         onRequested: (field, label, anchor) => sheetFilter.show(field, label, sheetState.filters[field], anchor)
     }
+    TrackFilterChoices {
+        width: section.width; height: Metrics.menuItem
+        choiceWindow: previewChoices
+        formatter: filterNames
+    }
+    TrackChoiceWindow { id: previewChoices }
     TrackColumnFilter {
         id: sheetFilter
         model: QtObject {

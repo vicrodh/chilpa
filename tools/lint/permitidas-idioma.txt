@@ -1028,3 +1028,6 @@ numer
 # sandbox test makes.
 ssl
 Romanizer
+
+# JavaScript Array method used by the bounded checklist window.
+unshift

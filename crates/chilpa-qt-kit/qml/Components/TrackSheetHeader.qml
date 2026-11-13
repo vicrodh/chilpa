@@ -31,8 +31,8 @@ Item {
             readonly property var selection: head.filters[modelData.key]
             readonly property bool filtered: selection !== undefined && selection !== null && (typeof selection === "boolean" || selection.length > 0)
             objectName: "tracksColumn-" + modelData.key
-            x: modelData.x
-            width: Math.max(0, modelData.width - Metrics.gap4)
+            x: modelData.x - (modelData.filter ? Metrics.gap8 : 0)
+            width: Math.max(0, modelData.width - Metrics.gap2)
             height: head.height
             visible: modelData.width > 0
             activeFocusOnTab: modelData.filter === true
@@ -44,13 +44,19 @@ Item {
             Keys.onSpacePressed: head.requested(modelData.key, modelData.label, cell)
             Rectangle {
                 anchors.fill: parent
-                anchors.margins: Metrics.gap2
-                radius: Metrics.radiusItem
-                color: cell.filtered ? Theme.color.stateSelected : (hover.hovered || cell.activeFocus) && cell.modelData.filter ? Theme.color.stateHover : "transparent"
+                radius: 0
+                color: (cell.filtered || hover.hovered || cell.activeFocus) && cell.modelData.filter ? Theme.color.stateHover : "transparent"
+            }
+            Rectangle {
+                anchors.bottom: parent.bottom; width: parent.width; height: Metrics.focusRing
+                visible: cell.filtered || cell.activeFocus
+                color: Theme.color.accent
             }
             Text {
                 anchors.left: parent.left
+                anchors.leftMargin: cell.modelData.filter ? Metrics.gap8 : 0
                 anchors.right: arrow.left
+                anchors.rightMargin: Metrics.gap4
                 anchors.verticalCenter: parent.verticalCenter
                 text: cell.modelData.label
                 elide: Text.ElideRight
@@ -61,8 +67,9 @@ Item {
             Icon {
                 id: arrow
                 anchors.right: parent.right
+                anchors.rightMargin: cell.modelData.filter ? Metrics.gap8 : 0
                 anchors.verticalCenter: parent.verticalCenter
-                width: cell.modelData.filter ? Metrics.iconSm + Metrics.gap4 : 0
+                width: cell.modelData.filter ? Metrics.iconSm : 0
                 visible: cell.modelData.filter === true
                 glyph: cell.filtered ? Icons.filter : Icons.chevronDown
                 size: Metrics.iconSm

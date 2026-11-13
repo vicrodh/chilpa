@@ -1452,6 +1452,9 @@ msgstr "すべて解除"
 msgid "Clear filter"
 msgstr "フィルターをクリア"
 
+msgid "Clear filters"
+msgstr "フィルターをクリア"
+
 msgid "Clear generated images"
 msgstr "生成された画像をクリア"
 
@@ -5643,9 +5646,6 @@ msgstr "EQをリセット"
 
 msgid "Reset counter"
 msgstr "カウンターをリセット"
-
-msgid "Reset filters"
-msgstr "フィルターをリセット"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "解像度を{}ビットから{}ビットに縮小"

@@ -53,7 +53,7 @@ Item {
     readonly property var names: ({ title: I18n.tr("Title", I18n.rev), artist: I18n.tr("Artist", I18n.rev), album: I18n.tr("Album", I18n.rev),
         source: I18n.tr("Source", I18n.rev), quality: I18n.tr("Quality", I18n.rev), rating: I18n.tr("Rating", I18n.rev),
         format: I18n.tr("Format", I18n.rev), favorite: I18n.tr("Favorite", I18n.rev), plays: I18n.tr("Plays", I18n.rev), time: I18n.tr("Time", I18n.rev) })
-    function named(design, name) { return Math.max(design, Math.ceil(name.implicitWidth) + (sheet ? Metrics.gap24 : Metrics.gap8)) }
+    function named(design, name) { return Math.max(design, Math.ceil(name.implicitWidth) + (sheet ? Metrics.gap16 + Metrics.iconSm + Metrics.gap8 : Metrics.gap8)) }
     Text { id: favoriteName; text: cols.names.favorite; font.pointSize: Type.label; font.weight: Type.bold }
     Text { id: formatName; text: cols.names.format; font.pointSize: Type.label; font.weight: Type.bold }
     Text { id: sourceName; text: cols.names.source; font.pointSize: Type.label; font.weight: Type.bold }

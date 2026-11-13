@@ -69,14 +69,34 @@ Item {
         order: page.order
         group: page.group
         shownColumns: page.shownColumns
-        filtered: tableState.filtered
         selectionMode: page.selectionMode
         onSearched: text => page.typed = text
         onOrdered: value => { page.order = value; SettingsModel.keep("ui.tracks.order", value) }
         onGrouped: value => { page.group = value; SettingsModel.keep("ui.tracks.group", value) }
         onColumned: columns => { columnFilter.close(); tableState.keepColumns(columns) }
-        onReset: page.columnFilters = ({})
         onSelectionToggled: { page.selectionMode = !page.selectionMode; tracks.clearSelection() }
+    }
+
+    readonly property var sourceNames: {
+        const names = Object.assign({}, tableState.sourceNames)
+        for (let i = 0; i < Library.sourceKeys.length; ++i) names[Library.sourceKeys[i]] = Library.sourceLabels[i]
+        return names
+    }
+    TrackFilterTrail {
+        id: trail
+        objectName: "tracksFilterTrail"
+        x: head.x; width: head.width
+        anchors.top: head.bottom
+        anchors.topMargin: visible ? Metrics.gap10 : 0
+        filters: tableState.effective
+        search: page.typed
+        sourceNames: page.sourceNames
+        onEdited: (field, label, anchor) => {
+            if (field === "search") head.focusSearch()
+            else columnFilter.show(field, label, page.columnFilters[field], anchor)
+        }
+        onRemoved: field => { if (field === "search") { page.typed = ""; head.clearSearch() } else tableState.apply(field, null) }
+        onCleared: { columnFilter.close(); page.columnFilters = ({}); page.typed = ""; head.clearSearch(); tableState.sourceNames = ({}) }
     }
 
     // The group the first row shown is in, above the rows: bands between
@@ -87,7 +107,7 @@ Item {
     Text {
         id: groupName
         objectName: "tracksGroupName"
-        anchors.top: head.bottom
+        anchors.top: trail.bottom
         anchors.topMargin: Metrics.gap12
         x: head.x
         width: sheet.width
@@ -150,7 +170,8 @@ Item {
     TrackColumnFilter {
         id: columnFilter
         model: choices
-        onApplied: (field, values) => tableState.apply(field, values)
+        sourceNames: page.sourceNames
+        onApplied: (field, values, labels) => tableState.apply(field, values, labels)
     }
     Connections {
         target: tracks

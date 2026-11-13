@@ -1454,6 +1454,9 @@ msgstr "Alles wissen"
 msgid "Clear filter"
 msgstr "Filter wissen"
 
+msgid "Clear filters"
+msgstr "Filters wissen"
+
 msgid "Clear generated images"
 msgstr "Gegenereerde afbeeldingen wissen"
 
@@ -5649,9 +5652,6 @@ msgstr "EQ resetten"
 
 msgid "Reset counter"
 msgstr "Teller resetten"
-
-msgid "Reset filters"
-msgstr "Filters herstellen"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Resolutie verlaagd van {} naar {} bits"

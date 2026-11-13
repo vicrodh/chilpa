@@ -7,6 +7,8 @@ QtObject {
     required property var settings
     required property var visits
     property var filters: visits.recall("tracks.columnFilters", ({}))
+    // At most 256 selected source labels survive visits; no catalog is retained.
+    property var sourceNames: visits.recall("tracks.sourceNames", ({}))
     property var columns: readColumns(settings.kept("ui.tracks.columns"))
     readonly property var defaults: ["index", "art", "source", "time", "rating", "quality", "favorite"]
     readonly property bool filtered: Object.keys(effective).some(key => {
@@ -22,12 +24,18 @@ QtObject {
         try { const parsed = JSON.parse(text); if (Array.isArray(parsed)) return parsed } catch (error) {}
         return defaults.slice()
     }
-    function apply(field, values) {
+    function apply(field, values, labels) {
         const next = Object.assign({}, filters)
         if (values === null || Array.isArray(values) && values.length === 0) delete next[field]
         else next[field] = values
         filters = next
+        if (field === "source") {
+            const names = ({})
+            for (const key of (next.source || []).slice(0, 256))
+                if (labels && labels[key] || sourceNames[key]) names[key] = labels && labels[key] || sourceNames[key]
+            sourceNames = names
+        }
     }
     function keepColumns(chosen) { columns = chosen; settings.keep("ui.tracks.columns", JSON.stringify(chosen)) }
-    Component.onDestruction: visits.keep("tracks.columnFilters", filters)
+    Component.onDestruction: { visits.keep("tracks.columnFilters", filters); visits.keep("tracks.sourceNames", sourceNames) }
 }

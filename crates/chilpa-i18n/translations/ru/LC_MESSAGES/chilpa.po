@@ -1456,6 +1456,9 @@ msgstr "Очистить всё"
 msgid "Clear filter"
 msgstr "Сбросить фильтр"
 
+msgid "Clear filters"
+msgstr "Сбросить фильтры"
+
 msgid "Clear generated images"
 msgstr "Очистить созданные изображения"
 
@@ -5655,9 +5658,6 @@ msgstr "Сбросить EQ"
 
 msgid "Reset counter"
 msgstr "Сбросить счётчик"
-
-msgid "Reset filters"
-msgstr "Сбросить фильтры"
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Разрядность снижена с {} до {} бит"

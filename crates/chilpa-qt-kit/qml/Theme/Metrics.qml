@@ -174,6 +174,9 @@ QtObject {
     readonly property int dspImportHeight: 180
     readonly property int menuWidth: 236
     readonly property int menuMaxWidth: 310
+    readonly property int trackFilterWidth: 320
+    readonly property int trackFilterHeight: 440
+    readonly property int trackFilterTagWidth: 240
     readonly property int menuIconColumn: 18
     readonly property int menuItem: 30
     readonly property int menuItemTall: 44
