@@ -33,6 +33,9 @@ TestCase {
     }
 
     function init() {
+        failOnWarning(/AlbumGridModel.art requires|Insufficient arguments/)
+        records.artSource = "qrc:/qt/qml/app/chilpa/kit/assets/logo.png"
+        records.rev++
         most.clear()
         for (let i = 0; i < 30; i++)
             most.append({ trackId: i + 1, rowKind: 0, title: "Track " + i, artist: "Band", plays: 30 - i, available: true, playing: false, art: "" })
@@ -66,6 +69,11 @@ TestCase {
         verify(!findChild(row, "slimRowCount").visible)
         row.activated()
         compare(Navigation.page, "album")
+    }
+
+    function test_record_rows_request_their_cover_with_the_native_visibility_argument() {
+        tryVerify(() => rowsOf(albums).length === 2)
+        for (const row of rowsOf(albums)) compare(row.art.toString(), records.artSource)
     }
 
     function test_only_a_section_that_can_be_compact_offers_the_choice() {
