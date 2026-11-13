@@ -129,4 +129,13 @@ Item {
     readonly property real qualityX: ratingX + rating
     readonly property real formatX: qualityX + quality
     readonly property real moreX: formatX + format
+    // Resolve horizontal visibility once per list, not for every recycled row.
+    readonly property bool sourceShown: sourceWidth > 0 && inView(sourceX, sourceWidth)
+    readonly property bool qualityShown: quality > 0 && inView(qualityX, quality)
+    readonly property bool ratingShown: rating > 0 && inView(ratingX, rating)
+    readonly property bool favoriteShown: favorite > 0 && inView(moreX, favorite)
+    readonly property bool formatShown: format > 0 && inView(formatX, format)
+    readonly property bool timeShown: time > 0 && inView(timeX, time)
+    readonly property bool playsShown: plays > 0 && inView(playsX, plays)
+    readonly property bool artShown: art > 0 && inView(artX, art)
 }

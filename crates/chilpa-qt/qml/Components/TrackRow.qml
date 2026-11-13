@@ -163,7 +163,7 @@ TrackRowSlot {
                     objectName: "trackPerformingArtistsRich"
                     width: parent.width
                     visible: row.rich && !row.cols.sheet
-                    text: row.credits.links ? TextLinks.render(row.credits.artist_html, "", color, color) : row.artist
+                    text: !visible ? "" : row.credits.links ? TextLinks.render(row.credits.artist_html, "", color, color) : row.artist
                     textFormat: row.credits.links ? Text.RichText : Text.PlainText
                     // Rich text does not elide: it is cut at its column.
                     clip: !!row.credits.links && contentWidth > width

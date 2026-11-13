@@ -19,6 +19,7 @@ Item {
     Tools.ViCursor { id: viCursor; host: list; view: view; menu: actions; ratings: Ratings }
 
     property TrackListModel model
+    readonly property bool snapshotRows: model && model.kind === "tracks"
     property bool rich: SettingsModel.density === "rich"
     property bool showArtist: true
     property bool showAlbum: true
@@ -68,25 +69,8 @@ Item {
     // queue is read again on every change; the same list stays where it was.
     property alias place: keptViewport.place
     Tools.TrackListViewport { id: keptViewport; model: list.model; view: view }
-    function positionAt(row, mode) {
-        place = null
-        view.forceLayout()
-        view.positionViewAtIndex(row, mode)
-    }
-    // Goes to `row` with the view started again from the top. Through
-    // section bands, a jump from far away held the window for 5 to 9 s and
-    // landed short: the view walked the bands it had only estimated. The
-    // rows it lets go are not pooled, or the top one came back showing a
-    // row from below.
-    function jumpTo(row) {
-        place = null
-        view.reuseItems = false
-        view.model = null
-        view.model = Qt.binding(() => list.model)
-        view.forceLayout()
-        view.positionViewAtIndex(row, ListView.Beginning)
-        view.reuseItems = true
-    }
+    function positionAt(row, mode) { keptViewport.positionAt(row, mode) }
+    function jumpTo(row) { keptViewport.jumpTo(row) }
     function identity() { return keptViewport.identity() }
     function keepPlace() { keptViewport.keep() }
     function restorePlace() { keptViewport.restore() }
@@ -159,12 +143,12 @@ Item {
         // Off the screen a current row and a pooled one stay alive: the playing mark would move there (QBZ).
         currentIndex: -1
         // A growing list retains its slots; the outer viewport windows their
-        // contents. A standalone list caches one screen on each side, unless
+        // contents. A standalone list caches a quarter screen on each side, unless
         // it has section bands: then the view places far rows by an
         // estimate the bands throw off (4% on 22,000 tracks grouped by
         // name), and with a cache a jump drew its rows where the estimate
         // put them, off the screen, leaving it blank.
-        cacheBuffer: list.fitContent ? Metrics.fitContentBuffer : view.section.property !== "" ? 0 : Math.max(0, height)
+        cacheBuffer: list.fitContent ? Metrics.fitContentBuffer : view.section.property !== "" ? 0 : Math.max(0, height * Metrics.trackScrollCacheShare)
         bottomMargin: list.bottomInset
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
@@ -181,26 +165,37 @@ Item {
 
         delegate: TrackRow {
             required property var model
-            immediate: y + height > list.visibleTop && y < list.visibleTop + (list.viewport ? list.viewport.height : view.height)
+            // Optional cells do not request native roles while their column is
+            // hidden. Keep the row body pooled so scrolling reuses its objects.
+            rowKind: list.snapshotRows ? 0 : model.rowKind
+            number: list.snapshotRows ? index + 1 : model.number || 0
+            headerLabel: list.snapshotRows ? "" : model.headerLabel || ""
+            headerMeta: list.snapshotRows ? "" : model.headerMeta || ""
+            immediate: visible && y + height > list.visibleTop && y < list.visibleTop + (list.viewport ? list.viewport.height : view.height)
             inViewport: !list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
-            sourceName: model.sourceName || ""
-            composer: model.composer || ""
-            format: model.format || ""
-            qualityDetail: model.qualityDetail || ""
+            sourceName: columns.sourceShown ? model.sourceName || "" : ""
+            composer: Prefs.trackComposers ? model.composer || "" : ""
+            format: columns.formatShown ? model.format || "" : ""
+            quality: columns.qualityShown ? model.quality || "" : ""
+            tier: columns.qualityShown ? model.tier || 0 : 0
+            qualityDetail: columns.sheet && columns.qualityShown ? model.qualityDetail || "" : ""
+            duration: columns.timeShown ? model.duration || "" : ""
+            plays: columns.playsShown ? model.plays || 0 : 0
+            art: rowKind !== 0 || columns.artShown ? model.art || "" : ""
             credits: JSON.parse(model.credits || "{}")
             explicitContent: model.explicitContent === true
             aiGenerated: model.aiGenerated === true
             headerGlyph: list.model && list.model.kind === "listenlist" ? (headerLabel === I18n.tr("History", I18n.rev) ? Lucide.rotateCcwClock : headerLabel === I18n.tr("Up next", I18n.rev) ? Lucide.listVideo : "") : ""
             headerIconFamily: headerGlyph !== "" ? Lucide.font : ""
-            headerWork: model.headerWork || false
-            headerComposer: model.headerComposer || ""
-            headerComposerTarget: model.headerComposerTarget || ""
-            sourceInfo: JSON.parse(model.sourceInfo || "{}")
+            headerWork: !list.snapshotRows && (model.headerWork || false)
+            headerComposer: list.snapshotRows ? "" : model.headerComposer || ""
+            headerComposerTarget: list.snapshotRows ? "" : model.headerComposerTarget || ""
+            sourceInfo: columns.sourceShown ? JSON.parse(model.sourceInfo || "{}") : ({})
             albumHovered: index === view.albumHovered
             cols: columns
             canRate: trackId !== 0
-            rating: inViewport && columns.rating > 0 ? Ratings.stars("track", trackId, Ratings.rev) : 0
-            favorite: inViewport && Ratings.favorite("track", trackId, Ratings.rev)
+            rating: inViewport && columns.ratingShown ? Ratings.stars("track", trackId, Ratings.rev) : 0
+            favorite: inViewport && columns.favoriteShown && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered || list.activeFocus && index === list.cursorRow
             actionHovered: index === view.hovered ? view.actionHovered : 0

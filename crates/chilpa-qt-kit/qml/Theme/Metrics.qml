@@ -177,6 +177,8 @@ QtObject {
     readonly property int trackFilterWidth: 320
     readonly property int trackFilterHeight: 440
     readonly property real trackFilterHeightShare: 0.4
+    // Each standalone track list keeps this fraction of a viewport on each side.
+    readonly property real trackScrollCacheShare: 0.25
     readonly property int trackFilterShortHeight: 200
     readonly property int trackSkeletonMaxRows: 64
     readonly property int trackFilterTagWidth: 240

@@ -73,6 +73,22 @@ TestCase {
         readAgain(80)
         compare(view.contentY - view.originY, at, "the same row at the top, as far into it")
     }
+    function test_explicit_jumps_keep_the_model_binding_and_clear_saved_place() {
+        list.keepPlace()
+        verify(list.place !== null)
+        list.jumpTo(50)
+        view.forceLayout()
+        compare(list.place, null)
+        compare(view.indexAt(2, view.contentY + 2), 50)
+        compare(view.reuseItems, true)
+        compare(view.model, tracks)
+        list.keepPlace()
+        list.positionAt(10, ListView.Beginning)
+        compare(list.place, null)
+        compare(view.indexAt(2, view.contentY + 2), 10)
+        fill(81)
+        compare(view.count, 81, "jumping keeps the live model binding")
+    }
     function test_pending_favorites_stop_outside_the_viewport_and_recover_on_the_same_row() {
         view.positionViewAtIndex(30, ListView.Center)
         tryVerify(() => view.itemAtIndex(30) && view.itemAtIndex(30).end)

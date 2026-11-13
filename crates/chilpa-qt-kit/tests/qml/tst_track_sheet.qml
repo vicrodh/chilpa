@@ -148,6 +148,58 @@ TestCase {
         keyClick(Qt.Key_Return)
         compare(applied.signalArguments[0][1], ["A"])
     }
+    function test_hidden_optional_roles_resume_on_the_same_pooled_body() {
+        const page = createTemporaryObject(screenMaker, test, {width:1000,height:700})
+        page.shownColumns = []
+        const model = page.scrollView.model
+        model.append({trackId:1,rowKind:0,number:1,title:"Track",artist:"Artist",album:"Album",duration:"3:00",plays:7,
+            quality:"FLAC",tier:2,format:"flac",qualityDetail:"Lossless",sourceName:"Local",sourceInfo:'{"local":true}',
+            available:true,playing:false,selected:false,headerLabel:"",headerMeta:"",art:""})
+        page.scrollView.forceLayout()
+        const row = page.scrollView.itemAtIndex(0)
+        verify(row !== null)
+        tryVerify(() => row.contentBuilds > 0)
+        const builds = row.contentBuilds
+        compare(row.quality, ""); compare(row.tier, 0); compare(row.duration, ""); compare(row.plays, 0)
+        compare(row.sourceName, ""); compare(row.sourceInfo.local, undefined)
+        page.shownColumns = ["source", "time", "quality", "plays"]
+        compare(page.scrollView.itemAtIndex(0), row)
+        compare(row.quality, "FLAC"); compare(row.tier, 2); compare(row.duration, "3:00"); compare(row.plays, 7)
+        compare(row.sourceName, "Local"); compare(row.sourceInfo.local, true)
+        compare(row.contentBuilds, builds, "changing columns keeps the reusable row body")
+        const hiddenArtist = findChild(row, "trackPerformingArtistsRich")
+        compare(hiddenArtist.text, "", "the unused artist line does not lay out recycled text")
+        compare(findChild(row, "trackPerformingArtists").text, "Artist")
+        page.shownColumns = []
+        compare(row.quality, ""); compare(row.sourceName, "")
+        compare(row.contentBuilds, builds)
+    }
+    function test_standalone_scroll_keeps_a_bounded_reusable_window() {
+        const page = createTemporaryObject(screenMaker, test, {width:1000,height:700})
+        page.shownColumns = ["index", "source", "time", "rating", "quality", "favorite"]
+        const rows = page.scrollView, model = rows.model
+        for (let i = 0; i < 600; ++i)
+            model.append({trackId:i + 1,rowKind:0,number:7000 + i,title:"Track " + i,artist:"Artist",album:"Album",duration:"3:00",plays:0,
+                quality:"FLAC",tier:2,available:true,playing:false,selected:false,headerLabel:"",headerMeta:"",art:""})
+        rows.forceLayout()
+        verify(waitForRendering(page))
+        const rowHeight = rows.itemAtIndex(0).height
+        compare(rows.cacheBuffer, rows.height * Metrics.trackScrollCacheShare)
+        compare(rows.itemAtIndex(0).number, 1, "snapshot numbering comes from its position without a metadata role")
+        const limit = Math.ceil(rows.height / rowHeight) * (2 + 2 * Metrics.trackScrollCacheShare) + 10
+        for (const at of [100, 300, 550]) {
+            rows.positionViewAtIndex(at, ListView.Beginning); rows.forceLayout()
+            verify(waitForRendering(page))
+            const slots = rows.contentItem.children.filter(child => child.index !== undefined && child.rowKind !== undefined)
+            verify(slots.length <= limit, "pooled and cached slots stay bounded: " + slots.length + " > " + limit)
+            const row = rows.itemAtIndex(at)
+            verify(row !== null)
+            tryVerify(() => row.contentBuilds > 0)
+            compare(row.title, "Track " + at)
+            compare(row.number, at + 1)
+            for (const slot of slots) if (!slot.visible) compare(slot.immediate, false, "pooled slots do not follow the scroll clock")
+        }
+    }
     function test_sheet_does_not_change_other_lists() {
         columns.sheet = false
         columns.rich = true
