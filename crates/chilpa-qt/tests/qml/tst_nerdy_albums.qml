@@ -49,7 +49,7 @@ TestCase {
     function test_clicking_the_album_row_opens_its_album_in_both_list_modes() {
         function albumRow(item) {
             if (!item) return null
-            if (typeof item.technicalFacts !== "undefined" && item.albumId === 1) return item
+            if (typeof item.technicalFacts !== "undefined" && item.albumId === 3) return item
             for (const child of item.children || []) {
                 const found = albumRow(child)
                 if (found) return found
@@ -59,14 +59,16 @@ TestCase {
         AlbumActions.selectedCount = 0
         for (const technical of [true, false]) {
             grid.technical = technical
+            grid.scrollView.forceLayout()
+            waitForRendering(grid)
             let row = null
-            tryVerify(() => { row = albumRow(grid.scrollView.itemAtIndex(0)); return row !== null })
+            tryVerify(() => { row = albumRow(grid.scrollView.itemAtIndex(2)); return row !== null })
             compare(row.technical, technical)
             opened.clear()
-            row.clicked(0)
+            mouseClick(row, Math.min(500, row.width / 2), 4)
             tryCompare(opened, "count", 1)
-            compare(opened.signalArguments[0][0], 1)
-            compare(opened.signalArguments[0][1], "Record 0")
+            compare(opened.signalArguments[0][0], 3)
+            compare(opened.signalArguments[0][1], "Record 2")
         }
     }
     function test_switcher_keeps_the_requested_glasses_icon() {

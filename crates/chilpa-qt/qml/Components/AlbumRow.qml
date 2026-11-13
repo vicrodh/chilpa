@@ -9,7 +9,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 // its title and who made it, then the columns asked for, in this order:
 // year, tracks, length, genre, stars and the sources it is on. A click
 // anywhere but the arrow and the stars opens the record.
-Item {
+Loader {
     id: row
 
     property int albumId
@@ -52,10 +52,10 @@ Item {
 
     function shows(column) { return row.columns.indexOf(column) >= 0 }
 
-    implicitHeight: technical ? Metrics.rowCompact : Metrics.rowRich
     opacity: available ? 1 : Metrics.disabledOpacity
 
     ListRowSurface {
+        z: -1
         anchors.fill: parent
         radius: Metrics.radiusRow
         rowIndex: row.tint
@@ -64,11 +64,11 @@ Item {
         emphasized: row.expanded
     }
 
-    Loader {
-        id: rich
-        anchors.fill: parent
-        active: !row.technical
-        sourceComponent: Item {
+    sourceComponent: technical ? technicalBody : richBody
+    Component {
+        id: richBody
+        Item {
+            implicitHeight: Metrics.rowRich
             readonly property alias artistItem: artistLabel
             readonly property alias ratingItem: cells.ratingItem
             Item {
@@ -90,13 +90,15 @@ Item {
                     onTapped: row.quick()
                 }
             }
-            Loader {
+            ArtTile {
                 id: cover
                 anchors.left: arrow.right
                 anchors.verticalCenter: parent.verticalCenter
                 width: Metrics.artRow
                 height: Metrics.artRow
-                sourceComponent: ArtTile { radius: Metrics.radiusArtSmall; source: row.art; tint: row.tint }
+                radius: Metrics.radiusArtSmall
+                source: row.art
+                tint: row.tint
             }
             Column {
                 anchors.left: cover.right
@@ -143,11 +145,9 @@ Item {
             }
         }
     }
-
-    Loader {
-        anchors.fill: parent
-        active: row.technical
-        sourceComponent: TechnicalCells { shown: row.technicalColumns; explicitContent: row.explicitContent; aiGenerated: row.aiGenerated; facts: row.technicalFacts; title: row.title; artist: row.subtitle; year: row.year }
+    Component {
+        id: technicalBody
+        TechnicalCells { implicitHeight: Metrics.rowCompact; shown: row.technicalColumns; explicitContent: row.explicitContent; aiGenerated: row.aiGenerated; facts: row.technicalFacts; title: row.title; artist: row.subtitle; year: row.year }
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
@@ -159,7 +159,7 @@ Item {
                 const at = item.mapFromItem(row, point.position.x, point.position.y)
                 return item.visible && at.x >= 0 && at.x <= item.width && at.y >= 0 && at.y <= item.height
             }
-            if (button === Qt.LeftButton && rich.item && (inside(rich.item.artistItem) || inside(rich.item.ratingItem))) return
+            if (button === Qt.LeftButton && !row.technical && row.item && (inside(row.item.artistItem) || inside(row.item.ratingItem))) return
             if (button === Qt.RightButton)
                 return row.menu(point.position.x, point.position.y)
             // The arrow is its own place.
