@@ -2,13 +2,31 @@
 use super::store::{CardKind, Store, Track};
 
 impl Store {
+    fn track_format<'a>(&'a self, track: &'a Track) -> Option<&'a super::store::Format> {
+        track.format.as_ref().or_else(|| self.cards.get(&track.album_id)
+            .filter(|card| card.kind == CardKind::Album && card.plugin == track.plugin)
+            .and_then(|card| card.format.as_ref()))
+    }
+
     pub(super) fn with_album_quality(&self, mut track: Track) -> Track {
         if track.format.is_none() {
-            track.format = self.cards.get(&track.album_id)
-                .filter(|card| card.kind == CardKind::Album && card.plugin == track.plugin)
-                .and_then(|card| card.format.clone());
+            track.format = self.track_format(&track).cloned();
         }
         track
+    }
+}
+
+impl super::Catalog {
+    /// A badge only borrows stored quality; it never schedules metadata or artwork.
+    pub(crate) fn card_quality(&self, id: i64) -> crate::Quality {
+        let inner = self.lock();
+        let Some(card) = inner.store.cards.get(&id) else { return crate::Quality::default() };
+        let known = card.tracks.as_deref().unwrap_or_default().iter()
+            .filter_map(|id| inner.store.tracks.get(id))
+            .filter_map(|track| inner.store.track_format(track))
+            .filter(|format| format.rate.is_some()).map(|format| format.quality())
+            .max_by_key(|quality| (quality.tier.rank(), quality.bits, quality.rate_hz));
+        known.or_else(|| card.format.as_ref().map(|format| format.quality())).unwrap_or_default()
     }
 }
 
@@ -49,6 +67,38 @@ mod tests {
         let inner = catalog.lock();
         assert!(inner.store.tracks.get(&unknown).unwrap().format.is_none());
         assert!(inner.queue.queued.is_empty(), "Showing a quality fallback must not schedule work");
+    }
+
+    #[test]
+    fn card_badges_borrow_fallbacks_without_scheduling_or_mutating_tracks() {
+        let (catalog, album, unknown, different) = fixture();
+        assert_eq!(catalog.card_quality(album).short(), "FLAC 24/96");
+        {
+            let mut inner = catalog.lock();
+            inner.store.tracks.get_mut(&unknown).unwrap().format = Some(Format {
+                codec: "dsd".into(), rate: None, ..Default::default()
+            });
+        }
+        assert_eq!(catalog.card_quality(album).short(), "FLAC 16/44.1", "a track without a rate does not displace known quality");
+        {
+            let mut inner = catalog.lock();
+            inner.store.tracks.get_mut(&different).unwrap().format = Some(Format {
+                codec: "dsd".into(), rate: Some(2822400), ..Default::default()
+            });
+        }
+        assert_eq!(catalog.card_quality(album).short(), "DSD64");
+        {
+            let mut inner = catalog.lock();
+            inner.store.cards.get_mut(&album).unwrap().tracks = Some(vec![unknown, -999]);
+            inner.store.cards.get_mut(&album).unwrap().format = Some(Format {
+                codec: "flac".into(), advertised_hires: true, ..Default::default()
+            });
+        }
+        assert_eq!(catalog.card_quality(album).short(), "FLAC Hi-Res", "card hints survive when no member has a known rate");
+        assert_eq!(catalog.card_quality(-999), crate::Quality::default());
+        let inner = catalog.lock();
+        assert_eq!(inner.store.tracks.get(&unknown).unwrap().format.as_ref().unwrap().rate, None);
+        assert!(inner.queue.queued.is_empty(), "a badge never schedules artwork or metadata");
     }
 
     #[test]

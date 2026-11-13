@@ -33,7 +33,7 @@ Item {
         key: page.source ? page.source + (page.membership ? " " + page.membership : "") : ""
         order: page.source ? sourceControls.sort : Library.albumOrder
         group: page.source ? sourceControls.grouping : page.group
-        filter: find.text
+        filter: find.typed
         contentRev: Library.contentRev + Library.rev + Library.remoteRev + Library.remoteArtRev
         columns: grid.columns
     }
@@ -49,12 +49,11 @@ Item {
             : page.about.entity === "artist" ? I18n.trCount("{} artist", "{} artists", all.albums, I18n.rev) : I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
         flexible: find
 
-        SearchField {
+        SettledSearchField {
             id: find
             anchors.verticalCenter: parent.verticalCenter
             width: Math.max(0, Math.min(Metrics.screenSearch, head.flexibleRoom))
             placeholder: I18n.tr("Filter albums", I18n.rev)
-            onEscaped: text = ""
         }
         SourceLibraryControls { id: sourceControls; visible: !!page.source; source: page.source; entity: page.about.entity || "album" }
         SortButton {

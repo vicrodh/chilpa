@@ -34,7 +34,7 @@ fn query() -> String {
 impl Library {
     /// Unknown members keep a scalar unknown; distinct known values are explicitly mixed.
     pub fn album_technical(&self, id: i64) -> rusqlite::Result<Value> {
-        self.db.query_row(&query(), [id], |row| {
+        self.db.prepare_cached(&query())?.query_row([id], |row| {
             let count: i64 = row.get(0)?;
             if count == 0 { return Ok(json!({})); }
             let mut document = json!({"tracks":count,"duration_ms":row.get::<_,Option<i64>>(1)?});

@@ -33,6 +33,7 @@ Item {
     // How far right of the rows the scrollbar sits: in the middle of the
     // page's margin, unless the screen puts something there.
     property real scrollGutter: Metrics.pageGutter
+    property Item scrollbarOverlay: null
     property real scrollbarEdge: NaN
     property real visibleLeft: 0
     property real visibleRight: width
@@ -153,7 +154,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
             objectName: "trackListScrollbar"
-            overlayParent: list
+            overlayParent: list.scrollbarOverlay || list
             z: 2
             onPressedChanged: if (pressed) list.userScrollStarted()
             policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded

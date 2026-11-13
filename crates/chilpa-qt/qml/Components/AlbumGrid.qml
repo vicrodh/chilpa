@@ -125,38 +125,35 @@ Item {
                 text: row.group
             }
 
-            AlbumRow {
-                readonly property bool shown: grid.list && row.nearby
-
-                visible: shown
+            Loader {
+                active: grid.list
                 x: Metrics.cardRing
                 y: row.lead
                 width: grid.layoutWidth
-                technical: grid.technical
-                technicalColumns: grid.technicalColumns
-                rev: grid.detailsRev
-                albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
-                title: shown ? grid.model.title(row.first, row.revision) : ""
-                explicitContent: shown && grid.model.explicitContent(row.first, row.revision)
-                aiGenerated: shown && grid.model.aiGenerated(row.first, row.revision)
-                subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
-                year: shown ? grid.model.year(row.first, row.revision) : ""
-                art: shown && !grid.technical ? grid.model.art(row.first, row.revision) : ""
-                columns: grid.listColumns
-                sources: shown && !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
-                mixed: !!grid.model && grid.model.mixed
-                tint: row.first
-                selected: shown && AlbumActions.selected(albumId, AlbumActions.rev)
-                expanded: shown && grid.model.expanded === row.first
-                available: !shown || AlbumActions.available(albumId, rev)
-                onClicked: (modifiers) => interaction.clicked(row.first, albumId, title, modifiers, available)
-                onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
-                onQuick: interaction.toggleQuick(row.first)
-                onMenu: (x, y) => {
-                    if (!available)
-                        return
-                    const p = mapToItem(grid, x, y)
-                    albumMenu.show(albumId, title, subtitle, row.first, p.x, p.y)
+                height: grid.rowHeight
+                sourceComponent: AlbumRow {
+                    visible: row.nearby
+                    technical: grid.technical
+                    technicalColumns: grid.technicalColumns
+                    rev: grid.detailsRev
+                    albumId: row.nearby ? grid.model.albumId(row.first, row.revision) : 0
+                    title: row.nearby ? grid.model.title(row.first, row.revision) : ""
+                    explicitContent: row.nearby && grid.model.explicitContent(row.first, row.revision)
+                    aiGenerated: row.nearby && grid.model.aiGenerated(row.first, row.revision)
+                    subtitle: row.nearby ? grid.model.subtitle(row.first, row.revision) : ""
+                    year: row.nearby ? grid.model.year(row.first, row.revision) : ""
+                    art: row.nearby && !grid.technical ? grid.model.art(row.first, row.revision) : ""
+                    columns: grid.listColumns
+                    sources: row.nearby && !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
+                    mixed: !!grid.model && grid.model.mixed
+                    tint: row.first
+                    selected: row.nearby && AlbumActions.selected(albumId, AlbumActions.rev)
+                    expanded: row.nearby && grid.model.expanded === row.first
+                    available: !row.nearby || AlbumActions.available(albumId, rev)
+                    onClicked: (modifiers) => interaction.clicked(row.first, albumId, title, modifiers, available)
+                    onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
+                    onQuick: interaction.toggleQuick(row.first)
+                    onMenu: (x, y) => interaction.menu(albumMenu, available, albumId, title, subtitle, row.first, mapToItem(grid, x, y))
                 }
             }
 
@@ -167,7 +164,7 @@ Item {
 
                 AlbumCard {
                     required property int index
-                    readonly property bool occupied: index < row.span
+                    readonly property bool occupied: row.nearby && index < row.span
                     readonly property int at: row.first + index
                     readonly property int rev: row.revision
 
@@ -195,12 +192,7 @@ Item {
                     // A record that stops playing closes its quick view too.
                     onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
                     onQuick: interaction.toggleQuick(at)
-                    onMenu: (x, y) => {
-                        if (round || !available)
-                            return
-                        const p = mapToItem(grid, x, y)
-                        albumMenu.show(albumId, title, subtitle, at, p.x, p.y)
-                    }
+                    onMenu: (x, y) => interaction.menu(albumMenu, !round && available, albumId, title, subtitle, at, mapToItem(grid, x, y))
                 }
             }
 

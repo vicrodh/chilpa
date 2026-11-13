@@ -50,6 +50,20 @@ TestCase {
         ScrollBar.vertical: ViewportScrollBar { id: gutterBar; gutter: Metrics.pageGutter }
     }
     Component {
+        id: nestedViewMaker
+        Item {
+            x: 90; y: 40; width: 240; height: 200; clip: true
+            property alias view: nestedView
+            property alias bar: nestedBar
+            Flickable {
+                id: nestedView
+                x: 12; y: 18; width: 180; height: 150
+                contentWidth: width; contentHeight: 2000; clip: true
+                ScrollBar.vertical: ViewportScrollBar { id: nestedBar; overlayParent: test; gutter: Metrics.gap8 }
+            }
+        }
+    }
+    Component {
         id: clearedViewMaker
         Item {
             id: frame
@@ -108,6 +122,20 @@ TestCase {
     function assertVisibleThumb(scrollbar) {
         tryVerify(() => scrollbar.contentItem.width > 0 && scrollbar.contentItem.height > 0)
         verify(scrollbar.contentItem.opacity > 0)
+    }
+    function test_overlay_gutter_tracks_ancestors_and_the_visible_edge() {
+        const frame = createTemporaryObject(nestedViewMaker, test)
+        verify(frame)
+        const bar = frame.bar, view = frame.view
+        tryCompare(bar, "parent", test)
+        const aligned = () => Math.abs(bar.mapToItem(view, 0, 0).x - view.width - Metrics.gap8 + bar.width / 2) < 0.1
+        tryVerify(aligned)
+        frame.x += 30; frame.y += 20
+        view.x += 10
+        tryVerify(aligned, 1000, "the control follows ancestor geometry outside the clip")
+        tryVerify(() => Math.abs(bar.mapToItem(view, 0, 0).y) < 0.1)
+        bar.rightEdge = view.width - 24
+        tryVerify(() => Math.abs(bar.mapToItem(view, 0, 0).x - bar.rightEdge - Metrics.gap8 + bar.width / 2) < 0.1)
     }
     function test_both_axes_have_nonzero_visible_thumbs() {
         const oldHorizontal = wideBar.policy, oldVertical = gutterBar.policy

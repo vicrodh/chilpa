@@ -1057,12 +1057,9 @@ impl Chilpa {
     /// A badge reads stored metadata; drawing a card never resolves audio.
     pub fn album_card_quality(&mut self, id: i64) -> crate::Quality {
         if id < 0 {
-            let Some(card) = self.catalog.card(id) else { return crate::Quality::default() };
-            let known = self.catalog.tracks_by_ids(card.tracks.as_deref().unwrap_or_default()).into_iter().filter_map(|(t,_)| t.format).filter(|f| f.rate.is_some()).map(|f| f.quality()).max_by_key(|q| (q.tier.rank(),q.bits,q.rate_hz));
-            return known.or_else(|| card.format.map(|f| f.quality())).unwrap_or_default();
+            return self.catalog.card_quality(id);
         }
-        self.album_track_rows(id).into_iter().map(|r| r.quality)
-            .max_by_key(|q| (q.tier.rank(), q.bits, q.rate_hz)).unwrap_or_default()
+        self.library().and_then(|lib| lib.album_quality(id).ok()).unwrap_or_default()
     }
 
     /// The output that is remembered, or the first one there is. The boolean

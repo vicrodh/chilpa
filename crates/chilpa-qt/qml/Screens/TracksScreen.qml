@@ -132,7 +132,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Metrics.gap8
         x: head.x
-        width: head.width - (strip.visible ? strip.width + Metrics.gap8 : 0)
+        width: head.width - Metrics.gap12 - (strip.visible ? strip.width + Metrics.gap8 : 0)
         contentWidth: Math.max(width, list.columns.minimumWidth)
         contentHeight: height
         flickableDirection: Flickable.HorizontalFlick
@@ -151,7 +151,8 @@ Item {
             y: sheetHead.height
             width: sheet.contentWidth
             height: Math.max(0, sheet.height - y)
-            scrollGutter: -Metrics.gap8
+            scrollGutter: Metrics.gap8
+            scrollbarOverlay: page
             scrollbarEdge: sheet.contentX + sheet.width
             visibleLeft: sheet.contentX
             visibleRight: sheet.contentX + sheet.width

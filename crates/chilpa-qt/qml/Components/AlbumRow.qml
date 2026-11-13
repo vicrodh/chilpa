@@ -34,7 +34,7 @@ Item {
     property int tracks: facts.tracks || 0
     property real durationMs: facts.duration_ms || 0
     property string genre: facts.genre || ""
-    property int stars: !technical && albumId !== 0 && cells.shows("rating") ? Ratings.stars("album", albumId, Ratings.rev) : 0
+    property int stars: !technical && albumId !== 0 && shows("rating") ? Ratings.stars("album", albumId, Ratings.rev) : 0
     // The record's sources; their column only where a list mixes them.
     property var sources: []
     property bool mixed: false
@@ -64,79 +64,84 @@ Item {
         emphasized: row.expanded
     }
 
-    Item {
-        id: arrow
-        visible: !row.technical
-        width: row.technical ? 0 : Metrics.button32
-        height: parent.height
-
-        Icon {
-            anchors.centerIn: parent
-            glyph: Icons.chevronRight
-            size: Metrics.iconSm
-            color: over.hovered ? Theme.color.textPrimary : Theme.color.textSecondary
-            rotation: row.expanded ? 90 : 0
-        }
-        HoverHandler { id: over; cursorShape: Qt.PointingHandCursor }
-        TapHandler {
-            enabled: row.available
-            gesturePolicy: TapHandler.ReleaseWithinBounds
-            onTapped: row.quick()
-        }
-    }
     Loader {
-        id: cover
+        id: rich
+        anchors.fill: parent
         active: !row.technical
-        anchors.left: arrow.right
-        anchors.verticalCenter: parent.verticalCenter
-        width: row.technical ? 0 : Metrics.artRow
-        height: Metrics.artRow
-        sourceComponent: ArtTile { radius: Metrics.radiusArtSmall; source: row.art; tint: row.tint }
-    }
-    Column {
-        visible: !row.technical
-        anchors.left: cover.right
-        anchors.leftMargin: Metrics.gap12
-        anchors.right: cells.left
-        anchors.rightMargin: Metrics.gap12
-        anchors.verticalCenter: parent.verticalCenter
+        sourceComponent: Item {
+            readonly property alias artistItem: artistLabel
+            readonly property alias ratingItem: cells.ratingItem
+            Item {
+                id: arrow
+                width: Metrics.button32
+                height: parent.height
 
-        AdvisoryTitle {
-            explicitContent: row.explicitContent
-            aiGenerated: row.aiGenerated
-            width: parent.width
-            text: row.title
-            elide: Text.ElideRight
-            font.pointSize: Type.bodyLarge
-            font.weight: Type.medium
-            color: Theme.color.textPrimary
+                Icon {
+                    anchors.centerIn: parent
+                    glyph: Icons.chevronRight
+                    size: Metrics.iconSm
+                    color: over.hovered ? Theme.color.textPrimary : Theme.color.textSecondary
+                    rotation: row.expanded ? 90 : 0
+                }
+                HoverHandler { id: over; cursorShape: Qt.PointingHandCursor }
+                TapHandler {
+                    enabled: row.available
+                    gesturePolicy: TapHandler.ReleaseWithinBounds
+                    onTapped: row.quick()
+                }
+            }
+            Loader {
+                id: cover
+                anchors.left: arrow.right
+                anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.artRow
+                height: Metrics.artRow
+                sourceComponent: ArtTile { radius: Metrics.radiusArtSmall; source: row.art; tint: row.tint }
+            }
+            Column {
+                anchors.left: cover.right
+                anchors.leftMargin: Metrics.gap12
+                anchors.right: cells.left
+                anchors.rightMargin: Metrics.gap12
+                anchors.verticalCenter: parent.verticalCenter
+
+                AdvisoryTitle {
+                    explicitContent: row.explicitContent
+                    aiGenerated: row.aiGenerated
+                    width: parent.width
+                    text: row.title
+                    elide: Text.ElideRight
+                    font.pointSize: Type.bodyLarge
+                    font.weight: Type.medium
+                    color: Theme.color.textPrimary
+                }
+                AlbumArtistText {
+                    id: artistLabel
+                    width: parent.width
+                    text: row.subtitle
+                    albumId: row.technical ? 0 : row.albumId; onFallback: row.clicked(0)
+                    elide: Text.ElideRight
+                    font.pointSize: Type.meta
+                }
+            }
+            AlbumListCells {
+                id: cells
+                anchors.right: parent.right
+                anchors.rightMargin: Metrics.gap12
+                height: parent.height
+                columns: row.columns
+                facts: row.technicalFacts
+                year: row.year
+                tracks: row.tracks
+                durationMs: row.durationMs
+                genre: row.genre
+                stars: row.stars
+                available: row.available
+                mixed: row.mixed
+                sources: row.sources
+                onRated: (value) => Ratings.rate("album", row.albumId, value)
+            }
         }
-        AlbumArtistText {
-            id: artistLabel
-            width: parent.width
-            text: row.subtitle
-            albumId: row.technical ? 0 : row.albumId; onFallback: row.clicked(0)
-            elide: Text.ElideRight
-            font.pointSize: Type.meta
-        }
-    }
-    AlbumListCells {
-        id: cells
-        visible: !row.technical
-        anchors.right: parent.right
-        anchors.rightMargin: Metrics.gap12
-        height: parent.height
-        columns: row.columns
-        facts: row.technicalFacts
-        year: row.year
-        tracks: row.tracks
-        durationMs: row.durationMs
-        genre: row.genre
-        stars: row.stars
-        available: row.available
-        mixed: row.mixed
-        sources: row.sources
-        onRated: (value) => Ratings.rate("album", row.albumId, value)
     }
 
     Loader {
@@ -154,11 +159,11 @@ Item {
                 const at = item.mapFromItem(row, point.position.x, point.position.y)
                 return item.visible && at.x >= 0 && at.x <= item.width && at.y >= 0 && at.y <= item.height
             }
-            if (button === Qt.LeftButton && (inside(artistLabel) || inside(cells.ratingItem))) return
+            if (button === Qt.LeftButton && rich.item && (inside(rich.item.artistItem) || inside(rich.item.ratingItem))) return
             if (button === Qt.RightButton)
                 return row.menu(point.position.x, point.position.y)
             // The arrow is its own place.
-            if (point.position.x < cover.x)
+            if (!row.technical && point.position.x < Metrics.button32)
                 return
             const held = tap.point.modifiers
             row.clicked((held & (Qt.ControlModifier | Qt.MetaModifier) ? 1 : 0) | (held & Qt.ShiftModifier ? 2 : 0))

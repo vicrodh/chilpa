@@ -580,6 +580,7 @@ TestCase {
         horizontal.viewportHovered = true; vertical.viewportHovered = true
         verify(waitForRendering(page))
         verify(sheet.contentWidth > sheet.width)
+        verify(vertical.mapToItem(page, 0, 0).x > sheet.x + sheet.width, "the thumb sits in its gutter outside the row clip")
         const clearance = data.space > 0 ? data.space + Metrics.spaceWindow : 0
         compare(horizontal.reservedBottom, clearance)
         compare(vertical.reservedBottom, Math.min(rows.bottomMargin, clearance))

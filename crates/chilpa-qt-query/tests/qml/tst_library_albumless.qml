@@ -103,6 +103,7 @@ TestCase {
                     for (const presentation of ["grid", "tracks"]) {
                         SettingsModel.libraryView = presentation
                         wait(0)
+                        waitForRendering(bar)
                         verify(summary.x + summary.width <= width, "summary stays inside the toolbar")
                         for (const item of [play, shuffle, toggle, views]) {
                             if (!item.visible) continue

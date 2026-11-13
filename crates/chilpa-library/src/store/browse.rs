@@ -166,7 +166,7 @@ impl TrackOrder {
         }
     }
 
-    fn keys(self) -> &'static str {
+    pub(super) fn keys(self) -> &'static str {
         match self {
             TrackOrder::Artist => {
                 "coalesce(a.album_artist, t.artist) COLLATE NOCASE, CASE WHEN t.album_id IS NULL THEN t.release_year ELSE a.year END, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"

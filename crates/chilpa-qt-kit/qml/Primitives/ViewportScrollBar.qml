@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import "../Theme"
+import "../Theme/Viewport.js" as Viewport
 
 // I keep the thumb in a margin beside the viewport's clipped delegates.
 ScrollBar {
@@ -45,8 +46,8 @@ ScrollBar {
         viewportArea = hoverComponent.createObject(viewport)
         if (gutter >= 0) {
             area = bridgeComponent.createObject(overlayParent || viewport.parent)
-            area.x = Qt.binding(function() { return viewport.x + (sideways ? 0 : viewport.width) })
-            area.y = Qt.binding(function() { return viewport.y + (sideways ? Math.max(0, viewport.height - bar.reservedBottom + (bar.reservedBottom > 0 ? bar.horizontalGutter - bar.height / 2 : 0)) : 0) })
+            area.x = Qt.binding(function() { return Viewport.pointIn(viewport, area.parent).x + (sideways ? 0 : isNaN(rightEdge) ? viewport.width : rightEdge) })
+            area.y = Qt.binding(function() { return Viewport.pointIn(viewport, area.parent).y + (sideways ? Math.max(0, viewport.height - bar.reservedBottom + (bar.reservedBottom > 0 ? bar.horizontalGutter - bar.height / 2 : 0)) : 0) })
             area.width = Qt.binding(function() { return sideways ? viewport.width : gutter + bar.width })
             area.height = Qt.binding(function() { return sideways ? (bar.reservedBottom > 0 ? bar.height : gutter + bar.height) : Math.max(0, viewport.height - bar.reservedBottom) })
         }
@@ -58,18 +59,19 @@ ScrollBar {
             if (surface === viewport && viewport.contentY !== undefined) {
                 // The attached control otherwise restores the full viewport size.
                 insetLayer = layerComponent.createObject(viewport)
+                if (!insetLayer) return
                 insetLayer.z = Qt.binding(function() { return bar.z })
                 parent = insetLayer
             } else parent = surface
             active = Qt.binding(function() { return hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewportArea && viewportArea.hovered) || !!(viewport && viewport.moving) })
             if (sideways) {
-                x = Qt.binding(function() { return inset ? 0 : viewport.x })
-                y = Qt.binding(function() { return (inset ? 0 : viewport.y) + Math.max(0, viewport.height - bar.reservedBottom + bar.horizontalGutter - height / 2) }) // derived: center the control in the margin
+                x = Qt.binding(function() { return inset ? 0 : Viewport.pointIn(viewport, bar.parent).x })
+                y = Qt.binding(function() { return (inset ? 0 : Viewport.pointIn(viewport, bar.parent).y) + Math.max(0, viewport.height - bar.reservedBottom + bar.horizontalGutter - height / 2) }) // derived: center the control in the margin
                 width = Qt.binding(function() { return viewport.width })
                 height = Qt.binding(function() { return Metrics.gap4 })
             } else {
-                x = Qt.binding(function() { return (inset ? 0 : viewport.x) + (isNaN(rightEdge) ? viewport.width : rightEdge) + gutter - width / 2 }) // derived: center the control in the margin
-                y = Qt.binding(function() { return inset ? 0 : viewport.y })
+                x = Qt.binding(function() { return (inset ? 0 : Viewport.pointIn(viewport, bar.parent).x) + (isNaN(rightEdge) ? viewport.width : rightEdge) + gutter - width / 2 }) // derived: center the control in the margin
+                y = Qt.binding(function() { return inset ? 0 : Viewport.pointIn(viewport, bar.parent).y })
                 height = Qt.binding(function() { return Math.max(0, viewport.height - bar.reservedBottom) })
             }
         })
