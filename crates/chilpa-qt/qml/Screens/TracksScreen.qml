@@ -137,7 +137,7 @@ Item {
         flickableDirection: Flickable.HorizontalFlick
         boundsBehavior: Flickable.StopAtBounds
         clip: true
-        Controls.ScrollBar.horizontal: ViewportScrollBar { policy: Controls.ScrollBar.AsNeeded; gutter: -Metrics.gap4 }
+        Controls.ScrollBar.horizontal: ViewportScrollBar { objectName: "tracksHorizontalScrollbar"; policy: Controls.ScrollBar.AsNeeded; gutter: -Metrics.gap4; bottomClearance: Metrics.floatingPlayerClearance; z: 2 }
         TrackSheetHeader {
             id: sheetHead
             width: sheet.contentWidth

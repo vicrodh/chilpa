@@ -169,10 +169,13 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
             objectName: "trackListScrollbar"
+            overlayParent: list
+            z: 2
             onPressedChanged: if (pressed) list.userScrollStarted()
             policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
             gutter: list.scrollGutter
             rightEdge: list.scrollbarEdge
+            bottomClearance: Math.min(list.bottomInset, Metrics.floatingPlayerClearance)
             viewportHovered: pointer.containsMouse
         }
 

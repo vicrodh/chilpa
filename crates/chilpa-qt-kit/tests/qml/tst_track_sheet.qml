@@ -4,7 +4,7 @@ import QtTest
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
-import "../../qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/qml/Screens" as Screens
 
 TestCase {
@@ -15,6 +15,20 @@ TestCase {
     width: 1100
     height: 800
     Component { id: screenMaker; Screens.TracksScreen {} }
+    Component {
+        id: playerCoverMaker
+        Rectangle {
+            property int presses: 0
+            x: Metrics.spaceWindow
+            y: parent.height - height - Metrics.spaceWindow
+            width: parent.width - Metrics.spaceWindow * 2
+            height: Metrics.playerSpace
+            visible: height > 0
+            color: "gray"
+            z: 10
+            MouseArea { anchors.fill: parent; onPressed: parent.presses++ }
+        }
+    }
     TrackColumns { id: columns; width: 1100; sheet: true }
     TrackSheetHeader { id: header; width: columns.width; cols: columns }
     Item { id: anchor; x: 1060; y: 720; width: 30; height: 30 }
@@ -45,6 +59,7 @@ TestCase {
         columns.optionalColumns = []
         columns.rich = false
         Prefs.ratings = true
+        Metrics.playerSpace = Metrics.playerHeight
         backend.requests = []
         applied.clear()
         requested.clear()
@@ -375,5 +390,49 @@ TestCase {
         tryCompare(popup.choiceWindow, "count", 200)
         wait(50)
         compare(backend.requests.length, 2, "wheel completion and model changes do not cascade queries")
+    }
+    function test_table_scrollbars_and_last_row_clear_the_player_data() {
+        return [{tag:"normal", space:Metrics.playerHeight}, {tag:"waveform", space:Metrics.playerHeightTall}, {tag:"docked", space:0}]
+    }
+    function test_table_scrollbars_and_last_row_clear_the_player(data) {
+        Metrics.playerSpace = data.space
+        const page = createTemporaryObject(screenMaker, test, {width:620, height:500})
+        page.columnFilters = ({}); page.typed = ""
+        page.shownColumns = ["index", "source", "time", "rating", "quality", "format", "plays", "favorite"]
+        const cover = createTemporaryObject(playerCoverMaker, page)
+        const rows = page.scrollView, model = rows.model
+        for (let i = 0; i < 80; ++i) model.append({trackId:i + 1,rowKind:0,number:i + 1,title:"Track " + i,artist:"Artist",album:"Album",duration:"3:00",plays:0,
+            quality:"FLAC",tier:2,available:true,playing:false,selected:false,headerLabel:"",headerMeta:"",art:""})
+        const sheet = findChild(page, "tracksSheet")
+        const horizontal = findChild(page, "tracksHorizontalScrollbar")
+        const vertical = findChild(page, "trackListScrollbar")
+        horizontal.viewportHovered = true; vertical.viewportHovered = true
+        verify(waitForRendering(page))
+        verify(sheet.contentWidth > sheet.width)
+        const clearance = data.space > 0 ? data.space + Metrics.spaceWindow : 0
+        compare(horizontal.reservedBottom, clearance)
+        compare(vertical.reservedBottom, Math.min(rows.bottomMargin, clearance))
+        if (data.space > 0) {
+            tryVerify(() => horizontal.mapToItem(page, 0, horizontal.height).y <= cover.y)
+            tryVerify(() => vertical.mapToItem(page, 0, vertical.height).y <= cover.y)
+        }
+        const startX = horizontal.contentItem.x + horizontal.contentItem.width / 2
+        mouseDrag(horizontal, startX, horizontal.height / 2, horizontal.width - startX, 0)
+        tryVerify(() => sheet.atXEnd, 1000, "the table scrollbar remains reachable above the floating player")
+        compare(cover.presses, 0)
+        sheet.contentX = 0
+        const startY = vertical.contentItem.y + vertical.contentItem.height / 2
+        mousePress(vertical, vertical.width / 2, startY)
+        const grabbed = vertical.pressed
+        mouseMove(vertical, vertical.width / 2, vertical.height, 10)
+        mouseRelease(vertical, vertical.width / 2, vertical.height)
+        verify(grabbed, "the scrollbar receives the press instead of the row pointer surface")
+        tryVerify(() => rows.atYEnd, 1000)
+        rows.forceLayout()
+        tryVerify(() => rows.itemAtIndex(rows.count - 1) !== null)
+        const last = rows.itemAtIndex(rows.count - 1)
+        verify(last.mapToItem(page, 0, last.height).y <= (data.space > 0 ? cover.y : page.height),
+            "last row bottom " + last.mapToItem(page, 0, last.height).y + " exceeds player top " + cover.y + "; bottomMargin=" + rows.bottomMargin + ", contentY=" + rows.contentY)
+        verify(last.mapToItem(page, 0, 0).y >= sheet.y)
     }
 }
