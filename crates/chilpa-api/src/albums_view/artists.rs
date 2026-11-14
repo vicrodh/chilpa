@@ -95,14 +95,20 @@ pub(crate) fn listed_within(library: Vec<Artist>, index: &SourceIndex, extras: &
 /// many records stand under it, and beside each the card Artist Scene
 /// draws. Only those whose name holds every word of `filter` stay.
 pub fn artist_cards(artists: &[ListedArtist], filter: &str) -> (Vec<crate::Album>, Vec<String>) {
+    artist_cards_ordered(artists, filter, "name")
+}
+
+pub fn artist_cards_ordered(artists: &[ListedArtist], filter: &str, order: &str) -> (Vec<crate::Album>, Vec<String>) {
     let words: Vec<String> = filter.to_lowercase().split_whitespace().map(String::from).collect();
-    artists
+    let mut rows: Vec<_> = artists
         .iter()
         .filter(|listed| {
             let name = listed.artist.name.to_lowercase();
             words.iter().all(|w| name.contains(w.as_str()))
-        })
-        .map(|listed| {
+        }).collect();
+    rows.sort_by_cached_key(|listed| (if order == "albums" { std::cmp::Reverse(listed.artist.album_count) } else { std::cmp::Reverse(0) }, listed.artist.name.to_lowercase(), listed.artist.name.clone()));
+    if order == "name-desc" || order == "title-desc" { rows.reverse(); }
+    rows.into_iter().map(|listed| {
             let a = &listed.artist;
             let card = crate::Album {
                 id: 0,
@@ -113,7 +119,8 @@ pub fn artist_cards(artists: &[ListedArtist], filter: &str) -> (Vec<crate::Album
                 artwork_path: a.artwork_path.clone(),
                 play_count: 0, ai_generated: None, explicit: None,
             };
-            (card, json!({"title": a.name, "sources": listed.sources}).to_string())
+            let portrait = url::Url::from_file_path(&a.artwork_path).ok().map(|url| url.to_string()).unwrap_or_default();
+            (card, json!({"title": a.name, "sources": listed.sources, "collection":true, "portrait":portrait}).to_string())
         })
         .unzip()
 }

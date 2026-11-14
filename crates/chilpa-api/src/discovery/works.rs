@@ -36,21 +36,28 @@ fn owned(((_, key), work): ((String, String), Remote<'_>)) -> Composition {
 }
 
 impl Reader {
-    pub(crate) fn discovery_compositions(&self, composer: &str, text: &str, page: usize) -> Result<(Vec<Composition>, usize), String> {
-        self.discovery_compositions_using(composer, text, page, &self.source_index().1)
+    pub(super) fn discovery_compositions_ordered(&self, composer: &str, text: &str, page: usize, descending: bool) -> Result<(Vec<Composition>, usize), String> {
+        self.compositions_ordered_using(composer, text, page, &self.source_index().1, descending)
     }
 
+    #[cfg(test)]
     pub(super) fn discovery_compositions_using(&self, composer: &str, text: &str, page: usize, index: &SourceIndex) -> Result<(Vec<Composition>, usize), String> {
-        let mut extra = remote(index, composer, text).into_iter().peekable();
+        self.compositions_ordered_using(composer, text, page, index, false)
+    }
+
+    fn compositions_ordered_using(&self, composer: &str, text: &str, page: usize, index: &SourceIndex, descending: bool) -> Result<(Vec<Composition>, usize), String> {
+        let extra = remote(index, composer, text).into_iter();
+        let extra: Box<dyn Iterator<Item = _>> = if descending { Box::new(extra.rev()) } else { Box::new(extra) };
+        let mut extra = extra.peekable();
         let (mut rows, mut total) = (Vec::with_capacity(PAGE), 0usize);
         let offset = page.saturating_mul(PAGE);
         let mut take = |work: Composition| {
             if total >= offset && rows.len() < PAGE { rows.push(work); }
             total += 1;
         };
-        self.lib.visit_compositions(composer, text, |mut local| {
+        self.lib.visit_compositions_ordered(composer, text, descending, |mut local| {
             let at = rank(&local.title, &local.key);
-            while extra.peek().is_some_and(|(remote, _)| *remote < at) { take(owned(extra.next().unwrap())); }
+            while extra.peek().is_some_and(|(remote, _)| if descending { *remote > at } else { *remote < at }) { take(owned(extra.next().unwrap())); }
             if extra.peek().is_some_and(|(remote, _)| *remote == at) {
                 let remote = extra.next().unwrap().1;
                 local.albums += remote.albums.len();
@@ -88,9 +95,9 @@ impl Reader {
         snapshot(self.work_parts(selected).unwrap_or_default())
     }
 
-    pub(super) fn recordings_page(&self, selected: &Selection, text: &str, page: usize) -> Value {
+    pub(super) fn recordings_page_ordered(&self, selected: &Selection, text: &str, page: usize, descending: bool) -> Value {
         match self.work_parts(selected) {
-            Ok(parts) => recordings(parts, text, page),
+            Ok(parts) => recordings_ordered(parts, text, page, descending),
             Err(error) => json!({"error":error,"items":[],"total":0}),
         }
     }
@@ -110,7 +117,12 @@ fn snapshot(parts: Vec<Part>) -> Snapshot {
         ids:parts.into_iter().map(|part| part.id).collect(), album_ids }
 }
 
+#[cfg(test)]
 fn recordings(parts: Vec<Part>, text: &str, page: usize) -> Value {
+    recordings_ordered(parts, text, page, false)
+}
+
+fn recordings_ordered(parts: Vec<Part>, text: &str, page: usize, descending: bool) -> Value {
     let text = text.to_lowercase();
     let mut found = BTreeMap::<String, Value>::new();
     for part in parts {
@@ -123,6 +135,7 @@ fn recordings(parts: Vec<Part>, text: &str, page: usize) -> Value {
     }
     let mut rows: Vec<_> = found.into_values().collect();
     rows.sort_by_cached_key(|row| (row["name"].as_str().unwrap_or_default().to_lowercase(), row["recording"].as_str().unwrap_or_default().to_string()));
+    if descending { rows.reverse(); }
     let total = rows.len();
     json!({"total":total,"items":rows.into_iter().skip(page.saturating_mul(PAGE)).take(PAGE).collect::<Vec<_>>()})
 }

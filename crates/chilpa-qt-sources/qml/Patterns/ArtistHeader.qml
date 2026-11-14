@@ -19,6 +19,7 @@ Item {
     id: header
     property var info: ({})
     property bool local: false
+    property bool activeImages: visible
     property bool networkEnabled: true
     property bool networkOpen: false
     // Showing what the listener keeps of the artist in its source.
@@ -50,17 +51,19 @@ Item {
     }
     implicitHeight: Math.max(portrait.height, body.height)
 
-    ArtTile {
+    ArtistPortrait {
         id: portrait
         objectName: "artistPortrait"
         width: Math.min(Metrics.artistPortrait, header.width / 3); height: width // derived: room for the text on narrow windows
         radius: width / 2 // derived: a circle
         // A picture the listener chose is shown whole, not cropped to the circle.
-        contain: chosen.toString() !== ""
+        contain: custom.toString() !== ""
         // The picture the listener chose for the artist wins over the one
         // the source or the records bring.
-        readonly property url chosen: Artwork.artist(header.info.title || "", Artwork.rev)
-        source: chosen.toString() !== "" ? chosen : header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || ""
+        readonly property url custom: Artwork.artist(header.info.title || "", Artwork.rev)
+        chosen: custom.toString() !== "" ? custom : header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : ""
+        name: header.info.title || ""; mbid: header.info.mbid || ""
+        activeImages: header.activeImages
     }
     // As QBZ's portrait: a click shows it whole, a right click its menu.
     HoverHandler { parent: portrait; cursorShape: portrait.ready ? Qt.PointingHandCursor : Qt.ArrowCursor }
@@ -71,7 +74,7 @@ Item {
         onTapped: (point) => {
             const at = portrait.mapToItem(header, point.position.x, point.position.y)
             portraitMenu.active = true
-            portraitMenu.item.custom = portrait.chosen.toString() !== ""
+            portraitMenu.item.custom = portrait.custom.toString() !== ""
             portraitMenu.item.showing = portrait.ready
             portraitMenu.item.address = /^https?:\/\//.test(header.info.image || "") ? header.info.image : ""
             portraitMenu.item.popupAt(at.x, at.y)

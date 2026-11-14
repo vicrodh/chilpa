@@ -11,6 +11,8 @@ import "../Components"
 Item {
     id: overview
     property string key: ""
+    property string filter: ""
+    property string order: "name"
     property string name: ""
     property var about: ({})
     property bool loading: false
@@ -52,7 +54,7 @@ Item {
                 id: hero
                 objectName: "genreHero"
                 width: parent.width; height: Metrics.discoveryHeroHeight
-                DiscoveryMosaic { anchors.fill: parent; images: overview.summary.images || []; label: overview.name; activeImages: overview.inView(hero) }
+                DiscoveryMosaic { anchors.fill: parent; images: overview.summary.images || []; art:overview.about.art || ({}); label: overview.name; activeImages: overview.inView(hero) }
                 Rectangle {
                     anchors.fill: parent; radius: Metrics.radiusCard
                     gradient: Gradient {
@@ -91,7 +93,7 @@ Item {
                 active:false
                 onWantedActiveChanged:overview.showShelf(albums,wantedActive)
                 sourceComponent: Item {
-                    AlbumGridModel { id: records; kind:"discovery"; key:overview.key; maxRows:1; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
+                    AlbumGridModel { id: records; kind:"discovery"; key:overview.key; filter:overview.filter; order:overview.order.replace("name", "title"); maxRows:1; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
                     AlbumGrid { id:grid; anchors.fill:parent; model:records; onOpen: albumId => Navigation.go("album", albumId) }
                     Text { anchors.centerIn:parent; visible:records.ready && records.albums === 0; text:I18n.tr("No albums in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
                 }

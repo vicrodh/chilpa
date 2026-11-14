@@ -2,6 +2,9 @@
 //! Per-query groups contain tag indices, released with the read-only request.
 mod resolution;
 mod taxonomy;
+mod distance;
+mod art;
+pub(super) use art::art;
 use resolution::{resolve, Resolution};
 use taxonomy::graph;
 use std::collections::{HashMap, HashSet};
@@ -32,13 +35,6 @@ impl Inventory {
         Self { records, groups }
     }
 
-    fn label(&self, id: &Identity) -> String {
-        match id {
-            Identity::Known(id) => graph().nodes[*id].name.to_string(),
-            Identity::Literal(_) => self.groups.get(id).and_then(|rows| rows.first()).map(|at| self.records[*at].original.clone()).unwrap_or_default(),
-        }
-    }
-
     pub fn matching(&self, name: &str) -> Vec<String> {
         self.records_for(name).into_iter().map(|record| record.original.clone()).collect()
     }
@@ -47,26 +43,34 @@ impl Inventory {
         self.groups.get(&resolve(name).identity()).into_iter().flatten().map(|at| &self.records[*at]).collect()
     }
 
-    pub fn names(&self, parent: Option<&str>, text: &str) -> Vec<String> {
-        let parent = parent.map(|name| resolve(name).identity());
-        let within = parent.as_ref().map(|id| match id {
-            Identity::Known(id) => graph().walk(*id, false).into_iter().map(Identity::Known).collect::<HashSet<_>>(),
-            id => HashSet::from([id.clone()]),
-        });
-        let mut names: Vec<_> = self.groups.iter().filter(|(id, rows)| {
+    pub fn browse(&self, parent: Option<&str>, text: &str, scope: &str) -> Vec<String> {
+        if scope == "tags" {
+            let within = parent.map(|name| self.matching(name));
+            let mut tags: Vec<_> = self.records.iter().filter(|record|
+                within.as_ref().is_none_or(|tags| tags.contains(&record.original)) &&
+                chilpa_library::store::query::fold(&record.original).contains(text))
+                .map(|record| record.original.clone()).collect();
+            tags.sort_by_cached_key(|name| (name.to_lowercase(), name.clone()));
+            return tags;
+        }
+        let graph = graph();
+        let named = parent;
+        let parent = parent.and_then(|name| resolve(name).node);
+        if named.is_some() && parent.is_none() { return Vec::new(); }
+        let within = parent.map(|id| graph.walk(id, false));
+        let mut names: Vec<_> = graph.nodes.iter().enumerate().filter(|(id, node)| {
+            // Alias-only vocabulary entries have no asserted ancestry. They
+            // remain searchable, without becoming top-level families.
+            let populated = self.groups.contains_key(&Identity::Known(*id));
+            if scope == "library" && !populated { return false; }
             if !text.is_empty() {
-                return within.as_ref().is_none_or(|keys| keys.contains(*id)) &&
-                    (chilpa_library::store::query::fold(&self.label(id)).contains(text) || rows.iter().any(|at| {
-                        self.records[*at].identity() == **id && chilpa_library::store::query::fold(&self.records[*at].original).contains(text)
-                    }));
+                return within.as_ref().is_none_or(|ids| ids.contains(id)) &&
+                    (chilpa_library::store::query::fold(node.name).contains(text) ||
+                        self.groups.get(&Identity::Known(*id)).into_iter().flatten().any(|at|
+                            self.records[*at].node == Some(*id) && chilpa_library::store::query::fold(&self.records[*at].original).contains(text)));
             }
-            match (&parent, id) {
-                (None, Identity::Literal(_)) => true,
-                (None, Identity::Known(id)) => graph().nodes[*id].parents.is_empty(),
-                (Some(Identity::Known(parent)), Identity::Known(id)) => graph().nodes[*parent].children.contains(id),
-                _ => false,
-            }
-        }).map(|(id, _)| self.label(id)).collect();
+            parent.map_or(node.parents.is_empty() && !node.children.is_empty(), |parent| graph.nodes[parent].children.contains(id))
+        }).map(|(_, node)| node.name.to_string()).collect();
         names.sort_by_cached_key(|name| (name.to_lowercase(), name.clone()));
         names
     }
@@ -103,15 +107,15 @@ mod tests {
     fn navigation_groups_original_spellings_without_replacing_them() {
         let tags = vec!["Progresive Metal".into(), "prog metal".into(), "Local tradition".into()];
         let inventory = Inventory::new(&tags);
-        assert_eq!(inventory.names(None, ""), ["Local tradition", "Rock"]);
+        assert_eq!(inventory.browse(None, "", "library"), ["Rock"]);
         assert_eq!(inventory.matching("Metal"), ["Progresive Metal", "prog metal"]);
         assert_eq!(inventory.matching("Progressive Metal"), ["Progresive Metal", "prog metal"]);
-        assert_eq!(inventory.names(Some("Metal"), "progressive"), ["Progressive Metal"]);
-        assert_eq!(inventory.names(None, "progresive"), ["Progressive Metal"]);
+        assert_eq!(inventory.browse(Some("Metal"), "progressive", "library"), ["Progressive Metal"]);
+        assert_eq!(inventory.browse(None, "progresive", "library"), ["Progressive Metal"]);
         assert_eq!(tags[0], "Progresive Metal");
         assert_eq!(breadcrumb("Metal"), ["Rock", "Metal"]);
         assert_eq!(parents("Symphonic Metal"), ["Metal"]);
-        let direct = Inventory::new(&["Symphonic Metal".into(), "Progressive Metal".into(), "Heavy Metal".into()]).names(Some("Metal"), "");
+        let direct = Inventory::new(&["Symphonic Metal".into(), "Progressive Metal".into(), "Heavy Metal".into()]).browse(Some("Metal"), "", "library");
         assert!(direct.contains(&"Heavy Metal".into()));
         assert!(direct.contains(&"Progressive Metal".into()));
         assert!(direct.contains(&"Symphonic Metal".into()));

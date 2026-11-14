@@ -474,6 +474,9 @@ msgstr ""
 msgid "All episode types"
 msgstr ""
 
+msgid "All families"
+msgstr ""
+
 msgid "All files"
 msgstr ""
 
@@ -3277,6 +3280,9 @@ msgstr ""
 msgid "In library"
 msgstr ""
 
+msgid "In my library"
+msgstr ""
+
 msgid "In progress"
 msgstr ""
 
@@ -4052,6 +4058,9 @@ msgstr "More than 16 bits"
 msgid "More than 48 kHz"
 msgstr "More than 48 kHz"
 
+msgid "Most albums"
+msgstr ""
+
 msgid "Most at {}:00"
 msgstr ""
 
@@ -4137,6 +4146,9 @@ msgid "Muted"
 msgstr "Muted"
 
 msgid "My Playlist"
+msgstr ""
+
+msgid "My genre tags"
 msgstr ""
 
 msgid "My library"

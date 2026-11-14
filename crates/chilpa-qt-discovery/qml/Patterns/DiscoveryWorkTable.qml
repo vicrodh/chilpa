@@ -8,9 +8,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Item {
     id: table
     property var entries: []
-    property int total: 0
-    property int page: 0
-    property bool loading: false
+    property var dataSource: null
+    readonly property int total: dataSource ? dataSource.count : entries.length
     property bool ready: true
     readonly property alias scrollView: rows
     readonly property bool counts: width >= Metrics.discoveryTableCountsMin
@@ -18,7 +17,13 @@ Item {
     readonly property real nameWidth: Math.max(0, width - countWidth * 2) * Metrics.discoveryTableTitleRatio // derived: two count columns
     readonly property real composerWidth: Math.max(0, width - countWidth * 2 - nameWidth) // derived: two count columns
     signal activated(var entry)
-    signal pageRequested(int page)
+    function decoded(row) { try { return JSON.parse(row || "{}") } catch (_) { return {} } }
+    function requestVisible() {
+        if (!visible || !dataSource || total === 0) return
+        dataSource.seek(Math.max(0, Math.floor(rows.contentY / Metrics.rowRich)), Math.ceil((rows.contentY + rows.height) / Metrics.rowRich) + 1)
+    }
+    onTotalChanged: Qt.callLater(requestVisible)
+    onVisibleChanged: if (visible) Qt.callLater(requestVisible)
 
     Row {
         id: header
@@ -39,15 +44,19 @@ Item {
     ListView {
         id: rows
         objectName: "discoveryEntries"
-        anchors.left: parent.left; anchors.right: parent.right; anchors.top: header.bottom; anchors.bottom: paging.top
+        anchors.left: parent.left; anchors.right: parent.right; anchors.top: header.bottom; anchors.bottom: parent.bottom
         anchors.bottomMargin: Metrics.gap12
-        model: table.entries; clip: true; reuseItems: true
+        model: table.total; clip: true; reuseItems: true
         cacheBuffer: Metrics.rowRich * 2
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {}
+        onContentYChanged: table.requestVisible()
+        onHeightChanged: Qt.callLater(table.requestVisible)
         delegate: Button {
             id: row
-            required property var modelData
+            required property int index
+            readonly property var modelData: table.dataSource ? table.decoded(table.dataSource.entry(index, table.dataSource.revision)) : table.entries[index] || ({})
+            enabled: !!modelData.kind
             width: rows.width; height: Metrics.rowRich; padding: 0
             hoverEnabled: true
             Accessible.name: modelData.name || ""
@@ -81,15 +90,5 @@ Item {
             ToolTip.visible: hovered && (modelData.name || "").length > 0
             ToolTip.text: (modelData.name || "") + "\n" + Accessible.description
         }
-    }
-    Row {
-        id: paging
-        anchors.bottom: parent.bottom; anchors.horizontalCenter: parent.horizontalCenter
-        spacing: Metrics.gap12
-        visible: table.total > Metrics.discoveryPageSize
-        height: visible ? implicitHeight : 0
-        PillButton { text: I18n.tr("Previous", I18n.rev); enabled: table.page > 0 && !table.loading; onClicked: table.pageRequested(table.page - 1) }
-        Text { anchors.verticalCenter: parent.verticalCenter; text: (table.page + 1) + " / " + Math.ceil(table.total / Metrics.discoveryPageSize); font.pointSize: Type.meta; color: Theme.color.textSecondary }
-        PillButton { text: I18n.tr("Next", I18n.rev); enabled: (table.page + 1) * Metrics.discoveryPageSize < table.total && !table.loading; onClicked: table.pageRequested(table.page + 1) }
     }
 }

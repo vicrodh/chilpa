@@ -29,7 +29,8 @@ fn a_parent_genre_finds_deep_tags_and_unknown_genres_never_mean_everything() {
     let roots = reader.discovery_page("genres", "", "", 0);
     assert!(roots["items"].as_array().unwrap().iter().any(|item| item["name"] == "Rock"));
     let search = reader.discovery_page("genres", "", "technical", 0);
-    assert_eq!(search["items"][0]["name"], "Technical Death Metal");
+    assert!(search["items"].as_array().unwrap().iter().any(|row| row["name"] == "Technical Death Metal" && row["albums"] == 1));
+    assert!(!search["items"].as_array().unwrap().iter().any(|row| row["name"] == "Rock"));
 }
 
 #[test]
@@ -77,7 +78,14 @@ fn derived_genres_keep_original_assignments_and_count_each_album_once() {
     let rock = root["items"].as_array().unwrap().iter().find(|item| item["name"] == "Rock").unwrap();
     assert_eq!(rock["albums"], 2, "shared tags and several ancestry paths count each album once");
     assert_eq!(rock["looseTracks"], 1);
-    assert_eq!(rock["images"], json!(["/library/first.jpg"]));
+    assert_eq!(rock["images"], json!([]), "album covers are not artist portraits");
+    assert_eq!(changes(), writes, "navigation must not write derived names back to the catalog");
+    reader.lib.set_artist_artwork("Quartet", Some("/library/quartet.jpg")).unwrap();
+    let portraits = reader.discovery_page("genres", "", "", 0);
+    let rock = portraits["items"].as_array().unwrap().iter().find(|item| item["name"] == "Rock").unwrap();
+    assert_eq!(rock["images"], json!(["/library/quartet.jpg"]));
+    reader.lib.set_artist_artwork("Quartet", None).unwrap();
+    let writes = changes();
     let key = json!({"kind":"genre","name":"Metal"}).to_string();
     let page = reader.discovery_page("genres", &key, "", 0);
     assert_eq!(page["summary"]["albums"], 1);
@@ -101,6 +109,38 @@ fn composer_portraits_reuse_the_chosen_person_image_without_fetching_metadata() 
     assert_eq!(page["items"][0]["portrait"], "/library/writer.jpg");
     assert_eq!(page["items"][0]["albums"], 2);
     assert_eq!(reader.lib.read_revision().unwrap(), before);
+}
+
+#[test]
+fn canonical_families_do_not_depend_on_the_library_or_alias_only_names() {
+    let reader = reader();
+    reader.lib.set_track_genres(1, &["Personal shelf".into(), "Aakhar".into()]).unwrap();
+    let names = |value: Value| value["items"].as_array().unwrap().iter().map(|row| row["name"].as_str().unwrap().to_string()).collect::<Vec<_>>();
+    let all = names(reader.discovery_page("genres", "", "", 0));
+    assert!(all.contains(&"Classical".into()) && all.contains(&"Rock".into()));
+    assert!(!all.contains(&"Personal shelf".into()) && !all.contains(&"Aakhar".into()));
+    reader.lib.connection().execute_batch("DELETE FROM track_genres").unwrap();
+    assert_eq!(names(reader.discovery_page("genres", "", "", 0)), all);
+    assert!(names(reader.discovery_page_options("genres", "", "", r#"{"scope":"library"}"#, 0)).is_empty());
+}
+
+#[test]
+fn browsing_options_apply_before_the_window_and_keep_personal_tags_accessible() {
+    let reader = reader();
+    reader.lib.set_track_genres(1, &["Personal shelf".into(), "Progresive Metal".into()]).unwrap();
+    let tags = reader.discovery_page_options("genres", "", "personal", r#"{"scope":"tags"}"#, 0);
+    assert_eq!(tags["items"][0]["name"], "Personal shelf");
+    let forward = reader.discovery_page("genres", "", "", 0);
+    let backward = reader.discovery_page_options("genres", "", "", r#"{"order":"name-desc"}"#, 0);
+    assert_eq!(backward["items"][0], *forward["items"].as_array().unwrap().last().unwrap());
+    for at in 0..125 {
+        reader.lib.connection().execute("INSERT INTO tracks(source_id,external_id,title,work,added_at) VALUES (1,?1,'Part',?2,1)",
+            rusqlite::params![format!("/extra/{at}"),format!("Work {at:03}")]).unwrap();
+    }
+    let page = reader.discovery_page_options("compositions", "", "Work", r#"{"order":"name-desc"}"#, 1);
+    assert_eq!(page["total"], 125);
+    assert_eq!(page["items"][0]["name"], "Work 064");
+    assert_eq!(page["items"].as_array().unwrap().len(), 60);
 }
 
 #[test]

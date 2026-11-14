@@ -475,6 +475,9 @@ msgstr "Все диски"
 msgid "All episode types"
 msgstr "Все типы выпусков"
 
+msgid "All families"
+msgstr ""
+
 msgid "All files"
 msgstr ""
 
@@ -3280,6 +3283,9 @@ msgstr "В приложении Jellyfin, где выполнен вход, от
 msgid "In library"
 msgstr "В библиотеке"
 
+msgid "In my library"
+msgstr ""
+
 msgid "In progress"
 msgstr "В процессе"
 
@@ -4057,6 +4063,9 @@ msgstr "Больше 16 бит"
 msgid "More than 48 kHz"
 msgstr "Больше 48 кГц"
 
+msgid "Most albums"
+msgstr ""
+
 msgid "Most at {}:00"
 msgstr "Пик в {}:00"
 
@@ -4143,6 +4152,9 @@ msgstr "Звук выключен"
 
 msgid "My Playlist"
 msgstr "Мой плейлист"
+
+msgid "My genre tags"
+msgstr ""
 
 msgid "My library"
 msgstr "Моя библиотека"

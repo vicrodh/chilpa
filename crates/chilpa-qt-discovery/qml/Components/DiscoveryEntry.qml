@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 Button {
     id: card
@@ -32,6 +33,7 @@ Button {
             anchors.fill: parent
             visible: card.genre
             images: card.genre ? card.entry.images || [] : []
+            art: card.entry.art || ({})
             label: card.entry.name || ""; activeImages: card.activeImages
         }
         Rectangle {
@@ -49,13 +51,15 @@ Button {
             Text { width: parent.width; text: card.entry.name || ""; textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.backdropText }
             Text { width: parent.width; text: card.detail; textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.backdropTextMuted }
         }
-        ArtTile {
+        ArtistPortrait {
             id: portrait
             width: Math.min(parent.width - Metrics.gap24, parent.height - Metrics.cardTextHeight - Metrics.cardTextGap)
             height: width; anchors.top: parent.top; anchors.topMargin: Metrics.gap12; anchors.horizontalCenter: parent.horizontalCenter
             radius: width / 2 // derived: a circular portrait
             visible: card.composer
-            source: card.composer && card.activeImages ? card.entry.portrait || "" : ""
+            chosen: card.entry.portrait || ""
+            name: card.composer ? card.entry.name || "" : ""
+            activeImages: card.composer && card.activeImages
             Text {
                 anchors.centerIn: parent; visible: !portrait.ready
                 text: (card.entry.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase()

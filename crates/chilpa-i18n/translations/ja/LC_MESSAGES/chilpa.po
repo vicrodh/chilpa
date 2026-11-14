@@ -473,6 +473,9 @@ msgstr "すべてのディスク"
 msgid "All episode types"
 msgstr "すべてのエピソードタイプ"
 
+msgid "All families"
+msgstr ""
+
 msgid "All files"
 msgstr ""
 
@@ -3274,6 +3277,9 @@ msgstr "サインイン済みの Jellyfin アプリで Quick Connect を開き�
 msgid "In library"
 msgstr "ライブラリ内"
 
+msgid "In my library"
+msgstr ""
+
 msgid "In progress"
 msgstr "進行中"
 
@@ -4047,6 +4053,9 @@ msgstr "16 ビットより上"
 msgid "More than 48 kHz"
 msgstr "48 kHz より上"
 
+msgid "Most albums"
+msgstr ""
+
 msgid "Most at {}:00"
 msgstr "{}:00が最多"
 
@@ -4133,6 +4142,9 @@ msgstr "ミュート"
 
 msgid "My Playlist"
 msgstr "マイプレイリスト"
+
+msgid "My genre tags"
+msgstr ""
 
 msgid "My library"
 msgstr "マイライブラリ"

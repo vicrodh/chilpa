@@ -13,6 +13,7 @@ Item {
     id: page
 
     property string role: SettingsModel.kept("ui.artists.role") === "all" ? "all" : "album"
+    property string order: SettingsModel.kept("ui.artists.order") || "name"
 
     AlbumGridModel {
         id: everyone
@@ -20,25 +21,21 @@ Item {
         key: page.role
         contentRev: Library.contentRev + Library.rev + Library.remoteRev
         columns: grid.columns
-        filter: find.text
+        filter: head.text
+        order: page.order
     }
 
-    ScreenHead {
+    CollectionHead {
         id: head
         x: Metrics.contentX
         y: Metrics.contentTop
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
         title: I18n.tr("Artists", I18n.rev)
         count: I18n.trCount("{} artist", "{} artists", everyone.albums, I18n.rev)
-        flexible: find
+        order: page.order
+        placeholder: I18n.tr("Filter artists", I18n.rev)
+        onOrderPicked: value => { page.order = value; SettingsModel.keep("ui.artists.order", value) }
 
-        SearchField {
-            id: find
-            anchors.verticalCenter: parent.verticalCenter
-            width: Math.max(0, Math.min(Metrics.screenSearch, head.flexibleRoom))
-            placeholder: I18n.tr("Filter artists", I18n.rev)
-            onEscaped: text = ""
-        }
         SegmentedControl {
             id: roles
             anchors.verticalCenter: parent.verticalCenter
@@ -63,6 +60,7 @@ Item {
             onClicked: filters.opened ? filters.close() : filters.open()
             SourcesPopover { id: filters; showAlbumGrouping: false; sourcesOnly: true; x: filterButton.width - width; y: filterButton.height + Metrics.gap6 }
         }
+
     }
 
     ArtistCardGrid {

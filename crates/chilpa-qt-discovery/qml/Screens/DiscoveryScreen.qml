@@ -22,7 +22,6 @@ Item {
     readonly property bool overview: genre && tab === 0
     readonly property string rootTitle: mode === "genres" ? I18n.tr("Genres", I18n.rev) : mode === "composers" ? I18n.tr("Composers", I18n.rev) : I18n.tr("Compositions", I18n.rev)
     property int tab: 0
-    property int number: 0
     property real restoredPosition: 0
     property var positions: ({})
     property bool restoring: false
@@ -44,7 +43,7 @@ Item {
             for (const key of Object.keys(positions)) shifted[Number(key) + 1] = positions[key]
             positions = shifted; tab++
         }
-        find.text = state.text || ""; number = state.page || 0
+        find.text = state.text || ""; find.order = state.order || "name"; find.scope = state.scope || "all"
         restoredPosition = positions[tab] || state.position || 0; restoring = restoredPosition > 0
         schedule()
     }
@@ -53,12 +52,12 @@ Item {
         const previous = Visit.recall("discovery.visits", {})
         const next = {}
         for (const key of Object.keys(previous).filter(key => key !== memory).slice(-63)) next[key] = previous[key]
-        next[memory] = {version:2, tab:tab, page:number, text:find.text, positions:positions, position:positions[tab] || 0}
+        next[memory] = {version:2, tab:tab, order:find.order, scope:find.scope, text:find.text, positions:positions, position:positions[tab] || 0}
         Visit.keep("discovery.visits", next)
     }
     function changeTab(next) {
         if (tab === next) return
-        tab = next; number = 0; restoredPosition = positions[next] || 0; restoring = restoredPosition > 0
+        tab = next; restoredPosition = positions[next] || 0; restoring = restoredPosition > 0
         remember(); schedule(); Qt.callLater(restoreViewport)
     }
     function restoreViewport() {
@@ -79,7 +78,7 @@ Item {
     Connections { target: content.item; function onReadyChanged() { Qt.callLater(discoveryPage.restoreViewport) } }
     Component.onCompleted: { restore(); updateContent(); settle.triggered() }
     Component.onDestruction: remember()
-    onRouteKeyChanged: { playSelection = false; tab = 0; number = 0; find.text = ""; schedule() }
+    onRouteKeyChanged: { playSelection = false; tab = 0; find.text = ""; schedule() }
     function schedule() { if (visible) settle.restart() }
     onVisibleChanged: {
         if (visible) { restoredPosition = positions[tab] || 0; restoring = restoredPosition > 0 }
@@ -91,7 +90,7 @@ Item {
     Timer {
         id: settle
         interval: Motion.searchSettle
-        onTriggered: if (discoveryPage.visible && !discoveryPage.selected.recording && (discoveryPage.listing || discoveryPage.genre)) results.request(discoveryPage.queryKind, discoveryPage.routeKey, discoveryPage.genre && discoveryPage.tab !== 4 ? "" : find.text, discoveryPage.number, Library.contentRev + Library.remoteRev)
+        onTriggered: if (discoveryPage.visible && !discoveryPage.selected.recording && (discoveryPage.listing || discoveryPage.genre)) results.request(discoveryPage.queryKind, discoveryPage.routeKey, find.text, JSON.stringify({order:find.order,scope:find.scope}), Library.contentRev + Library.remoteRev)
     }
     function open(entry) {
         if (entry.kind === "recording") {
@@ -123,23 +122,14 @@ Item {
                 }
             }
         }
-        ScreenHead {
-            id: head
+        DiscoveryTools {
+            id: find
             width: parent.width
-            visible: !discoveryPage.overview
             title: discoveryPage.detail ? discoveryPage.selected.name || discoveryPage.rootTitle : discoveryPage.rootTitle
-            flexible: find
-            SearchField {
-                id: find
-                objectName: "discoverySearch"
-                maximumLength: Metrics.discoverySearchChars
-                anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(0, Math.min(Metrics.screenSearch, head.flexibleRoom))
-                visible: !discoveryPage.selected.recording && !(discoveryPage.detail && discoveryPage.tab === (discoveryPage.genre ? 3 : 2))
-                placeholder: discoveryPage.work ? I18n.tr("Filter recordings", I18n.rev) : I18n.tr("Search your library", I18n.rev)
-                onTextChanged: { discoveryPage.number = 0; discoveryPage.schedule() }
-                onEscaped: text = ""
-            }
+            mode: discoveryPage.mode; listing: discoveryPage.listing; work: discoveryPage.work; detail: discoveryPage.detail
+            overview: discoveryPage.overview; recording: !!discoveryPage.selected.recording
+            tracks: discoveryPage.detail && discoveryPage.tab === (discoveryPage.genre ? 3 : 2)
+            onQueryChanged: { discoveryPage.restoring = false; discoveryPage.positions[discoveryPage.tab] = 0; discoveryPage.schedule() }
         }
         Text {
             visible: !discoveryPage.overview
@@ -170,10 +160,10 @@ Item {
     Component {
         id: genreOverview
         GenreOverview {
-            key:discoveryPage.routeKey; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:results.loading
+            key:discoveryPage.routeKey; filter:find.text; order:find.order; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:results.loading
             artistsContent: Component {
                 Item {
-                    AlbumGridModel { id:people; kind:"discoveryArtists"; key:discoveryPage.routeKey; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
+                    AlbumGridModel { id:people; kind:"discoveryArtists"; key:discoveryPage.routeKey; filter:find.text; order:find.order; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
                     ArtistUi.ArtistCardGrid { id:grid; anchors.fill:parent; artists:people; flow:GridView.FlowTopToBottom; flickableDirection:Flickable.HorizontalFlick }
                     Text { anchors.centerIn:parent; visible:people.ready && people.albums === 0; text:I18n.tr("No artists in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
                 }
@@ -188,18 +178,16 @@ Item {
         DiscoveryIndex {
             kind: discoveryPage.work ? "recordings" : discoveryPage.mode
             ready: !results.loading && Array.isArray(discoveryPage.about.items)
-            entries: results.loading ? [] : discoveryPage.about.items || []; total: discoveryPage.about.total || 0; page: discoveryPage.number; loading: results.loading
+            dataSource: results
             onActivated: entry => discoveryPage.open(entry)
-            onPageRequested: number => { discoveryPage.number = number; discoveryPage.positions[discoveryPage.tab] = 0; discoveryPage.restoring = false; discoveryPage.schedule() }
         }
     }
     Component {
         id: workTable
         DiscoveryWorkTable {
             ready: !results.loading && Array.isArray(discoveryPage.about.items)
-            entries: results.loading ? [] : discoveryPage.about.items || []; total: discoveryPage.about.total || 0; page: discoveryPage.number; loading: results.loading
+            dataSource: results
             onActivated: entry => discoveryPage.open(entry)
-            onPageRequested: number => { discoveryPage.number = number; discoveryPage.positions[discoveryPage.tab] = 0; discoveryPage.restoring = false; discoveryPage.schedule() }
         }
     }
     Component {
@@ -207,7 +195,7 @@ Item {
         Item {
             readonly property alias scrollView: grid.scrollView
             readonly property bool ready: records.ready
-            AlbumGridModel { id: records; kind: "discovery"; key: discoveryPage.routeKey; filter: find.text; columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
+            AlbumGridModel { id: records; kind: "discovery"; key: discoveryPage.routeKey; filter: find.text; order:find.order.replace("name", "title"); columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
             AlbumGrid { id: grid; anchors.fill: parent; model: records; onOpen: albumId => Navigation.go("album", albumId) }
             Text { anchors.centerIn: parent; visible: records.ready && records.albums === 0; text: I18n.tr("No albums in this selection", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
         }
@@ -217,7 +205,7 @@ Item {
         Item {
             readonly property alias scrollView: grid
             readonly property bool ready: people.ready
-            AlbumGridModel { id: people; kind: "discoveryArtists"; key: discoveryPage.routeKey; filter: find.text; columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
+            AlbumGridModel { id: people; kind: "discoveryArtists"; key: discoveryPage.routeKey; filter: find.text; order:find.order; columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
             ArtistUi.ArtistCardGrid { id: grid; anchors.fill: parent; artists: people }
             Text { anchors.centerIn: parent; visible: people.ready && people.albums === 0; text: I18n.tr("No artists in this selection", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
         }

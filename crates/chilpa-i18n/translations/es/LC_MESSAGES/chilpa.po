@@ -474,6 +474,9 @@ msgstr "Todos los discos"
 msgid "All episode types"
 msgstr "Todos los tipos de episodio"
 
+msgid "All families"
+msgstr "Todas las familias"
+
 msgid "All files"
 msgstr "Todos los archivos"
 
@@ -3277,6 +3280,9 @@ msgstr "En una app de Jellyfin donde tengas tu sesión iniciada, abre Quick Conn
 msgid "In library"
 msgstr "En tu biblioteca"
 
+msgid "In my library"
+msgstr "En mi biblioteca"
+
 msgid "In progress"
 msgstr "En progreso"
 
@@ -4052,6 +4058,9 @@ msgstr "Más de 16 bits"
 msgid "More than 48 kHz"
 msgstr "Más de 48 kHz"
 
+msgid "Most albums"
+msgstr "Más álbumes"
+
 msgid "Most at {}:00"
 msgstr "Más a las {}:00"
 
@@ -4138,6 +4147,9 @@ msgstr "Silenciado"
 
 msgid "My Playlist"
 msgstr "Mi playlist"
+
+msgid "My genre tags"
+msgstr "Mis etiquetas de género"
 
 msgid "My library"
 msgstr "Mi biblioteca"

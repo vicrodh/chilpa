@@ -194,6 +194,7 @@ Item {
                                     required property int index
                                     artist: (row.modelData.artists || [])[index] || ({})
                                     visible: index < (row.modelData.artists || []).length
+                                    activeImages: visible && grid.visible && row.y + row.height > grid.contentY && row.y < grid.contentY + grid.height
                                     onActivated: root.openArtist(artist)
                                     onSourceActivated: source => root.openSource(source)
                                 }

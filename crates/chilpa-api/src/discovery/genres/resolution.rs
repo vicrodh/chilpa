@@ -1,6 +1,6 @@
 //! Conservative name recognition; parents never come from edit distance.
 use super::taxonomy::{graph, ALIASES_VERSION};
-use crate::library_query::{distance, genre_key};
+use crate::library_query::genre_key;
 
 #[derive(Clone, Debug, serde::Serialize)]
 pub(in crate::discovery) struct Resolution {
@@ -14,6 +14,11 @@ pub(in crate::discovery) struct Resolution {
 }
 
 pub(super) fn resolve(original: &str) -> Resolution {
+    let mut rows = super::distance::Rows::default();
+    resolve_with(original, |a, b, limit| rows.between(a, b, limit))
+}
+
+fn resolve_with(original: &str, mut distance: impl FnMut(&[char], &[char], usize) -> usize) -> Resolution {
     let mut result = Resolution { original:original.to_string(), recognized:None, method:"unknown", source:"user", alternatives:Vec::new(), node:None };
     // Personal prose and very long tags are kept literally. DP rows are bounded.
     if original.chars().count() > 128 { return result; }
@@ -79,5 +84,39 @@ mod tests {
         let ambiguous = resolve("Wardcore");
         assert_eq!(ambiguous.method, "ambiguous");
         assert!(ambiguous.recognized.is_none());
+    }
+
+    #[test]
+    fn bounded_matching_preserves_recognition_and_ambiguity() {
+        let names = ["Progresive Metal", "Atmospheric Blak Metal", "Wardcore", "Folk Rok",
+            "My Sunday collection", "électro", "音楽", "PROGRESSIVE-METAL", "dnb"];
+        for name in names {
+            let old = resolve_with(name, crate::library_query::distance);
+            assert_eq!(serde_json::to_value(resolve(name)).unwrap(), serde_json::to_value(old).unwrap(), "{name}");
+        }
+    }
+
+    #[test]
+    fn cold_recognition_timing() {
+        let start = std::time::Instant::now();
+        let _ = graph();
+        eprintln!("taxonomy_init_ms={:.3}", start.elapsed().as_secs_f64() * 1000.0);
+        let tags: Vec<_> = (0..80).map(|at| format!("Personal collection {at:03}")).collect();
+        let mut timings = Vec::new();
+        for bounded in [false, true] {
+            let start = std::time::Instant::now();
+            for tag in &tags {
+                let found = if bounded { resolve(tag) } else { resolve_with(tag, crate::library_query::distance) };
+                assert!(found.recognized.is_none());
+                std::hint::black_box(found);
+            }
+            eprintln!("bounded={bounded} tags={} elapsed_ms={:.3}", tags.len(), start.elapsed().as_secs_f64() * 1000.0);
+            timings.push(serde_json::json!({"bounded":bounded,"tags":tags.len(),"elapsedMs":start.elapsed().as_secs_f64()*1000.0}));
+        }
+        if let Some(directory) = std::env::var_os("CHILPA_DISCOVERY_MEASUREMENT_DIR") {
+            let directory = std::path::Path::new(&directory);
+            std::fs::create_dir_all(directory).unwrap();
+            std::fs::write(directory.join("genre-recognition.json"), serde_json::to_vec_pretty(&timings).unwrap()).unwrap();
+        }
     }
 }

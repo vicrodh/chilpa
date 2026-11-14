@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 mod scope;
 pub(crate) mod artists;
-pub use artists::{artist_cards, ListedArtist};
+pub use artists::{artist_cards, artist_cards_ordered, ListedArtist};
 
 /// The records a question leaves, and where each group starts among them.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

@@ -53,10 +53,10 @@ TestCase {
         page.visible = true
         tryVerify(() => model.requests.length > requests)
     }
-    function test_search_page_and_scroll_return_after_leaving_the_route() {
+    function test_search_order_and_scroll_return_after_leaving_the_route() {
         let page = createTemporaryObject(maker, this, {mode:"compositions"})
         findChild(page, "discoverySearch").text = "Suite"
-        page.number = 2
+        findChild(page, "discoverySort").picked("name-desc")
         wait(300)
         const items = Array.from({length:60}, (_, n) => ({kind:"work",name:"Suite " + n,composers:["Writer"]}))
         findChild(page, "discoveryModel").document = JSON.stringify({items:items,total:200})
@@ -65,11 +65,35 @@ TestCase {
         view.contentY = 400
         page.destroy(); wait(1)
         page = createTemporaryObject(maker, this, {mode:"compositions"})
-        compare(page.number, 2)
+        compare(findChild(page, "discoverySort").value, "name-desc")
         compare(findChild(page, "discoverySearch").text, "Suite")
         wait(300)
         findChild(page, "discoveryModel").document = JSON.stringify({items:items,total:200})
         tryCompare(findChild(page, "discoveryEntries"), "contentY", 400)
+    }
+    function test_a_large_inventory_requests_the_viewport_without_a_pager_or_all_delegates() {
+        const page = createTemporaryObject(maker, this, {mode:"composers"})
+        const model = findChild(page, "discoveryModel")
+        model.document = JSON.stringify({total:20000,items:[{kind:"composer",name:"First"}]})
+        const view = findChild(page, "discoveryEntries")
+        tryCompare(view, "count", 20000)
+        verify(view.contentItem.children.length < 100)
+        view.contentY = 10000
+        tryVerify(() => model.seeks.length > 0 && model.seeks[model.seeks.length - 1].first > 60)
+        verify(view.contentItem.children.length < 100)
+        compare(findChild(page, "discoveryPager"), null)
+    }
+    function test_overview_has_search_sort_and_a_genre_scope_filter() {
+        const page = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:"Rock"})})
+        const model = findChild(page, "discoveryModel")
+        verify(findChild(page, "discoverySearch").visible)
+        verify(findChild(page, "discoverySort").visible)
+        verify(findChild(page, "discoveryFilter").visible)
+        findChild(page, "discoverySearch").text = "metal"
+        findChild(page, "discoveryFilter").picked("library")
+        findChild(page, "discoverySort").picked("name-desc")
+        tryVerify(() => model.requests.length > 0 && model.requests[model.requests.length - 1].text === "metal")
+        compare(JSON.parse(model.requests[model.requests.length - 1].options), {order:"name-desc",scope:"library"})
     }
     function test_a_source_recording_opens_its_album_by_keyboard_on_a_narrow_page() {
         const page = createTemporaryObject(maker, this, {width:560,mode:"compositions",routeKey:JSON.stringify({
@@ -184,6 +208,8 @@ TestCase {
         verify(view)
         verify(findChild(page, "genreHero"))
         const shelf = findChild(page, "genreAlbumShelf")
+        tryVerify(() => view.contentHeight > view.height)
+        view.contentY = Math.max(0, shelf.mapToItem(view.contentItem, 0, 0).y - view.height / 2)
         tryCompare(shelf, "active", true)
         tryCompare(findChild(page, "genreArtistShelf"), "active", false)
         view.contentY = 900

@@ -82,8 +82,13 @@ impl Library {
     /// Stream ordered works so a merged source page retains only 60 entries.
     /// This does not materialize the library's complete work inventory in Rust.
     pub fn visit_compositions(&self, composer: &str, text: &str, mut visit: impl FnMut(Composition)) -> rusqlite::Result<()> {
+        self.visit_compositions_ordered(composer, text, false, &mut visit)
+    }
+
+    pub fn visit_compositions_ordered(&self, composer: &str, text: &str, descending: bool, mut visit: impl FnMut(Composition)) -> rusqlite::Result<()> {
+        let direction = if descending { "DESC" } else { "ASC" };
         let sql = format!("{WORKS} SELECT work_key, min(title), composers, count(DISTINCT coalesce(album_id, -id)), count(*)
-            FROM identified{CONDITION} GROUP BY work_key ORDER BY chilpa_work_sort(min(title)) COLLATE BINARY, work_key");
+            FROM identified{CONDITION} GROUP BY work_key ORDER BY chilpa_work_sort(min(title)) COLLATE BINARY {direction}, work_key {direction}");
         let mut statement = self.db.prepare(&sql)?;
         for row in statement.query_map(params![composer, text.trim()], composition)? { visit(row?); }
         Ok(())
@@ -130,6 +135,20 @@ mod tests {
         assert_eq!((total, works[0].tracks), (1, 2));
         assert_eq!(lib.composition_tracks(&works[0].key).unwrap(), [1, 2]);
         assert_eq!(lib.db.total_changes(), changes);
+    }
+
+    #[test]
+    fn descending_stream_reverses_title_ties_without_merging_authors() {
+        let lib = library();
+        let mut ascending = Vec::new();
+        let mut descending = Vec::new();
+        lib.visit_compositions_ordered("", "", false, |work| ascending.push(work)).unwrap();
+        lib.visit_compositions_ordered("", "", true, |work| descending.push(work)).unwrap();
+        assert_eq!(ascending.len(), 2);
+        assert_eq!(ascending[0].title, ascending[1].title);
+        assert_ne!(ascending[0].key, ascending[1].key);
+        ascending.reverse();
+        assert_eq!(descending, ascending);
     }
 
     #[test]

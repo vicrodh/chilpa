@@ -20,6 +20,7 @@ pub mod http;
 pub mod musicbrainz;
 pub mod music_link;
 pub mod proxy;
+pub mod portrait;
 pub mod release;
 pub mod scene;
 pub mod text;

@@ -1042,3 +1042,5 @@ turbojpeg
 # Qt's executable-picker option and the pinned Python package installer.
 dont
 uv
+# SQLite virtual-machine instruction counts (StatementStatus::VmStep).
+vm

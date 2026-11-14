@@ -11,10 +11,14 @@ TitledFlow {
     title: "Discovery"
     LibraryDestinations {}
     ArtistContext { width: Metrics.settingsMaxWidth; info: ({title:"Artist",genres:["Jazz","Soul Jazz"],compositions:8}) }
-    DiscoveryEntry { width: Metrics.discoveryEntryWidth; entry: ({kind:"genre",name:"Jazz"}); detail:"Explore styles in your library" }
-    DiscoveryEntry { width: Metrics.sceneCardWidth; entry: ({kind:"composer",name:"Composer"}); detail:"3 albums" }
-    DiscoveryMosaic { width: Metrics.discoveryEntryWidth; height: Metrics.discoveryGenreHeight; label:"Jazz" }
+    DiscoveryEntry { width: Metrics.discoveryEntryWidth; entry: ({kind:"genre",name:"Jazz",art:{key:"jazz"}}); detail:"Explore styles in your library" }
+    DiscoveryEntry { width: Metrics.sceneCardWidth; activeImages:false; entry: ({kind:"composer",name:"Composer"}); detail:"3 albums" }
+    DiscoveryMosaic { width: Metrics.discoveryEntryWidth; height: Metrics.discoveryGenreHeight; label:"Jazz"; art:({key:"jazz"}) }
     DiscoveryActions { width:Metrics.settingsMaxWidth; selected:({kind:"genre",name:"Jazz"}); choices:["Overview","Albums","Artists","Tracks","Subgenres"]; overview:true }
+    DiscoveryTools { width:Metrics.settingsMaxWidth; title:"Genres" }
+    ArtistCard { artist:({title:"Artist",sources:[]}); activeImages:false }
+    CollectionHead { width:Metrics.settingsMaxWidth; title:"Artists" }
+    ArtistPortrait { width:Metrics.artistPortrait; height:width; name:"Artist"; activeImages:false }
     DiscoveryIndex {
         width: Metrics.discoveryEntryWidth * 2; height: Metrics.discoveryGenreHeight * 2 // derived: two preview cards across and two rows tall
         entries: [{kind:"genre",name:"Jazz",albums:4},{kind:"genre",name:"Rock",albums:3}]

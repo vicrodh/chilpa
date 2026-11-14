@@ -387,7 +387,7 @@ impl qobject::AlbumGridModel {
 
     /// The artists the filter leaves, as cards.
     fn show_artists(mut self: Pin<&mut Self>) {
-        let (cards, shown) = chilpa_api::artist_cards(&self.rust().artists, &self.rust().filter.to_string());
+        let (cards, shown) = chilpa_api::artist_cards_ordered(&self.rust().artists, &self.rust().filter.to_string(), &self.rust().order.to_string());
         self.as_mut().rust_mut().artist_cards = shown;
         self.show(Albums::Loaded(cards));
     }

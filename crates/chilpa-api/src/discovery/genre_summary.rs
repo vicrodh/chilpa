@@ -1,8 +1,9 @@
-//! Counts and at most four representative library images per visible group.
+//! Counts and at most four chosen artist portraits per visible group.
 //! Stream one release at a time, retaining one (id, 61-bit membership) pair
 //! per matched album. Version grouping holds only one parent's ids at a time;
 //! no per-parent album sets or image cache survive this read.
-//! The source pass sorts at most 30,000 borrowed index entries (240 KiB).
+//! The source pass sorts one borrowed pointer per resident index entry; the
+//! request releases them. Live collection roots may exceed the pruning target.
 use super::genres::Inventory;
 use crate::Reader;
 use serde::Serialize;
@@ -61,10 +62,11 @@ impl Counter {
 
 impl Reader {
     pub(super) fn genre_summaries(&self, names: &[String], inventory: &Inventory) -> Result<Vec<Summary>, String> {
-        let pictures = self.lib.artist_pictures().map_err(|error| error.to_string())?;
         let mut counter = Counter::new(names, inventory);
-        self.lib.visit_genre_releases(|loose, id, tag, artist, image| {
-            counter.accept(loose, id, tag, || pictures.of(artist).or(image).map(str::to_string));
+        if counter.slots.is_empty() { return Ok(counter.rows); }
+        let pictures = self.lib.artist_pictures().map_err(|error| error.to_string())?;
+        self.lib.visit_genre_releases(|loose, id, tag, artist| {
+            counter.accept(loose, id, tag, || pictures.of(artist).map(str::to_string));
         }).map_err(|error| error.to_string())?;
         // Index ids belong to the catalog; start a separate counting pass.
         counter.flush();
@@ -76,18 +78,18 @@ impl Reader {
             let loose = item.album == 0;
             let id = if loose { item.track } else { item.album };
             for tag in &item.genres {
-                counter.accept(loose, id, tag, || {
-                    pictures.of(&item.album_artist).map(str::to_string).or_else(||
-                        self.catalog.as_ref().map(|catalog| catalog.cached_art(id)))
-                });
+                counter.accept(loose, id, tag, || pictures.of(&item.album_artist).map(str::to_string));
             }
         }
         counter.flush();
         let grouping = (!index.items.is_empty()).then(|| self.copy_grouping()).flatten();
+        let versions = if counter.memberships.iter().any(|(id, _)| *id > 0) && self.lib.group_album_versions() {
+            Some(self.lib.version_catalog().map_err(|error| error.to_string())?)
+        } else { None };
         for (at, row) in counter.rows.iter_mut().enumerate() {
             let eligible = || counter.memberships.iter().filter(|(_, mask)| mask & (1 << at) != 0).map(|(id, _)| *id);
             let local: Vec<_> = eligible().filter(|id| *id > 0).collect();
-            let mut ids = self.lib.grouped_album_ids(&local).map_err(|error| error.to_string())?;
+            let mut ids = if let Some(versions) = &versions { versions.collapse(&local) } else { local };
             ids.extend(eligible().filter(|id| *id < 0));
             let dropped = grouping.as_ref().map(|(library, versions, chosen)| crate::library_sources::dropped_copies(&ids,
                 crate::library_sources::Grouping { library, versions:*versions, chosen }, &index.versions)).unwrap_or_default();
