@@ -9,6 +9,7 @@ TestCase {
     id:test
     property int retiredShelves:0
     property int uncancelledShelves:0
+    property int cancelledViews:0
     name: "MusicDiscovery"
     when: windowShown
     visible: true
@@ -90,6 +91,36 @@ TestCase {
         compare(findChild(page, "discoveryContent").item.toString().includes("DiscoveryWorkTable"), true)
         page.tab = 2
         tryVerify(() => findChild(page, "discoveryContent").item.toString().includes("DiscoveryTracks"))
+    }
+    function watchAlbumView(page) {
+        const view = findChild(page, "discoveryContent").item.scrollView
+        verify(!!view.model)
+        view.modelChanged.connect(() => { if (!view.model) test.cancelledViews++ })
+    }
+    function test_switching_a_restored_composer_tab_cancels_its_view_before_removal() {
+        const key = JSON.stringify({kind:"composer",name:"Writer"})
+        const visits = {}
+        visits["discovery.composers." + key] = {version:2,tab:1}
+        Visit.keep("discovery.visits", visits)
+        const page = createTemporaryObject(maker, this, {mode:"composers",routeKey:key})
+        compare(page.tab, 1)
+        test.cancelledViews = 0
+        watchAlbumView(page)
+        page.changeTab(0)
+        compare(test.cancelledViews, 1, "cancel the album view before replacing its loader context")
+        page.changeTab(1)
+        verify(!!findChild(page, "discoveryContent").item.scrollView.model)
+    }
+    function test_hiding_a_detail_cancels_its_view_and_reopens_it() {
+        const page = createTemporaryObject(maker, this, {mode:"composers",routeKey:JSON.stringify({kind:"composer",name:"Writer"})})
+        page.changeTab(1)
+        test.cancelledViews = 0
+        watchAlbumView(page)
+        page.visible = false
+        compare(test.cancelledViews, 1, "cancel the album view before hiding its loader")
+        compare(findChild(page, "discoveryContent").item, null)
+        page.visible = true
+        verify(!!findChild(page, "discoveryContent").item.scrollView.model)
     }
     function test_a_retained_genre_tile_releases_images_outside_the_viewport() {
         const page = createTemporaryObject(maker, this)

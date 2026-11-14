@@ -32,6 +32,7 @@ Item {
     readonly property var breadcrumb: (selected.trail || []).length > 1 ? selected.trail : about.breadcrumb || selected.trail || []
     readonly property bool listing: !detail || composer && tab === 0 || work && tab === 0 || genre && tab === 4
     readonly property string queryKind: work ? "recordings" : mode
+    readonly property Component contentComponent: selected.recording ? recordingParts : overview ? genreOverview : listing ? (mode === "compositions" || composer) && !work ? workTable : navigationList : composer || work ? tab === 1 ? albums : tracks : tab === 1 ? albums : tab === 2 ? artists : tracks
     readonly property var choices: composer ? [I18n.tr("Compositions", I18n.rev), I18n.tr("Albums", I18n.rev), I18n.tr("Tracks", I18n.rev)]
         : work ? [I18n.tr("Recordings", I18n.rev), I18n.tr("Albums", I18n.rev)]
         : [I18n.tr("Overview", I18n.rev), I18n.tr("Albums", I18n.rev), I18n.tr("Artists", I18n.rev), I18n.tr("Tracks", I18n.rev), I18n.tr("Subgenres", I18n.rev)]
@@ -66,17 +67,28 @@ Item {
         view.contentY = Math.max(0, Math.min(restoredPosition, view.contentHeight - view.height))
         restoring = false
     }
+    PageLifetime { id: contentLifetime }
+    function updateContent() {
+        if (!content) return
+        const next = visible ? contentComponent : null
+        if (content.sourceComponent === next && content.active === visible) return
+        // Stop nested views while their creation contexts still exist.
+        contentLifetime.cancel(content)
+        content.sourceComponent = next
+        content.active = visible
+    }
+    onContentComponentChanged: updateContent()
     Connections {
         target: content.item?.scrollView || null
         function onContentYChanged() { if (!discoveryPage.restoring) discoveryPage.positions[discoveryPage.tab] = target.contentY }
         function onContentHeightChanged() { Qt.callLater(discoveryPage.restoreViewport) }
     }
     Connections { target: content.item; function onReadyChanged() { Qt.callLater(discoveryPage.restoreViewport) } }
-    Component.onCompleted: { restore(); settle.triggered() }
+    Component.onCompleted: { restore(); updateContent(); settle.triggered() }
     Component.onDestruction: remember()
     onRouteKeyChanged: { playSelection = false; tab = 0; number = 0; find.text = ""; schedule() }
     function schedule() { if (visible) settle.restart() }
-    onVisibleChanged: { if (visible) schedule(); else { settle.stop(); results.cancel() } }
+    onVisibleChanged: { updateContent(); if (visible) schedule(); else { settle.stop(); results.cancel() } }
     Connections { target: Library; function onContentRevChanged() { discoveryPage.schedule() } function onRemoteRevChanged() { discoveryPage.schedule() } }
     DiscoveryModel { id: results; objectName: "discoveryModel" }
     Timer {
@@ -156,9 +168,8 @@ Item {
         objectName: "discoveryContent"
         anchors.left: heading.left; anchors.right: heading.right; anchors.top: heading.bottom; anchors.topMargin: Metrics.gap20
         anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.contentBottom
-        active: discoveryPage.visible
+        active: false
         onLoaded: Qt.callLater(discoveryPage.restoreViewport)
-        sourceComponent: discoveryPage.selected.recording ? recordingParts : discoveryPage.overview ? genreOverview : discoveryPage.listing ? (discoveryPage.mode === "compositions" || discoveryPage.composer) && !discoveryPage.work ? workTable : navigationList : discoveryPage.composer || discoveryPage.work ? discoveryPage.tab === 1 ? albums : tracks : discoveryPage.tab === 1 ? albums : discoveryPage.tab === 2 ? artists : tracks
     }
     Component {
         id: genreOverview
