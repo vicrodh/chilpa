@@ -120,7 +120,7 @@ impl SettingsPageRust {
 
 impl qobject::SettingsPage {
     pub fn set_file(self: Pin<&mut Self>, key: &QString, value: &cxx_qt_lib::QUrl) {
-        self.set(key, &value.to_local_file());
+        if let Some(path) = value.to_local_file() { self.set(key, &path); }
     }
     pub fn diagnosis_requires_stop(&self) -> bool { app::with(|api| api.diagnosis_requires_stop()) }
 
