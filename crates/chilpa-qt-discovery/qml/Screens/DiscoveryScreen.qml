@@ -28,6 +28,7 @@ Item {
     property bool playSelection: false
     readonly property string memory: "discovery." + mode + "." + routeKey
     readonly property var about: decode(results.document)
+    readonly property string collectionKey: mode === "genres" ? JSON.stringify(Object.assign({}, selected, {excluded_sources:find.excludedSources})) : routeKey
     readonly property var breadcrumb: (selected.trail || []).length > 1 ? selected.trail : about.breadcrumb || selected.trail || []
     readonly property bool listing: !detail || composer && tab === 0 || work && tab === 0 || genre && tab === 4
     readonly property string queryKind: work ? "recordings" : mode
@@ -44,6 +45,7 @@ Item {
             positions = shifted; tab++
         }
         find.text = state.text || ""; find.order = state.order || "name"; find.scope = state.scope || "all"
+        find.excludedSources = selected.excluded_sources || state.excludedSources || []
         restoredPosition = positions[tab] || state.position || 0; restoring = restoredPosition > 0
         schedule()
     }
@@ -52,7 +54,7 @@ Item {
         const previous = Visit.recall("discovery.visits", {})
         const next = {}
         for (const key of Object.keys(previous).filter(key => key !== memory).slice(-63)) next[key] = previous[key]
-        next[memory] = {version:2, tab:tab, order:find.order, scope:find.scope, text:find.text, positions:positions, position:positions[tab] || 0}
+        next[memory] = {version:2, tab:tab, order:find.order, scope:find.scope, excludedSources:find.excludedSources, text:find.text, positions:positions, position:positions[tab] || 0}
         Visit.keep("discovery.visits", next)
     }
     function changeTab(next) {
@@ -78,7 +80,7 @@ Item {
     Connections { target: content.item; function onReadyChanged() { Qt.callLater(discoveryPage.restoreViewport) } }
     Component.onCompleted: { restore(); updateContent(); settle.triggered() }
     Component.onDestruction: remember()
-    onRouteKeyChanged: { playSelection = false; tab = 0; find.text = ""; schedule() }
+    onRouteKeyChanged: { playSelection = false; tab = 0; find.text = ""; find.excludedSources = selected.excluded_sources || []; schedule() }
     function schedule() { if (visible) settle.restart() }
     onVisibleChanged: {
         if (visible) { restoredPosition = positions[tab] || 0; restoring = restoredPosition > 0 }
@@ -90,7 +92,7 @@ Item {
     Timer {
         id: settle
         interval: Motion.searchSettle
-        onTriggered: if (discoveryPage.visible && !discoveryPage.selected.recording && (discoveryPage.listing || discoveryPage.genre)) results.request(discoveryPage.queryKind, discoveryPage.routeKey, find.text, JSON.stringify({order:find.order,scope:find.scope}), Library.contentRev + Library.remoteRev)
+        onTriggered: if (discoveryPage.visible && !discoveryPage.selected.recording && (discoveryPage.listing || discoveryPage.genre)) results.request(discoveryPage.queryKind, discoveryPage.collectionKey, find.text, JSON.stringify({order:find.order,scope:find.scope,excluded_sources:find.excludedSources}), Library.contentRev + Library.remoteRev)
     }
     function open(entry) {
         if (entry.kind === "recording") {
@@ -99,7 +101,7 @@ Item {
             return
         }
         const next = {kind:entry.kind, name:entry.name, work:entry.work || "", composers:entry.composers || []}
-        if (entry.kind === "genre") next.trail = (breadcrumb || []).concat([entry.name])
+        if (entry.kind === "genre") { next.trail = (breadcrumb || []).concat([entry.name]); next.excluded_sources = find.excludedSources }
         Navigation.goKey(entry.kind === "genre" ? "genres" : entry.kind === "composer" ? "composers" : "compositions", JSON.stringify(next))
     }
     Column {
@@ -107,20 +109,10 @@ Item {
         x: Metrics.contentX; y: Metrics.contentTop
         width: discoveryPage.width - Metrics.contentX * 2 // derived: content margins
         spacing: Metrics.gap12
-        Flow {
-            width: parent.width; spacing: Metrics.gap4
+        DiscoveryBreadcrumb {
+            width: parent.width
             visible: discoveryPage.detail
-            PillButton { objectName: "discoveryRoot"; text: discoveryPage.rootTitle; kind: "ghost"; onClicked: Navigation.go(discoveryPage.mode, 0) }
-            Repeater {
-                model: discoveryPage.breadcrumb
-                PillButton {
-                    required property string modelData
-                    required property int index
-                    kind: "ghost"; text: modelData; enabled: index < discoveryPage.breadcrumb.length - 1
-                    maximumWidth: parent.width
-                    onClicked: Navigation.goKey("genres", JSON.stringify({kind:"genre",name:modelData,trail:discoveryPage.breadcrumb.slice(0,index + 1)}))
-                }
-            }
+            title: discoveryPage.rootTitle; mode: discoveryPage.mode; trail: discoveryPage.breadcrumb; excludedSources: find.excludedSources
         }
         DiscoveryTools {
             id: find
@@ -129,6 +121,12 @@ Item {
             mode: discoveryPage.mode; listing: discoveryPage.listing; work: discoveryPage.work; detail: discoveryPage.detail
             overview: discoveryPage.overview; recording: !!discoveryPage.selected.recording
             tracks: discoveryPage.detail && discoveryPage.tab === (discoveryPage.genre ? 3 : 2)
+            sources: discoveryPage.about.sources || []
+            onSourcesChosen: excluded => {
+                find.excludedSources = excluded; discoveryPage.playSelection = false; discoveryPage.positions = ({}); discoveryPage.restoring = false
+                if (content.item?.scrollView) content.item.scrollView.contentY = 0
+                discoveryPage.remember(); discoveryPage.schedule()
+            }
             onQueryChanged: { discoveryPage.restoring = false; discoveryPage.positions[discoveryPage.tab] = 0; discoveryPage.schedule() }
         }
         Text {
@@ -160,10 +158,10 @@ Item {
     Component {
         id: genreOverview
         GenreOverview {
-            key:discoveryPage.routeKey; filter:find.text; order:find.order; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:results.loading
+            key:discoveryPage.collectionKey; filter:find.text; order:find.order; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:results.loading
             artistsContent: Component {
                 Item {
-                    AlbumGridModel { id:people; kind:"discoveryArtists"; key:discoveryPage.routeKey; filter:find.text; order:find.order; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
+                    AlbumGridModel { id:people; kind:"discoveryArtists"; key:discoveryPage.collectionKey; filter:find.text; order:find.order; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
                     ArtistUi.ArtistCardGrid { id:grid; anchors.fill:parent; artists:people; flow:GridView.FlowTopToBottom; flickableDirection:Flickable.HorizontalFlick }
                     Text { anchors.centerIn:parent; visible:people.ready && people.albums === 0; text:I18n.tr("No artists in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
                 }
@@ -195,7 +193,7 @@ Item {
         Item {
             readonly property alias scrollView: grid.scrollView
             readonly property bool ready: records.ready
-            AlbumGridModel { id: records; kind: "discovery"; key: discoveryPage.routeKey; filter: find.text; order:find.order.replace("name", "title"); columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
+            AlbumGridModel { id: records; kind: "discovery"; key: discoveryPage.collectionKey; filter: find.text; order:find.order.replace("name", "title"); columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
             AlbumGrid { id: grid; anchors.fill: parent; model: records; onOpen: albumId => Navigation.go("album", albumId) }
             Text { anchors.centerIn: parent; visible: records.ready && records.albums === 0; text: I18n.tr("No albums in this selection", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
         }
@@ -205,13 +203,13 @@ Item {
         Item {
             readonly property alias scrollView: grid
             readonly property bool ready: people.ready
-            AlbumGridModel { id: people; kind: "discoveryArtists"; key: discoveryPage.routeKey; filter: find.text; order:find.order; columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
+            AlbumGridModel { id: people; kind: "discoveryArtists"; key: discoveryPage.collectionKey; filter: find.text; order:find.order; columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
             ArtistUi.ArtistCardGrid { id: grid; anchors.fill: parent; artists: people }
             Text { anchors.centerIn: parent; visible: people.ready && people.albums === 0; text: I18n.tr("No artists in this selection", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
         }
     }
-    Component { id: tracks; DiscoveryTracks { key: discoveryPage.routeKey; autoPlay:discoveryPage.playSelection; onPlayed:discoveryPage.playSelection = false } }
-    Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.routeKey; recording: true } }
+    Component { id: tracks; DiscoveryTracks { key: discoveryPage.collectionKey; autoPlay:discoveryPage.playSelection; onPlayed:discoveryPage.playSelection = false } }
+    Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.collectionKey; recording: true } }
     Column {
         anchors.centerIn: content
         width: Math.min(content.width, Metrics.settingsMaxWidth)

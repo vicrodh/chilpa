@@ -47,7 +47,7 @@ pub(crate) fn listed_within(library: Vec<Artist>, index: &SourceIndex, extras: &
     let stars = Stars::default();
     // By the library's key, then by plugin: the source's spelling and records.
     let mut found: BTreeMap<String, BTreeMap<String, (String, Vec<i64>)>> = BTreeMap::new();
-    for item in index.items.iter().filter(|item| item.saved_album && item.album != 0 && within.is_none_or(|ids| ids.contains(&item.album)) && through.passes(item, &stars)) {
+    for item in index.items.iter().filter(|item| item.album != 0 && within.map_or(item.saved_album, |ids| ids.contains(&item.album)) && through.passes(item, &stars)) {
         let names: Vec<&String> = if everyone { item.artists.iter().chain([&item.album_artist]).collect() } else { vec![&item.album_artist] };
         for name in names {
             let name = name.trim();

@@ -16,6 +16,8 @@ TitledFlow {
     DiscoveryMosaic { width: Metrics.discoveryEntryWidth; height: Metrics.discoveryGenreHeight; label:"Jazz"; art:({key:"jazz"}) }
     DiscoveryActions { width:Metrics.settingsMaxWidth; selected:({kind:"genre",name:"Jazz"}); choices:["Overview","Albums","Artists","Tracks","Subgenres"]; overview:true }
     DiscoveryTools { width:Metrics.settingsMaxWidth; title:"Genres" }
+    DiscoveryBreadcrumb { title:"Genres"; trail:["Rock","Metal"] }
+    GenreSources { sources:[{key:"local:default",label:"Local library"},{key:"plugin:fixture",label:"Source"}] }
     ArtistCard { artist:({title:"Artist",sources:[]}); activeImages:false }
     CollectionHead { width:Metrics.settingsMaxWidth; title:"Artists" }
     ArtistPortrait { width:Metrics.artistPortrait; height:width; name:"Artist"; activeImages:false }

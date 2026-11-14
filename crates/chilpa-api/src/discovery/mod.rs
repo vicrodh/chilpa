@@ -6,10 +6,13 @@ mod genres;
 mod genre_summary;
 mod works;
 mod options;
+mod sources;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod measurement;
+#[cfg(test)]
+mod source_tests;
 use crate::{AlbumsFound, Filter, Reader, Snapshot, TrackOrder};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -30,11 +33,13 @@ pub struct Selection {
     pub recording_title: String,
     pub performer: String,
     pub album: i64,
+    pub excluded_sources: Vec<String>,
 }
 
 impl Selection {
     pub fn parse(key: &str) -> Option<Self> {
-        (key.len() <= 8192).then(|| serde_json::from_str(key).ok()).flatten()
+        (key.len() <= 65536).then(|| serde_json::from_str::<Self>(key).ok()).flatten()
+            .filter(|selected| options::valid_sources(&selected.excluded_sources))
     }
 }
 
@@ -50,16 +55,21 @@ impl Reader {
     }
 
     fn discovery_names(&self, composers: bool) -> Vec<(String, usize)> {
+        self.discovery_names_using(composers, &[], &self.source_index().1)
+    }
+
+    fn discovery_names_using(&self, composers: bool, excluded: &[String], index: &crate::library_sources::SourceIndex) -> Vec<(String, usize)> {
         // Genre spellings remain separate inputs to the derived index. SQL's
         // NOCASE does not equate every Unicode case variant when filtering.
         let key = |name: &str| if composers { name.to_lowercase() } else { name.to_string() };
         let local: Vec<_> = if composers { self.lib.facet_composers(&Filter::default()).unwrap_or_default().into_iter().map(|row| (row.label,row.albums)).collect() }
-            else { self.lib.genre_names().unwrap_or_default().into_iter().map(|name| (name,0)).collect() };
+            else { self.lib.genre_names_excluding(excluded).unwrap_or_default().into_iter().map(|name| (name,0)).collect() };
         let mut names: BTreeMap<String, (String, usize)> = local.into_iter()
             .map(|(name, albums)| (key(&name), (name, albums))).collect();
-        let (_, index) = self.source_index();
+        let through = sources::through(excluded);
+        let stars = crate::library_sources::Stars::default();
         let mut counted = HashSet::new();
-        for item in &index.items {
+        for item in index.items.iter().filter(|item| through.passes(item, &stars)) {
             let tags = if composers { &item.composers } else { &item.genres };
             for tag in tags.iter().filter(|tag| !tag.trim().is_empty()) {
                 let key = key(tag);
@@ -73,9 +83,13 @@ impl Reader {
     }
 
     fn discovery_filter(&self, selected: &Selection) -> Filter {
+        self.discovery_filter_using(selected, &self.source_index().1)
+    }
+
+    fn discovery_filter_using(&self, selected: &Selection, index: &crate::library_sources::SourceIndex) -> Filter {
         match selected.kind.as_str() {
             "genre" => Filter { genres: genres::Inventory::new(
-                &self.discovery_names(false).into_iter().map(|(name, _)| name).collect::<Vec<_>>()).matching(&selected.name), ..Default::default() },
+                &self.discovery_names_using(false, &selected.excluded_sources, index).into_iter().map(|(name, _)| name).collect::<Vec<_>>()).matching(&selected.name), excluded_sources:selected.excluded_sources.clone(), ..Default::default() },
             "composer" => Filter { composers: vec![selected.name.clone()], ..Default::default() },
             _ => Filter::default(),
         }
@@ -93,12 +107,14 @@ impl Reader {
     }
 
     pub fn discovery_artists(&self, key: &str) -> Vec<crate::ListedArtist> {
+        let selected = Selection::parse(key).unwrap_or_default();
+        let extras = Filter { excluded_sources:if selected.kind == "genre" { selected.excluded_sources } else { Vec::new() }, ..Default::default() };
         let ids: HashSet<_> = self.discovery_snapshot(key).album_ids.into_iter().collect();
         let pictures = self.lib.artist_pictures().unwrap_or_default();
-        let local = self.lib.artists_by_role_within(chilpa_library::ArtistRole::Album, Some(&ids)).unwrap_or_default()
+        let local = self.lib.album_artists_excluding(&ids, &extras.excluded_sources).unwrap_or_default()
             .into_iter().map(|artist| crate::browse::artist_of(artist, &pictures)).collect();
         let (_, source) = self.source_index();
-        crate::albums_view::artists::listed_within(local, &source, &Filter::default(), false, Some(&ids),
+        crate::albums_view::artists::listed_within(local, &source, &extras, false, Some(&ids),
             |id| self.catalog.as_ref().and_then(|catalog| catalog.card(id)).map(|card| card.image).unwrap_or_default())
     }
 
@@ -119,8 +135,11 @@ impl Reader {
     }
 
     pub fn discovery_page_options(&self, kind: &str, key: &str, text: &str, options: &str, page: usize) -> Value {
-        let options = options::Options::parse(options);
-        let selected = Selection::parse(key).unwrap_or_default();
+        let Some(options) = options::Options::parse(options) else { return json!({"error":chilpa_i18n::t("Invalid discovery options."), "items":[], "total":0}); };
+        let selected = if key.is_empty() { Selection::default() } else {
+            let Some(selected) = Selection::parse(key) else { return json!({"error":chilpa_i18n::t("Invalid discovery selection."), "items":[], "total":0}); };
+            selected
+        };
         let text = chilpa_library::store::query::fold(text.trim());
         if kind == "recordings" { return self.recordings_page_ordered(&selected, &text, page, options.descending()); }
         if kind == "compositions" || selected.kind == "composer" {
@@ -144,7 +163,12 @@ impl Reader {
             }).collect();
             return json!({"total":total,"items":items});
         }
-        let tags: Vec<_> = self.discovery_names(false).into_iter().map(|(name, _)| name).collect();
+        let excluded = options.excluded_sources.as_deref().unwrap_or(&selected.excluded_sources);
+        self.genre_page_using(&selected, &text, &options, excluded, page, &self.source_index().1)
+    }
+
+    fn genre_page_using(&self, selected: &Selection, text: &str, options: &options::Options, excluded: &[String], page: usize, index: &crate::library_sources::SourceIndex) -> Value {
+        let tags: Vec<_> = self.discovery_names_using(false, excluded, index).into_iter().map(|(name, _)| name).collect();
         let inventory = genres::Inventory::new(&tags);
         let mut names = inventory.browse((selected.kind == "genre").then_some(selected.name.as_str()), &text, &options.scope);
         if options.descending() { names.reverse(); }
@@ -152,7 +176,7 @@ impl Reader {
         let names: Vec<_> = names.into_iter().skip(page.saturating_mul(PAGE)).take(PAGE).collect();
         let mut summarized = names.clone();
         if selected.kind == "genre" { summarized.push(selected.name.clone()); }
-        let summaries = match self.genre_summaries(&summarized, &inventory) {
+        let summaries = match self.genre_summaries_using(&summarized, &inventory, excluded, index) {
             Ok(summaries) => summaries,
             Err(error) => return json!({"error":error,"items":[],"total":0}),
         };
@@ -161,7 +185,7 @@ impl Reader {
             json!({"kind":"genre", "name":name, "styles":styles, "albums":summary.albums, "looseTracks":summary.loose_tracks, "images":summary.images, "art":genres::art(&name)})
         }).collect();
         let resolutions = inventory.records_for(&selected.name);
-        json!({"total":total, "art":genres::art(&selected.name), "taxonomyVersion":genres::VERSION, "resolutions":resolutions.iter().take(PAGE).collect::<Vec<_>>(),
+        json!({"total":total, "excluded_sources":excluded, "sources":self.discovery_sources_using(index), "art":genres::art(&selected.name), "taxonomyVersion":genres::VERSION, "resolutions":resolutions.iter().take(PAGE).collect::<Vec<_>>(),
             "resolutionTotal":resolutions.len(), "parents":genres::parents(&selected.name), "parentRelations":genres::parent_relations(&selected.name), "breadcrumb":genres::breadcrumb(&selected.name),
             "summary":if selected.kind == "genre" { summaries.last() } else { None }, "items":items})
     }

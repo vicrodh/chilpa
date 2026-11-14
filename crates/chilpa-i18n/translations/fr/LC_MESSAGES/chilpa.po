@@ -3460,6 +3460,12 @@ msgstr "Arguments non valides ; :help affiche la syntaxe."
 msgid "Invalid audio check request."
 msgstr "Requête de vérification audio invalide."
 
+msgid "Invalid discovery options."
+msgstr ""
+
+msgid "Invalid discovery selection."
+msgstr ""
+
 msgid "Invalid output identity."
 msgstr "Identité de sortie invalide."
 

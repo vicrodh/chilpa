@@ -93,7 +93,33 @@ TestCase {
         findChild(page, "discoveryFilter").picked("library")
         findChild(page, "discoverySort").picked("name-desc")
         tryVerify(() => model.requests.length > 0 && model.requests[model.requests.length - 1].text === "metal")
-        compare(JSON.parse(model.requests[model.requests.length - 1].options), {order:"name-desc",scope:"library"})
+        compare(JSON.parse(model.requests[model.requests.length - 1].options), {order:"name-desc",scope:"library",excluded_sources:[]})
+    }
+    function test_genre_sources_follow_breadcrumbs_children_and_collection_tabs() {
+        const excluded = ["plugin:other"]
+        const page = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:"Metal",trail:["Rock","Metal"],excluded_sources:excluded})})
+        const model = findChild(page, "discoveryModel")
+        tryVerify(() => model.requests.length > 0)
+        compare(JSON.parse(model.requests[model.requests.length - 1].options).excluded_sources, excluded)
+        page.open({kind:"genre",name:"Heavy Metal"})
+        compare(JSON.parse(Navigation.went[1]).excluded_sources, excluded)
+        compare(JSON.parse(page.collectionKey).excluded_sources, excluded)
+        mouseClick(findChild(page, "discoveryRoot"))
+        compare(Navigation.went[0], "genres")
+        compare(JSON.parse(Navigation.went[1]), {excluded_sources:excluded})
+    }
+    function test_genre_source_choices_are_local_to_this_view_and_survive_return() {
+        let page = createTemporaryObject(maker, this)
+        const model = findChild(page, "discoveryModel")
+        model.document = JSON.stringify({total:1,items:[{kind:"genre",name:"Rock"}],sources:[{key:"local:default",label:"Local library"},{key:"plugin:fixture",label:"Source"}]})
+        const picker = findChild(page, "genreSources")
+        verify(picker.visible); compare(picker.sources.length, 2)
+        picker.chosen(["plugin:fixture"])
+        tryVerify(() => model.requests.length > 0 && JSON.parse(model.requests[model.requests.length-1].options).excluded_sources.length === 1)
+        compare(JSON.parse(page.collectionKey).excluded_sources, ["plugin:fixture"])
+        page.destroy(); wait(1)
+        page = createTemporaryObject(maker, this)
+        compare(findChild(page, "genreSources").excluded, ["plugin:fixture"])
     }
     function test_a_source_recording_opens_its_album_by_keyboard_on_a_narrow_page() {
         const page = createTemporaryObject(maker, this, {width:560,mode:"compositions",routeKey:JSON.stringify({

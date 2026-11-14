@@ -64,7 +64,7 @@ impl qobject::DiscoveryModel {
         self.as_mut().set_document(QString::from("{}"));
     }
     pub fn request(mut self: Pin<&mut Self>, kind: &QString, key: &QString, text: &QString, options: &QString, revision: i32) {
-        if key.to_string().len() > 8192 || text.to_string().len() > 1024 || options.to_string().len() > 512 { return; }
+        if key.to_string().len() > 65536 || text.to_string().len() > 1024 || options.to_string().len() > 65536 { return; }
         let request = Request { kind:kind.to_string(), key:key.to_string(), text:text.to_string(), options:options.to_string(), revision };
         if self.rust().query.as_ref() == Some(&request) { return; }
         let same = self.rust().query.as_ref().is_some_and(|previous| previous.same_view(&request));

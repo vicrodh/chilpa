@@ -293,7 +293,6 @@ pub(crate) fn version_labels(versions: Vec<chilpa_library::store::versions::Albu
 pub(crate) fn heading(detail: &crate::AlbumDetail, length: &str, released: Option<String>, kind: String, info: String) -> AlbumHeading {
     let songs = i18n::tf("{} song", "{} songs", detail.album.track_count as i64, &[&detail.album.track_count.to_string()]);
     let mut meta = Vec::new();
-    if !detail.genre.is_empty() { meta.push(detail.genre.clone()); }
     if !detail.label.is_empty() { meta.push(detail.label.clone()); }
     meta.extend([songs.clone(), length.to_owned()]);
     let quality = detail.quality.long();

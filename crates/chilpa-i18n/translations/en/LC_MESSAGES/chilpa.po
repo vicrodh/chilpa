@@ -3460,6 +3460,12 @@ msgstr ""
 msgid "Invalid audio check request."
 msgstr ""
 
+msgid "Invalid discovery options."
+msgstr ""
+
+msgid "Invalid discovery selection."
+msgstr ""
+
 msgid "Invalid output identity."
 msgstr ""
 

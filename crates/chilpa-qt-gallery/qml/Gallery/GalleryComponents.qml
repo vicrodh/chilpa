@@ -45,6 +45,8 @@ TitledFlow {
     PlaylistSourceWrite { id: sourceWritePreview }
     AlbumDetailModel { id: detail; albumId: added.albumId(0, added.rev) }
     AlbumArtistLine { document: ({artist_html:"<a href=\"0\">Artist</a>",artist_links:[{target:"artist",key:"Artist"}]}) }
+    AlbumGenreLine { width:Metrics.settingsMaxWidth; document:({items:[{name:"Progressive Metal",key:'{"kind":"genre","name":"Progressive Metal"}'}]}) }
+    AlbumCredits { width:Metrics.settingsMaxWidth; record:({artistInformation:'{"artist_html":"Artist"}',genreLinks:'{"items":[]}'}) }
     Clipboard {}
     Driving.FrameSettlement {}
     Driving.WindowRequests {}

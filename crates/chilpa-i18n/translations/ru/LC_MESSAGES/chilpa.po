@@ -3463,6 +3463,12 @@ msgstr "Недопустимые аргументы; синтаксис пока
 msgid "Invalid audio check request."
 msgstr "Недопустимый запрос проверки звука."
 
+msgid "Invalid discovery options."
+msgstr ""
+
+msgid "Invalid discovery selection."
+msgstr ""
+
 msgid "Invalid output identity."
 msgstr "Недопустимый идентификатор выхода."
 

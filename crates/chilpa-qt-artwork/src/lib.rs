@@ -7,3 +7,4 @@ pub mod bridge {
     pub mod artwork;
     pub mod artwork_hint;
 }
+mod providers;
