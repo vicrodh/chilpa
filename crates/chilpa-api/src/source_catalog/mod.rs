@@ -578,12 +578,13 @@ impl Catalog {
         let mut card = inner.genres.card(card, now());
         card.art = inner.store.shown_art(&card);
         if card.art.is_empty() {
-            let image = if card.image.is_empty() {
-                card.tracks.iter().flatten().filter_map(|id| inner.store.tracks.get(id)).map(|track| track.image.clone()).find(|image| !image.is_empty()).unwrap_or_default()
-            } else { card.image.clone() };
-            match crate::pictures::kept(&image) {
+            let image = inner.store.card_image(&card);
+            match crate::pictures::kept(image) {
                 Some(kept) => card.art = kept,
-                None if ask => self.want_cover(inner, &image),
+                None if ask => {
+                    let image = image.to_owned();
+                    self.want_cover(inner, &image);
+                }
                 None => {}
             }
         }
@@ -637,15 +638,30 @@ impl Catalog {
         ids.iter().filter_map(|id| inner.store.tracks.get(id)).map(|t| (inner.composers.track(inner.genres.track(inner.store.with_album_quality(t.clone()), &inner.store, now()), now()), inner.store.art_of(t))).collect()
     }
 
-    pub fn art_of_card(&self, id: i64) -> String {
+    pub fn art_of_card(&self, id: i64) -> String { self.card_art(id, false) }
+
+    pub(super) fn visible_art_of_card(&self, id: i64) -> String { self.card_art(id, true) }
+
+    fn card_art(&self, id: i64, visible: bool) -> String {
         let mut inner = self.lock();
         let Some(card) = inner.store.cards.get(&id) else { return String::new() };
         let art = inner.store.shown_art(card);
-        if art.is_empty() {
-            let image = card.image.clone();
-            self.want_cover(&mut inner, &image);
+        if !art.is_empty() { return art; }
+        let image = inner.store.card_image(card);
+        if let Some(kept) = crate::pictures::kept(image) { return kept; }
+        let image = image.to_owned();
+        self.want_cover(&mut inner, &image);
+        if visible {
+            // A visible card goes ahead of shelf read-ahead. Running requests
+            // are absent from the deque and keep their existing deduplication.
+            if let Some(at) = inner.queue.covers.iter().position(|queued| queued == &image) {
+                if at > 0 {
+                    let queued = inner.queue.covers.remove(at).unwrap();
+                    inner.queue.covers.push_front(queued);
+                }
+            }
         }
-        art
+        String::new()
     }
 
     /// Takes in a record or a track a search found, which no listing showed:
@@ -1092,3 +1108,6 @@ mod retry_tests {
         assert!(!catalog.actions_pending(), "a disabled source cannot perpetually defer its missing card");
     }
 }
+
+#[cfg(test)]
+mod artwork_tests;

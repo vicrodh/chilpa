@@ -48,6 +48,32 @@ impl Library {
         Ok((tracks, duration, genre))
     }
 
+    /// The badge of the same bounded, ordered tracks shown on the album page.
+    /// Read only quality columns and retain one winner, without track metadata.
+    pub fn album_quality(&self, album: i64) -> rusqlite::Result<crate::quality::Quality> {
+        use super::{Filter, TrackOrder};
+        use crate::quality::Quality;
+        let (filter, args) = self.browse_clause(&Filter { album: Some(album), ..Default::default() });
+        let sql = format!("SELECT t.external_id, t.codec, t.bit_depth, t.sample_rate_hz
+            FROM tracks t LEFT JOIN albums a ON a.id = t.album_id {filter}
+            ORDER BY {} LIMIT 10000", TrackOrder::Disc.keys());
+        let mut statement = self.db.prepare_cached(&sql)?;
+        let rows = statement.query_map(rusqlite::params_from_iter(args.iter()), |row| {
+            let path: String = row.get(0)?;
+            let codec: Option<String> = row.get(1)?;
+            Ok(Quality::of_track(&path, codec.as_deref(), row.get(2)?, row.get(3)?))
+        })?;
+        let mut best: Option<Quality> = None;
+        for quality in rows {
+            let quality = quality?;
+            if best.as_ref().is_none_or(|held| (quality.tier.rank(), quality.bits, quality.rate_hz)
+                >= (held.tier.rank(), held.bits, held.rate_hz)) {
+                best = Some(quality);
+            }
+        }
+        Ok(best.unwrap_or_default())
+    }
+
     /// How many present tracks each record holds and how long they last:
     /// what tells a single or an EP from an album when no tag says it.
     pub fn album_sizes(&self) -> rusqlite::Result<HashMap<i64, (usize, i64)>> {
@@ -94,6 +120,53 @@ mod tests {
         assert_eq!((tracks, duration), (3, 3000));
         assert_eq!(Some(genre), lib.album_primaries("genre").unwrap().get(&1).cloned(), "the genre the genre grouping files it under");
         assert_eq!(lib.album_facts(9_999).unwrap(), (0, 0, String::new()), "a record that is not there says nothing");
+    }
+
+    #[test]
+    fn album_badges_keep_file_codec_and_visible_member_quality_rules() {
+        use crate::quality::Quality;
+        let lib = crate::store::fixtures::sample_library();
+        lib.connection().execute_batch("UPDATE tracks SET bit_depth = 16, sample_rate_hz = 44100;
+            UPDATE tracks SET codec = 'mp3' WHERE album_id = 1;
+            UPDATE tracks SET external_id = '/other.dsf', sample_rate_hz = 11289600 WHERE album_id = 2;
+            INSERT INTO sources(id, provider, instance, enabled) VALUES(99, 'fixture', 'disabled', 0);
+            INSERT INTO tracks(source_id, external_id, title, album_id, bit_depth, sample_rate_hz, added_at)
+            VALUES(99, '/disabled.dsf', 'Disabled', 1, 1, 11289600, 1);").unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        let insert = |path: &str, codec: Option<&str>, bits: Option<u8>, rate: Option<u32>, present: i64| {
+            lib.connection().execute("INSERT INTO tracks(source_id, external_id, title, album_id, codec,
+                bit_depth, sample_rate_hz, present, added_at) VALUES(?1, ?2, 'Member', 1, ?3, ?4, ?5, ?6, 1)",
+                rusqlite::params![source, path, codec, bits, rate, present]).unwrap();
+        };
+        assert_eq!(lib.album_quality(1).unwrap().short(), "FLAC 16/44.1", "local extension wins over codec");
+        insert("/missing.dsf", None, None, Some(11289600), 0);
+        insert("/lossy.mp3", None, Some(32), Some(192000), 1);
+        insert("remote:fixture/account/track", Some("alac"), Some(24), Some(96000), 1);
+        assert_eq!(lib.album_quality(1).unwrap().short(), "ALAC 24/96", "remote codec wins over extension");
+        insert("/member.dsf", None, Some(1), Some(2822400), 1);
+        assert_eq!(lib.album_quality(1).unwrap().short(), "DSD64", "DSD outranks PCM without leaking absent or disabled members");
+        let before = lib.connection().total_changes();
+        let rows = lib.browse_tracks(&super::super::Filter { album: Some(1), ..Default::default() },
+            super::super::TrackOrder::Disc, 10_000).unwrap();
+        let expected = rows.iter().map(|track| Quality::of_track(&track.external_id, track.codec.as_deref(),
+            track.bit_depth, track.sample_rate_hz)).max_by_key(|quality| (quality.tier.rank(), quality.bits, quality.rate_hz)).unwrap();
+        assert_eq!(lib.album_quality(1).unwrap(), expected);
+        assert_eq!(lib.album_quality(999).unwrap(), Quality::default());
+        assert_eq!(lib.connection().total_changes(), before, "badge reads write nothing");
+    }
+
+    #[test]
+    fn album_badges_keep_the_page_limit_and_last_equal_quality_format() {
+        let lib = crate::store::Library::in_memory().unwrap();
+        lib.connection().execute_batch("INSERT INTO sources(id,provider,instance) VALUES(1,'local','default');
+            INSERT INTO albums(id,title,album_artist) VALUES(1,'Album','Artist');
+            WITH RECURSIVE numbers(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM numbers WHERE n<10001)
+            INSERT INTO tracks(source_id, external_id, title, album_id, track_number, bit_depth, sample_rate_hz, added_at)
+            SELECT (SELECT id FROM sources WHERE provider='local' LIMIT 1),
+                CASE WHEN n=10001 THEN '/last.dsf' WHEN n=10000 THEN '/tie.wav' ELSE '/member-'||n||'.flac' END,
+                'Member', 1, n, 16, CASE WHEN n=10001 THEN 2822400 ELSE 44100 END, 1 FROM numbers;").unwrap();
+        assert_eq!(lib.album_quality(1).unwrap().short(), "WAV 16/44.1",
+            "the last tied row wins and a stronger track beyond the page limit is excluded");
     }
 
     #[test]

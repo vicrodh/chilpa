@@ -45,7 +45,7 @@ Column {
             width: CardLayout.cardWidth; height: implicitHeight
             albumId: record.albumId(0, record.rev)
             title: record.title(0, record.rev); subtitle: record.subtitle(0, record.rev)
-            year: record.year(0, record.rev); art: record.art(0, record.rev)
+            year: record.year(0, record.rev); art: record.art(0, record.rev, visible)
             aiGenerated: record.aiGenerated(0, record.rev)
             sources: albumId < 0 ? JSON.parse(AlbumActions.sources(albumId, record.rev) || "[]") : []
             qualityInfo: JSON.parse(AlbumActions.quality(albumId, record.rev) || "{}")

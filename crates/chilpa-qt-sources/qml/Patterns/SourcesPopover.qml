@@ -18,6 +18,7 @@ Popup {
     // screen has none; a toggle asks the screen to turn one on or off.
     property var panes: null
     signal paneToggled(string column)
+    signal panesReordered(var columns)
     // The Tracks screen's stars to keep, or null where a screen has none.
     property var ratings: null
     signal ratingsChosen(var ratings)
@@ -131,6 +132,7 @@ Popup {
                     width: parent.width
                     selected: popover.panes
                     onToggled: column => popover.paneToggled(column)
+                    onReordered: columns => popover.panesReordered(columns)
                 }
                 Text {
                     text: I18n.tr("Quality", I18n.rev)

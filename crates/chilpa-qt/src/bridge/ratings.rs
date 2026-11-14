@@ -62,11 +62,13 @@ impl qobject::Ratings {
         if app::with(|api| api.set_favorite(&kind.to_string(), &key.to_string(), on)) { self.refresh(); }
     }
     pub fn refresh(mut self: Pin<&mut Self>) {
+        let started = std::env::var_os("CHILPA_TRACK_TIMINGS").map(|_| std::time::Instant::now());
         if let Some(values) = app::with(|api| api.marks()) {
             self.as_mut().rust_mut().values = values;
             let next = self.rev().wrapping_add(1);
             self.set_rev(next);
         }
+        if let Some(started) = started { eprintln!("tracks marks_refresh_us={}", started.elapsed().as_micros()); }
     }
 }
 

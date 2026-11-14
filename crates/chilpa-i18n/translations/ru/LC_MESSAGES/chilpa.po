@@ -1456,6 +1456,9 @@ msgstr "Очистить всё"
 msgid "Clear filter"
 msgstr "Сбросить фильтр"
 
+msgid "Clear filters"
+msgstr "Сбросить фильтры"
+
 msgid "Clear generated images"
 msgstr "Очистить созданные изображения"
 
@@ -5185,9 +5188,6 @@ msgstr "Качество неизвестно"
 msgid "Quality, format and source filters"
 msgstr "Фильтры по качеству, формату и источнику"
 
-msgid "Quality, format, source and rating filters"
-msgstr "Фильтры по качеству, формату, источнику и рейтингу"
-
 msgid "Quarantined"
 msgstr "В карантине"
 
@@ -6775,6 +6775,9 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The filter cannot be read."
+msgstr "Не удалось прочитать фильтр."
+
 msgid "The filter cannot be read: {}"
 msgstr "Не удаётся прочитать фильтр: {}"
 
@@ -6810,6 +6813,9 @@ msgstr "Не удалось исключить неверный текст. По
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Не удалось изменить библиотеку. Попробуйте снова; ниже указано, что произошло."
+
+msgid "The library could not be read."
+msgstr "Не удалось прочитать библиотеку."
 
 msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
 msgstr "Библиотека оставалась занята другой задачей, поэтому этот выбор не сохранён. Попробуйте снова чуть позже."

@@ -17,3 +17,10 @@ function toggle(columns, column, settings, library) {
     }
     return chosen
 }
+
+function reorder(columns, order, settings) {
+    const chosen = order.filter((column, index) => columns.indexOf(column) >= 0 && order.indexOf(column) === index)
+        .concat(columns.filter(column => order.indexOf(column) < 0))
+    settings.keep("ui.library.columns", JSON.stringify(chosen))
+    return chosen
+}

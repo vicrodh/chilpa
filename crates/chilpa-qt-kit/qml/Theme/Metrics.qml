@@ -174,6 +174,14 @@ QtObject {
     readonly property int dspImportHeight: 180
     readonly property int menuWidth: 236
     readonly property int menuMaxWidth: 310
+    readonly property int trackFilterWidth: 320
+    readonly property int trackFilterHeight: 440
+    readonly property real trackFilterHeightShare: 0.4
+    // Each standalone track list keeps this fraction of a viewport on each side.
+    readonly property real trackScrollCacheShare: 0.25
+    readonly property int trackFilterShortHeight: 200
+    readonly property int trackSkeletonMaxRows: 64
+    readonly property int trackFilterTagWidth: 240
     readonly property int menuIconColumn: 18
     readonly property int menuItem: 30
     readonly property int menuItemTall: 44
@@ -266,6 +274,7 @@ QtObject {
     // How tall the bar stands now: the bar writes it, and whatever must stay
     // clear of it reads it here instead of asking the bar.
     property int playerSpace: playerHeight
+    readonly property int floatingPlayerClearance: playerSpace > 0 ? playerSpace + spaceWindow : 0
     // Where the window's planes (the sidebar, the content, the right panel)
     // start and how far above the window's bottom they end: the player's
     // layout writes them, under the tab bar and the window's margin unless a

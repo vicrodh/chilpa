@@ -1454,6 +1454,9 @@ msgstr "Tout effacer"
 msgid "Clear filter"
 msgstr "Effacer le filtre"
 
+msgid "Clear filters"
+msgstr "Effacer les filtres"
+
 msgid "Clear generated images"
 msgstr "Effacer les images générées"
 
@@ -5180,9 +5183,6 @@ msgstr "Qualité inconnue"
 msgid "Quality, format and source filters"
 msgstr "Filtres de qualité, de format et de source"
 
-msgid "Quality, format, source and rating filters"
-msgstr "Filtres de qualité, de format, de source et de note"
-
 msgid "Quarantined"
 msgstr "En quarantaine"
 
@@ -6765,6 +6765,9 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The filter cannot be read."
+msgstr "Le filtre ne peut pas être lu."
+
 msgid "The filter cannot be read: {}"
 msgstr "Le filtre est illisible : {}"
 
@@ -6800,6 +6803,9 @@ msgstr "Impossible d’exclure les paroles incorrectes. Réessayez."
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "La bibliothèque n'a pas pu être modifiée. Réessayez ; le détail ci-dessous dit ce qui s'est passé."
+
+msgid "The library could not be read."
+msgstr "La bibliothèque n’a pas pu être lue."
 
 msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
 msgstr "La bibliothèque est restée occupée par une autre tâche, ce choix n'a donc pas été enregistré. Réessayez dans un instant."

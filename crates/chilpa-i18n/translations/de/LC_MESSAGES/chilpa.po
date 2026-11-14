@@ -1454,6 +1454,9 @@ msgstr "Alle entfernen"
 msgid "Clear filter"
 msgstr "Filter löschen"
 
+msgid "Clear filters"
+msgstr "Filter löschen"
+
 msgid "Clear generated images"
 msgstr "Erzeugte Bilder löschen"
 
@@ -5180,9 +5183,6 @@ msgstr "Qualität unbekannt"
 msgid "Quality, format and source filters"
 msgstr "Filter für Qualität, Format und Quelle"
 
-msgid "Quality, format, source and rating filters"
-msgstr "Filter für Qualität, Format, Quelle und Bewertung"
-
 msgid "Quarantined"
 msgstr "In Quarantäne"
 
@@ -6765,6 +6765,9 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The filter cannot be read."
+msgstr "Der Filter kann nicht gelesen werden."
+
 msgid "The filter cannot be read: {}"
 msgstr "Der Filter kann nicht gelesen werden: {}"
 
@@ -6800,6 +6803,9 @@ msgstr "Der falsche Liedtext konnte nicht ausgeschlossen werden. Bitte erneut ve
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Die Bibliothek konnte nicht geändert werden. Versuche es erneut; das Detail unten sagt, was passiert ist."
+
+msgid "The library could not be read."
+msgstr "Die Bibliothek konnte nicht gelesen werden."
 
 msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
 msgstr "Die Bibliothek war weiter mit einer anderen Aufgabe beschäftigt, deshalb wurde diese Auswahl nicht gespeichert. Versuche es gleich noch einmal."

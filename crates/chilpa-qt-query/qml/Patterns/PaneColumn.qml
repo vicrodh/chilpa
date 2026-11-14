@@ -1,9 +1,11 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/AudioLabels.js" as AudioLabels
 
 // One of the Library screen's filter columns (design/03 PaneColumn):
 // a header with its count, "All (n)" first, then the entries.
@@ -19,7 +21,7 @@ Rectangle {
     FacetModel {
         id: facets
         column: pane.column
-        rev: Library.rev
+        rev: Library.rev + I18n.rev
         appliedQuery: Library.queryText
         query: input.text
     }
@@ -115,6 +117,8 @@ Rectangle {
 
         delegate: PaneRow {
             required property int index
+            required property var model
+            label: AudioLabels.display(pane.column, model.label)
             width: ListView.view.width
             stars: pane.column === "rating"
             onChosen: (modifiers) => facets.choose(index, modifiers)

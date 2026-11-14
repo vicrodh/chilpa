@@ -5,3 +5,4 @@ singleton Pulse 1.0 Pulse.qml
 singleton Prefs 1.0 Prefs.qml
 singleton QueueActivity 1.0 QueueActivity.qml
 singleton TextAudit 1.0 TextAudit.qml
+TrackColumnChoices 1.0 TrackColumnChoices.qml

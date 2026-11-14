@@ -26,6 +26,7 @@ TestCase {
     Component { id: memoryMaker; ScrollMemory {} }
     function init() {
         failOnWarning(/Binding loop detected/)
+        failOnWarning(/AlbumGridModel.art requires|Insufficient arguments/)
         Visit.kept = {}
         Sources.asked = []
         Navigation.page = ""

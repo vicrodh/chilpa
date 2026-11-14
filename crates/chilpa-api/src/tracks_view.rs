@@ -14,15 +14,34 @@ pub struct TracksQuery {
     /// A track's own stars to keep, 0 for none, written "5,0"; empty keeps
     /// every track.
     pub ratings: Vec<u8>,
+    /// Present only for the independent sheet protocol; old callers keep shared extras.
+    pub sheet: Option<chilpa_library::store::track_sheet::Selection>,
 }
 
 impl TracksQuery {
     pub fn parse(key: &str) -> Self {
-        let mut parts = key.splitn(4, '\u{1f}');
+        let mut parts = key.splitn(5, '\u{1f}');
         let mut next = || parts.next().unwrap_or_default().to_string();
         let (order, group, text) = (next(), next(), next());
         let ratings = next().split(',').filter_map(|stars| stars.trim().parse().ok()).filter(|stars| *stars <= 5).collect();
-        Self { order, group, text, ratings }
+        let sheet = parts.next().map(chilpa_library::store::track_sheet::Selection::parse);
+        Self { order, group, text, ratings, sheet }
+    }
+
+    pub(crate) fn filter(&self, extras: &Filter) -> Filter {
+        let mut sheet = self.sheet.clone().unwrap_or_default();
+        sheet.source_favorites = extras.sheet.source_favorites.clone();
+        if !crate::rating_switch::on() { sheet.without("rating"); }
+        Filter {
+            text: self.text.clone(),
+            excluded_sources: if self.sheet.is_none() { extras.excluded_sources.clone() } else { Vec::new() },
+            qualities: if self.sheet.is_none() { extras.qualities.clone() } else { Vec::new() },
+            formats: if self.sheet.is_none() { extras.formats.clone() } else { Vec::new() },
+            track_ratings: if crate::rating_switch::on() { self.ratings.clone() } else { Vec::new() },
+            grouped_by: if self.grouped() && self.group != "plays" { self.group.clone() } else { String::new() },
+            sheet,
+            ..Default::default()
+        }
     }
 
     /// The order inside each group, or of the whole list when it has none:
@@ -115,15 +134,7 @@ impl Reader {
 
     pub(crate) fn tracks_using(&self, query: &str, extras: &Filter, index: &crate::library_sources::SourceIndex) -> FoundTracks {
         let query = TracksQuery::parse(query);
-        let filter = Filter {
-            text: query.text.clone(),
-            excluded_sources: extras.excluded_sources.clone(),
-            qualities: extras.qualities.clone(),
-            formats: extras.formats.clone(),
-            track_ratings: if crate::rating_switch::on() { query.ratings.clone() } else { Vec::new() },
-            grouped_by: if query.grouped() && query.group != "plays" { query.group.clone() } else { String::new() },
-            ..Filter::default()
-        };
+        let filter = query.filter(extras);
         let by = if query.group == "name" { "title" } else { query.group.as_str() };
         if !index.items.iter().any(|item| item.saved_track) && !query.grouped() {
             return FoundTracks { snapshot: self.snapshot(&filter, query.order()), group: query.group, ..Default::default() };
@@ -150,6 +161,9 @@ impl Reader {
         emit(self.tracks(query, extras));
     }
 }
+
+#[cfg(test)]
+mod measurement;
 
 #[cfg(test)]
 mod tests {

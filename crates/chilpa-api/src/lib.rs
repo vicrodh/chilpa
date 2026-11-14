@@ -23,6 +23,7 @@ mod discogs_account;
 pub use discogs_account::DiscogsStatus;
 pub use desktop::WindowRequest;
 mod tracks_view;
+mod track_sheet;
 mod albums_view;
 mod artwork_hint;
 mod library_sources;

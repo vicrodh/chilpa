@@ -12,6 +12,16 @@ Item {
     visible: false
 
     property bool rich: false
+    // Tracks opts into a table; other lists retain their existing layout.
+    property bool sheet: false
+    property real viewportLeft: 0
+    property real viewportRight: width
+    function inView(x, width) { return x + width > viewportLeft && x < viewportRight }
+    property var optionalColumns: []
+    function includes(name) { return !sheet || optionalColumns.indexOf(name) >= 0 }
+    readonly property bool showFavorite: includes("favorite")
+    readonly property bool showIndex: includes("index")
+    readonly property int format: sheet && includes("format") ? named(Metrics.colQualityCompact, formatName) : 0
     property bool showArtist: true
     property bool showAlbum: true
     property bool showSource: false
@@ -26,24 +36,30 @@ Item {
     // How many rows the list has: past three digits, the number column
     // grows a digit's width for each one more, so 10308 is not cut to 0308.
     property int rows: 0
-    readonly property int index: (rich ? Metrics.colIndexRich : Metrics.colIndexCompact) + Math.max(0, String(rows).length - 3) * Metrics.gap8
+    readonly property int index: !showIndex ? Metrics.rowAction : (rich ? Metrics.colIndexRich : Metrics.colIndexCompact) + Math.max(0, String(rows).length - 3) * Metrics.gap8
     readonly property int move: !reorder ? 0 : rich ? Metrics.colMoveRich : Metrics.colMoveCompact
     readonly property real fromAlbum: Math.min(move, flex.album)
-    readonly property int art: rich && showArt ? Metrics.colArt : 0
-    readonly property int sourceWidth: showSource ? named(Metrics.colSource, sourceName) : 0
-    readonly property int quality: named(rich ? Metrics.colQualityRich : Metrics.colQualityCompact, qualityName)
-    readonly property int rating: showRating && Prefs.ratings ? named(Metrics.colRating, ratingName) : 0
-    readonly property int plays: showPlays ? named(rich ? Metrics.colPlaysRich : Metrics.colPlaysCompact, playsName) : 0
+    readonly property int art: rich && showArt && includes("art") ? Metrics.colArt : 0
+    readonly property int sourceWidth: showSource && includes("source") ? named(Metrics.colSource, sourceName) : 0
+    readonly property int quality: !includes("quality") ? 0 : named(rich ? Metrics.colQualityRich : Metrics.colQualityCompact, qualityName)
+    readonly property int bits: sheet && includes("bits") ? named(Metrics.nerdyDepth, bitsName) : 0
+    readonly property int rate: sheet && includes("rate") ? named(Metrics.nerdyRate, rateName) : 0
+    readonly property int rating: showRating && Prefs.ratings && includes("rating") ? named(Metrics.colRating, ratingName) : 0
+    readonly property int plays: showPlays && includes("plays") ? named(rich ? Metrics.colPlaysRich : Metrics.colPlaysCompact, playsName) : 0
     // An hour-long track's time fits too: "1:02:47", not cut into the next column.
-    readonly property int time: Math.max(named(rich ? Metrics.colTimeRich : Metrics.colTimeCompact, timeName), Math.ceil(clock.implicitWidth))
+    readonly property int time: !includes("time") ? 0 : Math.max(named(rich ? Metrics.colTimeRich : Metrics.colTimeCompact, timeName), Math.ceil(clock.implicitWidth))
 
     // The header's names. A fixed column is the design's width, or as wide
     // as its name in the header's bold (a sorted column's) and the header's
     // inset, so no language cuts it.
     readonly property var names: ({ title: I18n.tr("Title", I18n.rev), artist: I18n.tr("Artist", I18n.rev), album: I18n.tr("Album", I18n.rev),
         source: I18n.tr("Source", I18n.rev), quality: I18n.tr("Quality", I18n.rev), rating: I18n.tr("Rating", I18n.rev),
-        plays: I18n.tr("Plays", I18n.rev), time: I18n.tr("Time", I18n.rev) })
-    function named(design, name) { return Math.max(design, Math.ceil(name.implicitWidth) + Metrics.gap8) }
+        bits: I18n.tr("Bit depth", I18n.rev), rate: I18n.tr("Sample rate", I18n.rev), format: I18n.tr("Format", I18n.rev), favorite: I18n.tr("Favorite", I18n.rev), plays: I18n.tr("Plays", I18n.rev), time: I18n.tr("Time", I18n.rev) })
+    function named(design, name) { return Math.max(design, Math.ceil(name.implicitWidth) + (sheet ? Metrics.gap16 + Metrics.iconSm + Metrics.gap8 : Metrics.gap8)) }
+    Text { id: favoriteName; text: cols.names.favorite; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: bitsName; text: cols.names.bits; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: rateName; text: cols.names.rate; font.pointSize: Type.label; font.weight: Type.bold }
+    Text { id: formatName; text: cols.names.format; font.pointSize: Type.label; font.weight: Type.bold }
     Text { id: sourceName; text: cols.names.source; font.pointSize: Type.label; font.weight: Type.bold }
     Text { id: qualityName; text: cols.names.quality; font.pointSize: Type.label; font.weight: Type.bold }
     Text { id: ratingName; text: cols.names.rating; font.pointSize: Type.label; font.weight: Type.bold }
@@ -52,8 +68,9 @@ Item {
     // The longest time a row says, in the rows' figures.
     Text { id: clock; text: "0:00:00"; font.pointSize: Type.row; font.features: { "tnum": 1 } }
     // The time ends flush right; what follows it keeps its distance.
-    readonly property int afterTime: Metrics.gap16
-    readonly property int more: Metrics.colMore
+    readonly property int afterTime: time > 0 ? Metrics.gap16 : 0
+    readonly property int favorite: !showFavorite ? 0 : sheet ? named(Metrics.rowAction, favoriteName) : Metrics.rowAction
+    readonly property int more: favorite + Metrics.rowAction
 
     // The longest texts the compact rows hold: "title" as [title, credit]
     // pairs, "artist" and "album", measured here in the rows' own fonts into
@@ -74,9 +91,10 @@ Item {
     // it wants the room left goes by share. Nothing is cut while another
     // column has room to give; without wants, the proportions alone.
     readonly property real titleShare: 2.4
-    readonly property real artistShare: showArtist && !rich ? 1.4 : 0
+    readonly property real artistShare: showArtist && (!rich || sheet) ? 1.4 : 0
     readonly property real albumShare: showAlbum ? (rich ? 1.4 : 1.5) : 0
-    readonly property real free: Math.max(0, width - pad * 2 - index - art - sourceWidth - quality - rating - plays - time - afterTime - more) // derived: padding on both sides
+    readonly property real free: Math.max(0, width - pad * 2 - index - art - sourceWidth - format - bits - rate - quality - rating - plays - time - afterTime - more) // derived: padding on both sides
+    readonly property real minimumWidth: pad * 2 + index + art + sourceWidth + format + bits + rate + quality + rating + plays + time + afterTime + more + least * 6 // derived: two header widths per mandatory column, with padding on both sides
     readonly property var flex: share(free, [["title", titleShare], ["artist", artistShare], ["album", albumShare]], wants || ({}))
     function share(room, shares, wanted) {
         const out = ({title: 0, artist: 0, album: 0})
@@ -113,5 +131,19 @@ Item {
     readonly property real timeX: playsX + plays
     readonly property real ratingX: timeX + time + afterTime
     readonly property real qualityX: ratingX + rating
-    readonly property real moreX: qualityX + quality
+    readonly property real formatX: qualityX + quality
+    readonly property real bitsX: formatX + format
+    readonly property real rateX: bitsX + bits
+    readonly property real moreX: rateX + rate
+    // Resolve horizontal visibility once per list, not for every recycled row.
+    readonly property bool sourceShown: sourceWidth > 0 && inView(sourceX, sourceWidth)
+    readonly property bool qualityShown: quality > 0 && inView(qualityX, quality)
+    readonly property bool ratingShown: rating > 0 && inView(ratingX, rating)
+    readonly property bool favoriteShown: favorite > 0 && inView(moreX, favorite)
+    readonly property bool bitsShown: bits > 0 && inView(bitsX, bits)
+    readonly property bool rateShown: rate > 0 && inView(rateX, rate)
+    readonly property bool formatShown: format > 0 && inView(formatX, format)
+    readonly property bool timeShown: time > 0 && inView(timeX, time)
+    readonly property bool playsShown: plays > 0 && inView(playsX, plays)
+    readonly property bool artShown: art > 0 && inView(artX, art)
 }

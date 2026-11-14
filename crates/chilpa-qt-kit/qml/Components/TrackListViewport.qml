@@ -12,6 +12,22 @@ QtObject {
         onTriggered: viewport.restore()
     }
     function restoreLater() { pending.restart() }
+    function positionAt(row, mode) {
+        place = null
+        view.forceLayout()
+        view.positionViewAtIndex(row, mode)
+    }
+    // Restart estimates before a far jump through section bands. Reusing the
+    // old pool while rebuilding the model can briefly show the wrong row.
+    function jumpTo(row) {
+        place = null
+        view.reuseItems = false
+        view.model = null
+        view.model = Qt.binding(() => viewport.model)
+        view.forceLayout()
+        view.positionViewAtIndex(row, ListView.Beginning)
+        view.reuseItems = true
+    }
     function identity() { return model ? model.kind + "\n" + model.albumId + "\n" + model.key : "" }
     function keep() {
         const row = view.indexAt(0, view.contentY)

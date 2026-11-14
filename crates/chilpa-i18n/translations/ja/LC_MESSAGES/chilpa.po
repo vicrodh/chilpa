@@ -1452,6 +1452,9 @@ msgstr "すべて解除"
 msgid "Clear filter"
 msgstr "フィルターをクリア"
 
+msgid "Clear filters"
+msgstr "フィルターをクリア"
+
 msgid "Clear generated images"
 msgstr "生成された画像をクリア"
 
@@ -5175,9 +5178,6 @@ msgstr "音質不明"
 msgid "Quality, format and source filters"
 msgstr "音質、フォーマット、ソースのフィルター"
 
-msgid "Quality, format, source and rating filters"
-msgstr "音質、フォーマット、ソース、評価のフィルター"
-
 msgid "Quarantined"
 msgstr "隔離済み"
 
@@ -6755,6 +6755,9 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The filter cannot be read."
+msgstr "フィルターを読み取れません。"
+
 msgid "The filter cannot be read: {}"
 msgstr "フィルターを読み取れません: {}"
 
@@ -6790,6 +6793,9 @@ msgstr "誤った歌詞を除外できませんでした。再試行してくだ
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "ライブラリを変更できませんでした。もう一度お試しください。下の詳細に何が起きたかが書かれています。"
+
+msgid "The library could not be read."
+msgstr "ライブラリを読み取れませんでした。"
 
 msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
 msgstr "ライブラリが別の処理で使用中のままだったため、この選択は保存されませんでした。少ししてからもう一度お試しください。"
