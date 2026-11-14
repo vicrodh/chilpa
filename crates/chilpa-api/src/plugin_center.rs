@@ -281,10 +281,8 @@ impl Chilpa {
         if let Some(center) = &self.plugin_center { center.playback.store(playing, Ordering::Release); }
     }
     pub(crate) fn plugin_playback_active(&self) -> bool {
-        // A stop acknowledgement takes precedence over cached playback and pause flags.
-        let local = self.player.as_ref().map_or(self.now.playing, |player| {
-            !player.idle() && (self.now.playing || player.is_paused())
-        });
+        // A stopped window can still have a worker using a plugin.
+        let local = !self.plays.is_empty() || (self.player.is_none() && self.now.playing);
         local || self.listen.pending.is_some() || self.casting.local_start.is_some()
             || self.casting.active() && (self.now.playing || self.now.paused)
     }
@@ -782,7 +780,7 @@ mod tests {
         track
     }
     #[test]
-    fn paused_playback_blocks_until_the_worker_acknowledges_stop() {
+    fn paused_playback_blocks_until_its_play_has_ended() {
         let temporary = tempfile::tempdir().unwrap();
         let track = silent_track(temporary.path());
         let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
@@ -790,19 +788,19 @@ mod tests {
         api.plugin_center = Some(center);
         api.player = Some(chilpa_core::spawn_player());
         for _ in 0..64 {
-            let player = api.player.as_ref().unwrap();
-            player.play_all_from_paused(std::slice::from_ref(&track), "file:capture", None, true);
-            assert!(!player.idle());
+            let spec = chilpa_core::launch::LaunchSpec { paths: vec![track.clone()], device: "file:capture".into(), paused: true, ..Default::default() };
+            api.launch(spec, 0, crate::Relaunch::Track);
+            assert!(!api.plays.is_empty());
             api.now.paused = true;
             api.plugin_center_command("filter", "{}");
             assert!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
-            let player = api.player.as_ref().unwrap();
-            player.stop();
+            api.player.as_ref().unwrap().stop();
             let deadline = Instant::now() + Duration::from_secs(5);
-            while !player.idle() && Instant::now() < deadline {
+            while !api.plays.is_empty() && Instant::now() < deadline {
+                api.read_player_events();
                 std::thread::sleep(Duration::from_millis(5));
             }
-            assert!(player.idle());
+            assert!(api.plays.is_empty(), "the stopped play said how it ended");
         }
         api.now.playing = true;
         api.plugin_center_command("filter", "{}");
@@ -821,7 +819,8 @@ mod tests {
         api.replace_queue(vec![track.to_string_lossy().into_owned()]);
         api.now.playing = true;
         api.player = Some(chilpa_core::spawn_player());
-        api.player.as_ref().unwrap().play_all_from_paused(&[track], "file:capture", None, false);
+        let spec = chilpa_core::launch::LaunchSpec { paths: vec![track], device: "file:capture".into(), ..Default::default() };
+        api.launch(spec, 0, crate::Relaunch::Track);
         let deadline = Instant::now() + Duration::from_secs(5);
         while api.now.playing && Instant::now() < deadline {
             api.poll();

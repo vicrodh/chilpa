@@ -443,6 +443,7 @@ dependencies = [
  "async-channel",
  "base64 0.22.1",
  "chilpa-appkit",
+ "chilpa-audio",
  "chilpa-auth",
  "chilpa-bwrap",
  "chilpa-cast",

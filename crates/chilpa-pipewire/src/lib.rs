@@ -307,6 +307,9 @@ impl AudioSink for AtRate {
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         self.inner_mut().drain(give_up)
     }
+    fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+        self.inner_mut().drain_observed(give_up, held)
+    }
     fn held(&self) -> u64 {
         self.inner().held()
     }

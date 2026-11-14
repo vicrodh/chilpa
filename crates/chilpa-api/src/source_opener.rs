@@ -43,7 +43,12 @@ pub(crate) fn of_plugin(path: &str) -> Option<(String, String)> {
 /// lasts minutes; this is well inside that.
 const AHEAD_FOR: Duration = Duration::from_secs(120);
 
+#[cfg(test)]
+type TestLocator = Arc<dyn Fn(&RemoteEntry) -> Result<Located, String> + Send + Sync>;
+
 pub(crate) struct Openers {
+    #[cfg(test)]
+    locator: Mutex<Option<TestLocator>>,
     pub(crate) servers: Option<Arc<dyn RemoteOpener>>,
     pub(crate) plugins: Option<Arc<Mutex<Plugins>>>,
     catalog: Arc<crate::source_catalog::Catalog>,
@@ -52,14 +57,14 @@ pub(crate) struct Openers {
     /// next track's is resolved while the one before it ends, so the gap
     /// between them is not a round trip to the plugin.
     ahead: Mutex<std::collections::HashMap<String, (std::time::Instant, Located)>>,
-    /// What failed to open, for the queue to pass it over and say so, and
-    /// how fast: a burst of failures slows the next opens down.
+    /// How fast opens have been failing: a burst of failures slows the next
+    /// ones down.
     reports: crate::queue::unavailable::Reports,
 }
 
 impl Openers {
     pub(crate) fn new(servers: Option<Arc<dyn RemoteOpener>>, plugins: Option<Arc<Mutex<Plugins>>>, catalog: Arc<crate::source_catalog::Catalog>, reports: crate::queue::unavailable::Reports) -> Self {
-        Self { servers, plugins, catalog, library: Mutex::new(None), ahead: Mutex::new(std::collections::HashMap::new()), reports }
+        Self { #[cfg(test)] locator: Mutex::new(None), servers, plugins, catalog, library: Mutex::new(None), ahead: Mutex::new(std::collections::HashMap::new()), reports }
     }
 
     /// Resolves a plugin's queue entry on a thread of its own and keeps the
@@ -114,6 +119,11 @@ impl Openers {
     }
 
     fn locate_in_plugin(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        #[cfg(test)]
+        {
+            let locator = self.locator.lock().unwrap().clone();
+            if let Some(locator) = locator { return locator(entry); }
+        }
         let plugin = &entry.source.instance;
         if let Some(natives) = self.catalog.natives().filter(|natives| natives.is_native(plugin)) {
             return self.locate_in_native(&natives, plugin, &entry.external_id);
@@ -264,7 +274,8 @@ impl RemoteOpener for Openers {
     }
 
     fn failed(&self, entry: &RemoteEntry, why: &str) {
-        self.reports.failed(entry.to_entry(), why, !chilpa_core::network::current().offline);
+        // Health and pacing only: the play that asked says what it passed over.
+        self.reports.failed(!chilpa_core::network::current().offline);
         if entry.source.provider != PROVIDER {
             if let Some(servers) = &self.servers {
                 servers.failed(entry, why);
@@ -276,6 +287,26 @@ impl RemoteOpener for Openers {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// An open the player started for a play that is gone, failing late:
+    /// the opener hears of it for its pacing and nothing else does.
+    #[test]
+    fn a_late_failure_of_an_open_marks_nothing_in_the_queue_in_front() {
+        let mut api = crate::Chilpa::with_listed(Vec::new(), Vec::new());
+        let entry = RemoteEntry::new(SourceId::new(PROVIDER, "app.example.shows"), "ep-1");
+        api.swap_rows(vec![entry.to_entry()]);
+        api.launched(9, 0, crate::Relaunch::Track);
+        let openers = Openers::new(None, None, api.catalog.clone(), api.unavailable.reports());
+        for _ in 0..3 {
+            openers.failed(&entry, "timed out");
+        }
+        api.poll();
+        assert!(!api.marked_at(0), "only the play that reaches the entry says it was passed over");
+        assert!(!api.now.error.starts_with("Skipped"), "{}", api.now.error);
+        // Its own play passing it over is what marks it.
+        api.apply_player_event(9, chilpa_core::player::PlayerEvent::Skipped { attempt: 1, index: 0, path: entry.to_entry().into(), message: "timed out".into() }, &mut false);
+        assert!(api.marked_at(0));
+    }
 
     #[test]
     fn an_entry_of_a_plugin_round_trips_and_a_server_s_is_not_one() {
@@ -332,3 +363,7 @@ impl crate::Chilpa {
             })
     }
 }
+
+#[cfg(test)]
+#[path = "source_opener_race_tests.rs"]
+mod race_tests;

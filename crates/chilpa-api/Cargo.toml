@@ -52,6 +52,7 @@ tar = "0.4"
 flate2 = "1"
 
 [dev-dependencies]
+chilpa-audio.workspace = true
 # The test plugins are written in wasm text, so no separate toolchain is
 # needed.
 wat = "1"

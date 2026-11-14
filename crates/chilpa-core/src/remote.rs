@@ -53,7 +53,9 @@ pub trait RemoteOpener: Send + Sync {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String>;
     fn describe(&self, entry: &RemoteEntry) -> Described;
     /// The track could not be opened. The facade decides whether its server
-    /// stopped answering.
+    /// stopped answering, and how fast to ask again: nothing else. It is not
+    /// told which play asked, and it says nothing of any queue: the play
+    /// that reaches the track says it passed it over.
     fn failed(&self, _entry: &RemoteEntry, _why: &str) {}
 }
 

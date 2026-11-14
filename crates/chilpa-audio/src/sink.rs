@@ -118,6 +118,20 @@ pub trait AudioSink {
         Ok(())
     }
 
+    /// The same wait, saying what the device still holds as it goes: `held`
+    /// is told the frames written and not played yet at each look, before
+    /// `give_up` is asked. Whoever counts what was heard needs it: once the
+    /// wait is given up a device may throw the rest away, and what it holds
+    /// afterwards says nothing of how much of it played.
+    ///
+    /// A device that cannot say waits as `drain` does and tells nothing. A
+    /// sink that wraps another hands this on, or what the device tells is
+    /// lost on the way.
+    fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+        let _ = held;
+        self.drain(give_up)
+    }
+
     /// Frames written and not played yet: what the device holds. Progress
     /// counts what was heard, and without this it ran ahead of the music by
     /// all of it -- half a second on a DAC, which synced lyrics show. By
@@ -205,6 +219,10 @@ impl AudioSink for Box<dyn AudioSink + Send> {
 
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         (**self).drain(give_up)
+    }
+
+    fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+        (**self).drain_observed(give_up, held)
     }
 
     fn flush(&mut self) -> Result<(), SinkError> {
@@ -335,5 +353,59 @@ mod tests {
         assert!(!signal.is_stopped());
         std::thread::spawn(move || copy.stop()).join().unwrap();
         assert!(signal.is_stopped());
+    }
+
+    /// A device that says what it holds while it drains.
+    struct Reporting;
+
+    impl AudioSink for Reporting {
+        fn format(&self) -> StreamFormat {
+            StreamFormat::new(crate::format::SampleFormat::S16, 44_100, 2)
+        }
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            Ok(frames.len() / 4)
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+        fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+            held(7);
+            let _ = give_up();
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_boxed_sink_hands_on_what_the_device_says_it_holds_while_draining() {
+        let mut boxed: Box<dyn AudioSink + Send> = Box::new(Reporting);
+        let told = std::cell::RefCell::new(Vec::new());
+        boxed.drain_observed(&|| false, &|held| told.borrow_mut().push(held)).unwrap();
+        assert_eq!(*told.borrow(), [7]);
+    }
+
+    #[test]
+    fn a_sink_that_cannot_say_what_it_holds_drains_as_it_always_did() {
+        struct Plain(std::cell::Cell<u32>);
+        impl AudioSink for Plain {
+            fn format(&self) -> StreamFormat {
+                StreamFormat::new(crate::format::SampleFormat::S16, 44_100, 2)
+            }
+            fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+                Ok(frames.len() / 4)
+            }
+            fn close(&mut self) -> Result<(), SinkError> {
+                Ok(())
+            }
+            fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+                let _ = give_up();
+                Ok(())
+            }
+        }
+        let asked = std::cell::Cell::new(0);
+        let told = std::cell::Cell::new(0);
+        Plain(Default::default())
+            .drain_observed(&|| { asked.set(asked.get() + 1); false }, &|_| told.set(told.get() + 1))
+            .unwrap();
+        assert_eq!((asked.get(), told.get()), (1, 0), "one wait, asked once by the device and not again, and nothing told");
     }
 }

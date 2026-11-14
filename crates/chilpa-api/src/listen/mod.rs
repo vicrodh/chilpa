@@ -5,7 +5,10 @@ mod operations;
 mod snapshot;
 #[cfg(test)]
 mod snapshot_tests;
+#[cfg(test)]
+mod reset_tests;
 
+use crate::plays::{Fate, Replaced};
 use crate::{Chilpa, NowPlaying, QueueGroup, QueuePlacement, Repeat};
 use serde::{Deserialize, Serialize};
 
@@ -75,13 +78,7 @@ impl Default for Workspace {
 
 impl Chilpa {
     pub(crate) fn full_queue_order(&self) -> Vec<usize> {
-        let order = if self.casting.active() { self.casting.order.clone() }
-            else if let Some(player) = self.player.as_ref().filter(|p| !p.idle()) {
-                player.order().into_iter().map(|i| i + self.base).collect()
-            } else {
-                self.listen.buffers.iter().find(|b| b.id == self.listen.active)
-                    .map(|b| b.order.clone()).unwrap_or_default()
-            };
+        let order = if self.casting.active() { self.casting.order.clone() } else { self.local_order() };
         if order.len() == self.queue.len() { order } else { (0..self.queue.len()).collect() }
     }
     fn buffer_snapshot(&self, id: u64) -> Option<Buffer> {
@@ -114,7 +111,6 @@ impl Chilpa {
             self.listen.undo = Some(Undo { originals: vec![(at, b.clone())], created: Vec::new(), selected: b.id });
             b.epoch = b.epoch.wrapping_add(1); b.order.clear(); b.paths.clear(); b.origins.clear();
         }
-        if let Some(p) = &self.player { p.clear_order(); }
     }
     /// Where playback goes when nothing is playing, or when what plays is
     /// the opened media's queue: the queue in view, else the first that is
@@ -132,14 +128,13 @@ impl Chilpa {
     }
     fn install_buffer(&mut self, b: &Buffer) {
         self.listen.active = b.id;
-        self.queue = b.paths.clone(); self.queue_origins = b.origins.clone(); self.queue_origins.resize(self.queue.len(), None); self.removed = b.removed.clone();
+        self.swap_rows(b.paths.clone()); self.queue_origins = b.origins.clone(); self.queue_origins.resize(self.queue.len(), None); self.removed = b.removed.clone();
         self.queue_placement = b.placement.clone(); self.queue_groups = b.groups.clone();
         self.next_queue_group = b.groups.iter().map(|g| g.key).max().unwrap_or(0) + 1;
         self.base = 0; self.shuffle = b.shuffle;
         self.repeat = match b.repeat { 1 => Repeat::All, 2 => Repeat::One, _ => Repeat::Off };
         self.stop_after = b.stop_after; self.mix = false;
         self.casting.order = b.order.clone();
-        if let Some(p) = &self.player { p.set_order(b.order.clone(), b.paths.len()); }
         let cursor = b.cursor.min(b.paths.len().saturating_sub(1));
         let path = b.paths.get(cursor).cloned().unwrap_or_default();
         self.now = NowPlaying { path, index: cursor, seconds: b.seconds, queue_len: b.paths.len(),
@@ -157,20 +152,25 @@ impl Chilpa {
             at
         };
         if !b.live(at) { return false; }
+        self.sleep_until = None;
         let seconds = if key.is_empty() { b.seconds } else { 0.0 };
         self.listen.pending = Some((id, at, seconds));
-        // I wait for the existing worker's stop barrier without blocking Qt.
+        // I wait for the plays asked so far to end without blocking Qt.
+        // What plays is left for another queue: it is no longer in front of
+        // the window, and its listen is one somebody chose to leave.
+        self.plays.retire(Fate::Replaced(Replaced::Track));
         if let Some(p) = &self.player { p.stop_for_handoff(); }
-        self.relaunching = None;
+        self.now.playing = false;
         self.finish_buffer_switch();
         true
     }
     pub(crate) fn finish_buffer_switch(&mut self) {
         if self.listen.pending.is_none() || self.casting.disconnecting { return; }
-        if self.player.as_ref().is_some_and(|p| !p.idle()) { return; }
+        // Every play asked so far has to have said how it ended: the last of
+        // them settles its listens, and the device is free.
+        self.read_player_events();
+        if !self.plays.is_empty() { return; }
         let Some((id, index, seconds)) = self.listen.pending.take() else { return };
-        if let Some(p) = &self.player { let _ = p.poll(); }
-        self.log_play(true);
         self.capture_buffer();
         let Some(mut b) = self.buffer_snapshot(id) else { return };
         if !b.live(index) { return; }
@@ -216,7 +216,7 @@ impl Chilpa {
         if self.listen.pending.is_some_and(|p| p.0 == id) { self.listen.pending = None; }
         self.listen.undo = Some(Undo { originals: vec![(at, self.listen.buffers[at].clone())], created: Vec::new(), selected: self.listen.selected });
         if id == self.listen.active {
-            self.stop(); self.queue.clear(); self.queue_origins.clear(); self.removed.clear(); self.queue_groups.clear();
+            self.stop(); self.swap_rows(Vec::new()); self.queue_origins.clear(); self.removed.clear(); self.queue_groups.clear();
             self.queue_placement.clear(); self.now = NowPlaying::default();
             // The output stays empty; another tab never starts by closing this one.
             self.listen.active = 0;
@@ -237,7 +237,7 @@ impl Chilpa {
         b.order = (0..paths.len()).collect(); b.groups.clear(); b.placement = vec![QueuePlacement::Original; paths.len()];
         b.cursor = 0; b.seconds = 0.0; b.stop_after = None;
         if self.listen.active == id {
-            self.stop(); self.listen.active = 0; self.queue.clear(); self.queue_origins.clear(); self.now = NowPlaying::default();
+            self.stop(); self.listen.active = 0; self.swap_rows(Vec::new()); self.queue_origins.clear(); self.now = NowPlaying::default();
         }
         self.store_buffer(b); self.persist_buffers();
     }
@@ -245,7 +245,7 @@ impl Chilpa {
         let Some(undo) = self.listen.undo.take() else { return };
         let affected: Vec<_> = undo.originals.iter().map(|(_, b)| b.id).chain(undo.created).collect();
         if affected.contains(&self.listen.active) {
-            self.stop(); self.listen.active = 0; self.queue.clear(); self.queue_origins.clear();
+            self.stop(); self.listen.active = 0; self.swap_rows(Vec::new()); self.queue_origins.clear();
             self.removed.clear(); self.queue_placement.clear(); self.queue_groups.clear(); self.now = NowPlaying::default();
         }
         if self.listen.pending.is_some_and(|p| affected.contains(&p.0)) { self.listen.pending = None; }

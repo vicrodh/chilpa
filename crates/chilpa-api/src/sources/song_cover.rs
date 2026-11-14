@@ -25,6 +25,9 @@ const RETRY_AFTER: Duration = Duration::from_secs(60);
 /// A song to find the cover of.
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct Song {
+    /// The play it was on when it was asked for, if one was in front of the
+    /// window: the same title asked for by another play is another request.
+    pub(super) play: Option<u64>,
     pub(super) url: String,
     /// The whole title the station sent, which is what an answer is matched by.
     pub(super) title: String,
@@ -211,7 +214,7 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     fn song(title: &str) -> Song {
-        Song { url: "https://radio.example/a".into(), title: title.into(), artist: "A".into(), name: title.into() }
+        Song { play: None, url: "https://radio.example/a".into(), title: title.into(), artist: "A".into(), name: title.into() }
     }
 
     #[test]

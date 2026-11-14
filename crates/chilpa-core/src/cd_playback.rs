@@ -150,9 +150,36 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
+    play_disc_heard(drive, tracks, caps, controls, open_sink, on_track, &mut |index, progress, _| on_progress(index, progress), on_read_error, &mut |_| {})
+}
+
+/// The same, with each track's ending: every track that started is closed
+/// once through `on_closed`, with how it ended and how many frames of it
+/// left the device. A track is the attempt of its place on the disc, counted
+/// from one. One cut by a sector that would not read broke, though its
+/// source simply ran out; the disc goes on.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn play_disc_heard<F, K>(
+    drive: &mut dyn CdDevice,
+    tracks: &[Track],
+    caps: &DeviceCaps,
+    controls: &Controls,
+    open_sink: F,
+    on_track: &mut dyn FnMut(usize, &Delivery),
+    on_progress: &mut dyn FnMut(usize, Progress, u64),
+    on_read_error: &mut dyn FnMut(usize, String),
+    on_closed: &mut dyn FnMut(crate::attempts::Closed),
+) -> Result<Outcome, CdPlayError>
+where
+    F: FnOnce(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
     let delivery =
         negotiate(CDDA_FORMAT, caps, Policy::BitPerfect).map_err(|_| CdPlayError::Unsupported)?;
-    let mut sink = open_sink(delivery.opened).map_err(CdPlayError::Sink)?;
+    // Declared before the device, so the device is let go first and its
+    // meter says what of each track left it before they are closed.
+    let mut attempts = crate::attempts::Attempts::new(on_closed, controls.stop.clone());
+    let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(CdPlayError::Sink)?, attempts.report());
     let mut processor = chilpa_audio::dsp::Processor::new(controls.dsp.clone(), delivery.opened);
     let mut last = Outcome::Finished { frames: 0 };
     // Whether the last track ended by itself: then what is still in the
@@ -166,12 +193,19 @@ where
             ended_by_itself = false;
             break;
         }
+        // A seek still pending was for the track before, and goes with it.
+        if index > 0 {
+            let _ = controls.seek.take();
+        }
         if skipped_before {
             sink.flush().map_err(CdPlayError::Sink)?;
             processor.reset();
         }
         controls.dsp.begin_stream();
+        let attempt = index as u64 + 1;
+        sink.begin_attempt(attempt, None);
         on_track(index, &delivery);
+        attempts.open(attempt, index);
         let base = Arc::new(AtomicI64::new(0));
         let delivered = Arc::new(AtomicU64::new(0));
         let mut reader = TrackReader::new(drive, track);
@@ -190,14 +224,27 @@ where
             let outcome = render_with_processor(&mut laid, &mut sink, &controls.stop, &controls.pause, Some(&mut processor), &mut |f| {
                 delivered.store(f, Ordering::Relaxed);
                 let at = f as i64 + base.load(Ordering::Relaxed);
-                on_progress(index, Progress { position: at.max(0) as u64, delivered: f });
+                let heard = attempts.heard(attempt).unwrap_or(f);
+                attempts.settle();
+                on_progress(index, Progress { position: at.max(0) as u64, delivered: f }, heard);
             });
             (outcome, laid.skipped)
         };
+        attempts.ended(attempt, crate::attempts::How::of(&outcome, skipped));
         if let Some(problem) = reader.error.as_ref() {
+            // Its source ran out, as far as the render knows; the track was
+            // cut.
+            attempts.ended(attempt, crate::attempts::How::Broken);
             on_read_error(index, problem.to_string());
             processor.reset();
         }
+        sink.end(if skipped { "skipped" } else {
+            match &outcome {
+                Outcome::Finished { .. } => "finished",
+                Outcome::Stopped { .. } => "stopped",
+                _ => "error",
+            }
+        });
         ended_by_itself = matches!(outcome, Outcome::Finished { .. }) && !skipped;
         skipped_before = skipped;
         last = outcome;
@@ -530,5 +577,62 @@ mod tests {
         assert_eq!(errors.len(), 1, "the error was reported: {errors:?}");
         assert_eq!(errors[0].0, 0, "against the first track");
         assert!(sink.frames < 200 * 588, "the first track did not come out whole");
+    }
+
+    /// A device that counts what it is handed and asks for a seek as the
+    /// last frames of the first track go in.
+    struct SeeksAtTheEnd {
+        frames: Arc<AtomicU64>,
+        at: u64,
+        seek: Option<SeekSignal>,
+    }
+
+    impl AudioSink for SeeksAtTheEnd {
+        fn format(&self) -> StreamFormat {
+            CDDA_FORMAT
+        }
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            let n = frames.len() / CDDA_FORMAT.frame_bytes();
+            if self.frames.fetch_add(n as u64, Ordering::AcqRel) + n as u64 >= self.at {
+                if let Some(seek) = self.seek.take() {
+                    seek.request(Duration::from_millis(500));
+                }
+            }
+            Ok(n)
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+    }
+
+    /// Best effort: the disc's reader may still serve the seek to its own
+    /// track before the track is over, and then this passes either way. What
+    /// it catches is the seek left pending and served to the second track.
+    #[test]
+    fn a_seek_left_pending_when_a_track_ends_does_not_move_the_next_one() {
+        let mut disc = Disc { fail_at: None };
+        let toc = read_toc(&mut disc).unwrap();
+        let tracks: Vec<Track> = toc.audio_tracks().copied().collect();
+        let controls = Controls::new();
+        let whole = 100 * chilpa_cd::FRAMES_PER_SECTOR as u64;
+        let sent = Arc::new(AtomicU64::new(0));
+        let mut before_second = None;
+        play_disc(
+            &mut disc,
+            &tracks,
+            &caps(),
+            &controls,
+            |_| Ok(SeeksAtTheEnd { frames: Arc::clone(&sent), at: whole, seek: Some(controls.seek.clone()) }),
+            &mut |index, _| {
+                if index == 1 {
+                    before_second = Some(sent.load(Ordering::Acquire));
+                }
+            },
+            &mut |_, _| {},
+            &mut |_, _| {},
+        )
+        .unwrap();
+        let before_second = before_second.expect("the second track played");
+        assert_eq!(sent.load(Ordering::Acquire) - before_second, whole, "the second track was sent whole, from its beginning");
     }
 }

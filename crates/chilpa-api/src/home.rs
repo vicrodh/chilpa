@@ -132,7 +132,7 @@ impl Chilpa {
         if !matches!(kind, "recentlyPlayed" | "recentlyPlayedEverywhere" | "recentlyAdded" | "mostPlayed") { return None; }
         let key = Key(kind.into(), limit.clamp(1, ROWS));
         let recent = kind.starts_with("recentlyPlayed");
-        let current = if recent && self.in_progress.is_some() && self.now.album_id != 0
+        let current = if recent && self.plays.listening() && self.now.album_id != 0
             && (kind == "recentlyPlayedEverywhere" || self.now.album_id > 0) {
             self.album(self.now.album_id)
         } else { None };

@@ -135,9 +135,9 @@ impl Chilpa {
         if active {
             self.removed = b.removed.clone(); self.stop_after = b.stop_after;
             self.casting.order = b.order.clone();
-            if let Some(p) = &self.player {
+            if let Some(p) = self.current_launch() {
                 p.set_order(b.order.clone(), b.paths.len()); p.set_stop_after(b.stop_after);
-                for (i, removed) in b.removed.iter().enumerate() { if *removed { p.remove_from_queue(i); } }
+                for (i, removed) in b.removed.iter().enumerate() { if *removed { p.remove(i); } }
             }
         }
         self.store_buffer(b); self.persist_buffers(); true

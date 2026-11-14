@@ -263,9 +263,25 @@ impl AudioSink for DsdSink {
     }
 
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        self.drain_watching(give_up, None)
+    }
+
+    fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+        self.drain_watching(give_up, Some(held))
+    }
+}
+
+impl DsdSink {
+    /// The wait of `drain`. With `held`, it is told what the stream still
+    /// holds at each look, before the wait may be given up: giving up
+    /// flushes, and nothing afterwards says how much of it had played.
+    fn drain_watching(&mut self, give_up: &dyn Fn() -> bool, held: Option<&dyn Fn(u64)>) -> Result<(), SinkError> {
         let pointer = self.pointer()?;
         let start = Instant::now();
         loop {
+            if let Some(held) = held {
+                held(AudioSink::held(self));
+            }
             if give_up() {
                 return self.flush();
             }

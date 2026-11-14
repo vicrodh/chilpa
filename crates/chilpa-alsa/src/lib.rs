@@ -397,6 +397,18 @@ impl AudioSink for AlsaSink {
     /// answering would hold the player there. Never longer than the buffer
     /// plus a second.
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        self.drain_watching(give_up, None)
+    }
+
+    fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+        self.drain_watching(give_up, Some(held))
+    }
+}
+
+impl AlsaSink {
+    /// The wait of `drain`. With `tell`, it is told what the device still
+    /// holds at each look, before the wait may be given up.
+    fn drain_watching(&mut self, give_up: &dyn Fn() -> bool, tell: Option<&dyn Fn(u64)>) -> Result<(), SinkError> {
         let Some(pcm) = &self.pcm else { return Ok(()) };
         let started = std::time::Instant::now();
         let initial_state = pcm.state();
@@ -421,6 +433,9 @@ impl AudioSink for AlsaSink {
             + std::time::Duration::from_secs(1);
         // It ran out, which is where it stops once all of it has played.
         while pcm.state() == State::Running && std::time::Instant::now() < limit {
+            if let Some(tell) = tell {
+                tell(pcm.delay().map_or(0, |left| left.max(0) as u64));
+            }
             if give_up() {
                 chilpa_audio::diagnostics::trace(
                     "alsa",
