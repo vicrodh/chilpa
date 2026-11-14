@@ -498,11 +498,28 @@ mod tests {
     }
 
     #[test]
-    fn every_key_lives_in_its_own_section() {
+    fn settings_follow_their_namespace_with_metadata_tools_under_library() {
+        // Runtime preferences retain their metadata namespace in Library.
+        let metadata = [
+            (crate::beets_runtime::ENGINE, Control::Segmented),
+            ("metadata.beets.status", Control::Status),
+            ("metadata.beets.install", Control::Progress),
+            (crate::beets_runtime::PYTHON, Control::File),
+            ("metadata.beets.check", Control::Button),
+        ];
         for s in SECTIONS {
             for set in s.groups.iter().flat_map(|g| g.settings) {
-                assert!(set.key.starts_with(&format!("{}.", s.id)), "{} is not under {}", set.key, s.id);
+                if let Some((_, control)) = metadata.iter().find(|(key, _)| *key == set.key) {
+                    assert_eq!(s.id, "library", "{} must be configured in Library", set.key);
+                    assert_eq!(set.control, *control, "{} has the wrong setup control", set.key);
+                } else {
+                    assert!(set.key.starts_with(&format!("{}.", s.id)), "{} is not under {}", set.key, s.id);
+                }
             }
+        }
+        for (key, _) in metadata {
+            assert!(section("library").groups.iter().flat_map(|g| g.settings).any(|set| set.key == key),
+                "{key} is missing from Library");
         }
     }
 
