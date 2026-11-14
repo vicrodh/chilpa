@@ -11,9 +11,9 @@
 mod apply;
 pub(crate) use apply::said as failure_message;
 mod artwork;
-mod beets;
+pub(crate) mod beets;
 mod draft;
-mod fields;
+pub(crate) mod fields;
 mod hosted;
 mod preview;
 mod save;

@@ -7,6 +7,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 TitledFlow {
+    MultilineField { width:Metrics.selectWidth; text:"First value\nSecond value" }
     CircleCheck { text: "Selected"; checked: true }
     FolderChoice { width: Metrics.confirmWidth; title:"Offline folder"; defaultLabel:"Default destination" }
     StatusArea { width: Metrics.confirmWidth; label:"Validation"; text:"Transient progress stays within this area." }

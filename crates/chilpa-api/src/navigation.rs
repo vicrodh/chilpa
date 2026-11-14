@@ -46,6 +46,8 @@ pub enum Screen {
     Search,
     /// The metadata editor, on one record.
     Metadata,
+    /// A metadata batch over a frozen folder selection.
+    FolderMetadata,
     ListenList,
     /// What was listened to, a period at a time, and the history whole.
     Stats,
@@ -82,6 +84,7 @@ impl Screen {
             Screen::PlaylistManager => "playlistManager",
             Screen::PlaylistImport => "playlistImport",
             Screen::Metadata => "metadata",
+            Screen::FolderMetadata => "folderMetadata",
             Screen::ListenList => "listenlist",
             Screen::Stats => "stats",
             Screen::ListeningHistory => "listeningHistory",
@@ -92,7 +95,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Genres, Screen::Composers, Screen::Compositions, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Genres, Screen::Composers, Screen::Compositions, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::FolderMetadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -327,6 +330,7 @@ impl crate::Chilpa {
             Screen::PlaylistImport => (self.t("Import playlist"), "playlist"),
             Screen::ListenList => (self.t("Queues"), "listDetails"),
             Screen::Metadata => (self.t("Edit metadata"), "listDetails"),
+            Screen::FolderMetadata => (self.t("Folder metadata"), "listDetails"),
             Screen::Stats => (self.t("Listening stats"), "chartBar"),
             Screen::ListeningHistory => (self.t("Listening history"), "history"),
             Screen::Search => (r.key.clone(), "search"),

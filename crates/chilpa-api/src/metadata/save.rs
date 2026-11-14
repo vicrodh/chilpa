@@ -195,6 +195,12 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
                 }
             }
             sidecar.album.put(field.name, laid);
+            for (_, row) in in_home(home) {
+                if let Some(track) = sidecar.tracks.get_mut(&row.key) {
+                    track.file_fields.remove(&format!("album.{}", field.name));
+                    track.album.put(field.name, Override::Absent);
+                }
+            }
         }
     }
     for (i, row) in draft.rows.iter().enumerate() {

@@ -1,11 +1,13 @@
 //! I rebuild local releases from persisted part evidence, independently of scans.
 
 mod parts;
+mod metadata;
+mod presentation;
 #[cfg(test)]
 mod migration;
 pub(crate) use parts::location;
 use super::Library;
-use parts::{Track, collect, assemble};
+use parts::Track;
 use rusqlite::params;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -13,31 +15,39 @@ use std::path::Path;
 impl Library {
     /// I never open media here. Running again with the same evidence makes no writes.
     pub fn assemble_local_releases(&self) -> rusqlite::Result<()> {
+        self.assemble_release_scope(false)
+    }
+
+    fn assemble_release_scope(&self, scoped: bool) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
         let tracks = {
-            let mut stmt = tx.prepare("SELECT t.id, t.album_id, t.source_id, t.external_id,
+            let restriction = if scoped { "AND t.id IN (SELECT id FROM metadata_release_members)" } else { "" };
+            let mut stmt = tx.prepare(&format!("SELECT t.id, t.album_id, t.source_id, t.external_id,
                 CASE WHEN t.album_title = '' THEN a.title ELSE t.album_title END,
                 t.artist, t.album_credit, t.disc_number, t.disc_total, t.present,
                 CASE WHEN t.release_part = '' THEN coalesce(t.release_year, a.year) ELSE t.release_year END,
-                CASE WHEN t.release_part = '' THEN coalesce(t.release_artwork, a.artwork_path) ELSE t.release_artwork END
+                CASE WHEN t.release_part = '' THEN coalesce(t.release_artwork, a.artwork_path) ELSE t.release_artwork END,
+                local.group_key,local.title,local.artist
                 FROM tracks t JOIN albums a ON a.id = t.album_id JOIN sources s ON s.id = t.source_id
-                WHERE s.provider = 'local' ORDER BY t.id")?;
+                LEFT JOIN local_release_members local ON local.track_id=t.id
+                WHERE s.provider = 'local' {restriction} ORDER BY t.id"))?;
             let rows = stmt.query_map([], |r| Ok(Track { id: r.get(0)?, album: r.get(1)?, source: r.get(2)?, path: r.get(3)?,
                 title: r.get(4)?, artist: r.get(5)?, credit: r.get(6)?, disc: r.get(7)?, total: r.get(8)?,
-                present: r.get(9)?, year: r.get(10)?, artwork: r.get(11)? }))?
+                present: r.get(9)?, year: r.get(10)?, artwork: r.get(11)?,
+                local:r.get::<_,Option<String>>(12)?.map(|key| Ok::<_,rusqlite::Error>((key,r.get::<_,String>(13)?,r.get::<_,String>(14)?))).transpose()? }))?
                 .collect::<rusqlite::Result<Vec<_>>>()?.into_iter()
                 .filter(|t| t.path.starts_with("sacd:") || Path::new(&t.path).is_absolute()).collect();
             rows
         };
-        let parts = collect(tracks);
-        let releases = assemble(&parts);
+        let (parts,releases,local_keys) = presentation::release_parts(tracks);
         let mut used = BTreeSet::new();
         let mut moved = BTreeMap::<i64, BTreeSet<i64>>::new();
         let mut metadata = Vec::new();
         let mut changed = false;
         for ids in releases {
             let first = &parts[ids[0]];
-            let key = format!("release:{}:{}:{}{}", first.source, first.title.len(), first.title, first.location);
+            let key = local_keys.get(&first.tracks[0].id).cloned()
+                .unwrap_or_else(|| format!("release:{}:{}:{}{}", first.source, first.title.len(), first.title, first.location));
             let old: BTreeSet<_> = ids.iter().flat_map(|i| parts[*i].tracks.iter().map(|t| t.album)).collect();
             let target = if let Some(id) = old.iter().find(|id| !used.contains(*id)) {
                 *id
@@ -80,7 +90,8 @@ impl Library {
                     params![old, targets.first()])? > 0;
             }
         }
-        changed |= tx.execute("DELETE FROM albums WHERE NOT EXISTS (SELECT 1 FROM tracks WHERE album_id = albums.id)", [])? > 0;
+        let orphan_scope = if scoped { "AND id IN (SELECT c.album FROM metadata_release_components c JOIN metadata_release_members m ON m.id=c.id)" } else { "" };
+        changed |= tx.execute(&format!("DELETE FROM albums WHERE NOT EXISTS (SELECT 1 FROM tracks WHERE album_id = albums.id) {orphan_scope}"), [])? > 0;
         for (id, _, _, _, key, _, _) in &metadata {
             changed |= tx.prepare_cached("UPDATE albums SET version_key = ?2 WHERE id = ?1 AND version_key <> ?3")?.execute(
                 params![id, format!("pending:{id}:{key}"), key])? > 0;

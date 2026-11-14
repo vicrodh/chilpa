@@ -64,23 +64,23 @@ impl Request {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Credit { pub name:String, pub id:String, pub join:String }
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct ReleaseTrack {
     pub disc:u16, pub number:u16, pub title:String, pub duration_ms:u32, pub credits:Vec<Credit>,
     pub recording_id:String, pub track_id:String,
 }
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Release {
     pub provider:Source, pub id:String, pub title:String, pub credits:Vec<Credit>, pub date:String,
     pub genres:Vec<String>, pub label:String, pub catalog_number:String, pub catalog_numbers:Vec<String>,
     pub country:String, pub barcode:String, pub discs:u16, pub media_titles:Vec<String>,
     pub release_group_id:String, pub url:String, pub tracks:Vec<ReleaseTrack>,
 }
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Mapping { pub track:i64, pub index:usize, pub composers:Vec<String>, pub work:String }
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Candidate { pub release:Release, pub score:u8, pub mappings:Vec<Mapping> }
 
 #[derive(Clone, Debug, Deserialize)]

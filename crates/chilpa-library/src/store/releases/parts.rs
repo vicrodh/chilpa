@@ -28,6 +28,7 @@ pub(super) struct Track {
     pub present: bool,
     pub year: Option<i64>,
     pub artwork: Option<String>,
+    pub local: Option<(String,String,String)>,
 }
 
 pub(super) struct Part {

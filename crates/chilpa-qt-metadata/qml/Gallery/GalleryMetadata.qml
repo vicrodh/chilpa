@@ -13,6 +13,14 @@ import "../Patterns"
 TitledFlow {
     id: section
     title: "Metadata editor"
+    BatchPreviewRow { width:Metrics.settingsMaxWidth; entry:({key:"1:1",path:"Album/01.flac",title:"Track",artist:"Artist",album:"Album",selected:true,changes:[{field:"genres",before:["Power Metal"],after:["Power Metal","Symphonic Metal"]}]}) }
+    BatchPatch { width:Metrics.metadataColumnMin; selected:4; fields:[{key:"genres",label:"Genres",type:"list",operations:["keep","set","clear","append_unique","remove_values"]}] }
+    BatchSelection { width:Metrics.metadataColumnMin }
+    BatchPreview { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; batch:({count:0,busy:false}) }
+    BatchGroupRow { width:Metrics.settingsMaxWidth; entry:({key:"1:g1",title:"Album",artist:"Artist",tracks:12,selected:12,lookup:{allowed:true}}) }
+    BatchGrouping { width:Metrics.metadataColumnMin; groups:[{key:"1:g1",title:"Album",artist:"Artist",discs:[{number:1,tracks:12}]}] }
+    BatchLookup { width:Metrics.metadataColumnMin }
+    BatchProposal { width:Metrics.metadataColumnMin }
 
     function field(name, value, extra) {
         return Object.assign({ name: name, value: value, mixed: false, dirty: false, overridden: false, editable: true, invalid: "" }, extra || {})

@@ -145,6 +145,34 @@ pub fn scan_root(lib: &Library, root: &Path) -> rusqlite::Result<ScanReport> {
     scan_root_with(lib, root, None, &|_| {}, &NoContainers)
 }
 
+/// Reconcile one already indexed file after an explicit metadata write. This
+/// never imports an external file, prunes a root, or opens another media file.
+/// The caller assembles releases once after the batch has reconciled its files.
+pub fn reconcile_metadata_file(lib: &Library, id: i64, expected: &str, path: &Path) -> Result<(), String> {
+    lib.prepare_metadata_reconcile().map_err(|error| error.to_string())?;
+    let tx = lib.db.unchecked_transaction().map_err(|error| error.to_string())?;
+    let (source, external, root): (i64,String,Option<String>) = tx.query_row(
+        "SELECT t.source_id,t.external_id,(SELECT r.path FROM scanned_files sf JOIN roots r ON r.id=sf.root_id WHERE sf.track_id=t.id LIMIT 1)
+         FROM tracks t JOIN sources s ON s.id=t.source_id WHERE t.id=?1 AND s.provider='local'", [id],
+        |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?))).map_err(|error| error.to_string())?;
+    if external != expected { return Err(chilpa_i18n::t("The library entry changed while metadata was being edited.")); }
+    let mut info = chilpa_tags::read(path).map_err(|error| error.to_string())?;
+    let home = Home::of(&path.to_string_lossy(),None);
+    let sidecar = crate::sidecar::load(&home,&path.to_string_lossy()).map_err(|error| error.to_string())?;
+    let presentation = sidecar.as_ref().and_then(|sidecar| chilpa_tags::edit::snapshot(path).ok().and_then(|snapshot|
+        sidecar.presentation(&home.key(&path.to_string_lossy()),&snapshot)));
+    if let Some(sidecar) = sidecar {
+        sidecar.overlay(&mut info.tags,&home.key(&path.to_string_lossy()));
+    }
+    let name = path.file_stem().unwrap_or_default().to_string_lossy();
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs() as i64;
+    save_track(lib,source,&external,Some(&info),&name,path,root.as_deref().map(Path::new),now,None)
+        .map_err(|error| error.to_string())?;
+    lib.set_file_presentation(id,presentation.as_ref()).map_err(|error| error.to_string())?;
+    lib.metadata_release_changed(id).map_err(|error| error.to_string())?;
+    tx.commit().map_err(|error| error.to_string())
+}
+
 /// The same, reporting how many files it has looked at.
 pub fn scan_root_reporting(
     lib: &Library,
@@ -698,6 +726,7 @@ fn save_file(
     let name = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
     let saved = save_track(lib, source, &external_id, info.as_ref(), &name, path, Some(root), now, cache)?;
     seen.cover_onto(lib, home, saved.0)?;
+    seen.presentation_onto(lib,path,saved.0)?;
     Ok(saved)
 }
 

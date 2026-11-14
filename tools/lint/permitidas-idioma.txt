@@ -1044,3 +1044,8 @@ dont
 uv
 # SQLite virtual-machine instruction counts (StatementStatus::VmStep).
 vm
+hardlink
+hardlinked
+nlink
+offscreen
+retag

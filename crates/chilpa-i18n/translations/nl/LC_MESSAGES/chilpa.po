@@ -151,8 +151,20 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
+msgid "A disc assignment has no selected files."
+msgstr ""
+
+msgid "A disc has too many track positions for this plan."
+msgstr ""
+
+msgid "A file appears in more than one disc assignment."
+msgstr ""
+
 msgid "A folder chosen before"
 msgstr "Een eerder gekozen map"
+
+msgid "A lookup file is no longer in the current selection."
+msgstr ""
 
 msgid "A media server on this network, such as MiniDLNA, Gerbera or the DLNA side of Plex. There is nothing to sign in to."
 msgstr "Een mediaserver in dit netwerk, zoals MiniDLNA, Gerbera of de DLNA-kant van Plex. Aanmelden is niet nodig."
@@ -160,11 +172,17 @@ msgstr "Een mediaserver in dit netwerk, zoals MiniDLNA, Gerbera of de DLNA-kant 
 msgid "A media server you run yourself. You sign in with its user and password, or with Quick Connect."
 msgstr "Een mediaserver die je zelf draait. Je meldt je aan met gebruiker en wachtwoord, of met Quick Connect."
 
+msgid "A metadata lookup field exceeds the 4096-byte input limit."
+msgstr ""
+
 msgid "A name for this memory"
 msgstr ""
 
 msgid "A new version of Chilpa is available."
 msgstr "Er is een nieuwe versie van Chilpa beschikbaar."
+
+msgid "A newer Chilpa wrote this sidecar."
+msgstr ""
 
 msgid "A player for your own music"
 msgstr "Een speler voor je eigen muziek"
@@ -189,6 +207,12 @@ msgstr "Een scan ondersteunt maximaal 256 mappen en 64 KiB aan opgeslagen paden.
 
 msgid "A secure cast URL could not be created."
 msgstr "Er kon geen beveiligde cast-URL worden gemaakt."
+
+msgid "A selected file cannot store one of the proposed fields."
+msgstr ""
+
+msgid "A selected file is missing."
+msgstr ""
 
 msgid "A selected local file is unavailable. I kept the device unchanged."
 msgstr ""
@@ -322,6 +346,9 @@ msgstr "Alles aan wachtrij toevoegen"
 msgid "Add all tracks"
 msgstr "Alle nummers toevoegen"
 
+msgid "Add an album or artist proposal before looking up files with empty tags."
+msgstr ""
+
 msgid "Add cover"
 msgstr "Hoes toevoegen"
 
@@ -331,11 +358,17 @@ msgstr "Filter toevoegen"
 msgid "Add folder to library"
 msgstr "Map aan bibliotheek toevoegen"
 
+msgid "Add genres to existing values"
+msgstr ""
+
 msgid "Add image"
 msgstr "Afbeelding toevoegen"
 
 msgid "Add only new tracks"
 msgstr "Alleen nieuwe nummers toevoegen"
+
+msgid "Add reviewed proposal to pending changes"
+msgstr ""
 
 msgid "Add server"
 msgstr "Server toevoegen"
@@ -408,6 +441,9 @@ msgstr "Toevoegen…"
 msgid "Advanced"
 msgstr "Geavanceerd"
 
+msgid "After"
+msgstr ""
+
 msgid "Album"
 msgstr "Album"
 
@@ -426,6 +462,9 @@ msgstr "Albumartiesten"
 msgid "Album contains"
 msgstr "Album bevat"
 
+msgid "Album grouping"
+msgstr ""
+
 msgid "Album header"
 msgstr "Albumkop"
 
@@ -437,6 +476,9 @@ msgstr "Albumradio"
 
 msgid "Album review"
 msgstr "Albumrecensie"
+
+msgid "Album title"
+msgstr ""
 
 msgid "Albums"
 msgstr "Albums"
@@ -506,6 +548,9 @@ msgstr "Alle opgeslagen resultaten"
 
 msgid "All seasons"
 msgstr "Alle seizoenen"
+
+msgid "All selected files with pending changes will be saved, including files outside the current view. Only reviewed fields will change. Completed writes cannot be undone from Chilpa. Files are not moved or renamed."
+msgstr ""
 
 msgid "All selections"
 msgstr "Alle selecties"
@@ -714,6 +759,9 @@ msgstr "Artiest"
 msgid "Artist mix"
 msgstr "Artiestmix"
 
+msgid "Artist names, one per line"
+msgstr ""
+
 msgid "Artist radio"
 msgstr "Artiestradio"
 
@@ -749,6 +797,15 @@ msgstr "Plex wordt om een code gevraagd…"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Vraagt PipeWire of PulseAudio de kaart los te laten zolang Chilpa erop afspeelt, en geeft hem terug wanneer Chilpa stopt of lang pauzeert."
+
+msgid "Assign a distinct target disc number to each joined disc."
+msgstr ""
+
+msgid "Assign each disc using its group and source disc, or explicit files."
+msgstr ""
+
+msgid "Assign every selected file to one resulting disc."
+msgstr ""
 
 msgid "Assumed fallback: {}"
 msgstr "Aangenomen alternatief: {}"
@@ -917,6 +974,9 @@ msgstr "Gebaseerd op {artist} · {genres}"
 
 msgid "Bass"
 msgstr "Bas"
+
+msgid "Before"
+msgstr ""
 
 msgid "Being removed…"
 msgstr "Wordt verwijderd…"
@@ -1124,6 +1184,9 @@ msgstr "Hoes wijzigen"
 msgid "Change image"
 msgstr "Afbeelding wijzigen"
 
+msgid "Change only the selected field"
+msgstr ""
+
 msgid "Change source"
 msgstr "Andere bron"
 
@@ -1140,6 +1203,9 @@ msgid "Change the sign-in"
 msgstr "Aanmelding wijzigen"
 
 msgid "Changes"
+msgstr ""
+
+msgid "Changing the positions of an identified release requires a real release match."
 msgstr ""
 
 msgid "Channels"
@@ -1190,11 +1256,17 @@ msgstr "Controleer de naam en wat erbij komt."
 msgid "Check one format"
 msgstr "Eén formaat controleren"
 
+msgid "Check or install beets in Settings."
+msgstr ""
+
 msgid "Check the address and its port, and that the server is on and reachable from this computer, then try again."
 msgstr "Controleer het adres en de poort, en of de server aanstaat en bereikbaar is vanaf deze computer, en probeer het dan opnieuw."
 
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "Controleer het adres, of DLNA aanstaat in de instellingen van de server en of hij deze computer toelaat, en probeer het dan opnieuw."
+
+msgid "Check the beets environment in Settings before looking up metadata."
+msgstr ""
 
 msgid "Check the selected item and the changes described above. This action cannot be undone from Chilpa."
 msgstr ""
@@ -1409,11 +1481,29 @@ msgstr "Kies een weergavebediening"
 msgid "Choose a preset."
 msgstr "Kies een preset."
 
+msgid "Choose a readable group with at most 1024 files."
+msgstr ""
+
+msgid "Choose a resulting album title for each disc."
+msgstr ""
+
 msgid "Choose a saved device profile."
+msgstr ""
+
+msgid "Choose a smaller selection, up to 32 discs for one plan."
 msgstr ""
 
 msgid "Choose a value"
 msgstr "Kies een waarde"
+
+msgid "Choose albums with Use in disc plan. Only selected files participate."
+msgstr ""
+
+msgid "Choose albums, disc assignments and a resulting album title."
+msgstr ""
+
+msgid "Choose an album and look it up. Choosing a match prepares a proposal without writing files."
+msgstr ""
 
 msgid "Choose an available writable storage."
 msgstr ""
@@ -1427,11 +1517,17 @@ msgstr "Kies een afbeelding"
 msgid "Choose at least two different queues."
 msgstr "Kies minstens twee verschillende wachtrijen."
 
+msgid "Choose at most 1024 files for one metadata lookup."
+msgstr ""
+
 msgid "Choose at most 512 playlists or queries for one storage."
 msgstr ""
 
 msgid "Choose between 1 and 10,000 server tracks for an offline download."
 msgstr "Selecteer 1 tot 10.000 servernummers om offline te downloaden."
+
+msgid "Choose between 1 and 256 folders or files."
+msgstr ""
 
 msgid "Choose between 1 and 50,000 Library tracks."
 msgstr ""
@@ -1447,6 +1543,9 @@ msgstr ""
 
 msgid "Choose fewer offline files for this action."
 msgstr "Selecteer minder offlinebestanden voor deze actie."
+
+msgid "Choose files from the current metadata selection."
+msgstr ""
 
 msgid "Choose file…"
 msgstr "Bestand kiezen…"
@@ -1475,7 +1574,16 @@ msgstr "Plug-inpictogram kiezen"
 msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr "Kies wachtrijen en bepaal hun volgorde. Herhaalde nummers blijven behouden."
 
+msgid "Choose readable files for the disc plan."
+msgstr ""
+
+msgid "Choose readable files for this metadata lookup."
+msgstr ""
+
 msgid "Choose storage"
+msgstr ""
+
+msgid "Choose supported fields and a genre operation."
 msgstr ""
 
 msgid "Choose the Python environment containing beets."
@@ -1499,6 +1607,12 @@ msgstr "Kies de ontvanger bij Afspelen op om verbinding te maken."
 msgid "Choose the storage paired with this profile."
 msgstr ""
 
+msgid "Choose up to 32 discs for one plan."
+msgstr ""
+
+msgid "Choose valid absolute file paths."
+msgstr ""
+
 msgid "Choose where to open this music"
 msgstr ""
 
@@ -1516,6 +1630,9 @@ msgstr "Wissen na dit nummer"
 
 msgid "Clear all"
 msgstr "Alles wissen"
+
+msgid "Clear field"
+msgstr ""
 
 msgid "Clear filter"
 msgstr "Filter wissen"
@@ -1546,6 +1663,9 @@ msgstr "Wissen bij pauze"
 
 msgid "Clear queue"
 msgstr "Wachtrij wissen"
+
+msgid "Clear selection"
+msgstr ""
 
 msgid "Clear temporary remote artwork"
 msgstr "Tijdelijke externe albumhoezen wissen"
@@ -1589,6 +1709,9 @@ msgstr "Sluiten / Verbergen"
 msgid "Close Tab"
 msgstr "Tabblad sluiten"
 
+msgid "Close folder metadata?"
+msgstr ""
+
 msgid "Close media"
 msgstr "Media sluiten"
 
@@ -1597,6 +1720,9 @@ msgstr "Zoeken sluiten"
 
 msgid "Close tab"
 msgstr "Tabblad sluiten"
+
+msgid "Close the current metadata selection before opening another."
+msgstr ""
 
 msgid "Close the quotation marks."
 msgstr "Sluit de aanhalingstekens."
@@ -2237,8 +2363,17 @@ msgstr "Uitgeschakeld. De bijbehorende items blijven in de bibliotheek."
 msgid "Disc"
 msgstr "Schijf"
 
+msgid "Disc number"
+msgstr ""
+
+msgid "Disc plan"
+msgstr ""
+
 msgid "Disc subtitle"
 msgstr "Ondertitel van schijf"
+
+msgid "Disc total"
+msgstr ""
 
 msgid "Disc {}"
 msgstr "Schijf {}"
@@ -2444,6 +2579,9 @@ msgstr "Elk bestand wordt gekopieerd, de kopie wordt geschreven en teruggelezen,
 msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
 msgstr "Elke geselecteerde bestemming maakt een eigen afspeellijst. Gemengde afspeellijsten blijven in Chilpa en kunnen nummers van elke verbonden bron bevatten."
 
+msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
+msgstr ""
+
 msgid "Earlier"
 msgstr "Eerder"
 
@@ -2603,6 +2741,9 @@ msgstr "Exclusieve modus is aangevraagd."
 msgid "Existing genres are unselected by default."
 msgstr ""
 
+msgid "Existing values stay on each file. Equivalent values are not added twice."
+msgstr ""
+
 msgid "Exit Immersive"
 msgstr "Immersieve weergave verlaten"
 
@@ -2614,6 +2755,9 @@ msgstr "Experimenteel: het thema komt mogelijk niet exact overeen met je systeem
 
 msgid "Explicit"
 msgstr "Expliciet"
+
+msgid "Explicit track numbers must belong to this disc's selected files."
+msgstr ""
 
 msgid "Explore"
 msgstr "Verkennen"
@@ -2702,6 +2846,12 @@ msgstr "Bestandsgrootte"
 msgid "Files"
 msgstr "Bestanden"
 
+msgid "Files to change"
+msgstr ""
+
+msgid "Files were changed before this session stopped. {} file saves completed. Reopen the selection to review the remaining work."
+msgstr ""
+
 msgid "Fill missing composers from MusicBrainz"
 msgstr "Ontbrekende componisten aanvullen vanuit MusicBrainz"
 
@@ -2768,8 +2918,17 @@ msgstr "Voltooien"
 msgid "Finish or cancel the current analysis first."
 msgstr "Rond eerst de huidige analyse af of annuleer die."
 
+msgid "Finish pending saves before preparing a disc plan."
+msgstr ""
+
 msgid "Finish selecting"
 msgstr "Selecteren voltooien"
+
+msgid "Finish the pending save before applying this proposal."
+msgstr ""
+
+msgid "Finish the pending save before changing this file's proposal."
+msgstr ""
 
 msgid "Finished"
 msgstr "Voltooid"
@@ -2795,6 +2954,9 @@ msgstr "Afspelen volgen"
 msgid "Folder colors in the sidebar"
 msgstr "Mapkleuren in de zijbalk"
 
+msgid "Folder metadata"
+msgstr ""
+
 msgid "Folder name"
 msgstr "Mapnaam"
 
@@ -2803,6 +2965,9 @@ msgstr ""
 
 msgid "Folder path"
 msgstr "Mappad"
+
+msgid "Folder reading was cancelled. Only the files already captured are shown."
+msgstr ""
 
 msgid "Folders"
 msgstr "Mappen"
@@ -3382,6 +3547,9 @@ msgstr "Installeren vanuit ZIP…"
 msgid "Install method"
 msgstr "Installatiemethode"
 
+msgid "Install or check beets in Settings > Library to use folder metadata."
+msgstr ""
+
 msgid "Install plugin from ZIP"
 msgstr "Plug-in installeren vanuit ZIP"
 
@@ -3530,6 +3698,9 @@ msgstr "januari"
 msgid "Japanese"
 msgstr "Japans"
 
+msgid "Join as a multidisc album"
+msgstr ""
+
 msgid "Jul"
 msgstr "jul"
 
@@ -3545,6 +3716,9 @@ msgstr "juni"
 msgid "Keep at most 64 personal presets."
 msgstr "Bewaar maximaal 64 persoonlijke presets."
 
+msgid "Keep current values"
+msgstr ""
+
 msgid "Keep original queues"
 msgstr "Originele wachtrijen behouden"
 
@@ -3553,6 +3727,9 @@ msgstr "De huidige behouden"
 
 msgid "Keep the queue between sessions"
 msgstr "De wachtrij tussen sessies bewaren"
+
+msgid "Keep track numbers"
+msgstr ""
 
 msgid "Keep uploads for"
 msgstr "Uploads bewaren voor"
@@ -3610,6 +3787,9 @@ msgstr "Afgelopen 3 maanden"
 
 msgid "Last check"
 msgstr "Laatste controle"
+
+msgid "Last file changed: {}"
+msgstr ""
 
 msgid "Last playlist"
 msgstr "Laatste afspeellijst"
@@ -3821,6 +4001,12 @@ msgstr "Opzoeken"
 msgid "Look up lyrics through Chilpa's lyrics service when the file and its source have none."
 msgstr "Zoek songteksten op via de songtekstservice van Chilpa als het bestand en de bron ze niet hebben."
 
+msgid "Look up this group again to choose a current candidate."
+msgstr ""
+
+msgid "Look up with beets"
+msgstr ""
+
 msgid "Looking for files…"
 msgstr "Bestanden zoeken…"
 
@@ -3831,6 +4017,9 @@ msgid "Looking for lyrics…"
 msgstr "Songtekst zoeken…"
 
 msgid "Looking for players…"
+msgstr ""
+
+msgid "Looking up metadata is turned off in Settings."
 msgstr ""
 
 msgid "Lookup cancelled."
@@ -3964,6 +4153,9 @@ msgstr "Bericht"
 
 msgid "Metadata"
 msgstr "Metadata"
+
+msgid "Metadata changed after lookup. Look up this group again."
+msgstr ""
 
 msgid "Metadata search engine"
 msgstr ""
@@ -4219,6 +4411,9 @@ msgstr "Voorspelling van de onderhandeling, geen afspeeltest: {}"
 
 msgid "Nerdy"
 msgstr "Nerdy"
+
+msgid "Nested directory links and links outside this folder are skipped. Select their target explicitly to edit it."
+msgstr ""
 
 msgid "Network"
 msgstr "Netwerk"
@@ -4664,6 +4859,9 @@ msgstr "Nu aan het afspelen: {}"
 msgid "Number of tracks"
 msgstr "Aantal nummers"
 
+msgid "Number tracks in order"
+msgstr ""
+
 msgid "OR needs a condition on each side"
 msgstr "OR heeft aan beide kanten een voorwaarde nodig"
 
@@ -4729,6 +4927,9 @@ msgstr "Eén nummer direct in het volgende."
 
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr "Eén nummer direct in het volgende. Uit: het apparaat speelt uit en wordt opnieuw geopend."
+
+msgid "One value per line"
+msgstr ""
 
 msgid "One-bit DSD"
 msgstr "DSD van één bit"
@@ -4862,6 +5063,9 @@ msgstr "Open de map voor wegwerpbestanden."
 msgid "Open the offline folder"
 msgstr "Offlinemap openen"
 
+msgid "Open the selection again"
+msgstr ""
+
 msgid "Open view"
 msgstr "Weergave openen"
 
@@ -4921,6 +5125,9 @@ msgstr "Overig / onbekend"
 
 msgid "Other cache"
 msgstr "Overige cache"
+
+msgid "Other fields stay unchanged."
+msgstr ""
 
 msgid "Out of date"
 msgstr "Verouderd"
@@ -4999,6 +5206,12 @@ msgstr "Piek"
 
 msgid "Pending"
 msgstr "In afwachting"
+
+msgid "Pending changes will be discarded. Files already saved keep their changes."
+msgstr ""
+
+msgid "Pending work was cancelled."
+msgstr ""
 
 msgid "Pending: it will be sent to {} with its first tracks."
 msgstr "In afwachting: hij gaat met de eerste nummers naar {}."
@@ -5270,6 +5483,15 @@ msgstr "Druk op toetsen…"
 msgid "Prevent clipping"
 msgstr "Clipping voorkomen"
 
+msgid "Preview changes"
+msgstr ""
+
+msgid "Preview disc plan"
+msgstr ""
+
+msgid "Preview selected fields"
+msgstr ""
+
 msgid "Previous"
 msgstr "Vorige"
 
@@ -5332,6 +5554,9 @@ msgstr ""
 
 msgid "Pronunciation"
 msgstr "Uitspraak"
+
+msgid "Proposal"
+msgstr ""
 
 msgid "Proposed"
 msgstr ""
@@ -5522,6 +5747,9 @@ msgstr ""
 msgid "Reading file sizes"
 msgstr "Bestandsgrootten lezen"
 
+msgid "Reading folder metadata…"
+msgstr ""
+
 msgid "Reading it from {}…"
 msgstr "Wordt gelezen van {}…"
 
@@ -5693,6 +5921,9 @@ msgstr "Gedownloade bestanden verwijderen…"
 msgid "Remove filter"
 msgstr "Filter verwijderen"
 
+msgid "Remove from disc plan"
+msgstr ""
+
 msgid "Remove from favorites"
 msgstr "Uit favorieten verwijderen"
 
@@ -5746,6 +5977,9 @@ msgstr "Deze plug-in, het bijbehorende account, de instellingen en de gecachte b
 msgid "Remove unreferenced images from sources and plugins. Needed images download again."
 msgstr "Verwijder ongebruikte afbeeldingen van bronnen en plug-ins. Benodigde afbeeldingen worden opnieuw gedownload."
 
+msgid "Remove values"
+msgstr ""
+
 msgid "Remove {}?"
 msgstr "{} verwijderen?"
 
@@ -5779,6 +6013,9 @@ msgstr "Renderer automatisch overgeschakeld — de vorige renderer kon niet star
 msgid "Rendering backend"
 msgstr "Rendering-backend"
 
+msgid "Renumber resulting discs"
+msgstr ""
+
 msgid "Reopens the upcoming queue paused, at the place where you left it."
 msgstr "Opent de komende wachtrij gepauzeerd opnieuw, op de plek waar je was gebleven."
 
@@ -5797,8 +6034,14 @@ msgstr "Herhalen"
 msgid "Replace current queue"
 msgstr "Huidige wachtrij vervangen"
 
+msgid "Replace genres"
+msgstr ""
+
 msgid "Replace queue {}"
 msgstr "Wachtrij {} vervangen"
+
+msgid "Replace values"
+msgstr ""
 
 msgid "Report an issue"
 msgstr "Probleem melden"
@@ -5875,6 +6118,9 @@ msgstr "Tabbladen herstellen"
 msgid "Result saved on this computer."
 msgstr "Resultaat opgeslagen op deze computer."
 
+msgid "Resulting album title"
+msgstr ""
+
 msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
 msgstr "Resultaten worden na elk nummer opgeslagen. Voer Analyseren opnieuw uit om de resterende nummers te verwerken."
 
@@ -5886,6 +6132,9 @@ msgstr "Opnieuw proberen"
 
 msgid "Retry download"
 msgstr "Download opnieuw proberen"
+
+msgid "Retry pending files"
+msgstr ""
 
 msgid "Revert"
 msgstr "Terugzetten"
@@ -5910,6 +6159,12 @@ msgstr ""
 
 msgid "Review diagnostics"
 msgstr "Diagnostiek controleren"
+
+msgid "Review proposal"
+msgstr ""
+
+msgid "Review the current proposal before applying it."
+msgstr ""
 
 msgid "Review the device changes before syncing."
 msgstr ""
@@ -6222,14 +6477,38 @@ msgstr "Afbeelding selecteren..."
 msgid "Select a folder to see its contents."
 msgstr "Selecteer een map om de inhoud te bekijken."
 
+msgid "Select album files"
+msgstr ""
+
 msgid "Select all"
 msgstr "Alles selecteren"
 
 msgid "Select an artist to see their albums"
 msgstr "Selecteer een artiest om diens albums te zien"
 
+msgid "Select files for the disc plan."
+msgstr ""
+
+msgid "Select files from the captured lookup before preparing this candidate."
+msgstr ""
+
+msgid "Select files from this group before looking up metadata."
+msgstr ""
+
+msgid "Select files with consistent album and release tags for one lookup."
+msgstr ""
+
 msgid "Select folders"
 msgstr "Mappen selecteren"
+
+msgid "Select one album or prepare a consistent album proposal before looking up this group."
+msgstr ""
+
+msgid "Select the required release identity fields together."
+msgstr ""
+
+msgid "Select these artists"
+msgstr ""
 
 msgid "Select tracks"
 msgstr "Nummers selecteren"
@@ -6257,6 +6536,9 @@ msgstr "De wijziging wordt naar {} gestuurd…"
 
 msgid "Sep"
 msgstr "sep"
+
+msgid "Separate by disc"
+msgstr ""
 
 msgid "Separate input limits do not establish every combination of rate, word width and channels."
 msgstr "Afzonderlijke invoerlimieten bewijzen niet elke combinatie van samplefrequentie, woordbreedte en kanalen."
@@ -6548,6 +6830,9 @@ msgstr "Softwarevolume"
 msgid "Some endpoint streams could not be read."
 msgstr "Sommige streams van het eindpunt konden niet worden gelezen."
 
+msgid "Some explicit files are outside the selected disc plan."
+msgstr ""
+
 msgid "Some of these tracks were already added"
 msgstr "Sommige van deze nummers waren al toegevoegd"
 
@@ -6558,6 +6843,12 @@ msgid "Some ratings or favorites could not reach their source. Chilpa will try a
 msgstr "Sommige waarderingen of favorieten konden hun bron niet bereiken. Chilpa probeert het opnieuw."
 
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
+msgstr ""
+
+msgid "Some selected files have no mapping in this candidate. Adjust the selection before applying it."
+msgstr ""
+
+msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
 msgid "Songs"
@@ -6915,6 +7206,12 @@ msgstr ""
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "De ingebouwde test speelt vier nummers af met verschillende bitdieptes en samplefrequenties (16/44.1, 24/44.1, 24/96, 24/192), zodat je je DAC kunt zien schakelen. Elk is het meest afgespeelde nummer van je bibliotheek in dat formaat, of een gegenereerd testsignaal als je er geen hebt. Wil je liever je eigen wachtrij gebruiken, voeg dan eerst van elk soort één nummer toe, zodat elke frequentie aan bod komt."
 
+msgid "The candidate belongs to another metadata group."
+msgstr ""
+
+msgid "The candidate includes an unsupported metadata field."
+msgstr ""
+
 msgid "The check finished, but the previous physical format could not be restored."
 msgstr "De controle is voltooid, maar het vorige fysieke formaat kon niet worden hersteld."
 
@@ -6946,6 +7243,9 @@ msgid "The device review needs attention before continuing."
 msgstr ""
 
 msgid "The device task stopped. Its progress is saved for recovery."
+msgstr ""
+
+msgid "The disc proposal was cancelled."
 msgstr ""
 
 msgid "The download is incomplete. Try again."
@@ -6981,6 +7281,24 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The file changed while its metadata was being read."
+msgstr ""
+
+msgid "The file is no longer in the current selection."
+msgstr ""
+
+msgid "The file or its sidecar changed after preview. Reopen the selection before saving it."
+msgstr ""
+
+msgid "The file save progressed, but its session record could not be stored. Retry to record the completed phases: {}"
+msgstr ""
+
+msgid "The file selection belongs to another metadata session."
+msgstr ""
+
+msgid "The file tags have been written."
+msgstr ""
+
 msgid "The filter cannot be read."
 msgstr "Het filter kan niet worden gelezen."
 
@@ -6999,8 +7317,14 @@ msgstr "De zwevende afspeelbalk verdwijnt na tien seconden zonder muisbeweging e
 msgid "The folder is no longer in the library."
 msgstr "De map staat niet meer in de bibliotheek."
 
+msgid "The folder metadata has been saved."
+msgstr ""
+
 msgid "The folder scan policy is invalid."
 msgstr "Het scanbeleid voor de map is ongeldig."
+
+msgid "The group belongs to another metadata session."
+msgstr ""
 
 msgid "The image could not be kept"
 msgstr "De afbeelding kon niet worden bewaard"
@@ -7032,6 +7356,9 @@ msgstr "De bibliotheek kon niet worden gewijzigd. Probeer het opnieuw; het detai
 msgid "The library could not be read."
 msgstr "De bibliotheek kon niet worden gelezen."
 
+msgid "The library entry changed while metadata was being edited."
+msgstr ""
+
 msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
 msgstr "De bibliotheek bleef bezig met een andere taak, dus deze keuze is niet bewaard. Probeer het zo opnieuw."
 
@@ -7043,6 +7370,9 @@ msgstr "De regel die wordt gezongen blijft in beeld."
 
 msgid "The listening history could not be saved"
 msgstr "De luistergeschiedenis kon niet worden opgeslagen"
+
+msgid "The local album proposal is invalid."
+msgstr ""
 
 msgid "The locked output is not connected; playing on {}."
 msgstr "De vergrendelde uitvoer is niet verbonden; afspelen via {}."
@@ -7067,6 +7397,36 @@ msgstr "De songtekst-API kon de melding niet opslaan. Dit resultaat is op dit ap
 
 msgid "The lyrics cache could not be opened."
 msgstr "De songtekstcache kon niet worden geopend."
+
+msgid "The metadata group is no longer in the current selection."
+msgstr ""
+
+msgid "The metadata lookup has no saved selection."
+msgstr ""
+
+msgid "The metadata lookup was cancelled."
+msgstr ""
+
+msgid "The metadata operation is invalid."
+msgstr ""
+
+msgid "The metadata proposal summary exceeds the page budget."
+msgstr ""
+
+msgid "The metadata selection changed. Prepare this proposal again."
+msgstr ""
+
+msgid "The metadata selection is invalid or belongs to another session."
+msgstr ""
+
+msgid "The metadata session stopped. Reopen the selection to review the files."
+msgstr ""
+
+msgid "The metadata value has the wrong type."
+msgstr ""
+
+msgid "The metadata worker is not available."
+msgstr ""
 
 msgid "The network is off; turn it on in Settings › Integrations"
 msgstr "Het netwerk staat uit; zet het aan in Instellingen › Integraties"
@@ -7233,8 +7593,23 @@ msgstr ""
 msgid "The selected environment does not provide beets 2.14.1."
 msgstr ""
 
+msgid "The selected file belongs to another metadata group."
+msgstr ""
+
+msgid "The selected file cannot store this field: {}"
+msgstr ""
+
+msgid "The selected file is no longer in the current selection."
+msgstr ""
+
+msgid "The selected files disagree on this disc's track total. Prepare a consistent total or use sequential numbering."
+msgstr ""
+
 msgid "The selected hardware volume control is gone."
 msgstr "De geselecteerde hardwarevolumeregeling bestaat niet meer."
+
+msgid "The selected lookup exceeds the 1 MiB input limit."
+msgstr ""
 
 msgid "The selected music changed. Open its menu and confirm again."
 msgstr ""
@@ -7250,6 +7625,12 @@ msgstr "De geselecteerde nummers konden niet worden gelezen."
 
 msgid "The selected tracks will be removed from this playlist and its saved order."
 msgstr "De geselecteerde nummers worden uit deze afspeellijst en de opgeslagen volgorde verwijderd."
+
+msgid "The selection changed. Preview the proposal again before applying it."
+msgstr ""
+
+msgid "The selection changed. Review the current metadata before preparing this proposal."
+msgstr ""
 
 msgid "The server answered, and Chilpa can read its music."
 msgstr "De server antwoordde, en Chilpa kan de muziek lezen."
@@ -7328,6 +7709,9 @@ msgstr "Thema"
 msgid "There are no folders inside this one. Choose it from the level above, or go back up."
 msgstr "Deze map bevat geen mappen. Kies hem een niveau hoger, of ga terug."
 
+msgid "There are no selected changes to save."
+msgstr ""
+
 msgid "There is no previous EQ to restore."
 msgstr "Er is geen vorige EQ om te herstellen."
 
@@ -7339,6 +7723,9 @@ msgstr ""
 
 msgid "These answered a search of this network. Choose yours, or type its address."
 msgstr "Deze antwoordden op een zoekactie in dit netwerk. Kies de jouwe of typ het adres."
+
+msgid "These files identify different releases. Choose a real release match before joining them."
+msgstr ""
 
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "De barcodes van deze albums worden naar MusicBrainz verzonden."
@@ -7361,6 +7748,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "Dit adres hoort bij een andere server."
 
+msgid "This adds changes to the file preview. Write reviewed changes saves them."
+msgstr ""
+
 msgid "This album is no longer in the current view."
 msgstr "Dit album staat niet meer in de huidige weergave."
 
@@ -7369,6 +7759,18 @@ msgstr "Deze versie kan de uitvoer bevragen, maar er nog geen audio door afspele
 
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr "Dit kan enkele minuten duren wanneer MusicBrainz het druk heeft."
+
+msgid "This candidate contains inconsistent disc or track positions."
+msgstr ""
+
+msgid "This candidate does not contain a complete release identity and disc mapping."
+msgstr ""
+
+msgid "This candidate has no matching track for this file."
+msgstr ""
+
+msgid "This candidate proposal is invalid."
+msgstr ""
 
 msgid "This chapter format is not supported."
 msgstr "Dit hoofdstukformaat wordt niet ondersteund."
@@ -7388,6 +7790,15 @@ msgstr ""
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "Deze directe uitvoer heeft geen hardwarevolumeregeling. Gebruik de DAC of versterker."
 
+msgid "This disc assignment contains invalid titles or positions."
+msgstr ""
+
+msgid "This disc plan is invalid."
+msgstr ""
+
+msgid "This edition requires these identity fields together:"
+msgstr ""
+
 msgid "This entry is no longer at hand. Open it again from its source."
 msgstr "Dit item is niet meer beschikbaar. Open het opnieuw vanuit de bron."
 
@@ -7397,11 +7808,26 @@ msgstr ""
 msgid "This episode material could not be loaded."
 msgstr "Dit afleveringsmateriaal kon niet worden geladen."
 
+msgid "This field cannot be written to every selected file."
+msgstr ""
+
+msgid "This file cannot be tagged."
+msgstr ""
+
+msgid "This file path cannot be represented in the metadata editor."
+msgstr ""
+
+msgid "This file's metadata exceeds the batch editor limit."
+msgstr ""
+
 msgid "This folder has no tracks."
 msgstr "Deze map bevat geen nummers."
 
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "Deze map toont dezelfde nummers in meerdere weergaven. Kies één weergave (we raden By Folder aan) zodat elk nummer één keer wordt gelezen."
+
+msgid "This folder tree exceeds the batch traversal limit. Select a smaller part."
+msgstr ""
 
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "Dit formaat is vanaf teken {} niet leesbaar, dus Discord krijgt een lege regel. Sluit elke %, [, ( en elk aanhalingsteken, en gebruik alleen de functies die onder Titel staan."
@@ -7417,6 +7843,21 @@ msgstr ""
 
 msgid "This looks like a playlist."
 msgstr "Dit lijkt een afspeellijst te zijn."
+
+msgid "This metadata field cannot be written."
+msgstr ""
+
+msgid "This metadata field is not supported."
+msgstr ""
+
+msgid "This metadata group is invalid."
+msgstr ""
+
+msgid "This metadata page is not supported."
+msgstr ""
+
+msgid "This metadata proposal is invalid."
+msgstr ""
 
 msgid "This month"
 msgstr "Deze maand"
@@ -7435,6 +7876,9 @@ msgstr "Deze maakt geen geluid. Hij schrijft weg wat naar het apparaat zou zijn 
 
 msgid "This opens and closes the selected output without writing audio. Stop playback first. The queue, volume and desktop default stay as they are."
 msgstr "Dit opent en sluit de geselecteerde uitvoer zonder audio te verzenden. Stop eerst het afspelen. De wachtrij, het volume en de standaarduitvoer van het bureaublad blijven behouden."
+
+msgid "This operation is not supported for that field."
+msgstr ""
 
 msgid "This output has no hardware mute switch."
 msgstr "Deze uitvoer heeft geen hardwareschakelaar voor dempen."
@@ -7514,6 +7958,9 @@ msgstr "Het programma van deze plug-in is niet voor dit systeem gebouwd."
 msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
 msgstr "Deze preset gebruikt nauwkeurige filters; elke band toont zijn niveau. Maak een aparte grafische EQ om de banden te verschuiven. Je kunt je vorige EQ herstellen."
 
+msgid "This proposal summary exceeds the metadata page limit. Choose fewer groups or fields."
+msgstr ""
+
 msgid "This purchase is unavailable for download."
 msgstr "Deze aankoop kan niet worden gedownload."
 
@@ -7552,6 +7999,9 @@ msgstr "Deze server neemt geen API-sleutel aan. Ga terug en meld je aan met gebr
 
 msgid "This server is no longer available."
 msgstr "Deze server is niet meer beschikbaar."
+
+msgid "This sidecar exceeds the batch editor limit."
+msgstr ""
 
 msgid "This source cannot accept these tracks right now."
 msgstr "Deze bron kan deze nummers nu niet accepteren."
@@ -7700,6 +8150,9 @@ msgstr "Nummerlijsten"
 msgid "Track menu"
 msgstr "Nummermenu"
 
+msgid "Track positions are missing or duplicated. Choose sequential numbering or explicit positions."
+msgstr ""
+
 msgid "Track review"
 msgstr "Controle van nummers"
 
@@ -7708,6 +8161,9 @@ msgstr "Samplefrequentie van nummer"
 
 msgid "Track title"
 msgstr "Titel van nummer"
+
+msgid "Track total"
+msgstr ""
 
 msgid "Track {}"
 msgstr "Nummer {}"
@@ -7874,6 +8330,9 @@ msgstr "Onbeperkt"
 msgid "Unmatched"
 msgstr "Niet gevonden"
 
+msgid "Unmatched file"
+msgstr ""
+
 msgid "Unmute"
 msgstr "Dempen opheffen"
 
@@ -7882,6 +8341,9 @@ msgstr "Niet afgespeeld"
 
 msgid "Unrated"
 msgstr "Niet gewaardeerd"
+
+msgid "Unselected files remain in their current albums."
+msgstr ""
 
 msgid "Unselected playlists are removed after approval. Enable this option to remove unselected music too."
 msgstr "Niet geselecteerde afspeellijsten worden na goedkeuring verwijderd. Schakel deze optie in om ook niet geselecteerde muziek te verwijderen."
@@ -7991,6 +8453,9 @@ msgstr "Gebruik maximaal 10 DSP-filters."
 msgid "Use current colors"
 msgstr "Huidige kleuren gebruiken"
 
+msgid "Use in disc plan"
+msgstr ""
+
 msgid "Use my current queue"
 msgstr "Mijn huidige wachtrij gebruiken"
 
@@ -8017,6 +8482,9 @@ msgstr "Geldig"
 
 msgid "Valid node name"
 msgstr "Geldige nodenaam"
+
+msgid "Value"
+msgstr ""
 
 msgid "Verify files after transfer"
 msgstr ""
@@ -8079,6 +8547,12 @@ msgid "Wait for the audio check to finish."
 msgstr "Wacht tot de audiocontrole is voltooid."
 
 msgid "Wait for the beets installation or check to finish in Settings."
+msgstr ""
+
+msgid "Wait for the current beets operation to finish."
+msgstr ""
+
+msgid "Wait for the current metadata operation to finish."
 msgstr ""
 
 msgid "Wait for the queue to finish switching."
@@ -8256,6 +8730,12 @@ msgstr "In de audiobestanden schrijven?"
 
 msgid "Write into the files"
 msgstr "In de bestanden schrijven"
+
+msgid "Write reviewed changes"
+msgstr ""
+
+msgid "Write reviewed changes?"
+msgstr ""
 
 msgid "Write the external SACD XML?"
 msgstr "De externe SACD-XML schrijven?"
@@ -8483,6 +8963,9 @@ msgid "beets availability"
 msgstr ""
 
 msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets matches"
 msgstr ""
 
 msgid "beets settings"
@@ -9846,6 +10329,16 @@ msgid_plural "{} favorites wait to reach it: {}"
 msgstr[0] "{} favoriet wacht op verzending: {}"
 msgstr[1] "{} favorieten wachten op verzending: {}"
 
+msgid "{} file has pending changes"
+msgid_plural "{} files have pending changes"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} file saved"
+msgid_plural "{} files saved"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
 msgstr[0] "{} bestand met afwijkende tags"
@@ -9981,6 +10474,9 @@ msgstr "{} van {} gedownload. {} mislukt."
 msgid "{} of {} files removed. {} failed."
 msgstr "{} van {} bestanden verwijderd. {} mislukt."
 
+msgid "{} of {} files selected"
+msgstr ""
+
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "{} van {} bestanden zijn gewijzigd voordat het mislukte: {}"
 
@@ -10037,6 +10533,11 @@ msgstr ""
 
 msgid "{} sel"
 msgstr "{} gesel."
+
+msgid "{} selected file"
+msgid_plural "{} selected files"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} selection"
 msgid_plural "{} selections"
@@ -10132,6 +10633,9 @@ msgstr "{} {} {}"
 
 msgid "{} {}, {}"
 msgstr "{2} {1} {3}"
+
+msgid "{} · disc {}"
+msgstr ""
 
 msgid "{} · {}"
 msgstr "{} · {}"

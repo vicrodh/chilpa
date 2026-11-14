@@ -10,6 +10,17 @@ use taxonomy::graph;
 use std::collections::{HashMap, HashSet};
 pub(super) const VERSION: &str = taxonomy::VERSION;
 
+pub(super) fn strong_identity(original: &str) -> String {
+    let key = crate::library_query::genre_key(original);
+    let graph = graph();
+    let known = graph.by_key.get(&key).copied().or_else(||
+        graph.aliases.get(&key).filter(|ids| ids.len() == 1).map(|ids| ids[0]));
+    match known {
+        Some(node) => format!("known:{node}"),
+        None => format!("literal:{}", if key.is_empty() { original.to_lowercase() } else { key }),
+    }
+}
+
 #[derive(Clone, Eq, Hash, PartialEq)]
 enum Identity { Known(usize), Literal(String) }
 impl Resolution {

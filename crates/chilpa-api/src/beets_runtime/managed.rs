@@ -61,12 +61,35 @@ impl Drop for Managed {
     fn drop(&mut self) { self.shared.cancel.store(true,Ordering::Release); self.shared.kill(); }
 }
 impl Managed {
+    pub(super) fn uninitialized() -> Self {
+        Self { shared:Arc::new(Shared { status:Mutex::new(Status { phase:Phase::Idle,progress:0.0,installing:false }),
+            cancel:AtomicBool::new(false), child:Mutex::new(None), result:Mutex::new(None) }), worker:None, checked:None }
+    }
+    pub(super) fn check_configured(&mut self) {
+        self.start(false,move |shared| {
+            shared.check(false)?;
+            let settings = chilpa_core::settings::load();
+            let python = settings.window.get(super::PYTHON).filter(|value| !value.is_empty()).cloned()
+                .or_else(|| packages::installed().map(|item| item.python().to_string_lossy().into_owned()))
+                .ok_or(Failure::Unavailable)?;
+            shared.phase(Phase::Checking,0.0);
+            let cache = workspace()?;
+            probe(&shared,Path::new(&python),cache.path())?;
+            Ok(Outcome { python,installed:false })
+        });
+    }
     pub(super) fn new() -> Self {
         let installed = packages::installed().map(|item| item.python().to_string_lossy().into_owned());
         let phase = if installed.is_some() { Phase::Ready } else { Phase::Idle };
         Self { shared:Arc::new(Shared { status:Mutex::new(Status { phase,progress:0.0,installing:false }),
             cancel:AtomicBool::new(false), child:Mutex::new(None), result:Mutex::new(None) }), worker:None, checked:installed }
     }
+    pub(super) fn verified_runtime(&self) -> Option<String> { self.ready().then(|| self.checked.clone()).flatten() }
+    pub(super) fn ready(&self) -> bool {
+        !self.busy() && self.checked.is_some()
+            && matches!(self.shared.status.lock().unwrap_or_else(|error| error.into_inner()).phase, Phase::Ready)
+    }
+    pub(super) fn forget_other(&mut self, runtime: &str) { if self.checked.as_deref() != Some(runtime) { self.checked = None; } }
     pub(super) fn busy(&self) -> bool { self.worker.is_some() }
     pub(super) fn cancel(&self) {
         self.shared.cancel.store(true,Ordering::Release);

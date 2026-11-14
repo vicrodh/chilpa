@@ -274,7 +274,7 @@ impl Library {
             return Ok(Arc::clone(&cache.catalog));
         }
         let mut catalog = VersionCatalog::default();
-        let apart: HashSet<i64> = self.db.prepare(&format!("SELECT album_id FROM album_preferences WHERE group_key LIKE '{APART}%'"))?
+        let apart: HashSet<i64> = self.db.prepare(&format!("SELECT album_id FROM album_preferences WHERE group_key LIKE '{APART}%' UNION SELECT id FROM albums WHERE version_key LIKE 'local:%'"))?
             .query_map([], |r| r.get(0))?.collect::<rusqlite::Result<_>>()?;
         let mut stmt = self.db.prepare("SELECT a.id, a.title, a.album_artist, a.folder,
             s.provider || ':' || s.instance, t.external_id, t.bit_depth, t.sample_rate_hz, t.id, t.duration_ms,

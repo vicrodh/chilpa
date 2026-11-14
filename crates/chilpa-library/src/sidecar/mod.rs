@@ -13,8 +13,10 @@
 //! (`store::overlay`), and the tracks in it go by their ids there.
 
 pub mod document;
+mod presentation;
+pub use presentation::{Presentation,presentation_evidence,presentation_evidence_after};
 pub mod files;
 pub mod qbz;
 
 pub use document::{join, split, Album, Override, Sidecar, SidecarError, Track, ALBUM_FIELDS, FORMAT, TRACK_FIELDS, VERSION};
-pub use files::{in_force, load, stage, store, Home, Scope, StagedHome};
+pub use files::{in_force, load, stage, stage_fields, store, Home, Scope, StagedHome};

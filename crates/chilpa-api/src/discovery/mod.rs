@@ -17,6 +17,8 @@ use std::collections::{BTreeMap, HashSet};
 
 const PAGE: usize = 60;
 
+pub(crate) fn genre_identity(name: &str) -> String { genres::strong_identity(name) }
+
 #[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Selection {

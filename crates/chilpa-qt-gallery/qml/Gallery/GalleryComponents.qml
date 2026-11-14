@@ -15,6 +15,7 @@ import "qrc:/qt/qml/app/chilpa/query/qml/Patterns"
 TitledFlow {
     id: section
     title: "Components"
+    Item { width:Metrics.settingsMaxWidth; height:Metrics.settingsRow * 6; PageSkeleton {} } // derived: heading and five placeholder rows
     Text {
         id: pulsePreview
         property int ticks: 0

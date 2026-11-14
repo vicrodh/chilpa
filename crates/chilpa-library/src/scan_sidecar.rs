@@ -69,6 +69,16 @@ fn look(lib: &Library, home: &Home, external_id: &str) -> Seen {
 }
 
 impl Seen {
+    pub(crate) fn presentation_onto(&self,lib:&Library,path:&Path,id:i64)->rusqlite::Result<()> {
+        if self.failed { return Ok(()); }
+        let snapshot=self.sidecar.as_ref().filter(|sidecar| sidecar.tracks.get(&Home::of(&path.to_string_lossy(),None).key(&path.to_string_lossy()))
+            .is_some_and(|track| track.unknown.contains_key("presentation")))
+            .and_then(|_| chilpa_tags::edit::snapshot(path).ok());
+        let presentation=self.sidecar.as_ref().zip(snapshot.as_ref()).and_then(|(sidecar,snapshot)|
+            sidecar.presentation(&Home::of(&path.to_string_lossy(),None).key(&path.to_string_lossy()),snapshot));
+        lib.set_file_presentation(id,presentation.as_ref())
+    }
+
     /// Gives a track's record the cover its sidecar names, over whatever
     /// cover the record had: it is what somebody chose.
     pub(crate) fn cover_onto(&self, lib: &Library, home: &Home, track_id: i64) -> rusqlite::Result<()> {

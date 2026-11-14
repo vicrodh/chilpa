@@ -31,15 +31,12 @@ PageTransition {
     Driving.FrameSettlement { navigation: Navigation; router: host }
     onPreparingRoute: {
         if (Navigation.prepare()) Sources.refresh()
-        panelAside = Navigation.screen === "metadata"
+        panelAside = Navigation.screen === "metadata" || Navigation.screen === "folderMetadata"
     }
     route: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join("\u001f")
     Driving.WindowRequests {}
     readonly property var sourceDocument: JSON.parse(Sources.snapshot || "{}")
     readonly property bool medium: ["radio", "podcasts"].indexOf(sourceDocument.medium) >= 0
-    readonly property var requested: host.componentRoute.split("\u001f")
-    readonly property string screen: requested.length > 1 ? requested[1] : ""
-    readonly property string routeKey: requested.length > 3 ? requested[3] : ""
     readonly property url displayEntry: screen === "source" && routeKey.indexOf(" ") < 0 ? Sources.display(routeKey, Sources.revision) : ""
     readonly property var music: screen === "source" && String(displayEntry) === "" && !(medium && sourceDocument.source === routeKey) ? JSON.parse(Sources.page(routeKey, Library.remoteRev) || "{}") : ({})
 
@@ -69,6 +66,7 @@ PageTransition {
         case "playlistImport": return playlistImport
         case "deviceSync": return deviceSync
         case "metadata": return metadata
+        case "folderMetadata": return folderMetadata
         case "listenlist": return listenlist
         case "search": return searchResults
         case "stats": return stats
@@ -107,6 +105,7 @@ PageTransition {
     } }
     Component { id: searchResults; SearchScreen { query: host.routeKeyOf(parent) } }
     Component { id: metadata; MetadataScreen { albumId: host.routeIdOf(parent) } }
+    Component { id: folderMetadata; FolderMetadataScreen { routeKey:host.routeKeyOf(parent) } }
     Component { id: stats; StatsScreen {} }
     Component { id: listeningHistory; HistoryScreen {} }
     Component { id: source; SourceScreen { routeKey: host.routeKeyOf(parent) } }

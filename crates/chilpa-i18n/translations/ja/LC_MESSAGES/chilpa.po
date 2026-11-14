@@ -151,8 +151,20 @@ msgstr ""
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
+msgid "A disc assignment has no selected files."
+msgstr ""
+
+msgid "A disc has too many track positions for this plan."
+msgstr ""
+
+msgid "A file appears in more than one disc assignment."
+msgstr ""
+
 msgid "A folder chosen before"
 msgstr "以前に選んだフォルダ"
+
+msgid "A lookup file is no longer in the current selection."
+msgstr ""
 
 msgid "A media server on this network, such as MiniDLNA, Gerbera or the DLNA side of Plex. There is nothing to sign in to."
 msgstr "MiniDLNA、Gerbera、Plex の DLNA 機能など、このネットワーク上のメディアサーバーです。サインインは不要です。"
@@ -160,11 +172,17 @@ msgstr "MiniDLNA、Gerbera、Plex の DLNA 機能など、このネットワー�
 msgid "A media server you run yourself. You sign in with its user and password, or with Quick Connect."
 msgstr "自分で運用するメディアサーバーです。ユーザーとパスワード、または Quick Connect でサインインします。"
 
+msgid "A metadata lookup field exceeds the 4096-byte input limit."
+msgstr ""
+
 msgid "A name for this memory"
 msgstr ""
 
 msgid "A new version of Chilpa is available."
 msgstr "Chilpaの新しいバージョンがあります。"
+
+msgid "A newer Chilpa wrote this sidecar."
+msgstr ""
 
 msgid "A player for your own music"
 msgstr "あなた自身の音楽のためのプレーヤー"
@@ -189,6 +207,12 @@ msgstr "スキャンは最大256個のフォルダーと64 KiBの保存済みパ
 
 msgid "A secure cast URL could not be created."
 msgstr "安全なキャストURLを作成できませんでした。"
+
+msgid "A selected file cannot store one of the proposed fields."
+msgstr ""
+
+msgid "A selected file is missing."
+msgstr ""
 
 msgid "A selected local file is unavailable. I kept the device unchanged."
 msgstr ""
@@ -322,6 +346,9 @@ msgstr "すべてをキューに追加"
 msgid "Add all tracks"
 msgstr "すべてのトラックを追加"
 
+msgid "Add an album or artist proposal before looking up files with empty tags."
+msgstr ""
+
 msgid "Add cover"
 msgstr "カバーを追加"
 
@@ -331,11 +358,17 @@ msgstr "フィルターを追加"
 msgid "Add folder to library"
 msgstr "ライブラリにフォルダーを追加"
 
+msgid "Add genres to existing values"
+msgstr ""
+
 msgid "Add image"
 msgstr "画像を追加"
 
 msgid "Add only new tracks"
 msgstr "新しいトラックのみ追加"
+
+msgid "Add reviewed proposal to pending changes"
+msgstr ""
 
 msgid "Add server"
 msgstr "サーバーを追加"
@@ -407,6 +440,9 @@ msgstr "追加…"
 msgid "Advanced"
 msgstr "詳細"
 
+msgid "After"
+msgstr ""
+
 msgid "Album"
 msgstr "アルバム"
 
@@ -425,6 +461,9 @@ msgstr "アルバムアーティスト"
 msgid "Album contains"
 msgstr "アルバム名に含む"
 
+msgid "Album grouping"
+msgstr ""
+
 msgid "Album header"
 msgstr "アルバムヘッダー"
 
@@ -436,6 +475,9 @@ msgstr "アルバムラジオ"
 
 msgid "Album review"
 msgstr "アルバムレビュー"
+
+msgid "Album title"
+msgstr ""
 
 msgid "Albums"
 msgstr "アルバム"
@@ -505,6 +547,9 @@ msgstr "保存済みの結果すべて"
 
 msgid "All seasons"
 msgstr "すべてのシーズン"
+
+msgid "All selected files with pending changes will be saved, including files outside the current view. Only reviewed fields will change. Completed writes cannot be undone from Chilpa. Files are not moved or renamed."
+msgstr ""
 
 msgid "All selections"
 msgstr "すべての選択"
@@ -713,6 +758,9 @@ msgstr "アーティスト"
 msgid "Artist mix"
 msgstr "アーティストミックス"
 
+msgid "Artist names, one per line"
+msgstr ""
+
 msgid "Artist radio"
 msgstr "アーティストラジオ"
 
@@ -748,6 +796,15 @@ msgstr "Plex にコードを問い合わせています…"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Chilpaが再生している間、PipeWireまたはPulseAudioにカードの解放を要求し、Chilpaが停止または長時間一時停止したときに返します。"
+
+msgid "Assign a distinct target disc number to each joined disc."
+msgstr ""
+
+msgid "Assign each disc using its group and source disc, or explicit files."
+msgstr ""
+
+msgid "Assign every selected file to one resulting disc."
+msgstr ""
 
 msgid "Assumed fallback: {}"
 msgstr "仮定した代替値：{}"
@@ -916,6 +973,9 @@ msgstr "{artist} · {genres}に基づく"
 
 msgid "Bass"
 msgstr "低音"
+
+msgid "Before"
+msgstr ""
 
 msgid "Being removed…"
 msgstr "削除中…"
@@ -1122,6 +1182,9 @@ msgstr "カバーを変更"
 msgid "Change image"
 msgstr "画像を変更"
 
+msgid "Change only the selected field"
+msgstr ""
+
 msgid "Change source"
 msgstr "提供元を変更"
 
@@ -1138,6 +1201,9 @@ msgid "Change the sign-in"
 msgstr "サインインを変更"
 
 msgid "Changes"
+msgstr ""
+
+msgid "Changing the positions of an identified release requires a real release match."
 msgstr ""
 
 msgid "Channels"
@@ -1188,11 +1254,17 @@ msgstr "名前と取り込む内容を確認してください。"
 msgid "Check one format"
 msgstr "1つのフォーマットをチェック"
 
+msgid "Check or install beets in Settings."
+msgstr ""
+
 msgid "Check the address and its port, and that the server is on and reachable from this computer, then try again."
 msgstr "アドレスとポート、サーバーが起動していてこのコンピュータから届くことを確認してから、もう一度お試しください。"
 
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "アドレス、サーバーの設定で DLNA がオンになっていること、このコンピュータが許可されていることを確認してから、もう一度お試しください。"
+
+msgid "Check the beets environment in Settings before looking up metadata."
+msgstr ""
 
 msgid "Check the selected item and the changes described above. This action cannot be undone from Chilpa."
 msgstr ""
@@ -1407,11 +1479,29 @@ msgstr "再生コントロールを選択"
 msgid "Choose a preset."
 msgstr "プリセットを選択してください。"
 
+msgid "Choose a readable group with at most 1024 files."
+msgstr ""
+
+msgid "Choose a resulting album title for each disc."
+msgstr ""
+
 msgid "Choose a saved device profile."
+msgstr ""
+
+msgid "Choose a smaller selection, up to 32 discs for one plan."
 msgstr ""
 
 msgid "Choose a value"
 msgstr "値を選択"
+
+msgid "Choose albums with Use in disc plan. Only selected files participate."
+msgstr ""
+
+msgid "Choose albums, disc assignments and a resulting album title."
+msgstr ""
+
+msgid "Choose an album and look it up. Choosing a match prepares a proposal without writing files."
+msgstr ""
 
 msgid "Choose an available writable storage."
 msgstr ""
@@ -1425,11 +1515,17 @@ msgstr "画像を選択"
 msgid "Choose at least two different queues."
 msgstr "異なるキューを2つ以上選択してください。"
 
+msgid "Choose at most 1024 files for one metadata lookup."
+msgstr ""
+
 msgid "Choose at most 512 playlists or queries for one storage."
 msgstr ""
 
 msgid "Choose between 1 and 10,000 server tracks for an offline download."
 msgstr "オフライン用にサーバーの曲を1〜10,000曲選択してください。"
+
+msgid "Choose between 1 and 256 folders or files."
+msgstr ""
 
 msgid "Choose between 1 and 50,000 Library tracks."
 msgstr ""
@@ -1445,6 +1541,9 @@ msgstr ""
 
 msgid "Choose fewer offline files for this action."
 msgstr "この操作では選択するオフラインファイルを減らしてください。"
+
+msgid "Choose files from the current metadata selection."
+msgstr ""
 
 msgid "Choose file…"
 msgstr "ファイルを選択…"
@@ -1473,7 +1572,16 @@ msgstr "プラグインのアイコンを選択"
 msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr "キューを選択して順序を並べ替えます。重複したトラックはそのまま残ります。"
 
+msgid "Choose readable files for the disc plan."
+msgstr ""
+
+msgid "Choose readable files for this metadata lookup."
+msgstr ""
+
 msgid "Choose storage"
+msgstr ""
+
+msgid "Choose supported fields and a genre operation."
 msgstr ""
 
 msgid "Choose the Python environment containing beets."
@@ -1497,6 +1605,12 @@ msgstr "接続するには「再生先」で受信機を選択してください
 msgid "Choose the storage paired with this profile."
 msgstr ""
 
+msgid "Choose up to 32 discs for one plan."
+msgstr ""
+
+msgid "Choose valid absolute file paths."
+msgstr ""
+
 msgid "Choose where to open this music"
 msgstr ""
 
@@ -1514,6 +1628,9 @@ msgstr "このトラックの後でクリア"
 
 msgid "Clear all"
 msgstr "すべて解除"
+
+msgid "Clear field"
+msgstr ""
 
 msgid "Clear filter"
 msgstr "フィルターをクリア"
@@ -1544,6 +1661,9 @@ msgstr "一時停止中はクリア"
 
 msgid "Clear queue"
 msgstr "キューをクリア"
+
+msgid "Clear selection"
+msgstr ""
 
 msgid "Clear temporary remote artwork"
 msgstr "一時的なリモートアートワークをクリア"
@@ -1587,6 +1707,9 @@ msgstr "閉じる / 非表示"
 msgid "Close Tab"
 msgstr "タブを閉じる"
 
+msgid "Close folder metadata?"
+msgstr ""
+
 msgid "Close media"
 msgstr "メディアを閉じる"
 
@@ -1595,6 +1718,9 @@ msgstr "検索を閉じる"
 
 msgid "Close tab"
 msgstr "タブを閉じる"
+
+msgid "Close the current metadata selection before opening another."
+msgstr ""
 
 msgid "Close the quotation marks."
 msgstr "引用符を閉じてください。"
@@ -2235,8 +2361,17 @@ msgstr "無効です。アルバムはライブラリに残ります。"
 msgid "Disc"
 msgstr "ディスク"
 
+msgid "Disc number"
+msgstr ""
+
+msgid "Disc plan"
+msgstr ""
+
 msgid "Disc subtitle"
 msgstr "ディスクのサブタイトル"
+
+msgid "Disc total"
+msgstr ""
 
 msgid "Disc {}"
 msgstr "ディスク {}"
@@ -2442,6 +2577,9 @@ msgstr "各ファイルをコピーし、そのコピーに書き込んで読み
 msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
 msgstr "選択した取り込み先ごとに、それぞれプレイリストが作成されます。ミックスプレイリストはChilpa内に残り、接続したすべてのソースのトラックを含められます。"
 
+msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
+msgstr ""
+
 msgid "Earlier"
 msgstr "前の期間"
 
@@ -2601,6 +2739,9 @@ msgstr "排他モードを要求しました。"
 msgid "Existing genres are unselected by default."
 msgstr ""
 
+msgid "Existing values stay on each file. Equivalent values are not added twice."
+msgstr ""
+
 msgid "Exit Immersive"
 msgstr "没入表示を終了"
 
@@ -2612,6 +2753,9 @@ msgstr "実験的: テーマがシステムと完全に一致しない場合が�
 
 msgid "Explicit"
 msgstr "露骨な表現あり"
+
+msgid "Explicit track numbers must belong to this disc's selected files."
+msgstr ""
 
 msgid "Explore"
 msgstr "探索"
@@ -2700,6 +2844,12 @@ msgstr "ファイルサイズ"
 msgid "Files"
 msgstr "ファイル"
 
+msgid "Files to change"
+msgstr ""
+
+msgid "Files were changed before this session stopped. {} file saves completed. Reopen the selection to review the remaining work."
+msgstr ""
+
 msgid "Fill missing composers from MusicBrainz"
 msgstr "不足している作曲者情報をMusicBrainzから補完"
 
@@ -2766,8 +2916,17 @@ msgstr "完了"
 msgid "Finish or cancel the current analysis first."
 msgstr "現在の解析を終えるか、キャンセルしてください。"
 
+msgid "Finish pending saves before preparing a disc plan."
+msgstr ""
+
 msgid "Finish selecting"
 msgstr "選択を終了"
+
+msgid "Finish the pending save before applying this proposal."
+msgstr ""
+
+msgid "Finish the pending save before changing this file's proposal."
+msgstr ""
 
 msgid "Finished"
 msgstr "完了"
@@ -2793,6 +2952,9 @@ msgstr "再生中のトラックへ移動"
 msgid "Folder colors in the sidebar"
 msgstr "サイドバーのフォルダーの色"
 
+msgid "Folder metadata"
+msgstr ""
+
 msgid "Folder name"
 msgstr "フォルダー名"
 
@@ -2801,6 +2963,9 @@ msgstr ""
 
 msgid "Folder path"
 msgstr "フォルダーのパス"
+
+msgid "Folder reading was cancelled. Only the files already captured are shown."
+msgstr ""
 
 msgid "Folders"
 msgstr "フォルダー"
@@ -3379,6 +3544,9 @@ msgstr "ZIPからインストール…"
 msgid "Install method"
 msgstr "インストール方法"
 
+msgid "Install or check beets in Settings > Library to use folder metadata."
+msgstr ""
+
 msgid "Install plugin from ZIP"
 msgstr "ZIPからプラグインをインストール"
 
@@ -3525,6 +3693,9 @@ msgstr "1月"
 msgid "Japanese"
 msgstr "日本語"
 
+msgid "Join as a multidisc album"
+msgstr ""
+
 msgid "Jul"
 msgstr "7月"
 
@@ -3540,6 +3711,9 @@ msgstr "6月"
 msgid "Keep at most 64 personal presets."
 msgstr "個人用プリセットは最大64個まで保持できます。"
 
+msgid "Keep current values"
+msgstr ""
+
 msgid "Keep original queues"
 msgstr "元のキューを残す"
 
@@ -3548,6 +3722,9 @@ msgstr "現在のものを残す"
 
 msgid "Keep the queue between sessions"
 msgstr "セッション間でキューを保持"
+
+msgid "Keep track numbers"
+msgstr ""
 
 msgid "Keep uploads for"
 msgstr "アップロードの保持期間"
@@ -3605,6 +3782,9 @@ msgstr "過去3か月"
 
 msgid "Last check"
 msgstr "前回のチェック"
+
+msgid "Last file changed: {}"
+msgstr ""
 
 msgid "Last playlist"
 msgstr "前回のプレイリスト"
@@ -3816,6 +3996,12 @@ msgstr "検索"
 msgid "Look up lyrics through Chilpa's lyrics service when the file and its source have none."
 msgstr "ファイルとそのソースに歌詞がない場合、Chilpaの歌詞サービスで歌詞を検索します。"
 
+msgid "Look up this group again to choose a current candidate."
+msgstr ""
+
+msgid "Look up with beets"
+msgstr ""
+
 msgid "Looking for files…"
 msgstr "ファイルを探しています…"
 
@@ -3826,6 +4012,9 @@ msgid "Looking for lyrics…"
 msgstr "歌詞を探しています…"
 
 msgid "Looking for players…"
+msgstr ""
+
+msgid "Looking up metadata is turned off in Settings."
 msgstr ""
 
 msgid "Lookup cancelled."
@@ -3959,6 +4148,9 @@ msgstr "メッセージ"
 
 msgid "Metadata"
 msgstr "メタデータ"
+
+msgid "Metadata changed after lookup. Look up this group again."
+msgstr ""
 
 msgid "Metadata search engine"
 msgstr ""
@@ -4214,6 +4406,9 @@ msgstr "ネゴシエーションの予測であり、再生テストではあり
 
 msgid "Nerdy"
 msgstr "Nerdy"
+
+msgid "Nested directory links and links outside this folder are skipped. Select their target explicitly to edit it."
+msgstr ""
 
 msgid "Network"
 msgstr "ネットワーク"
@@ -4659,6 +4854,9 @@ msgstr "再生中: {}"
 msgid "Number of tracks"
 msgstr "トラック数"
 
+msgid "Number tracks in order"
+msgstr ""
+
 msgid "OR needs a condition on each side"
 msgstr "OR の両側に条件が必要です"
 
@@ -4724,6 +4922,9 @@ msgstr "トラックから次のトラックへ途切れなくつなぎます。
 
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr "トラックから次のトラックへ途切れなくつなぎます。オフの場合、デバイスは再生を終えてからもう一度開かれます。"
+
+msgid "One value per line"
+msgstr ""
 
 msgid "One-bit DSD"
 msgstr "1ビットDSD"
@@ -4857,6 +5058,9 @@ msgstr "使い捨てファイルに使うフォルダーを開きます。"
 msgid "Open the offline folder"
 msgstr "オフライン用フォルダーを開く"
 
+msgid "Open the selection again"
+msgstr ""
+
 msgid "Open view"
 msgstr "ビューを開く"
 
@@ -4916,6 +5120,9 @@ msgstr "その他 / 不明"
 
 msgid "Other cache"
 msgstr "その他のキャッシュ"
+
+msgid "Other fields stay unchanged."
+msgstr ""
 
 msgid "Out of date"
 msgstr "情報が古い"
@@ -4994,6 +5201,12 @@ msgstr "ピーク"
 
 msgid "Pending"
 msgstr "未処理"
+
+msgid "Pending changes will be discarded. Files already saved keep their changes."
+msgstr ""
+
+msgid "Pending work was cancelled."
+msgstr ""
 
 msgid "Pending: it will be sent to {} with its first tracks."
 msgstr "保留中：最初の曲と一緒に {} に送られます。"
@@ -5265,6 +5478,15 @@ msgstr "キーを押してください…"
 msgid "Prevent clipping"
 msgstr "クリッピングを防止"
 
+msgid "Preview changes"
+msgstr ""
+
+msgid "Preview disc plan"
+msgstr ""
+
+msgid "Preview selected fields"
+msgstr ""
+
 msgid "Previous"
 msgstr "前へ"
 
@@ -5327,6 +5549,9 @@ msgstr ""
 
 msgid "Pronunciation"
 msgstr "発音"
+
+msgid "Proposal"
+msgstr ""
 
 msgid "Proposed"
 msgstr ""
@@ -5517,6 +5742,9 @@ msgstr ""
 msgid "Reading file sizes"
 msgstr "ファイルサイズを読み取り中"
 
+msgid "Reading folder metadata…"
+msgstr ""
+
 msgid "Reading it from {}…"
 msgstr "{}から読み取っています…"
 
@@ -5688,6 +5916,9 @@ msgstr "ダウンロード済みファイルを削除…"
 msgid "Remove filter"
 msgstr "フィルターを削除"
 
+msgid "Remove from disc plan"
+msgstr ""
+
 msgid "Remove from favorites"
 msgstr "お気に入りから削除"
 
@@ -5740,6 +5971,9 @@ msgstr "このプラグインと、そのアカウント、設定、キャッシ
 msgid "Remove unreferenced images from sources and plugins. Needed images download again."
 msgstr "ソースやプラグインから参照されていない画像を削除します。必要な画像は再度ダウンロードされます。"
 
+msgid "Remove values"
+msgstr ""
+
 msgid "Remove {}?"
 msgstr "{}を削除しますか？"
 
@@ -5773,6 +6007,9 @@ msgstr "レンダラーを自動的に切り替えました — 前のレンダ�
 msgid "Rendering backend"
 msgstr "レンダリングバックエンド"
 
+msgid "Renumber resulting discs"
+msgstr ""
+
 msgid "Reopens the upcoming queue paused, at the place where you left it."
 msgstr "次に再生するキューを、中断した位置で一時停止した状態で再び開きます。"
 
@@ -5791,8 +6028,14 @@ msgstr "リピート"
 msgid "Replace current queue"
 msgstr "現在のキューを置き換え"
 
+msgid "Replace genres"
+msgstr ""
+
 msgid "Replace queue {}"
 msgstr "キュー「{}」を置き換え"
+
+msgid "Replace values"
+msgstr ""
 
 msgid "Report an issue"
 msgstr "問題を報告"
@@ -5869,6 +6112,9 @@ msgstr "タブを復元"
 msgid "Result saved on this computer."
 msgstr "結果をこのコンピューターに保存しました。"
 
+msgid "Resulting album title"
+msgstr ""
+
 msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
 msgstr "結果はトラックごとに保存されます。未処理のトラックを続けるには、もう一度「解析」を実行してください。"
 
@@ -5880,6 +6126,9 @@ msgstr "再試行"
 
 msgid "Retry download"
 msgstr "ダウンロードを再試行"
+
+msgid "Retry pending files"
+msgstr ""
 
 msgid "Revert"
 msgstr "元に戻す"
@@ -5904,6 +6153,12 @@ msgstr ""
 
 msgid "Review diagnostics"
 msgstr "診断情報を確認"
+
+msgid "Review proposal"
+msgstr ""
+
+msgid "Review the current proposal before applying it."
+msgstr ""
 
 msgid "Review the device changes before syncing."
 msgstr ""
@@ -6215,14 +6470,38 @@ msgstr "画像を選択..."
 msgid "Select a folder to see its contents."
 msgstr "フォルダーを選択して内容を表示します。"
 
+msgid "Select album files"
+msgstr ""
+
 msgid "Select all"
 msgstr "すべて選択"
 
 msgid "Select an artist to see their albums"
 msgstr "アーティストを選択してアルバムを表示します"
 
+msgid "Select files for the disc plan."
+msgstr ""
+
+msgid "Select files from the captured lookup before preparing this candidate."
+msgstr ""
+
+msgid "Select files from this group before looking up metadata."
+msgstr ""
+
+msgid "Select files with consistent album and release tags for one lookup."
+msgstr ""
+
 msgid "Select folders"
 msgstr "フォルダーを選択"
+
+msgid "Select one album or prepare a consistent album proposal before looking up this group."
+msgstr ""
+
+msgid "Select the required release identity fields together."
+msgstr ""
+
+msgid "Select these artists"
+msgstr ""
 
 msgid "Select tracks"
 msgstr "トラックを選択"
@@ -6250,6 +6529,9 @@ msgstr "{}に変更を送信しています…"
 
 msgid "Sep"
 msgstr "9月"
+
+msgid "Separate by disc"
+msgstr ""
 
 msgid "Separate input limits do not establish every combination of rate, word width and channels."
 msgstr "個別の入力上限から、サンプルレート、ワード幅、チャンネル数のすべての組み合わせに対応すると判断することはできません。"
@@ -6540,6 +6822,9 @@ msgstr "ソフトウェア音量"
 msgid "Some endpoint streams could not be read."
 msgstr "出力先の一部のストリーム情報を読み取れませんでした。"
 
+msgid "Some explicit files are outside the selected disc plan."
+msgstr ""
+
 msgid "Some of these tracks were already added"
 msgstr "これらのトラックの一部はすでに追加されています"
 
@@ -6550,6 +6835,12 @@ msgid "Some ratings or favorites could not reach their source. Chilpa will try a
 msgstr "一部の評価やお気に入りをソースに送れませんでした。Chilpaが再試行します。"
 
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
+msgstr ""
+
+msgid "Some selected files have no mapping in this candidate. Adjust the selection before applying it."
+msgstr ""
+
+msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
 msgid "Songs"
@@ -6905,6 +7196,12 @@ msgstr ""
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "内蔵テストは、ビット深度とサンプルレートが異なる4つのトラック（16/44.1、24/44.1、24/96、24/192）を再生し、DACの切り替わりを確認できます。各トラックは、ライブラリでそのフォーマットの最も再生回数が多いトラックで、ない場合は生成したテスト信号です。自分のキューを使いたい場合は、すべてのレートが試されるように、先に各種類のトラックを1つずつ追加してください。"
 
+msgid "The candidate belongs to another metadata group."
+msgstr ""
+
+msgid "The candidate includes an unsupported metadata field."
+msgstr ""
+
 msgid "The check finished, but the previous physical format could not be restored."
 msgstr "チェックは完了しましたが、以前の物理フォーマットを復元できませんでした。"
 
@@ -6936,6 +7233,9 @@ msgid "The device review needs attention before continuing."
 msgstr ""
 
 msgid "The device task stopped. Its progress is saved for recovery."
+msgstr ""
+
+msgid "The disc proposal was cancelled."
 msgstr ""
 
 msgid "The download is incomplete. Try again."
@@ -6971,6 +7271,24 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The file changed while its metadata was being read."
+msgstr ""
+
+msgid "The file is no longer in the current selection."
+msgstr ""
+
+msgid "The file or its sidecar changed after preview. Reopen the selection before saving it."
+msgstr ""
+
+msgid "The file save progressed, but its session record could not be stored. Retry to record the completed phases: {}"
+msgstr ""
+
+msgid "The file selection belongs to another metadata session."
+msgstr ""
+
+msgid "The file tags have been written."
+msgstr ""
+
 msgid "The filter cannot be read."
 msgstr "フィルターを読み取れません。"
 
@@ -6989,8 +7307,14 @@ msgstr "フローティングのプレーヤーバーは、マウスが10秒間�
 msgid "The folder is no longer in the library."
 msgstr "このフォルダーはライブラリにありません。"
 
+msgid "The folder metadata has been saved."
+msgstr ""
+
 msgid "The folder scan policy is invalid."
 msgstr "フォルダーのスキャン設定が無効です。"
+
+msgid "The group belongs to another metadata session."
+msgstr ""
 
 msgid "The image could not be kept"
 msgstr "画像を保持できませんでした"
@@ -7022,6 +7346,9 @@ msgstr "ライブラリを変更できませんでした。もう一度お試し
 msgid "The library could not be read."
 msgstr "ライブラリを読み取れませんでした。"
 
+msgid "The library entry changed while metadata was being edited."
+msgstr ""
+
 msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
 msgstr "ライブラリが別の処理で使用中のままだったため、この選択は保存されませんでした。少ししてからもう一度お試しください。"
 
@@ -7033,6 +7360,9 @@ msgstr "歌っている行が常に表示されます。"
 
 msgid "The listening history could not be saved"
 msgstr "再生履歴を保存できませんでした"
+
+msgid "The local album proposal is invalid."
+msgstr ""
 
 msgid "The locked output is not connected; playing on {}."
 msgstr "ロックした出力が接続されていません。{}で再生します。"
@@ -7057,6 +7387,36 @@ msgstr "歌詞APIに報告を保存できませんでした。この結果はこ
 
 msgid "The lyrics cache could not be opened."
 msgstr "歌詞キャッシュを開けませんでした。"
+
+msgid "The metadata group is no longer in the current selection."
+msgstr ""
+
+msgid "The metadata lookup has no saved selection."
+msgstr ""
+
+msgid "The metadata lookup was cancelled."
+msgstr ""
+
+msgid "The metadata operation is invalid."
+msgstr ""
+
+msgid "The metadata proposal summary exceeds the page budget."
+msgstr ""
+
+msgid "The metadata selection changed. Prepare this proposal again."
+msgstr ""
+
+msgid "The metadata selection is invalid or belongs to another session."
+msgstr ""
+
+msgid "The metadata session stopped. Reopen the selection to review the files."
+msgstr ""
+
+msgid "The metadata value has the wrong type."
+msgstr ""
+
+msgid "The metadata worker is not available."
+msgstr ""
 
 msgid "The network is off; turn it on in Settings › Integrations"
 msgstr "ネットワークがオフです。設定 › 連携 でオンにしてください"
@@ -7223,8 +7583,23 @@ msgstr ""
 msgid "The selected environment does not provide beets 2.14.1."
 msgstr ""
 
+msgid "The selected file belongs to another metadata group."
+msgstr ""
+
+msgid "The selected file cannot store this field: {}"
+msgstr ""
+
+msgid "The selected file is no longer in the current selection."
+msgstr ""
+
+msgid "The selected files disagree on this disc's track total. Prepare a consistent total or use sequential numbering."
+msgstr ""
+
 msgid "The selected hardware volume control is gone."
 msgstr "選択したハードウェア音量コントロールがなくなりました。"
+
+msgid "The selected lookup exceeds the 1 MiB input limit."
+msgstr ""
 
 msgid "The selected music changed. Open its menu and confirm again."
 msgstr ""
@@ -7240,6 +7615,12 @@ msgstr "選択したトラックを読み取れませんでした。"
 
 msgid "The selected tracks will be removed from this playlist and its saved order."
 msgstr "選択した曲をこのプレイリストと保存済みの順序から削除します。"
+
+msgid "The selection changed. Preview the proposal again before applying it."
+msgstr ""
+
+msgid "The selection changed. Review the current metadata before preparing this proposal."
+msgstr ""
 
 msgid "The server answered, and Chilpa can read its music."
 msgstr "サーバーが応答し、Chilpa は音楽を読み込めます。"
@@ -7317,6 +7698,9 @@ msgstr "テーマ"
 msgid "There are no folders inside this one. Choose it from the level above, or go back up."
 msgstr "このフォルダの中にはフォルダがありません。上の階層で選ぶか、戻ってください。"
 
+msgid "There are no selected changes to save."
+msgstr ""
+
 msgid "There is no previous EQ to restore."
 msgstr "復元できる以前のEQがありません。"
 
@@ -7328,6 +7712,9 @@ msgstr ""
 
 msgid "These answered a search of this network. Choose yours, or type its address."
 msgstr "このネットワークの検索に応答したサーバーです。自分のサーバーを選ぶか、アドレスを入力してください。"
+
+msgid "These files identify different releases. Choose a real release match before joining them."
+msgstr ""
 
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "これらのアルバムのバーコードがMusicBrainzに送信されます。"
@@ -7350,6 +7737,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "このアドレスは別のサーバーのものです。"
 
+msgid "This adds changes to the file preview. Write reviewed changes saves them."
+msgstr ""
+
 msgid "This album is no longer in the current view."
 msgstr "このアルバムは現在の表示にありません。"
 
@@ -7358,6 +7748,18 @@ msgstr "このビルドでは出力情報を問い合わせできますが、そ
 
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr "MusicBrainzが混雑している場合、数分かかることがあります。"
+
+msgid "This candidate contains inconsistent disc or track positions."
+msgstr ""
+
+msgid "This candidate does not contain a complete release identity and disc mapping."
+msgstr ""
+
+msgid "This candidate has no matching track for this file."
+msgstr ""
+
+msgid "This candidate proposal is invalid."
+msgstr ""
 
 msgid "This chapter format is not supported."
 msgstr "このチャプター形式には対応していません。"
@@ -7377,6 +7779,15 @@ msgstr ""
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "この直接出力にはハードウェア音量コントロールがありません。DACまたはアンプを使ってください。"
 
+msgid "This disc assignment contains invalid titles or positions."
+msgstr ""
+
+msgid "This disc plan is invalid."
+msgstr ""
+
+msgid "This edition requires these identity fields together:"
+msgstr ""
+
 msgid "This entry is no longer at hand. Open it again from its source."
 msgstr "この項目はもう利用できません。ソースからもう一度開いてください。"
 
@@ -7386,11 +7797,26 @@ msgstr ""
 msgid "This episode material could not be loaded."
 msgstr "このエピソードの資料を読み込めませんでした。"
 
+msgid "This field cannot be written to every selected file."
+msgstr ""
+
+msgid "This file cannot be tagged."
+msgstr ""
+
+msgid "This file path cannot be represented in the metadata editor."
+msgstr ""
+
+msgid "This file's metadata exceeds the batch editor limit."
+msgstr ""
+
 msgid "This folder has no tracks."
 msgstr "このフォルダーにトラックはありません。"
 
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "このフォルダーには同じ曲が複数のビューで含まれています。各曲が一度だけ読み取られるよう、ビューを1つ選んでください（By Folder をおすすめします）。"
+
+msgid "This folder tree exceeds the batch traversal limit. Select a smaller part."
+msgstr ""
 
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "このフォーマットは {} 文字目から読み取れないため、Discord には空の行が送られます。%、[、( と引用符をすべて閉じ、「タイトル」に記載された関数だけを使ってください。"
@@ -7406,6 +7832,21 @@ msgstr ""
 
 msgid "This looks like a playlist."
 msgstr "これはプレイリストのようです。"
+
+msgid "This metadata field cannot be written."
+msgstr ""
+
+msgid "This metadata field is not supported."
+msgstr ""
+
+msgid "This metadata group is invalid."
+msgstr ""
+
+msgid "This metadata page is not supported."
+msgstr ""
+
+msgid "This metadata proposal is invalid."
+msgstr ""
 
 msgid "This month"
 msgstr "今月"
@@ -7424,6 +7865,9 @@ msgstr "これは音を出しません。デバイスに送られるはずだっ
 
 msgid "This opens and closes the selected output without writing audio. Stop playback first. The queue, volume and desktop default stay as they are."
 msgstr "音声を送信せず、選択した出力を開いて閉じます。先に再生を停止してください。キュー、音量、デスクトップの既定の出力は変更しません。"
+
+msgid "This operation is not supported for that field."
+msgstr ""
 
 msgid "This output has no hardware mute switch."
 msgstr "この出力にはハードウェアのミュートスイッチがありません。"
@@ -7503,6 +7947,9 @@ msgstr "このプラグインのプログラムは、このシステム向けに
 msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
 msgstr "このプリセットは精密フィルターを使っています。各バンドにそのレベルを表示しています。バンドを動かすには、別にグラフィックEQを作成してください。以前のEQに戻すこともできます。"
 
+msgid "This proposal summary exceeds the metadata page limit. Choose fewer groups or fields."
+msgstr ""
+
 msgid "This purchase is unavailable for download."
 msgstr "この購入はダウンロードできません。"
 
@@ -7541,6 +7988,9 @@ msgstr "このサーバーは API キーに対応していません。戻って�
 
 msgid "This server is no longer available."
 msgstr "このサーバーは利用できなくなりました。"
+
+msgid "This sidecar exceeds the batch editor limit."
+msgstr ""
 
 msgid "This source cannot accept these tracks right now."
 msgstr "このソースは現在これらのトラックを受け付けられません。"
@@ -7689,6 +8139,9 @@ msgstr "トラック一覧"
 msgid "Track menu"
 msgstr "トラックメニュー"
 
+msgid "Track positions are missing or duplicated. Choose sequential numbering or explicit positions."
+msgstr ""
+
 msgid "Track review"
 msgstr "トラックの確認"
 
@@ -7697,6 +8150,9 @@ msgstr "曲のサンプルレート"
 
 msgid "Track title"
 msgstr "曲名"
+
+msgid "Track total"
+msgstr ""
 
 msgid "Track {}"
 msgstr "トラック {}"
@@ -7863,6 +8319,9 @@ msgstr "無制限"
 msgid "Unmatched"
 msgstr "未一致"
 
+msgid "Unmatched file"
+msgstr ""
+
 msgid "Unmute"
 msgstr "ミュート解除"
 
@@ -7871,6 +8330,9 @@ msgstr "未再生"
 
 msgid "Unrated"
 msgstr "未評価"
+
+msgid "Unselected files remain in their current albums."
+msgstr ""
 
 msgid "Unselected playlists are removed after approval. Enable this option to remove unselected music too."
 msgstr "選択を解除したプレイリストは承認後に削除されます。音楽も削除する場合はこの設定を有効にしてください。"
@@ -7980,6 +8442,9 @@ msgstr "DSPフィルターは最大10個までです。"
 msgid "Use current colors"
 msgstr "現在の色を使用"
 
+msgid "Use in disc plan"
+msgstr ""
+
 msgid "Use my current queue"
 msgstr "現在のキューを使用"
 
@@ -8006,6 +8471,9 @@ msgstr "検査合格"
 
 msgid "Valid node name"
 msgstr "有効なノード名"
+
+msgid "Value"
+msgstr ""
 
 msgid "Verify files after transfer"
 msgstr ""
@@ -8068,6 +8536,12 @@ msgid "Wait for the audio check to finish."
 msgstr "音声のチェックが完了するまでお待ちください。"
 
 msgid "Wait for the beets installation or check to finish in Settings."
+msgstr ""
+
+msgid "Wait for the current beets operation to finish."
+msgstr ""
+
+msgid "Wait for the current metadata operation to finish."
 msgstr ""
 
 msgid "Wait for the queue to finish switching."
@@ -8244,6 +8718,12 @@ msgstr "オーディオファイルに書き込みますか？"
 
 msgid "Write into the files"
 msgstr "ファイルに書き込む"
+
+msgid "Write reviewed changes"
+msgstr ""
+
+msgid "Write reviewed changes?"
+msgstr ""
 
 msgid "Write the external SACD XML?"
 msgstr "外部のSACD XMLを書き込みますか？"
@@ -8471,6 +8951,9 @@ msgid "beets availability"
 msgstr ""
 
 msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets matches"
 msgstr ""
 
 msgid "beets settings"
@@ -9821,6 +10304,14 @@ msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
 msgstr[0] "{}件のお気に入りが送信待ちです: {}"
 
+msgid "{} file has pending changes"
+msgid_plural "{} files have pending changes"
+msgstr[0] ""
+
+msgid "{} file saved"
+msgid_plural "{} files saved"
+msgstr[0] ""
+
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
 msgstr[0] "タグが一致しないファイル{}個"
@@ -9944,6 +10435,9 @@ msgstr "{} / {} 件をダウンロードしました。失敗 {} 件。"
 msgid "{} of {} files removed. {} failed."
 msgstr "{} / {} ファイルを削除しました。失敗 {} 件。"
 
+msgid "{} of {} files selected"
+msgstr ""
+
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "失敗するまでに{} / {}個のファイルが変更されました: {}"
 
@@ -9994,6 +10488,10 @@ msgstr ""
 
 msgid "{} sel"
 msgstr "{}選択"
+
+msgid "{} selected file"
+msgid_plural "{} selected files"
+msgstr[0] ""
 
 msgid "{} selection"
 msgid_plural "{} selections"
@@ -10079,6 +10577,9 @@ msgstr "{3}年{2}{1}日"
 
 msgid "{} {}, {}"
 msgstr "{3}年{1}{2}日"
+
+msgid "{} · disc {}"
+msgstr ""
 
 msgid "{} · {}"
 msgstr "{} · {}"

@@ -280,6 +280,11 @@ impl Library {
         chilpa_dirs::data().join("library.db")
     }
 
+    pub fn metadata_track_id(&self, path: &Path) -> rusqlite::Result<Option<i64>> {
+        self.db.query_row("SELECT t.id FROM tracks t JOIN sources s ON s.id=t.source_id
+            WHERE s.provider='local' AND t.external_id=?1 LIMIT 1", [path.to_string_lossy().as_ref()], |row| row.get(0)).optional()
+    }
+
     /// The source's id, creating it if needed.
     pub fn source_id(&self, provider: &str, instance: &str) -> rusqlite::Result<i64> {
         // Asked on the window's thread at every track start. A source that

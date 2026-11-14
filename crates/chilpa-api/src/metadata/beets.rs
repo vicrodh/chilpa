@@ -164,6 +164,7 @@ impl Editor {
 impl Chilpa {
     pub(crate) fn metadata_beets_lease(&self) -> Arc<AtomicBool> { self.metadata.beets.busy_flag() }
     pub(crate) fn metadata_beets_network_changed(&mut self) {
+        self.metadata_batch_network_changed();
         if self.metadata.beets.enabled && self.metadata.beets.busy() && !self.metadata.beets.probing { self.metadata_cancel_lookup(); }
     }
     pub(crate) fn metadata_preference_changed(&mut self, key: &str) {
@@ -179,6 +180,7 @@ impl Chilpa {
         }
         if key == crate::beets_runtime::PYTHON {
             let runtime = self.beets_python();
+            self.invalidate_beets_check(&runtime);
             if runtime != self.metadata.beets.runtime {
                 self.metadata_cancel_lookup();
                 self.metadata.beets.runtime = runtime;

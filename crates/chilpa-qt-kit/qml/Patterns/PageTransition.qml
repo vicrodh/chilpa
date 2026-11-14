@@ -12,6 +12,9 @@ Item {
     property string route: ""
     property string retainedScreen: ""
     property string componentRoute: ""
+    readonly property var requested: componentRoute.split("\u001f")
+    readonly property string screen: requested.length > 1 ? requested[1] : ""
+    readonly property string routeKey: requested.length > 3 ? requested[3] : ""
     property Component sourceComponent
     property string committedRoute: ""
     property string acknowledgedRoute: ""
@@ -250,27 +253,10 @@ Item {
     // in over the plane's own background, as QBZ's does. An opaque shell
     // there covered the dynamic background for the whole navigation and left
     // in one step when the reveal ended.
-    Column {
+    PageSkeleton {
         id: skeleton
         objectName: "acknowledgementSkeleton"
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.margins: Metrics.contentX
-        spacing: Metrics.gap16
         visible: transition.phase !== "error" && (transition.phase !== "content" || retire.running)
         z: -1
-        Rectangle { width: parent.width * 0.36; height: Metrics.gap16; radius: Metrics.gap8; color: Theme.color.stateHover }
-        Repeater {
-            model: 5
-            Rectangle {
-                required property int index
-                width: parent.width
-                height: Metrics.settingsRow
-                radius: Metrics.radiusControl
-                color: Theme.color.stateHover
-                opacity: index % 2 ? 0.55 : 0.8
-            }
-        }
     }
 }

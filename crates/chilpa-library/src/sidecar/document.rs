@@ -1,13 +1,13 @@
 //! The sidecar as a document: what it holds and how it is written down.
 
 use serde_json::{Map, Value};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// What the file calls itself. Anything else is not a sidecar.
 pub const FORMAT: &str = "chilpa-sidecar";
 
 /// The version this code writes.
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 3;
 
 /// An album's fields, by the names the editor gives them, in its order.
 pub const ALBUM_FIELDS: [&str; 12] = [
@@ -41,6 +41,9 @@ pub const TRACK_FIELDS: [&str; 13] = [
     "musicbrainz_artist_ids",
     "explicit",
 ];
+
+/// Additional numeric fields edited by the folder batch editor.
+pub const TOTAL_FIELDS: [&str; 2] = ["track_total", "disc_total"];
 
 /// A field of a sidecar: not there, there, or there to say "empty".
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -395,12 +398,18 @@ impl Album {
 /// What a sidecar lays over one track.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct Track {
+    /// Album fields scoped to this file, after the folder defaults.
+    pub album: Album,
+    /// Qualified fields that take their embedded value instead of an overlay.
+    pub file_fields: BTreeSet<String>,
     pub explicit: Override<bool>,
     pub title: Override<String>,
     pub artist_credit: Override<String>,
     pub artists: Override<Vec<String>>,
     pub track_number: Override<u32>,
     pub disc_number: Override<u32>,
+    pub track_total: Override<u32>,
+    pub disc_total: Override<u32>,
     pub disc_subtitle: Override<String>,
     pub work: Override<String>,
     pub composers: Override<Vec<String>>,
@@ -414,7 +423,7 @@ pub struct Track {
 impl Track {
     const TEXTS: [&'static str; 6] = ["title", "artist_credit", "disc_subtitle", "work", "musicbrainz_recording_id", "musicbrainz_track_id"];
     const LISTS: [&'static str; 4] = ["artists", "composers", "performers", "musicbrainz_artist_ids"];
-    const NUMBERS: [&'static str; 2] = ["track_number", "disc_number"];
+    const NUMBERS: [&'static str; 4] = ["track_number", "disc_number", "track_total", "disc_total"];
 
     fn text(&self, name: &str) -> Option<&Override<String>> {
         Some(match name {
@@ -464,6 +473,8 @@ impl Track {
         Some(match name {
             "track_number" => &self.track_number,
             "disc_number" => &self.disc_number,
+            "track_total" => &self.track_total,
+            "disc_total" => &self.disc_total,
             _ => return None,
         })
     }
@@ -472,6 +483,8 @@ impl Track {
         Some(match name {
             "track_number" => &mut self.track_number,
             "disc_number" => &mut self.disc_number,
+            "track_total" => &mut self.track_total,
+            "disc_total" => &mut self.disc_total,
             _ => return None,
         })
     }
@@ -531,6 +544,8 @@ impl Track {
     pub fn is_empty(&self) -> bool {
         self.unknown.is_empty()
             && self.explicit.is_absent()
+            && self.album.is_empty()
+            && self.file_fields.is_empty()
             && Self::TEXTS.iter().all(|name| self.text(name).is_some_and(Override::is_absent))
             && Self::LISTS.iter().all(|name| self.list(name).is_some_and(Override::is_absent))
             && Self::NUMBERS.iter().all(|name| self.number(name).is_some_and(Override::is_absent))
@@ -538,6 +553,16 @@ impl Track {
 
     fn from_map(mut map: Map<String, Value>) -> Self {
         let mut track = Track::default();
+        if let Some(Value::Object(fields)) = map.get("album") {
+            track.album = Album::from_map(fields.clone());
+            map.remove("album");
+        }
+        if let Some(Value::Array(fields)) = map.get("file_fields") {
+            if let Some(names) = fields.iter().map(|value| value.as_str().map(str::to_string)).collect::<Option<BTreeSet<_>>>() {
+                track.file_fields = names;
+                map.remove("file_fields");
+            }
+        }
         track.explicit = take_flag(&mut map, "explicit");
         for name in Self::TEXTS {
             if let Some(field) = track.text_mut(name) {
@@ -560,6 +585,8 @@ impl Track {
 
     fn to_map(&self) -> Map<String, Value> {
         let mut map = self.unknown.clone();
+        if !self.album.is_empty() { map.insert("album".into(), Value::Object(self.album.to_map())); }
+        if !self.file_fields.is_empty() { map.insert("file_fields".into(), serde_json::json!(self.file_fields)); }
         put_flag(&mut map, "explicit", &self.explicit);
         for name in Self::TEXTS {
             if let Some(field) = self.text(name) {
@@ -604,6 +631,63 @@ fn lay<T: Clone>(over: &Override<T>, onto: &mut Option<T>) {
 }
 
 impl Sidecar {
+    /// Folder defaults resolved for one file. Unknown keys survive the document.
+    pub fn effective_album(&self, key: &str) -> Album {
+        let mut album = self.album.clone();
+        if let Some(track) = self.tracks.get(key) {
+            for field in ALBUM_FIELDS {
+                if track.file_fields.contains(&format!("album.{field}")) {
+                    album.put(field, Override::Absent);
+                } else {
+                    let value = track.album.get(field);
+                    if !value.is_absent() { album.put(field, value); }
+                }
+            }
+        }
+        album
+    }
+
+    pub fn effective_track(&self, key: &str) -> Option<Track> {
+        let mut track = self.tracks.get(key)?.clone();
+        for field in TRACK_FIELDS.into_iter().chain(TOTAL_FIELDS) {
+            if track.file_fields.contains(&format!("track.{field}")) { track.put(field, Override::Absent); }
+        }
+        Some(track)
+    }
+
+    /// Typed overrides using physical tag names, for a per-file editor.
+    pub fn field_values(&self, key: &str) -> Map<String, Value> {
+        let album = self.effective_album(key);
+        let album_values = album.to_map();
+        let mut values = Map::new();
+        for field in ALBUM_FIELDS {
+            if album.get(field).is_absent() { continue; }
+            if let Some(value) = album_values.get(field) {
+                values.insert(if field == "title" { "album" } else { field }.into(), value.clone());
+            }
+        }
+        if let Some(track) = self.effective_track(key) {
+            let track_values = track.to_map();
+            for field in TRACK_FIELDS.into_iter().chain(TOTAL_FIELDS) {
+                if track.get(field).is_absent() { continue; }
+                if let Some(value) = track_values.get(field) { values.insert(field.into(), value.clone()); }
+            }
+        }
+        values
+    }
+
+    /// Let a selected field follow the file after a verified embedded write.
+    pub fn use_file_field(&mut self, key: &str, album: bool, field: &str) {
+        let inherited = album && !self.album.get(field).is_absent();
+        let qualified = format!("{}.{field}", if album { "album" } else { "track" });
+        let track = self.track_mut(key);
+        if album { track.album.put(field, Override::Absent); }
+        else { track.put(field, Override::Absent); }
+        if inherited { track.file_fields.insert(qualified); }
+        else { track.file_fields.remove(&qualified); }
+        self.tracks.retain(|_, track| !track.is_empty());
+    }
+
     pub fn new(now: i64) -> Self {
         Self {
             version: VERSION,
@@ -675,15 +759,16 @@ impl Sidecar {
     /// Lays it over what a file says, for the fields the library keeps.
     /// `key` is what the track goes by in its home.
     pub fn overlay(&self, tags: &mut chilpa_tags::Tags, key: &str) {
-        lay(&self.album.title, &mut tags.album);
-        lay(&self.album.album_artist, &mut tags.album_artist);
-        lay(&self.album.date, &mut tags.date);
-        match &self.album.genres {
+        let album = self.effective_album(key);
+        lay(&album.title, &mut tags.album);
+        lay(&album.album_artist, &mut tags.album_artist);
+        lay(&album.date, &mut tags.date);
+        match &album.genres {
             Override::Absent => {}
             Override::Cleared => tags.genres.clear(),
             Override::Value(genres) => tags.genres = genres.clone(),
         }
-        let Some(track) = self.tracks.get(key) else { return };
+        let Some(track) = self.effective_track(key) else { return };
         match track.explicit {
             Override::Absent => {}
             Override::Cleared => tags.explicit = None,
@@ -697,7 +782,7 @@ impl Sidecar {
             Override::Cleared => tags.artists.clear(),
             Override::Value(credit) => tags.artists = vec![credit.clone()],
         }
-        for (over, onto) in [(&track.track_number, &mut tags.track_number), (&track.disc_number, &mut tags.disc_number)] {
+        for (over, onto) in [(&track.track_number, &mut tags.track_number), (&track.disc_number, &mut tags.disc_number), (&track.disc_total, &mut tags.disc_total)] {
             match over {
                 Override::Absent => {}
                 Override::Cleared => *onto = None,
@@ -797,8 +882,8 @@ mod tests {
 
     #[test]
     fn a_newer_sidecar_is_read() {
-        let s = read(r#"{"format":"chilpa-sidecar","version":2,"album":{"title":"A"},"tracks":{}}"#);
-        assert_eq!(s.version, 2);
+        let s = read(r#"{"format":"chilpa-sidecar","version":4,"album":{"title":"A"},"tracks":{}}"#);
+        assert_eq!(s.version, 4);
         assert_eq!(s.album.title, Override::Value("A".to_string()));
     }
 
@@ -899,5 +984,34 @@ mod tests {
         s.overlay(&mut other, "b.flac");
         assert_eq!(other.album.as_deref(), Some("Another album"));
         assert_eq!(other.artists, before.artists);
+    }
+}
+
+#[cfg(test)]
+mod file_field_tests {
+    use super::*;
+
+    #[test]
+    fn per_file_album_fields_and_future_masks_roundtrip_without_affecting_neighbors() {
+        let bytes = br#"{"format":"chilpa-sidecar","version":2,"updated_at":1,"album":{"title":"Shared","genres":["Rock"]},"tracks":{"one.flac":{"album":{"title":"Own","future_album":{"x":1}},"file_fields":["album.genres","future.mask"],"future_track":true}},"future_root":7}"#;
+        let sidecar = Sidecar::from_json(bytes).unwrap();
+        assert_eq!(sidecar.effective_album("one.flac").title,Override::Value("Own".into()));
+        assert!(sidecar.effective_album("one.flac").genres.is_absent());
+        assert_eq!(sidecar.effective_album("two.flac").title,Override::Value("Shared".into()));
+        assert_eq!(Sidecar::from_json(&sidecar.to_json()).unwrap(),sidecar);
+        let values = sidecar.field_values("one.flac");
+        assert_eq!(values["album"],Value::String("Own".into()));
+        assert!(!values.contains_key("genres"));
+        assert!(sidecar.tracks["one.flac"].file_fields.contains("future.mask"));
+    }
+
+    #[test]
+    fn malformed_future_extensions_survive_and_v1_keeps_folder_semantics() {
+        let bytes = br#"{"format":"chilpa-sidecar","version":1,"updated_at":1,"album":{"title":"Shared"},"tracks":{"one.flac":{"album":17,"file_fields":["album.title",5]}}}"#;
+        let sidecar = Sidecar::from_json(bytes).unwrap();
+        assert_eq!(sidecar.effective_album("one.flac").title,Override::Value("Shared".into()));
+        assert_eq!(Sidecar::from_json(&sidecar.to_json()).unwrap(),sidecar);
+        assert_eq!(sidecar.tracks["one.flac"].unknown["album"],17);
+        assert_eq!(sidecar.tracks["one.flac"].unknown["file_fields"],serde_json::json!(["album.title",5]));
     }
 }

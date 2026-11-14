@@ -24,7 +24,9 @@ Menu {
         { act: "play", text: I18n.tr("Play", I18n.rev), glyph: Icons.playerPlayFilled, filled: true },
         { act: "next", text: I18n.tr("Play next", I18n.rev), glyph: Lucide.listStart, family: Lucide.font },
         { act: "later", text: I18n.tr("Play later", I18n.rev), glyph: Lucide.listPlus, family: Lucide.font },
-        { act: "queue", text: I18n.tr("Add to queue", I18n.rev), glyph: Lucide.listEnd, family: Lucide.font }
+        { act: "queue", text: I18n.tr("Add to queue", I18n.rev), glyph: Lucide.listEnd, family: Lucide.font },
+        { separator:true },
+        { act:"metadata",text:I18n.tr("Edit metadata",I18n.rev),glyph:Icons.pencil }
     ]
-    onChosen: (index) => folder.act(path, entries[index].act)
+    onChosen: index => entries[index].act === "metadata" ? Navigation.goKey("folderMetadata",JSON.stringify([path])) : folder.act(path,entries[index].act)
 }

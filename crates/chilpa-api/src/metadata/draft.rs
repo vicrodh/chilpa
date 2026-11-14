@@ -193,12 +193,12 @@ impl Draft {
             let home = track.home();
             let at = homes.iter().position(|h| h.home == home).unwrap_or(0);
             let key = home.key(&track.external_id);
-            let over = homes.get(at).and_then(|h| h.sidecar.as_ref()).and_then(|s| s.tracks.get(&key));
+            let over = homes.get(at).and_then(|h| h.sidecar.as_ref()).and_then(|s| s.effective_track(&key));
             let file: Vec<String> = TRACK.iter().map(|f| track_file(f, &read, &track)).collect();
             let cells = TRACK
                 .iter()
                 .zip(&file)
-                .map(|(f, file)| match over.and_then(|o| laid(o.get(f.name))) {
+                .map(|(f, file)| match over.as_ref().and_then(|o| laid(o.get(f.name))) {
                     Some(laid) => Cell::of(laid, true),
                     None => {
                         let mut cell = Cell::of(file.clone(), false);
@@ -213,7 +213,7 @@ impl Draft {
             rows.push(Row { track, home: at, key, placed: read.placed, known: read.known, file, album_file, cells });
         }
 
-        let of_home = |row: &Row, name: &str| homes.get(row.home).and_then(|h| h.sidecar.as_ref()).and_then(|s| laid(s.album.get(name)));
+        let of_home = |row: &Row, name: &str| homes.get(row.home).and_then(|h| h.sidecar.as_ref()).and_then(|s| laid(s.effective_album(&row.key).get(name)));
         let cells = ALBUM
             .iter()
             .enumerate()

@@ -11,6 +11,25 @@ const CHECK: &str = "metadata.beets.check";
 const STATUS: &str = "metadata.beets.status";
 
 impl Chilpa {
+    pub(crate) fn metadata_batch_beets_runtime(&self) -> Option<String> {
+        self.beets_runtime.as_ref().and_then(Managed::verified_runtime)
+    }
+    pub(crate) fn metadata_batch_probe_beets(&mut self) {
+        if !self.beets_runtime_busy() && !self.beets_runtime.as_ref().is_some_and(Managed::ready) {
+            self.beets_runtime.get_or_insert_with(Managed::uninitialized).check_configured();
+        }
+    }
+    pub(crate) fn metadata_batch_beets_status(&self) -> serde_json::Value {
+        match &self.beets_runtime {
+            Some(manager) => serde_json::json!({"ready":manager.ready(),"busy":manager.busy(),
+                "reason":if manager.ready() || manager.busy() { manager.view().message } else { chilpa_i18n::t("Check or install beets in Settings.") }}),
+            None => serde_json::json!({"ready":false,"busy":false,"reason":chilpa_i18n::t("Check or install beets in Settings.")}),
+        }
+    }
+    pub(crate) fn invalidate_beets_check(&mut self, runtime: &str) {
+        if let Some(manager) = &mut self.beets_runtime { manager.forget_other(runtime); }
+    }
+
     pub(crate) fn beets_python(&self) -> String {
         self.preference(PYTHON).filter(|value| !value.is_empty())
             .or_else(|| packages::installed().map(|installation| installation.python().to_string_lossy().into_owned()))

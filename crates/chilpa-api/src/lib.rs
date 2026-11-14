@@ -55,6 +55,7 @@ mod listening_stats;
 pub mod listening;
 pub mod list_changes;
 mod metadata;
+mod metadata_batch;
 mod beets_runtime;
 pub mod navigation;
 pub mod discover_genres;
@@ -710,6 +711,7 @@ pub struct Chilpa {
     outputs_listing: outputs::Listing,
     /// The metadata editor, and the record open in it if there is one.
     metadata: metadata::Editor,
+    metadata_batch: metadata_batch::BatchEditor,
     beets_runtime: Option<beets_runtime::Managed>,
     /// My servers: adding, syncing, watching and removing them (ADR-017).
     servers: servers::Servers,
@@ -832,6 +834,7 @@ impl Chilpa {
             sample_rate: 0,
             outputs_listing,
             metadata: metadata::Editor::default(),
+            metadata_batch: metadata_batch::BatchEditor::default(),
             beets_runtime: None,
             servers: servers::Servers::default(),
             casting: casting::Casting::default(),
@@ -1260,6 +1263,7 @@ impl Chilpa {
         self.advance_catalog();
         self.advance_lyrics();
         self.advance_beets_runtime();
+        self.advance_closed_metadata_batch();
         self.resolve_next_ahead();
         self.keep_place(false);
         self.advance_connect();

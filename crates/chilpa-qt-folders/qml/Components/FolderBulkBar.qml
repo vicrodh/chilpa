@@ -31,5 +31,6 @@ Item {
         IconButton { tip: I18n.tr("Play later", I18n.rev); glyph: Lucide.listPlus; iconFamily: Lucide.font; onClicked: bar.acted("later") }
         IconButton { tip: I18n.tr("Add to queue", I18n.rev); glyph: Lucide.listEnd; iconFamily: Lucide.font; onClicked: bar.acted("queue") }
         IconButton { tip: I18n.tr("Clear", I18n.rev); glyph: Icons.x; onClicked: bar.cleared() }
+        IconButton { tip:I18n.tr("Edit metadata",I18n.rev); glyph:Icons.pencil; onClicked:bar.acted("metadata") }
     }
 }
