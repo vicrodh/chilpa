@@ -613,10 +613,18 @@ fn one(changes: &FileChanges, copy: &Path, options: Options) -> Result<(), Write
     drop(file);
     if let Some(comments) = native_comments {
         use lofty::tag::{MergeTag, SplitTag};
+        // These comments were captured before the generic write. Lofty's merge
+        // consumes EncoderSoftware as the vendor, so retain both native forms.
+        let vendor = comments.vendor().to_string();
+        let encoders: Vec<_> = comments.items().filter(|(key, _)| key.eq_ignore_ascii_case("ENCODER"))
+            .map(|(key, value)| (key.to_string(), value.to_string())).collect();
         let mut fresh = read_copy(copy).map_err(&failed)?;
         let tag = fresh.remove(primary).unwrap_or_else(|| Tag::new(primary));
         drop(fresh);
         let mut comments = comments.split_tag().0.merge_tag(tag);
+        comments.set_vendor(vendor);
+        drop(comments.remove("ENCODER"));
+        for (key, value) in encoders { comments.push(key, value); }
         if !changes.explicit.is_keep() { drop(comments.remove("ITUNESADVISORY")); }
         if let Change::Set(value) = changes.explicit {
             comments.insert("ITUNESADVISORY".into(), if value { "1" } else { "2" }.into());

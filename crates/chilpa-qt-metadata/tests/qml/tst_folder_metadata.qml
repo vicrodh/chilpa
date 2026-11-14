@@ -120,4 +120,17 @@ TestCase {
         tryVerify(()=>grouping.discs.length === 2)
         compare(grouping.discs.map(disc=>disc.number),[2,1])
     }
+    function test_a_disc_plan_does_not_claim_that_it_has_no_metadata_changes() {
+        const page=createTemporaryObject(maker,this,{routeKey:'["/music"]'})
+        const model=findChild(page,"folderMetadataModel")
+        const data=JSON.parse(model.document)
+        data.dataRevision=9
+        data.plan={id:"1:p1",baseDataRevision:9,kind:"grouping",canApply:true,title:"Joined record",counts:{files:4,changed:4,previewRows:4},resultGroups:[{title:"Joined record",artist:"Artist",files:4}]}
+        model.publish(data)
+        const proposal=findChild(page,"batchProposal")
+        tryVerify(()=>proposal.visible)
+        verify(!findChild(page,"batchCandidateChanges").visible)
+        verify(findChild(page,"batchApplyPlan").enabled)
+        compare(model.saves,0)
+    }
 }

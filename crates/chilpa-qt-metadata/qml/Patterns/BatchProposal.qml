@@ -20,6 +20,8 @@ Column {
     Text { width:parent.width; visible:!!root.plan.error; text:root.plan.error || ""; textFormat:Text.PlainText; wrapMode:Text.Wrap; font.pointSize:Type.body; color:Theme.color.statusNegative }
     Text { width:parent.width; visible:(root.plan.requiredFields || []).length > 0; text:I18n.tr("This edition requires these identity fields together:",I18n.rev) + " " + (root.plan.requiredFields || []).map(field=>root.choices.find(choice=>choice.field === field)?.label || field).join(", "); wrapMode:Text.Wrap; font.pointSize:Type.meta; color:Theme.color.statusWarning }
     MetadataChanges {
+        objectName:"batchCandidateChanges"
+        visible:root.plan.kind === "candidate"
         width:parent.width; changes:root.choices; busy:root.busy || root.plan.kind !== "candidate"
         onChoose:(key,selected)=> { root.choices=root.choices.map(choice=>choice.key === key ? Object.assign({},choice,{selected:selected}) : choice) }
     }
