@@ -1,7 +1,8 @@
 //! Merge ordered SQL works with integrated source tags, without fetching a
-//! catalog or retaining the library's complete inventory. At most 30,000 source
-//! keys and borrowed entries live for this query, bounded by the source index;
-//! only 60 owned work cards cross the facade. No cache or worker is added.
+//! catalog or retaining the library's complete inventory. Each matching source
+//! work retains sort keys, a borrowed entry and its album ids for this query.
+//! Live collection roots may exceed the source index's pruning target; only
+//! 60 owned work cards cross the facade. No cache or worker is added.
 use super::{Selection, PAGE};
 use crate::{library_sources::{SourceIndex, SourceItem}, Reader, Snapshot, Totals};
 use chilpa_library::store::{compositions::{Composition, work_key}, query::fold};

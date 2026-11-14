@@ -79,6 +79,9 @@ pub fn mixes_sources(ids: impl IntoIterator<Item = i64>) -> bool {
     false
 }
 
+#[derive(Default)]
+struct Selection<'a> { favorites_only: bool, within: Option<&'a HashSet<i64>> }
+
 impl Reader {
     /// The records of the Albums screen: the library's that hold every word
     /// of `text`, through the sources, qualities and formats `extras` leaves
@@ -93,9 +96,22 @@ impl Reader {
     }
 
     pub(super) fn albums_view_selected(&self, order: &str, group: &str, text: &str, extras: &Filter, index: &crate::library_sources::SourceIndex, favorites_only: bool) -> AlbumsFound {
+        self.albums_view_selection(order, group, text, extras, index, Selection { favorites_only, within: None })
+    }
+
+    /// A discovery snapshot already chose eligible editions and source copies.
+    /// Keep that membership before ranking versions, including saved-track albums.
+    pub(crate) fn albums_view_within(&self, order: &str, text: &str, within: &HashSet<i64>, index: &crate::library_sources::SourceIndex) -> AlbumsFound {
+        if within.is_empty() { return AlbumsFound::default(); }
+        self.albums_view_selection(order, "", text, &Filter::default(), index, Selection { within: Some(within), ..Default::default() })
+    }
+
+    fn albums_view_selection(&self, order: &str, group: &str, text: &str, extras: &Filter, index: &crate::library_sources::SourceIndex, selection: Selection<'_>) -> AlbumsFound {
+        let Selection { favorites_only, within } = selection;
         let (name, turned) = turned_order(order);
         let order = AlbumSort::from_name(name);
         let mut ids = self.lib.album_ids_matching(order, text).unwrap_or_default();
+        if let Some(within) = within { ids.retain(|id| within.contains(id)); }
         if let Some(left) = self.passing_album_ids(extras) {
             ids.retain(|id| left.contains(id));
         }
@@ -104,7 +120,7 @@ impl Reader {
             ids.retain(|id|favorites.contains(id));
         }
         let mut ids = self.lib.grouped_album_ids(&ids).unwrap_or(ids);
-        let mut remote = saved_records(index, text, extras, favorites_only);
+        let mut remote = saved_records(index, text, extras, favorites_only, within);
         if !remote.is_empty() {
             remote.sort_by(|a, b| order.compare(&a.1, &b.1));
             let keys = self.lib.album_keys(&ids).unwrap_or_default();
@@ -158,9 +174,9 @@ impl Reader {
     }
 }
 
-/// The integrated sources' saved records that hold every word of `text` in
-/// their title or artist and pass the extras, each once, in grid order keys.
-fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras: &Filter, favorites_only: bool) -> Vec<(i64, chilpa_library::AlbumKey)> {
+/// Saved records, or the records selected by discovery, that hold every word
+/// of `text` in their title or artist and pass the extras, each once as order keys.
+fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras: &Filter, favorites_only: bool, within: Option<&HashSet<i64>>) -> Vec<(i64, chilpa_library::AlbumKey)> {
     let words: Vec<String> = text.to_lowercase().split_whitespace().map(String::from).collect();
     let through = crate::library_sources::Prepared::new(&Filter {
         excluded_sources: extras.excluded_sources.clone(), qualities: extras.qualities.clone(), formats: extras.formats.clone(), ..Filter::default()
@@ -168,7 +184,9 @@ fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras
     let stars = crate::library_sources::Stars::default();
     let mut records: std::collections::HashMap<i64, chilpa_library::AlbumKey> = std::collections::HashMap::new();
     let mut order = Vec::new();
-    for item in index.items.iter().filter(|item| item.album != 0 && (if favorites_only {item.favorite_album} else {item.saved_album})) {
+    for item in index.items.iter().filter(|item| item.album != 0 && within.map_or_else(
+        || if favorites_only { item.favorite_album } else { item.saved_album },
+        |within| within.contains(&item.album) && (!favorites_only || item.favorite_album))) {
         let named = |word: &String| item.folded.album_title.contains(word.as_str()) || item.folded.artists.iter().any(|a| a.contains(word.as_str()));
         if !words.iter().all(named) || !through.passes(item, &stars) { continue; }
         let key = records.entry(item.album).or_insert_with(|| {

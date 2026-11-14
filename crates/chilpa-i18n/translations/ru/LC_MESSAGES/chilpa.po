@@ -1198,6 +1198,9 @@ msgstr "Проверьте адрес и порт, а также что серв
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "Проверьте адрес, включён ли DLNA в настройках сервера и пускает ли он этот компьютер, затем попробуйте снова."
 
+msgid "Check the selected item and the changes described above. This action cannot be undone from Chilpa."
+msgstr ""
+
 msgid "Check the selected runtime and its beets version without looking up music."
 msgstr ""
 
@@ -3211,6 +3214,9 @@ msgstr ""
 msgid "I do not know the list \"{}\""
 msgstr "Список «{}» неизвестен"
 
+msgid "I have reviewed the changes and want to continue."
+msgstr ""
+
 msgid "I keep this filter applied; edit its text to change it."
 msgstr "Я сохраняю этот фильтр; отредактируйте его текст, чтобы изменить его."
 
@@ -3219,9 +3225,6 @@ msgstr "Аудиослужбы перезапущены"
 
 msgid "I understand and accept these terms"
 msgstr "Я понимаю и принимаю эти условия"
-
-msgid "I understand the consequences and want to proceed."
-msgstr "Я понимаю последствия и хочу продолжить."
 
 msgid "INFLUENCES"
 msgstr "ВЛИЯНИЯ"
@@ -5919,9 +5922,6 @@ msgstr ""
 
 msgid "Review the requested permissions before installing."
 msgstr "Проверьте запрошенные разрешения перед установкой."
-
-msgid "Review the target and the effects described above. The next confirmation applies this destructive action."
-msgstr "Проверьте объект и описанные выше последствия. Следующее подтверждение выполнит это разрушительное действие."
 
 msgid "Reviewing changes…"
 msgstr ""

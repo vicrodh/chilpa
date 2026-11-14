@@ -328,3 +328,22 @@ fn saved_albums_and_explicit_hearts_are_independent_filters(){
     let found=reader.albums_view_selected("artist","","",&filter,&index,true);
     assert_eq!(found.ids,[1]);
 }
+
+#[test]
+fn discovery_album_selection_keeps_saved_track_albums_and_filters_before_copy_grouping() {
+    use std::collections::HashSet;
+    let (reader, index) = fixture();
+    let within = HashSet::from([1, -12]);
+    let legacy: Vec<_> = reader.albums_view_using("title", "", "", &Filter::default(), &index).ids
+        .into_iter().filter(|id| within.contains(id)).collect();
+    assert_eq!(legacy, [1], "the old global grid excluded the saved-track-only album");
+    assert_eq!(reader.albums_view_within("title", "", &within, &index).ids, [1,-12]);
+    assert_eq!(reader.albums_view_within("title-desc", "", &within, &index).ids, [-12,1]);
+    assert_eq!(reader.albums_view_within("title", "Kind", &within, &index).ids, [-12]);
+    let item = SourceItem { track:-70, album:-71, plugin:"fixture".into(), album_identity:"scoped-copy".into(),
+        album_title:"Blue Train".into(), album_artist:"Coltrane".into(), artists:vec!["Coltrane".into()],
+        saved_album:true, playable:true, tracks:1, ..Default::default() };
+    let copy = SourceIndex::new(vec![item], Vec::new());
+    assert_eq!(reader.albums_view_within("title", "", &HashSet::from([-71]), &copy).ids, [-71],
+        "an ineligible local copy must not hide the selected source copy");
+}

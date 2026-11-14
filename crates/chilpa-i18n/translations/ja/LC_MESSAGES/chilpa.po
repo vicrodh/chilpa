@@ -1194,6 +1194,9 @@ msgstr "アドレスとポート、サーバーが起動していてこのコン
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "アドレス、サーバーの設定で DLNA がオンになっていること、このコンピュータが許可されていることを確認してから、もう一度お試しください。"
 
+msgid "Check the selected item and the changes described above. This action cannot be undone from Chilpa."
+msgstr ""
+
 msgid "Check the selected runtime and its beets version without looking up music."
 msgstr ""
 
@@ -3205,6 +3208,9 @@ msgstr ""
 msgid "I do not know the list \"{}\""
 msgstr "リスト「{}」は見つかりません"
 
+msgid "I have reviewed the changes and want to continue."
+msgstr ""
+
 msgid "I keep this filter applied; edit its text to change it."
 msgstr "このフィルターを適用したままにします。変更するにはテキストを編集してください。"
 
@@ -3213,9 +3219,6 @@ msgstr "オーディオサービスを再起動しました"
 
 msgid "I understand and accept these terms"
 msgstr "これらの規約を理解し、同意します"
-
-msgid "I understand the consequences and want to proceed."
-msgstr "影響を理解したうえで続行します。"
 
 msgid "INFLUENCES"
 msgstr "影響を受けたアーティスト"
@@ -5907,9 +5910,6 @@ msgstr ""
 
 msgid "Review the requested permissions before installing."
 msgstr "インストールする前に、要求された権限を確認してください。"
-
-msgid "Review the target and the effects described above. The next confirmation applies this destructive action."
-msgstr "対象と上記の影響を確認してください。次の確認でこの破壊的な操作を実行します。"
 
 msgid "Reviewing changes…"
 msgstr ""

@@ -1196,6 +1196,9 @@ msgstr ""
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr ""
 
+msgid "Check the selected item and the changes described above. This action cannot be undone from Chilpa."
+msgstr "Check the selected item and the changes described above. This action cannot be undone from Chilpa."
+
 msgid "Check the selected runtime and its beets version without looking up music."
 msgstr ""
 
@@ -3208,6 +3211,9 @@ msgstr "I do not have permission to access this USB device."
 msgid "I do not know the list \"{}\""
 msgstr ""
 
+msgid "I have reviewed the changes and want to continue."
+msgstr "I have reviewed the changes and want to continue."
+
 msgid "I keep this filter applied; edit its text to change it."
 msgstr "I keep this filter applied; edit its text to change it."
 
@@ -3216,9 +3222,6 @@ msgstr ""
 
 msgid "I understand and accept these terms"
 msgstr ""
-
-msgid "I understand the consequences and want to proceed."
-msgstr "I understand the consequences and want to proceed."
 
 msgid "INFLUENCES"
 msgstr ""
@@ -5913,9 +5916,6 @@ msgstr "Review the device changes before syncing."
 
 msgid "Review the requested permissions before installing."
 msgstr "Review the requested permissions before installing."
-
-msgid "Review the target and the effects described above. The next confirmation applies this destructive action."
-msgstr "Review the target and the effects described above. The next confirmation applies this destructive action."
 
 msgid "Reviewing changes…"
 msgstr "Reviewing changes…"

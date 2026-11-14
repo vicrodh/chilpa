@@ -13,7 +13,17 @@ pub(super) const VERSION: &str = taxonomy::VERSION;
 #[derive(Clone, Eq, Hash, PartialEq)]
 enum Identity { Known(usize), Literal(String) }
 impl Resolution {
-    fn identity(&self) -> Identity { self.node.map(Identity::Known).unwrap_or_else(|| Identity::Literal(self.original.to_lowercase())) }
+    fn identity(&self) -> Identity {
+        self.node.map(Identity::Known).unwrap_or_else(|| {
+            let key = crate::library_query::genre_key(&self.original);
+            Identity::Literal(if key.is_empty() { self.original.to_lowercase() } else { key })
+        })
+    }
+}
+
+fn matches(name: &str, text: &str) -> bool {
+    let key = crate::library_query::genre_key(text);
+    !key.is_empty() && crate::library_query::genre_key(name).contains(&key) || chilpa_library::store::query::fold(name).contains(text)
 }
 
 pub(super) struct Inventory {
@@ -46,10 +56,12 @@ impl Inventory {
     pub fn browse(&self, parent: Option<&str>, text: &str, scope: &str) -> Vec<String> {
         if scope == "tags" {
             let within = parent.map(|name| self.matching(name));
+            let mut seen = HashSet::new();
             let mut tags: Vec<_> = self.records.iter().filter(|record|
                 within.as_ref().is_none_or(|tags| tags.contains(&record.original)) &&
-                chilpa_library::store::query::fold(&record.original).contains(text))
-                .map(|record| record.original.clone()).collect();
+                (matches(&record.original,text) || record.recognized.is_some_and(|name| matches(name,text))))
+                .filter(|record| seen.insert(record.identity()))
+                .map(|record| record.recognized.map(str::to_string).unwrap_or_else(|| record.original.clone())).collect();
             tags.sort_by_cached_key(|name| (name.to_lowercase(), name.clone()));
             return tags;
         }
@@ -65,9 +77,9 @@ impl Inventory {
             if scope == "library" && !populated { return false; }
             if !text.is_empty() {
                 return within.as_ref().is_none_or(|ids| ids.contains(id)) &&
-                    (chilpa_library::store::query::fold(node.name).contains(text) ||
+                    (matches(node.name,text) ||
                         self.groups.get(&Identity::Known(*id)).into_iter().flatten().any(|at|
-                            self.records[*at].node == Some(*id) && chilpa_library::store::query::fold(&self.records[*at].original).contains(text)));
+                            self.records[*at].node == Some(*id) && matches(&self.records[*at].original,text)));
             }
             parent.map_or(node.parents.is_empty() && !node.children.is_empty(), |parent| graph.nodes[parent].children.contains(id))
         }).map(|(_, node)| node.name.to_string()).collect();
@@ -122,12 +134,29 @@ mod tests {
     }
 
     #[test]
-    fn multiple_parents_do_not_repeat_a_tag_and_personal_names_remain_distinct() {
+    fn multiple_parents_and_format_variants_do_not_repeat_a_style() {
         let inventory = Inventory::new(&["Jazz Fusion".into(), "My-style".into(), "My style".into()]);
         assert_eq!(inventory.matching("Rock"), ["Jazz Fusion"]);
         assert_eq!(inventory.matching("Jazz"), ["Jazz Fusion"]);
-        assert_eq!(inventory.matching("My-style"), ["My-style"]);
-        assert_eq!(inventory.matching("My style"), ["My style"]);
+        assert_eq!(inventory.matching("My-style"), ["My-style", "My style"]);
+        assert_eq!(inventory.matching("My style"), ["My-style", "My style"]);
         assert!(inventory.matching("Missing category").is_empty());
+    }
+
+    #[test]
+    fn case_and_separators_share_one_style_without_changing_any_original() {
+        let tags: Vec<String> = ["heavy metal", "Heavy Metal", "heavy-metal", "HEAVY_METAL", "Heavy  Metal"].map(String::from).into();
+        let before = tags.clone();
+        let inventory = Inventory::new(&tags);
+        assert_eq!(inventory.browse(None,"","tags"), ["Heavy Metal"]);
+        for query in ["HEAVY-METAL", "heavy_metal", "heavy metal", "heavymetal"] {
+            assert_eq!(inventory.matching(query), tags);
+            assert_eq!(inventory.browse(None,query,"library"), ["Heavy Metal"]);
+        }
+        assert_eq!(tags,before);
+        let custom = Inventory::new(&["Personal-Shelf".into(),"personal shelf".into()]);
+        assert_eq!(custom.browse(None,"PERSONAL_SHELF","tags").len(),1);
+        assert_eq!(custom.matching("Personal Shelf"), ["Personal-Shelf","personal shelf"]);
+        assert!(custom.browse(None,"","library").is_empty(), "format recognition does not invent ancestry");
     }
 }

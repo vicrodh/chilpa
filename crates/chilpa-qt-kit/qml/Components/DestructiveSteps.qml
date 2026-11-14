@@ -35,7 +35,7 @@ Column {
         objectName: "destructiveConfirmationWarning"
         visible: confirmation.step === 2
         width: parent.width
-        text: I18n.tr("Review the target and the effects described above. The next confirmation applies this destructive action.", I18n.rev)
+        text: I18n.tr("Check the selected item and the changes described above. This action cannot be undone from Chilpa.", I18n.rev)
         wrapMode: Text.WordWrap
         font.pointSize: Type.body
         color: Theme.color.statusNegative
@@ -45,6 +45,6 @@ Column {
         objectName: "destructiveAcknowledgement"
         visible: confirmation.step === 2
         width: parent.width
-        text: I18n.tr("I understand the consequences and want to proceed.", I18n.rev)
+        text: I18n.tr("I have reviewed the changes and want to continue.", I18n.rev)
     }
 }

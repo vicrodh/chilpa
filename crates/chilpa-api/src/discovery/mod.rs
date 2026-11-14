@@ -108,9 +108,8 @@ impl Reader {
 
     fn discovery_albums_ordered(&self, key: &str, text: &str, order: &str) -> AlbumsFound {
         let within: HashSet<_> = self.discovery_snapshot(key).album_ids.into_iter().collect();
-        let mut ids = self.albums_view(order, "", text, &Filter::default()).ids;
-        ids.retain(|id| within.contains(id));
-        AlbumsFound { ids, groups: Vec::new() }
+        if within.is_empty() { return AlbumsFound::default(); }
+        self.albums_view_within(order, text, &within, &self.source_index().1)
     }
 
     /// JSON for a virtualized page. Search examines the full inventory before

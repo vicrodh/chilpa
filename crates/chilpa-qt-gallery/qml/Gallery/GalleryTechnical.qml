@@ -31,7 +31,7 @@ Column {
     }
     AlbumViewTools { columns: ["rate", "bits"]; view: "nerdy" }
     DestructiveSteps { width: section.width; step: 2 }
-    PillButton { text: "Destructive confirmation"; onClicked: confirmation.open() }
+    PillButton { text: "Action confirmation"; onClicked: confirmation.open() }
     ConfirmationDialog {
         id: confirmation
         title: "Remove this example?"

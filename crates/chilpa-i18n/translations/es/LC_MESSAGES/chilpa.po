@@ -1196,6 +1196,9 @@ msgstr "Revisa la dirección y su puerto, y que el servidor esté encendido y se
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "Revisa la dirección, que DLNA esté activado en los ajustes del servidor y que deje entrar a esta computadora; luego inténtalo de nuevo."
 
+msgid "Check the selected item and the changes described above. This action cannot be undone from Chilpa."
+msgstr "Revisa el elemento seleccionado y los cambios descritos arriba. Esta acción no se puede deshacer desde Chilpa."
+
 msgid "Check the selected runtime and its beets version without looking up music."
 msgstr "Comprueba el entorno seleccionado y su versión de beets sin buscar música."
 
@@ -3208,6 +3211,9 @@ msgstr "No tengo permiso para acceder a este dispositivo USB."
 msgid "I do not know the list \"{}\""
 msgstr "no conozco la lista \"{}\""
 
+msgid "I have reviewed the changes and want to continue."
+msgstr "He revisado los cambios y quiero continuar."
+
 msgid "I keep this filter applied; edit its text to change it."
 msgstr "Mantengo aplicado este filtro; edita su texto para cambiarlo."
 
@@ -3216,9 +3222,6 @@ msgstr "Ya reinicié los servicios de audio"
 
 msgid "I understand and accept these terms"
 msgstr "Entiendo y acepto estos términos"
-
-msgid "I understand the consequences and want to proceed."
-msgstr "Entiendo las consecuencias y quiero continuar."
 
 msgid "INFLUENCES"
 msgstr "INFLUENCIAS"
@@ -5913,9 +5916,6 @@ msgstr "Revisa los cambios del dispositivo antes de sincronizar."
 
 msgid "Review the requested permissions before installing."
 msgstr "Revisa los permisos solicitados antes de instalar."
-
-msgid "Review the target and the effects described above. The next confirmation applies this destructive action."
-msgstr "Revisa el destino y los efectos descritos arriba. La siguiente confirmación ejecuta esta acción destructiva."
 
 msgid "Reviewing changes…"
 msgstr "Revisando cambios…"

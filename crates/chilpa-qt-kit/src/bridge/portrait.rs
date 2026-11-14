@@ -63,7 +63,7 @@ impl qobject::PortraitModel {
             if !ticket.current() { return; }
             let _ = thread.queue(move |mut model| {
                 if !ticket.current() || !*model.active() || image.path.is_empty() { return; }
-                model.as_mut().set_source(QUrl::from_local_file(&QString::from(image.path)).to_string());
+                model.as_mut().set_source(QString::from(QUrl::from_local_file(&QString::from(image.path)).to_string()));
                 let credit = [image.info.credit,image.info.license,image.info.license_url].into_iter().filter(|part| !part.is_empty()).collect::<Vec<_>>().join(" · ");
                 model.as_mut().set_credit(QString::from(credit));
                 model.set_page(QString::from(image.info.page));
