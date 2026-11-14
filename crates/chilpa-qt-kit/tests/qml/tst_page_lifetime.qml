@@ -32,6 +32,34 @@ TestCase {
             tryCompare(test, "retiredMaterial", null)
         }
     }
+    Component { id: emptyShadow; RectangularShadow {} }
+    function test_retired_shadow_without_a_window_releases_its_material() {
+        for (const factory of [shadowPage, emptyShadow]) {
+            // Closed popup content has not joined a window or initialized
+            // the default shader's visual parent yet.
+            const shadow = factory.createObject(null)
+            compare(shadow.parent, null)
+            compare(shadow.children.length, 0)
+            test.retiredMaterial = shadow.material
+            verify(test.retiredMaterial !== null)
+            lifetime.cancel(shadow)
+            shadow.destroy()
+            tryCompare(test, "retiredMaterial", null)
+        }
+    }
+    Component { id: customMaterial; ShaderEffect {} }
+    function test_retiring_a_shadow_preserves_its_custom_material() {
+        const material = customMaterial.createObject(null)
+        const shadow = emptyShadow.createObject(null)
+        shadow.material = material
+        test.retiredMaterial = material
+        lifetime.cancel(shadow)
+        shadow.destroy()
+        wait(1)
+        verify(test.retiredMaterial !== null)
+        material.destroy()
+        tryCompare(test, "retiredMaterial", null)
+    }
     Component {
         id: boundPage
         Item {

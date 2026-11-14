@@ -16,12 +16,14 @@ void ownShadowMaterial(QObject *root)
 {
     if (!root->inherits("QQuickRectangularShadow")) return;
     auto *material = root->property("material").value<QQuickItem *>();
-    // Qt's built-in shadow material can have only a visual parent. Give it
-    // the retiring shadow's QObject lifetime, without taking custom materials.
-    if (material && !material->parent() && material->parentItem() == root
-            && !qmlContext(material)
-            && material->property("vertexShader").toUrl()
-                == QUrl(QStringLiteral("qrc:/data/shaders/rectangularshadow.vert.qsb")))
+    // A closed popup's default material has not joined a window and can
+    // lack both parents. Custom materials already have a visual parent or
+    // QML context; keep their ownership when retiring the shadow.
+    if (material && !material->parent() && !qmlContext(material)
+            && std::strcmp(material->metaObject()->className(), "QQuickShaderEffect") == 0
+            && (!material->parentItem() || (material->parentItem() == root
+                && material->property("vertexShader").toUrl()
+                    == QUrl(QStringLiteral("qrc:/data/shaders/rectangularshadow.vert.qsb")))))
         material->setParent(root);
 }
 
