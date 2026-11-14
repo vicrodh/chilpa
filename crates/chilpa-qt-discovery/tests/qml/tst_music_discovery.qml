@@ -114,13 +114,32 @@ TestCase {
     function test_hiding_a_detail_cancels_its_view_and_reopens_it() {
         const page = createTemporaryObject(maker, this, {mode:"composers",routeKey:JSON.stringify({kind:"composer",name:"Writer"})})
         page.changeTab(1)
+        fillAlbumView(page).contentY = 500
         test.cancelledViews = 0
         watchAlbumView(page)
         page.visible = false
         compare(test.cancelledViews, 1, "cancel the album view before hiding its loader")
         compare(findChild(page, "discoveryContent").item, null)
+        compare(page.positions[1], 500)
         page.visible = true
-        verify(!!findChild(page, "discoveryContent").item.scrollView.model)
+        const reopened = fillAlbumView(page)
+        tryCompare(reopened, "contentY", 500)
+    }
+    function fillAlbumView(page) {
+        const view = findChild(page, "discoveryContent").item.scrollView
+        for (let index = 0; index < 40; index++) view.model.append({first:index * 3,span:3,group:"",revision:0})
+        view.forceLayout()
+        return view
+    }
+    function test_changing_tabs_keeps_the_other_tabs_scroll_position() {
+        const page = createTemporaryObject(maker, this, {mode:"composers",routeKey:JSON.stringify({kind:"composer",name:"Writer"})})
+        page.changeTab(1)
+        const view = fillAlbumView(page)
+        view.contentY = 500
+        page.positions[0] = 123
+        page.changeTab(0)
+        compare(page.restoredPosition, 123, "retiring the old view must not reset the destination tab's position")
+        compare(page.positions[1], 500)
     }
     function test_a_retained_genre_tile_releases_images_outside_the_viewport() {
         const page = createTemporaryObject(maker, this)

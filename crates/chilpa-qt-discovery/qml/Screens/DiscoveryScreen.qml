@@ -67,20 +67,13 @@ Item {
         view.contentY = Math.max(0, Math.min(restoredPosition, view.contentHeight - view.height))
         restoring = false
     }
-    PageLifetime { id: contentLifetime }
     function updateContent() {
-        if (!content) return
-        const next = visible ? contentComponent : null
-        if (content.sourceComponent === next && content.active === visible) return
-        // Stop nested views while their creation contexts still exist.
-        contentLifetime.cancel(content)
-        content.sourceComponent = next
-        content.active = visible
+        if (content) content.replace(contentComponent, visible)
     }
     onContentComponentChanged: updateContent()
     Connections {
         target: content.item?.scrollView || null
-        function onContentYChanged() { if (!discoveryPage.restoring) discoveryPage.positions[discoveryPage.tab] = target.contentY }
+        function onContentYChanged() { if (!discoveryPage.restoring && !content.retiring) discoveryPage.positions[discoveryPage.tab] = target.contentY }
         function onContentHeightChanged() { Qt.callLater(discoveryPage.restoreViewport) }
     }
     Connections { target: content.item; function onReadyChanged() { Qt.callLater(discoveryPage.restoreViewport) } }
@@ -88,7 +81,11 @@ Item {
     Component.onDestruction: remember()
     onRouteKeyChanged: { playSelection = false; tab = 0; number = 0; find.text = ""; schedule() }
     function schedule() { if (visible) settle.restart() }
-    onVisibleChanged: { updateContent(); if (visible) schedule(); else { settle.stop(); results.cancel() } }
+    onVisibleChanged: {
+        if (visible) { restoredPosition = positions[tab] || 0; restoring = restoredPosition > 0 }
+        updateContent()
+        if (visible) schedule(); else { settle.stop(); results.cancel() }
+    }
     Connections { target: Library; function onContentRevChanged() { discoveryPage.schedule() } function onRemoteRevChanged() { discoveryPage.schedule() } }
     DiscoveryModel { id: results; objectName: "discoveryModel" }
     Timer {
@@ -163,12 +160,11 @@ Item {
             onTabRequested: tab => discoveryPage.changeTab(tab)
         }
     }
-    Loader {
+    RetiringLoader {
         id: content
         objectName: "discoveryContent"
         anchors.left: heading.left; anchors.right: heading.right; anchors.top: heading.bottom; anchors.topMargin: Metrics.gap20
         anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.contentBottom
-        active: false
         onLoaded: Qt.callLater(discoveryPage.restoreViewport)
     }
     Component {
