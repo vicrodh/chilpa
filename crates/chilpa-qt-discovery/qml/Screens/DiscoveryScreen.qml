@@ -80,7 +80,7 @@ Item {
     Connections { target: content.item; function onReadyChanged() { Qt.callLater(discoveryPage.restoreViewport) } }
     Component.onCompleted: { restore(); updateContent(); settle.triggered() }
     Component.onDestruction: remember()
-    onRouteKeyChanged: { playSelection = false; tab = 0; find.text = ""; find.excludedSources = selected.excluded_sources || []; schedule() }
+    onRouteKeyChanged: { playSelection = false; tab = 0; find.text = ""; find.excludedSources = decode(routeKey).excluded_sources || []; schedule() }
     function schedule() { if (visible) settle.restart() }
     onVisibleChanged: {
         if (visible) { restoredPosition = positions[tab] || 0; restoring = restoredPosition > 0 }

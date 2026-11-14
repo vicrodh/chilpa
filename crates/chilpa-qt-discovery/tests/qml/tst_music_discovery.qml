@@ -15,7 +15,7 @@ TestCase {
     visible: true
     width: 1100; height: 820
     Component { id: maker; DiscoveryScreen { width: 1100; height: 820 } }
-    function init() { Visit.kept = ({}); Navigation.went = []; Navigation.page = ""; Navigation.selectedId = 0 }
+    function init() { failOnWarning(/ReferenceError|TypeError|Binding loop|invalid context/);Visit.kept = ({}); Navigation.went = []; Navigation.page = ""; Navigation.selectedId = 0 }
     function test_a_deep_genre_keeps_its_path_in_the_route() {
         const page = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:"Death Metal",trail:["Metal","Death Metal"]})})
         verify(page)
@@ -107,6 +107,27 @@ TestCase {
         mouseClick(findChild(page, "discoveryRoot"))
         compare(Navigation.went[0], "genres")
         compare(JSON.parse(Navigation.went[1]), {excluded_sources:excluded})
+    }
+    function test_pending_source_tracks_cannot_trigger_old_collection_actions() {
+        const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Heavy Metal"})})
+        page.changeTab(3)
+        const list=findChild(page,"discoveryTrackList")
+        verify(list)
+        list.model.append({title:"Old source track",rowKind:0})
+        list.model.ready=false
+        verify(!findChild(page,"discoveryPlay").enabled)
+        verify(!findChild(page,"discoveryQueue").enabled)
+        verify(!list.enabled)
+        list.model.ready=true
+        verify(findChild(page,"discoveryPlay").enabled)
+        verify(findChild(page,"discoveryQueue").enabled)
+        verify(list.enabled)
+    }
+    function test_retargeting_a_genre_route_updates_its_source_scope_immediately() {
+        const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Metal",excluded_sources:["local:default"]})})
+        page.routeKey=JSON.stringify({kind:"genre",name:"Heavy Metal",excluded_sources:["server:fixture"]})
+        compare(findChild(page,"genreSources").excluded,["server:fixture"])
+        compare(JSON.parse(page.collectionKey).excluded_sources,["server:fixture"])
     }
     function test_genre_source_choices_are_local_to_this_view_and_survive_return() {
         let page = createTemporaryObject(maker, this)
