@@ -473,6 +473,9 @@ msgstr "すべてのディスク"
 msgid "All episode types"
 msgstr "すべてのエピソードタイプ"
 
+msgid "All files"
+msgstr ""
+
 msgid "All groups"
 msgstr "すべてのグループ"
 
@@ -830,6 +833,9 @@ msgstr "自動追従"
 msgid "Auto-tail"
 msgstr "自動で追従"
 
+msgid "Automatic beets installation is not available on this platform."
+msgstr ""
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "このスキャンを続行または破棄するまで、自動確認は一時停止されます。破棄しても追加済みのファイルは保持されます。"
 
@@ -1053,6 +1059,9 @@ msgstr "キャンセル"
 msgid "Cancel Timer"
 msgstr "タイマーをキャンセル"
 
+msgid "Cancel check"
+msgstr ""
+
 msgid "Cancel download"
 msgstr "ダウンロードをキャンセル"
 
@@ -1064,6 +1073,9 @@ msgstr "このトラックの後で停止をキャンセル"
 
 msgid "Cancelled"
 msgstr "キャンセル済み"
+
+msgid "Cancelling the beets task…"
+msgstr ""
 
 msgid "Cancelling update…"
 msgstr "アップデートをキャンセル中…"
@@ -1146,6 +1158,9 @@ msgstr "もう一度確認し、必要ならダウンロードし直す"
 msgid "Check all folders"
 msgstr "すべてのフォルダーを確認"
 
+msgid "Check beets"
+msgstr ""
+
 msgid "Check for a newer version of Chilpa."
 msgstr "Chilpaの新しいバージョンを確認します。"
 
@@ -1175,6 +1190,9 @@ msgstr "アドレスとポート、サーバーが起動していてこのコン
 
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "アドレス、サーバーの設定で DLNA がオンになっていること、このコンピュータが許可されていることを確認してから、もう一度お試しください。"
+
+msgid "Check the selected runtime and its beets version without looking up music."
+msgstr ""
 
 msgid "Check the user and the password or the API key, then go back and try again."
 msgstr "ユーザーとパスワード、または API キーを確認し、戻ってもう一度お試しください。"
@@ -1392,6 +1410,9 @@ msgstr "値を選択"
 msgid "Choose an available writable storage."
 msgstr ""
 
+msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
+msgstr ""
+
 msgid "Choose an image"
 msgstr "画像を選択"
 
@@ -1412,6 +1433,9 @@ msgstr "ダウンロードフォルダーを選択"
 
 msgid "Choose download folder…"
 msgstr "ダウンロードフォルダーを選択…"
+
+msgid "Choose executable…"
+msgstr ""
 
 msgid "Choose fewer offline files for this action."
 msgstr "この操作では選択するオフラインファイルを減らしてください。"
@@ -1453,6 +1477,9 @@ msgid "Choose the Python executable for beets"
 msgstr ""
 
 msgid "Choose the connected player and its storage first."
+msgstr ""
+
+msgid "Choose the engine used by the metadata editor."
 msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
@@ -1902,6 +1929,9 @@ msgstr "カスタム"
 msgid "Custom Image"
 msgstr "カスタム画像"
 
+msgid "Custom Python executable"
+msgstr ""
+
 msgid "Custom image"
 msgstr "カスタム画像"
 
@@ -2322,11 +2352,20 @@ msgstr "完了しました。このタブを閉じてChilpaに戻れます。"
 msgid "Download"
 msgstr "ダウンロード"
 
+msgid "Download a private Python environment with beets. A successful installation becomes the default runtime."
+msgstr ""
+
+msgid "Download a private copy managed by Chilpa."
+msgstr ""
+
 msgid "Download again"
 msgstr "もう一度ダウンロード"
 
 msgid "Download album"
 msgstr "アルバムをダウンロード"
+
+msgid "Download and install"
+msgstr ""
 
 msgid "Download cancelled."
 msgstr "ダウンロードをキャンセルしました。"
@@ -2342,6 +2381,9 @@ msgstr ""
 
 msgid "Downloading for offline listening"
 msgstr "オフライン再生用にダウンロード中"
+
+msgid "Downloading the verified installer…"
+msgstr ""
 
 msgid "Downloading update…"
 msgstr "アップデートをダウンロード中…"
@@ -3313,6 +3355,9 @@ msgstr "設定 → プラグインで、プレイリストインポーターを�
 msgid "Install and enable the Mood plugin first."
 msgstr "先にムードプラグインをインストールして有効にしてください。"
 
+msgid "Install beets"
+msgstr ""
+
 msgid "Install beets {} in the selected Python environment."
 msgstr ""
 
@@ -3343,8 +3388,14 @@ msgstr "インストール方法"
 msgid "Installed"
 msgstr "インストール済み"
 
+msgid "Installing beets and its pinned packages…"
+msgstr ""
+
 msgid "Installing plugin…"
 msgstr "プラグインをインストール中…"
+
+msgid "Installing private Python…"
+msgstr ""
 
 msgid "Instrument"
 msgstr "楽器"
@@ -3897,7 +3948,7 @@ msgstr "メッセージ"
 msgid "Metadata"
 msgstr "メタデータ"
 
-msgid "Metadata source: MusicBrainz"
+msgid "Metadata search engine"
 msgstr ""
 
 msgid "Micro"
@@ -4470,6 +4521,9 @@ msgstr "ノーマライズ"
 msgid "Not answering"
 msgstr "応答なし"
 
+msgid "Not checked"
+msgstr ""
+
 msgid "Not compatible"
 msgstr "互換性なし"
 
@@ -4493,6 +4547,9 @@ msgstr "ライブラリにもソースにもありません"
 
 msgid "Not inspected"
 msgstr "未検査"
+
+msgid "Not installed"
+msgstr ""
 
 msgid "Not now"
 msgstr "今はしない"
@@ -5172,6 +5229,9 @@ msgstr "ムード解析を準備しています"
 msgid "Preparing analysis…"
 msgstr "解析を準備しています…"
 
+msgid "Preparing beets…"
+msgstr ""
+
 msgid "Preparing playlists"
 msgstr "プレイリストを準備中"
 
@@ -5270,9 +5330,6 @@ msgstr "購入"
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "プラグインのフォルダーをChilpaのプラグインディレクトリに置き、アプリを開き直してください。"
-
-msgid "Python executable"
-msgstr ""
 
 msgid "Qt version"
 msgstr "Qtのバージョン"
@@ -5567,6 +5624,9 @@ msgstr "設定を更新"
 
 msgid "Regenerate"
 msgstr "再生成"
+
+msgid "Reinstall"
+msgstr ""
 
 msgid "Release"
 msgstr "リリース"
@@ -6152,9 +6212,6 @@ msgstr "アーティストを選択してアルバムを表示します"
 msgid "Select folders"
 msgstr "フォルダーを選択"
 
-msgid "Select the Python executable from an environment with beets 2.14.1 installed."
-msgstr ""
-
 msgid "Select tracks"
 msgstr "トラックを選択"
 
@@ -6232,6 +6289,9 @@ msgstr "設定を変更"
 
 msgid "Set the overall light or dark polarity. Affects derived shades, borders and overlays."
 msgstr "全体の明暗の極性を設定します。派生する陰影、境界線、オーバーレイに影響します。"
+
+msgid "Set up beets in Settings to look up metadata."
+msgstr ""
 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Chilpaが出力を単独で使用している間、PipeWireのグラフを各トラックのレートに合わせ、DACがファイル本来のレートを受け取れるようにします。Chilpaが停止するとレートは元に戻ります。"
@@ -6812,10 +6872,22 @@ msgstr "アカウントの有効期限が切れました。もう一度接続し
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "ブラウザでサーバーを開くときのアドレス（ポートを含む）と、Chilpa がサインインするユーザーです。"
 
+msgid "The beets installer could not be downloaded. Try again."
+msgstr ""
+
 msgid "The beets lookup exceeded its metadata size limit."
 msgstr ""
 
 msgid "The beets lookup timed out. Try again."
+msgstr ""
+
+msgid "The beets setting could not be changed while a task is running."
+msgstr ""
+
+msgid "The beets task reached its time limit."
+msgstr ""
+
+msgid "The beets task was cancelled."
 msgstr ""
 
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
@@ -6920,6 +6992,15 @@ msgstr "画像が大きすぎます"
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "誤った歌詞を除外できませんでした。再試行してください。"
 
+msgid "The installer archive could not be opened safely."
+msgstr ""
+
+msgid "The installer did not match its pinned checksum."
+msgstr ""
+
+msgid "The installer exceeded its output limit."
+msgstr ""
+
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "ライブラリを変更できませんでした。もう一度お試しください。下の詳細に何が起きたかが書かれています。"
 
@@ -7022,8 +7103,23 @@ msgstr ""
 msgid "The previous beets lookup is still stopping."
 msgstr ""
 
+msgid "The previous beets task is still stopping."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "チェック後に以前のサンプルレートが安定しませんでした。"
+
+msgid "The private beets environment could not be installed. The previous runtime is unchanged."
+msgstr ""
+
+msgid "The private beets environment could not be saved."
+msgstr ""
+
+msgid "The private beets environment exceeded its size limit."
+msgstr ""
+
+msgid "The provider for Chilpa's lookup engine. Embedded tags only disables online lookup for both engines."
+msgstr ""
 
 msgid "The publisher did not return an audio file."
 msgstr ""
@@ -7104,6 +7200,9 @@ msgid "The scan worker stopped unexpectedly."
 msgstr "スキャン処理が予期せず停止しました。"
 
 msgid "The selected Python environment could not start beets."
+msgstr ""
+
+msgid "The selected environment does not provide beets 2.14.1."
 msgstr ""
 
 msgid "The selected hardware volume control is gone."
@@ -7950,6 +8049,9 @@ msgstr "音量 {}%"
 msgid "Wait for the audio check to finish."
 msgstr "音声のチェックが完了するまでお待ちください。"
 
+msgid "Wait for the beets installation or check to finish in Settings."
+msgstr ""
+
 msgid "Wait for the queue to finish switching."
 msgstr "キューの切り替えが終わるまでお待ちください。"
 
@@ -8049,9 +8151,6 @@ msgstr "サーバーの場所とサインインするユーザー"
 
 msgid "Where is your music?"
 msgstr "音楽はどこにありますか？"
-
-msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
-msgstr "メタデータエディターが最初に検索する場所です。「埋め込みタグのみ」の場合、ネットワークには一切接続しません。"
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "サンプルの送り先です。デバイスに直接送るか、サウンドサーバーを経由します。"
@@ -8344,10 +8443,19 @@ msgstr "承認待ち"
 msgid "be a plugin of another kind: {}"
 msgstr "別の種類のプラグインになる: {}"
 
+msgid "beets 2.14.1 is ready."
+msgstr ""
+
 msgid "beets accepts up to {} tracks per lookup."
 msgstr ""
 
+msgid "beets availability"
+msgstr ""
+
 msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets settings"
 msgstr ""
 
 msgid "beets {} is ready."

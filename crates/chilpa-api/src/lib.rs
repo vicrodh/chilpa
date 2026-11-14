@@ -52,6 +52,7 @@ mod listening_stats;
 pub mod listening;
 pub mod list_changes;
 mod metadata;
+mod beets_runtime;
 pub mod navigation;
 pub mod discover_genres;
 pub mod queue_origin;
@@ -707,6 +708,7 @@ pub struct Chilpa {
     outputs_listing: outputs::Listing,
     /// The metadata editor, and the record open in it if there is one.
     metadata: metadata::Editor,
+    beets_runtime: Option<beets_runtime::Managed>,
     /// My servers: adding, syncing, watching and removing them (ADR-017).
     servers: servers::Servers,
     casting: casting::Casting,
@@ -828,6 +830,7 @@ impl Chilpa {
             relaunching: None,
             outputs_listing,
             metadata: metadata::Editor::default(),
+            beets_runtime: None,
             servers: servers::Servers::default(),
             casting: casting::Casting::default(),
             credits: Default::default(),
@@ -946,11 +949,6 @@ impl Chilpa {
         }
         self.replace_queue(vec![url.clone()]);
         self.spawn(0, device, bit_perfect);
-    }
-
-    /// What Chilpa remembers: the last output and the last folder opened.
-    pub fn settings(&self) -> chilpa_core::settings::Settings {
-        chilpa_core::settings::load()
     }
 
     /// Chooses the output, remembers it and moves what is playing there at
@@ -1258,6 +1256,7 @@ impl Chilpa {
         self.advance_sources();
         self.advance_catalog();
         self.advance_lyrics();
+        self.advance_beets_runtime();
         self.resolve_next_ahead();
         self.keep_place(false);
         self.advance_connect();

@@ -12,6 +12,8 @@ pub mod qobject {
         type QModelIndex = cxx_qt_lib::QModelIndex;
         include!("cxx-qt-lib/qstring.h");
         type QString = cxx_qt_lib::QString;
+        include!("cxx-qt-lib/qurl.h");
+        type QUrl = cxx_qt_lib::QUrl;
         include!("cxx-qt-lib/qvector.h");
         type QVector_i32 = cxx_qt_lib::QVector<i32>;
     }
@@ -24,11 +26,14 @@ pub mod qobject {
         #[qproperty(QString, section)]
         /// True when the section has nothing built yet.
         #[qproperty(bool, pending)]
+        #[qproperty(bool, working)]
         type SettingsPage = super::SettingsPageRust;
         /// Changes a setting to one of its option values ("true", "dark",
         /// an output's id).
         #[qinvokable]
         fn set(self: Pin<&mut SettingsPage>, key: &QString, value: &QString);
+        #[qinvokable]
+        fn set_file(self: Pin<&mut SettingsPage>, key: &QString, value: &QUrl);
         /// Presses a setting's button or link.
         #[qinvokable]
         fn press(self: Pin<&mut SettingsPage>, key: &QString);
@@ -94,6 +99,7 @@ type Row = chilpa_api::SettingsRow;
 pub struct SettingsPageRust {
     section: QString,
     pending: bool,
+    working: bool,
     rows: Vec<Row>,
     /// The last diagnosis of the output, shown under its button.
     report: Option<chilpa_api::WizardReport>,
@@ -113,6 +119,9 @@ impl SettingsPageRust {
 }
 
 impl qobject::SettingsPage {
+    pub fn set_file(self: Pin<&mut Self>, key: &QString, value: &cxx_qt_lib::QUrl) {
+        self.set(key, &value.to_local_file());
+    }
     pub fn diagnosis_requires_stop(&self) -> bool { app::with(|api| api.diagnosis_requires_stop()) }
 
     pub fn stop_for_diagnosis(&self) { app::with(|api| api.stop()); }
@@ -463,7 +472,10 @@ impl qobject::SettingsPage {
         next.said = self.as_mut().rust_mut().said.take();
         next.plugin_link = self.as_mut().rust_mut().plugin_link.take();
         next.build();
+        let working = app::with(|api| api.settings_working(&self.section().to_string()));
+        self.as_mut().set_working(working);
         if next.rows.len() == before && before > 0 {
+            let changed = self.rust().rows != next.rows;
             {
                 let mut this = self.as_mut().rust_mut();
                 this.rows = std::mem::take(&mut next.rows);
@@ -474,7 +486,7 @@ impl qobject::SettingsPage {
             }
             let parent = QModelIndex::default();
             let (top, bottom) = (self.index(0, 0, &parent), self.index(before as i32 - 1, 0, &parent));
-            self.as_mut().data_changed(&top, &bottom, &QVector::<i32>::default());
+            if changed { self.as_mut().data_changed(&top, &bottom, &QVector::<i32>::default()); }
         } else {
             // SAFETY: the reset is begun and ended around the swap, as Qt asks.
             unsafe { self.as_mut().begin_reset_model() };

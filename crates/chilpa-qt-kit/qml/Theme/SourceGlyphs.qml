@@ -41,4 +41,7 @@ QtObject {
     readonly property string homeGear: "\ue019"
     readonly property string listFilter: "\ue01a"
     readonly property string chilpa: "\ue01b"
+    readonly property string compositions: "\ue01c"
+    readonly property string composers: "\ue01d"
+    readonly property string genresTree: "\ue01e"
 }

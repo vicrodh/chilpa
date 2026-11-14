@@ -8,6 +8,11 @@ pub(crate) const COMMANDS: &[crate::commands::Command] = &[
 use crate::Chilpa;
 
 impl Chilpa {
+    /// What Chilpa remembers: the last output and the last folder opened.
+    pub fn settings(&self) -> chilpa_core::settings::Settings {
+        chilpa_core::settings::load()
+    }
+
     /// Remembers the chosen window layout.
     pub fn remember_layout(&mut self, layout: &str) {
         let mut s = chilpa_core::settings::load();

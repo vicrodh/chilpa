@@ -1,5 +1,6 @@
 import QtQuick
 import QtTest
+import app.chilpa
 import app.chilpa.metadata
 import "../../qml/Patterns"
 import "../../qml/Components"
@@ -21,30 +22,35 @@ TestCase {
             ]}}
     }
     function init() {
+        Navigation.went=[]
         MetadataEditor.engineCalls=[]; MetadataEditor.runtimeCalls=[]; MetadataEditor.changesChosen=[]
         MetadataEditor.loadedHits=[]; MetadataEditor.probes=0; MetadataEditor.lookupCancels=0
         MetadataEditor.applied=0; MetadataEditor.saved=0; MetadataEditor.choosingBeetsRuntime=false
         MetadataEditor.show(document("native"))
     }
-    function test_the_search_engine_is_selected_by_keyboard_and_keeps_the_source_separate() {
-        const page=createTemporaryObject(maker,this)
-        const control=findChild(page,"metadataSearchEngine")
-        control.forceActiveFocus(); keyClick(Qt.Key_Right)
-        compare(MetadataEditor.engineCalls,["beets"])
-        compare(MetadataEditor.view.lookup.provider,"musicbrainz")
-        verify(findChild(page,"metadataBeetsRuntime").visible)
-        compare(MetadataEditor.saved,0)
-    }
-    function test_checking_and_cancelling_the_runtime_never_applies_or_saves_metadata() {
+    function test_runtime_configuration_is_in_settings_and_keeps_the_real_source() {
         MetadataEditor.show(document("beets"))
         const page=createTemporaryObject(maker,this)
-        const check=findChild(page,"metadataBeetsCheck")
-        check.forceActiveFocus(); keyClick(Qt.Key_Return)
-        compare(MetadataEditor.probes,1)
+        compare(findChild(page,"metadataSearchEngine"),null)
+        compare(findChild(page,"metadataBeetsRuntime"),null)
+        compare(findChild(page,"metadataBeetsCheck"),null)
+        compare(MetadataEditor.view.lookup.provider,"musicbrainz")
+        const settings=findChild(page,"metadataBeetsSettings")
+        settings.forceActiveFocus(); keyClick(Qt.Key_Return)
+        compare(Navigation.went,["settings","library"])
+        compare(MetadataEditor.applied,0)
+        compare(MetadataEditor.saved,0)
+    }
+    function test_cancelling_a_lookup_keeps_configuration_and_form_values() {
+        const doc=document("beets")
+        doc.lookup.searching=true; doc.lookup.beets_busy=true
+        MetadataEditor.show(doc)
+        const page=createTemporaryObject(maker,this)
         const cancel=findChild(page,"metadataLookupCancel")
         verify(cancel.visible)
         cancel.forceActiveFocus(); keyClick(Qt.Key_Return)
         compare(MetadataEditor.lookupCancels,1)
+        compare(MetadataEditor.runtimeCalls.length,0)
         compare(MetadataEditor.applied,0)
         compare(MetadataEditor.saved,0)
     }

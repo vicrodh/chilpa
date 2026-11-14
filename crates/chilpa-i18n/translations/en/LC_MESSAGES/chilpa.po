@@ -474,6 +474,9 @@ msgstr ""
 msgid "All episode types"
 msgstr ""
 
+msgid "All files"
+msgstr ""
+
 msgid "All groups"
 msgstr ""
 
@@ -831,6 +834,9 @@ msgstr ""
 msgid "Auto-tail"
 msgstr "Auto-tail"
 
+msgid "Automatic beets installation is not available on this platform."
+msgstr ""
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 
@@ -1055,6 +1061,9 @@ msgstr ""
 msgid "Cancel Timer"
 msgstr ""
 
+msgid "Cancel check"
+msgstr ""
+
 msgid "Cancel download"
 msgstr "Cancel download"
 
@@ -1065,6 +1074,9 @@ msgid "Cancel stop after this track"
 msgstr ""
 
 msgid "Cancelled"
+msgstr ""
+
+msgid "Cancelling the beets task…"
 msgstr ""
 
 msgid "Cancelling update…"
@@ -1148,6 +1160,9 @@ msgstr ""
 msgid "Check all folders"
 msgstr "Check all folders"
 
+msgid "Check beets"
+msgstr ""
+
 msgid "Check for a newer version of Chilpa."
 msgstr ""
 
@@ -1176,6 +1191,9 @@ msgid "Check the address and its port, and that the server is on and reachable f
 msgstr ""
 
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
+msgstr ""
+
+msgid "Check the selected runtime and its beets version without looking up music."
 msgstr ""
 
 msgid "Check the user and the password or the API key, then go back and try again."
@@ -1394,6 +1412,9 @@ msgstr ""
 msgid "Choose an available writable storage."
 msgstr "Choose an available writable storage."
 
+msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
+msgstr ""
+
 msgid "Choose an image"
 msgstr ""
 
@@ -1414,6 +1435,9 @@ msgstr "Choose download folder"
 
 msgid "Choose download folder…"
 msgstr "Choose download folder…"
+
+msgid "Choose executable…"
+msgstr ""
 
 msgid "Choose fewer offline files for this action."
 msgstr "Choose fewer offline files for this action."
@@ -1456,6 +1480,9 @@ msgstr ""
 
 msgid "Choose the connected player and its storage first."
 msgstr "Choose the connected player and its storage first."
+
+msgid "Choose the engine used by the metadata editor."
+msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
 msgstr ""
@@ -1904,6 +1931,9 @@ msgstr ""
 msgid "Custom Image"
 msgstr ""
 
+msgid "Custom Python executable"
+msgstr ""
+
 msgid "Custom image"
 msgstr ""
 
@@ -2324,11 +2354,20 @@ msgstr ""
 msgid "Download"
 msgstr "Download"
 
+msgid "Download a private Python environment with beets. A successful installation becomes the default runtime."
+msgstr ""
+
+msgid "Download a private copy managed by Chilpa."
+msgstr ""
+
 msgid "Download again"
 msgstr "Download again"
 
 msgid "Download album"
 msgstr "Download album"
+
+msgid "Download and install"
+msgstr ""
 
 msgid "Download cancelled."
 msgstr "Download cancelled."
@@ -2343,6 +2382,9 @@ msgid "Downloading episodes…"
 msgstr ""
 
 msgid "Downloading for offline listening"
+msgstr ""
+
+msgid "Downloading the verified installer…"
 msgstr ""
 
 msgid "Downloading update…"
@@ -3316,6 +3358,9 @@ msgstr "Install and enable a playlist importer in Settings → Plugins."
 msgid "Install and enable the Mood plugin first."
 msgstr ""
 
+msgid "Install beets"
+msgstr ""
+
 msgid "Install beets {} in the selected Python environment."
 msgstr ""
 
@@ -3346,8 +3391,14 @@ msgstr "Installation"
 msgid "Installed"
 msgstr ""
 
+msgid "Installing beets and its pinned packages…"
+msgstr ""
+
 msgid "Installing plugin…"
 msgstr "Installing plugin…"
+
+msgid "Installing private Python…"
+msgstr ""
 
 msgid "Instrument"
 msgstr ""
@@ -3902,7 +3953,7 @@ msgstr "Message"
 msgid "Metadata"
 msgstr ""
 
-msgid "Metadata source: MusicBrainz"
+msgid "Metadata search engine"
 msgstr ""
 
 msgid "Micro"
@@ -4475,6 +4526,9 @@ msgstr "Normalization"
 msgid "Not answering"
 msgstr ""
 
+msgid "Not checked"
+msgstr ""
+
 msgid "Not compatible"
 msgstr "Not compatible"
 
@@ -4498,6 +4552,9 @@ msgstr ""
 
 msgid "Not inspected"
 msgstr "Not inspected"
+
+msgid "Not installed"
+msgstr ""
 
 msgid "Not now"
 msgstr ""
@@ -5177,6 +5234,9 @@ msgstr ""
 msgid "Preparing analysis…"
 msgstr ""
 
+msgid "Preparing beets…"
+msgstr ""
+
 msgid "Preparing playlists"
 msgstr "Preparing playlists"
 
@@ -5274,9 +5334,6 @@ msgid "Purchases"
 msgstr ""
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
-msgstr ""
-
-msgid "Python executable"
 msgstr ""
 
 msgid "Qt version"
@@ -5571,6 +5628,9 @@ msgid "Refresh settings"
 msgstr "Refresh settings"
 
 msgid "Regenerate"
+msgstr ""
+
+msgid "Reinstall"
 msgstr ""
 
 msgid "Release"
@@ -6159,9 +6219,6 @@ msgstr ""
 msgid "Select folders"
 msgstr ""
 
-msgid "Select the Python executable from an environment with beets 2.14.1 installed."
-msgstr ""
-
 msgid "Select tracks"
 msgstr ""
 
@@ -6238,6 +6295,9 @@ msgid "Set preference"
 msgstr ""
 
 msgid "Set the overall light or dark polarity. Affects derived shades, borders and overlays."
+msgstr ""
+
+msgid "Set up beets in Settings to look up metadata."
 msgstr ""
 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
@@ -6822,10 +6882,22 @@ msgstr ""
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr ""
 
+msgid "The beets installer could not be downloaded. Try again."
+msgstr ""
+
 msgid "The beets lookup exceeded its metadata size limit."
 msgstr ""
 
 msgid "The beets lookup timed out. Try again."
+msgstr ""
+
+msgid "The beets setting could not be changed while a task is running."
+msgstr ""
+
+msgid "The beets task reached its time limit."
+msgstr ""
+
+msgid "The beets task was cancelled."
 msgstr ""
 
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
@@ -6930,6 +7002,15 @@ msgstr ""
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr ""
 
+msgid "The installer archive could not be opened safely."
+msgstr ""
+
+msgid "The installer did not match its pinned checksum."
+msgstr ""
+
+msgid "The installer exceeded its output limit."
+msgstr ""
+
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr ""
 
@@ -7032,7 +7113,22 @@ msgstr ""
 msgid "The previous beets lookup is still stopping."
 msgstr ""
 
+msgid "The previous beets task is still stopping."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
+msgstr ""
+
+msgid "The private beets environment could not be installed. The previous runtime is unchanged."
+msgstr ""
+
+msgid "The private beets environment could not be saved."
+msgstr ""
+
+msgid "The private beets environment exceeded its size limit."
+msgstr ""
+
+msgid "The provider for Chilpa's lookup engine. Embedded tags only disables online lookup for both engines."
 msgstr ""
 
 msgid "The publisher did not return an audio file."
@@ -7114,6 +7210,9 @@ msgid "The scan worker stopped unexpectedly."
 msgstr "The scan worker stopped unexpectedly."
 
 msgid "The selected Python environment could not start beets."
+msgstr ""
+
+msgid "The selected environment does not provide beets 2.14.1."
 msgstr ""
 
 msgid "The selected hardware volume control is gone."
@@ -7961,6 +8060,9 @@ msgstr ""
 msgid "Wait for the audio check to finish."
 msgstr ""
 
+msgid "Wait for the beets installation or check to finish in Settings."
+msgstr ""
+
 msgid "Wait for the queue to finish switching."
 msgstr ""
 
@@ -8060,9 +8162,6 @@ msgid "Where is it, and who signs in?"
 msgstr ""
 
 msgid "Where is your music?"
-msgstr ""
-
-msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr ""
 
 msgid "Where the samples go: straight to the device, or through a sound server."
@@ -8356,10 +8455,19 @@ msgstr ""
 msgid "be a plugin of another kind: {}"
 msgstr ""
 
+msgid "beets 2.14.1 is ready."
+msgstr ""
+
 msgid "beets accepts up to {} tracks per lookup."
 msgstr ""
 
+msgid "beets availability"
+msgstr ""
+
 msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets settings"
 msgstr ""
 
 msgid "beets {} is ready."

@@ -265,7 +265,8 @@ impl Chilpa {
             _ if !self.musicbrainz_enabled() => Provider::Discogs,
             _ => Provider::MusicBrainz,
         };
-        let beets_runtime = self.preference("metadata.beetsPython").unwrap_or_default();
+        let beets_runtime = self.beets_python();
+        let beets_enabled = self.preference("metadata.engine").as_deref() == Some("beets");
 
         if self.metadata.worker.is_none() {
             (self.metadata.credential,self.metadata.credential_epoch)=self.discogs_provider();
@@ -279,6 +280,7 @@ impl Chilpa {
         editor.album = Some(album);
         editor.provider = chosen;
         editor.beets.runtime = beets_runtime;
+        editor.beets.enabled = beets_enabled;
         if editor.beets.enabled { editor.provider = Provider::MusicBrainz; }
         editor.artwork_provider = chosen;
         editor.error.clear();

@@ -119,7 +119,7 @@ impl StagedPackage {
     }
 }
 
-fn portable_path(name: &str) -> Result<PathBuf, String> {
+pub(crate) fn portable_path(name: &str) -> Result<PathBuf, String> {
     let invalid = || "The package contains an unsafe or nonportable path.".to_string();
     if name.len() > 1024 || name.contains(['\\', ':', '\0']) { return Err(invalid()); }
     let name = name.strip_suffix('/').unwrap_or(name);

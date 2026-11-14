@@ -69,6 +69,7 @@ impl Task {
 
 impl BeetsState {
     pub fn busy(&self) -> bool { self.busy.load(Ordering::Acquire) }
+    pub(crate) fn busy_flag(&self) -> Arc<AtomicBool> { self.busy.clone() }
     pub fn cancel(&mut self) {
         if let Some(slot) = self.active.take() { slot.cancel(); }
         self.candidates.clear(); self.selected = None; self.recommendation.clear(); self.probing = false;
@@ -161,28 +162,50 @@ impl Editor {
 }
 
 impl Chilpa {
+    pub(crate) fn metadata_beets_lease(&self) -> Arc<AtomicBool> { self.metadata.beets.busy_flag() }
     pub(crate) fn metadata_beets_network_changed(&mut self) {
         if self.metadata.beets.enabled && self.metadata.beets.busy() && !self.metadata.beets.probing { self.metadata_cancel_lookup(); }
     }
     pub(crate) fn metadata_preference_changed(&mut self, key: &str) {
         if key == "library.metaSrc" && self.metadata_lookups_off() { self.metadata_beets_network_changed(); }
+        if key == crate::beets_runtime::ENGINE {
+            let enabled = self.preference(key).as_deref() == Some("beets");
+            if enabled != self.metadata.beets.enabled {
+                self.metadata_cancel_lookup();
+                self.metadata.beets.enabled = enabled;
+                if enabled { self.metadata.provider = Provider::MusicBrainz; }
+                self.metadata.refresh();
+            }
+        }
+        if key == crate::beets_runtime::PYTHON {
+            let runtime = self.beets_python();
+            if runtime != self.metadata.beets.runtime {
+                self.metadata_cancel_lookup();
+                self.metadata.beets.runtime = runtime;
+                self.metadata.beets.version.clear();
+                self.metadata.refresh();
+            }
+        }
     }
     pub fn metadata_set_engine(&mut self, engine: &str) -> bool {
-        if !matches!(engine,"native"|"beets") || self.metadata.state != EditorState::Ready { return false; }
-        self.metadata_cancel_lookup();
-        self.metadata.beets.enabled = engine == "beets";
-        self.metadata.error.clear(); self.metadata.notice.clear();
-        if self.metadata.beets.enabled { self.metadata.provider = Provider::MusicBrainz; }
-        self.metadata.refresh(); true
+        if !matches!(engine,"native"|"beets") || self.metadata.saving() || self.beets_runtime_busy() { return false; }
+        if self.preference(crate::beets_runtime::ENGINE).as_deref() != Some(engine) {
+            if let Err(error) = self.remember_preference_checked(crate::beets_runtime::ENGINE, engine) { return self.metadata.refuse(error); }
+        } else { self.metadata_preference_changed(crate::beets_runtime::ENGINE); }
+        true
     }
     pub fn metadata_set_beets_runtime(&mut self, runtime: &str) -> bool {
-        if runtime.len() > 4096 || runtime.contains(['\0','\n','\r']) || self.metadata.saving() { return false; }
-        if let Err(error) = self.remember_preference_checked("metadata.beetsPython", runtime) { return self.metadata.refuse(error); }
-        self.metadata_cancel_lookup(); self.metadata.beets.runtime = runtime.to_string(); self.metadata.beets.version.clear();
-        self.metadata.refresh(); true
+        if runtime.len() > 4096 || runtime.contains(['\0','\n','\r']) || self.metadata.saving() || self.beets_runtime_busy() { return false; }
+        if self.preference(crate::beets_runtime::PYTHON).as_deref() != Some(runtime) {
+            if let Err(error) = self.remember_preference_checked(crate::beets_runtime::PYTHON, runtime) { return self.metadata.refuse(error); }
+        } else { self.metadata_preference_changed(crate::beets_runtime::PYTHON); }
+        true
     }
-    pub fn metadata_probe_beets(&mut self) -> bool { self.metadata.start_beets(true, &HashMap::new()) }
+    pub fn metadata_probe_beets(&mut self) -> bool {
+        !self.beets_runtime_busy() && self.metadata.start_beets(true, &HashMap::new())
+    }
     pub(crate) fn metadata_beets_search(&mut self) -> bool {
+        if self.beets_runtime_busy() { return self.metadata.refuse(chilpa_i18n::t("Wait for the beets installation or check to finish in Settings.")); }
         if self.metadata_lookups_off() { return self.metadata.refuse(chilpa_i18n::t("looking records up is turned off in Settings")); }
         let policy = chilpa_core::network::current();
         if policy.offline || !policy.musicbrainz || !self.musicbrainz_enabled() { return self.metadata.refuse(chilpa_core::network::blocked()); }
