@@ -29,7 +29,7 @@ Item {
 
     Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
-    RectangularShadow {
+    Shadow {
         anchors.fill: card
         radius: card.radius
         offset.y: Metrics.shadowKeyY

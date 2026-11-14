@@ -14,7 +14,7 @@ enum class Content { None, Loader, View, Repeater };
 
 void ownShadowMaterial(QObject *root)
 {
-    if (!root->inherits("QQuickRectangularShadow")) return;
+    if (!root || !root->inherits("QQuickRectangularShadow")) return;
     auto *material = root->property("material").value<QQuickItem *>();
     // A closed popup's default material has not joined a window and can
     // lack both parents. Custom materials already have a visual parent or
@@ -72,6 +72,20 @@ void cancelTree(QObject *root, QSet<QObject *> &visited)
 }
 }
 
+PageLifetime *PageLifetime::qmlAttachedProperties(QObject *root)
+{
+    auto *lifetime = new PageLifetime(root);
+    lifetime->setOwnMaterial(true);
+    return lifetime;
+}
+
+void PageLifetime::setOwnMaterial(bool requested)
+{
+    if (!requested || materialRequested_) return;
+    ownShadowMaterial(parent());
+    materialRequested_ = true;
+}
+
 void PageLifetime::cancel(QObject *root)
 {
     QSet<QObject *> visited;
@@ -84,6 +98,9 @@ extern "C" void chilpa_page_lifetime_register_qml_type()
     if (registered) return;
     registered = true;
     qmlRegisterType<PageLifetime>("app.chilpa.kit", 1, 0, "PageLifetime");
+    // This primitive bootstrap uses Qt only; it exposes no facade state.
+    qmlRegisterUncreatableType<PageLifetime>("app.chilpa.kit.primitives", 1, 0, "MaterialLifetime",
+        "MaterialLifetime is attached by the shared Shadow primitive.");
 }
 
 Q_COREAPP_STARTUP_FUNCTION(chilpa_page_lifetime_register_qml_type)

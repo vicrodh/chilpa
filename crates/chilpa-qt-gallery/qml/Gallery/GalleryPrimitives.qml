@@ -18,6 +18,11 @@ TitledFlow {
         ElevatedShadow { target: raised; radius: raised.radius }
         Rectangle { id: raised; anchors.fill: parent; radius: Metrics.radiusPlayer; color: Theme.color.surfacePlayer }
     }
+    Item {
+        width: Metrics.cardMinWidth; height: Metrics.playerHeight
+        Shadow { anchors.fill: ownedPanel; radius: ownedPanel.radius; blur: Metrics.shadowSubtleBlur; color: Theme.color.shadowSegment }
+        Rectangle { id: ownedPanel; anchors.fill: parent; radius: Metrics.radiusCard; color: Theme.color.surfaceRaised }
+    }
     title: "Primitives"
     ExplicitBadge {}
     AdvisoryTitle { width: Metrics.cardMinWidth; text: "A record with an advisory"; explicitContent: true; font.pointSize: Type.body }

@@ -45,7 +45,7 @@ Item {
 
     implicitWidth: Math.min(Metrics.tabMaxWidth, row.implicitWidth + Metrics.tabPadLeft + Metrics.tabPadRight)
     implicitHeight: Metrics.tabHeight
-    RectangularShadow {
+    Shadow {
         anchors.fill: panel
         visible: tab.active
         radius: panel.radius

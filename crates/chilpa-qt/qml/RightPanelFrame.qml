@@ -29,7 +29,7 @@ Item {
     property int kept: Number(SettingsModel.kept("ui.rightPanel.width")) || Metrics.rightPanel
     readonly property int shown: SettingsModel.panelWidthAt(dragged >= 0 ? dragged : kept, Window.width)
 
-    RectangularShadow {
+    Shadow {
         visible: frame.dragged < 0
         anchors.fill: parent
         radius: panel.radius

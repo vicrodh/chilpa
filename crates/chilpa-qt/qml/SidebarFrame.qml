@@ -43,7 +43,7 @@ Item {
         : SettingsModel.sidebarMode === "collapsed" ? Metrics.sidebarCollapsed
         : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
 
-    RectangularShadow {
+    Shadow {
         visible: frame.shown > 0 && !frame.dragging
         x: Metrics.spaceWindow
         y: frame.head

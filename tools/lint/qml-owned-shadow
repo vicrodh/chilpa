@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""Keep native shadow ownership inside the shared creation-time primitive."""
+import re
+import sys
+
+from qmllib import KIT, code_only, files, rel
+
+
+def violations(source, primitive=False):
+    code = code_only(source)
+    native = list(re.finditer(r"\bRectangularShadow\s*\{", code))
+    if not primitive:
+        return [(code.count("\n", 0, match.start()) + 1,
+                 "use the kit Shadow primitive; native materials need creation-time ownership")
+                for match in native]
+    errors = []
+    if len(native) != 1:
+        errors.append((1, "the shared Shadow must contain one native RectangularShadow"))
+    if not re.search(r"\bMaterialLifetime\s*\.\s*ownMaterial\s*:\s*true\s*(?=[;\n}])", code):
+        errors.append((1, "the shared Shadow must request MaterialLifetime.ownMaterial: true"))
+    return errors
+
+
+def main():
+    primitive = KIT / "Primitives/Shadow.qml"
+    errors = [] if primitive.is_file() else ["missing shared Shadow primitive"]
+    for path in files():
+        errors.extend(f"{rel(path)}:{line}: {message}"
+                      for line, message in violations(path.read_text(), path == primitive))
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        return 1
+    print("qml-owned-shadow: native materials take their owner's lifetime at creation")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

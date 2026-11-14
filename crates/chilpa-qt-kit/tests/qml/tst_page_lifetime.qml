@@ -3,6 +3,7 @@ import QtQuick.Effects
 import QtTest
 import app.chilpa.kit
 import "../../qml/Patterns"
+import "../../qml/Primitives"
 import "../../qml/Theme"
 
 TestCase {
@@ -48,6 +49,26 @@ TestCase {
         }
     }
     Component { id: customMaterial; ShaderEffect {} }
+    Component {
+        id: automaticShadowPage
+        Item {
+            property alias rows: rows
+            Repeater {
+                id: rows
+                model: 1
+                Shadow { width: 100; height: 40 }
+            }
+        }
+    }
+    function test_model_removal_releases_a_dormant_shadow_without_page_retirement() {
+        const page = automaticShadowPage.createObject(null)
+        test.retiredMaterial = page.rows.itemAt(0).material
+        verify(test.retiredMaterial !== null)
+        // A live document can remove a delegate before the page retires.
+        page.rows.model = 0
+        tryCompare(test, "retiredMaterial", null)
+        page.destroy()
+    }
     function test_retiring_a_shadow_preserves_its_custom_material() {
         const material = customMaterial.createObject(null)
         const shadow = emptyShadow.createObject(null)
