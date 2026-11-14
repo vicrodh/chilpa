@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import QtTest
 import app.chilpa.kit
 import "../../qml/Patterns"
@@ -15,6 +16,22 @@ TestCase {
     Loader { id: owner; anchors.fill: parent }
     PageTransition { id: pages; anchors.fill: parent }
     Component { id: emptyPage; Item {} }
+    property Item retiredMaterial: null
+    Component {
+        id: shadowPage
+        RectangularShadow { width: 100; height: 40; radius: 6 }
+    }
+    function test_retired_shadow_releases_its_native_material() {
+        for (let index = 0; index < 4; ++index) {
+            owner.sourceComponent = shadowPage
+            tryVerify(() => owner.item.children.length > 0)
+            test.retiredMaterial = owner.item.children[0]
+            verify(test.retiredMaterial !== null)
+            lifetime.cancel(owner.item)
+            owner.sourceComponent = null
+            tryCompare(test, "retiredMaterial", null)
+        }
+    }
     Component {
         id: boundPage
         Item {

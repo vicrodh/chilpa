@@ -2,6 +2,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QPointer>
 #include <QtCore/QSet>
+#include <QtCore/QUrl>
 #include <QtCore/QVariant>
 #include <QtQml/qqml.h>
 #include <QtQml/QQmlProperty>
@@ -11,11 +12,25 @@
 namespace {
 enum class Content { None, Loader, View, Repeater };
 
+void ownShadowMaterial(QObject *root)
+{
+    if (!root->inherits("QQuickRectangularShadow")) return;
+    auto *material = root->property("material").value<QQuickItem *>();
+    // Qt's built-in shadow material can have only a visual parent. Give it
+    // the retiring shadow's QObject lifetime, without taking custom materials.
+    if (material && !material->parent() && material->parentItem() == root
+            && !qmlContext(material)
+            && material->property("vertexShader").toUrl()
+                == QUrl(QStringLiteral("qrc:/data/shaders/rectangularshadow.vert.qsb")))
+        material->setParent(root);
+}
+
 void cancelTree(QObject *root, QSet<QObject *> &visited)
 {
     if (!root || visited.contains(root)) return;
     visited.insert(root);
     const QPointer<QObject> guard(root);
+    ownShadowMaterial(root);
     bool visual = false;
     Content content = Content::None;
     // Read the class hierarchy once without invoking every generated metacast.
