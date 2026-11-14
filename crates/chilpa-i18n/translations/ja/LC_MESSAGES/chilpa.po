@@ -3625,6 +3625,12 @@ msgstr "引数が無効です。:help で構文を表示できます。"
 msgid "Invalid audio check request."
 msgstr "音声チェックのリクエストが無効です。"
 
+msgid "Invalid discovery options."
+msgstr ""
+
+msgid "Invalid discovery selection."
+msgstr ""
+
 msgid "Invalid output identity."
 msgstr "出力の識別情報が無効です。"
 

@@ -61,18 +61,24 @@ impl Counter {
 }
 
 impl Reader {
+    #[cfg(test)]
     pub(super) fn genre_summaries(&self, names: &[String], inventory: &Inventory) -> Result<Vec<Summary>, String> {
+        self.genre_summaries_using(names, inventory, &[], &self.source_index().1)
+    }
+
+    pub(super) fn genre_summaries_using(&self, names: &[String], inventory: &Inventory, excluded: &[String], index: &crate::library_sources::SourceIndex) -> Result<Vec<Summary>, String> {
         let mut counter = Counter::new(names, inventory);
         if counter.slots.is_empty() { return Ok(counter.rows); }
         let pictures = self.lib.artist_pictures().map_err(|error| error.to_string())?;
-        self.lib.visit_genre_releases(|loose, id, tag, artist| {
+        self.lib.visit_genre_releases_excluding(excluded, |loose, id, tag, artist| {
             counter.accept(loose, id, tag, || pictures.of(artist).map(str::to_string));
         }).map_err(|error| error.to_string())?;
         // Index ids belong to the catalog; start a separate counting pass.
         counter.flush();
         counter.last = None;
-        let (_, index) = self.source_index();
-        let mut items: Vec<_> = index.items.iter().collect();
+        let through = super::sources::through(excluded);
+        let stars = crate::library_sources::Stars::default();
+        let mut items: Vec<_> = index.items.iter().filter(|item| through.passes(item, &stars)).collect();
         items.sort_unstable_by_key(|item| (item.album == 0, if item.album != 0 { item.album } else { item.track }));
         for item in items {
             let loose = item.album == 0;

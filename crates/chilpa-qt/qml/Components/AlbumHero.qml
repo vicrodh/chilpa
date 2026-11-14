@@ -62,9 +62,9 @@ Item {
             font.letterSpacing: Type.displayTracking
             color: hero.contrasted ? Theme.color.backdropText : Theme.color.textPrimary
         }
-        AlbumArtistLine {
+        AlbumCredits {
             width: parent.width; albumId: hero.detail.selectedId; contrasted: hero.contrasted
-            document: JSON.parse(hero.detail.artistInformation || "{}")
+            record: hero.detail
             color: hero.contrasted ? Theme.color.backdropText : Theme.color.textPrimary
         }
         Text {

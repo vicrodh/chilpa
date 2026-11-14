@@ -8,6 +8,13 @@ pub(super) use art::art;
 use resolution::{resolve, Resolution};
 use taxonomy::graph;
 use std::collections::{HashMap, HashSet};
+pub(super) fn link(original: &str) -> (Identity, String) {
+    let found = resolve(original);
+    if matches!(found.method, "exact" | "normalized" | "alias") {
+        (found.identity(), found.recognized.unwrap_or(original).to_string())
+    } else { (Identity::literal(original), original.to_string()) }
+}
+
 pub(super) const VERSION: &str = taxonomy::VERSION;
 
 pub(super) fn strong_identity(original: &str) -> String {
@@ -21,14 +28,17 @@ pub(super) fn strong_identity(original: &str) -> String {
     }
 }
 
-#[derive(Clone, Eq, Hash, PartialEq)]
-enum Identity { Known(usize), Literal(String) }
+#[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub(super) enum Identity { Known(usize), Literal(String) }
+impl Identity {
+    fn literal(original: &str) -> Self {
+        let key = crate::library_query::genre_key(original);
+        Self::Literal(if key.is_empty() { original.to_lowercase() } else { key })
+    }
+}
 impl Resolution {
     fn identity(&self) -> Identity {
-        self.node.map(Identity::Known).unwrap_or_else(|| {
-            let key = crate::library_query::genre_key(&self.original);
-            Identity::Literal(if key.is_empty() { self.original.to_lowercase() } else { key })
-        })
+        self.node.map(Identity::Known).unwrap_or_else(|| Identity::literal(&self.original))
     }
 }
 

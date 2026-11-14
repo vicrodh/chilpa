@@ -107,3 +107,27 @@ fn twenty_thousand_tracks_keep_release_counts_with_read_only_queries() {
             serde_json::to_vec_pretty(&json!({"tracks":20000,"albums":2000,"unassigned_genres":500,"mode":"test-profile, in-memory SQLite, first and repeated connection reads","samples":samples})).unwrap()).unwrap();
     }
 }
+
+#[test]
+fn source_scope_precedes_name_resolution_and_release_deduplication() {
+    let lib = Library::in_memory().unwrap();
+    lib.db.execute_batch("INSERT INTO sources(id,provider,instance,enabled) VALUES (1,'local','default',1),(2,'server','home',1),(3,'server','off',0);
+        INSERT INTO albums(id,title,album_artist) VALUES (1,'Shared','Player'),(2,'Outside','Other');
+        INSERT INTO tracks(id,source_id,external_id,title,album_id,present,added_at) VALUES
+        (1,1,'/one','One',1,1,1),(2,2,'/two','Two',1,1,1),(3,2,'/three','Three',2,1,1),
+        (4,1,'/four','Loose',NULL,1,1),(5,3,'/five','Hidden',1,1,1);").unwrap();
+    for (id, tag) in [(1,"Progresive Metal"),(2,"Jazz"),(3,"Technical Death Metal"),(4,"Progresive Metal"),(5,"Hidden")] {
+        lib.set_track_genres(id, &[tag.into()]).unwrap();
+    }
+    let revision = lib.read_revision().unwrap();
+    lib.db.execute_batch("PRAGMA query_only=ON").unwrap();
+    assert_eq!(lib.genre_names_excluding(&["server:home".into()]).unwrap(), ["Progresive Metal"]);
+    assert_eq!(lib.genre_names_excluding(&["local:default".into()]).unwrap(), ["Jazz","Technical Death Metal"]);
+    let mut scoped = Vec::new();
+    lib.visit_genre_releases_excluding(&["server:home".into()], |loose,id,tag,_| scoped.push((loose,id,tag.to_string()))).unwrap();
+    assert_eq!(scoped, [(false,1,"Progresive Metal".into()),(true,4,"Progresive Metal".into())]);
+    assert_eq!(lib.album_genre_sources(1).unwrap(), (vec!["Jazz".into(),"Progresive Metal".into()],vec!["local:default".into(),"server:home".into()]));
+    assert_eq!(lib.album_genre_sources(999).unwrap(), (Vec::new(),Vec::new()));
+    assert_eq!(lib.genre_names_excluding(&["server:home' OR 1=1 --".into()]).unwrap(),lib.genre_names().unwrap());
+    assert_eq!(lib.read_revision().unwrap(),revision);
+}

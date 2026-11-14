@@ -4,6 +4,7 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "../Components"
 
 ScreenHead {
     id: tools
@@ -17,6 +18,9 @@ ScreenHead {
     property bool overview: false
     property bool work: false
     property bool detail: false
+    property var sources: []
+    property var excludedSources: []
+    signal sourcesChosen(var excluded)
     signal queryChanged()
     flexible: find
     SearchField {
@@ -48,5 +52,11 @@ ScreenHead {
             {value:"library",text:I18n.tr("In my library", I18n.rev)},
             {value:"tags",text:I18n.tr("My genre tags", I18n.rev)}]
         onPicked: value => { tools.scope = value; tools.queryChanged() }
+    }
+    GenreSources {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: tools.mode === "genres"
+        sources: tools.sources; excluded: tools.excludedSources
+        onChosen: excluded => tools.sourcesChosen(excluded)
     }
 }

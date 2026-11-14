@@ -25,8 +25,8 @@ Item {
     Row {
         id: actions
         spacing: Metrics.gap8
-        PillButton { text: I18n.tr("Play", I18n.rev); kind: "primary"; enabled: parts.count > 0; onClicked: parts.playAll(false) }
-        PillButton { text: I18n.tr("Add to queue", I18n.rev); enabled: parts.count > 0; onClicked: parts.queueAll() }
+        PillButton { objectName:"discoveryPlay"; text: I18n.tr("Play", I18n.rev); kind: "primary"; enabled: parts.ready && parts.count > 0; onClicked: parts.playAll(false) }
+        PillButton { objectName:"discoveryQueue"; text: I18n.tr("Add to queue", I18n.rev); enabled: parts.ready && parts.count > 0; onClicked: parts.queueAll() }
         Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.trCount("{} track", "{} tracks", parts.count, I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
     }
     TrackList {
@@ -34,6 +34,7 @@ Item {
         objectName: "discoveryTrackList"
         anchors.left: parent.left; anchors.right: parent.right; anchors.top: actions.bottom; anchors.topMargin: Metrics.gap12; anchors.bottom: parent.bottom
         model: parts
+        enabled:parts.ready
         showArtist: !section.recording
         showAlbum: !section.recording && !section.narrow
         showArt: !section.recording

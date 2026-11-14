@@ -24,10 +24,11 @@ pub mod qobject {
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, artist_information)]
+        #[qproperty(QString, genre_links)]
         #[qproperty(QUrl, art)]
         /// "ALBUM · 2019".
         #[qproperty(QString, kind_line)]
-        /// Genre, songs, length and quality, joined.
+        /// Label, songs, length and quality, joined.
         #[qproperty(QString, meta)]
         /// "2 discs", empty for one.
         #[qproperty(QString, discs)]
@@ -69,6 +70,7 @@ pub struct AlbumDetailRust {
     ai_generated: bool,
     artist: QString,
     artist_information: QString,
+    genre_links: QString,
     art: QUrl,
     kind_line: QString,
     meta: QString,
@@ -129,7 +131,18 @@ impl qobject::AlbumDetailModel {
         if id <= 0 {
             let (revision, page) = app::with(|api| (api.source_entity_revision(id), api.cached_album_page(id)));
             self.as_mut().rust_mut().source_revision = Some(revision);
-            self.apply(page);
+            self.as_mut().apply(page);
+            let selected = *self.selected_id();
+            if selected < 0 {
+                let thread = self.qt_thread();
+                worker::submit_album(move |reader| {
+                    if !ticket.current() { return; }
+                    let links = reader.album_genre_links(selected).to_string();
+                    let _ = thread.queue(move |mut model| {
+                        if ticket.current() && *model.selected_id() == selected { model.as_mut().set_genre_links(QString::from(links)); }
+                    });
+                });
+            }
             return;
         }
         let thread = self.qt_thread();
@@ -144,6 +157,7 @@ impl qobject::AlbumDetailModel {
             self.as_mut().rust_mut().page = None;
             self.as_mut().set_found(false);
             self.as_mut().set_selected_id(0);
+            self.as_mut().set_genre_links(QString::from("{}"));
             return;
         };
         let versions = std::mem::take(&mut page.versions);
@@ -161,6 +175,7 @@ impl qobject::AlbumDetailModel {
         self.as_mut().set_ai_generated(d.album.ai_generated == Some(true));
         self.as_mut().set_artist(QString::from(&d.album.artist));
         self.as_mut().set_artist_information(QString::from(&page.artist_information));
+        self.as_mut().set_genre_links(QString::from(&page.genre_links));
         self.as_mut().set_art(art);
         self.as_mut().set_kind_line(QString::from(&lines.kind));
         self.as_mut().set_meta(QString::from(&lines.meta));
@@ -179,6 +194,7 @@ impl cxx_qt::Initialize for qobject::AlbumDetailModel {
             model.as_mut().rust_mut().source_revision = None;
             model.as_mut().set_found(false);
             model.as_mut().set_selected_id(0);
+            model.as_mut().set_genre_links(QString::from("{}"));
             model.schedule();
         }).release();
         self.as_mut().on_content_rev_changed(|model| model.schedule()).release();

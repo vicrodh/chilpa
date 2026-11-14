@@ -9,6 +9,8 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 TitledFlow {
     id: section
     title: "Discovery"
+    AlbumGenreLine { width:Metrics.settingsMaxWidth; document:({items:[{name:"Progressive Metal",key:'{"kind":"genre","name":"Progressive Metal"}'}]}) }
+    AlbumCredits { width:Metrics.settingsMaxWidth; record:({artistInformation:'{"artist_html":"Artist"}',genreLinks:'{"items":[]}'}) }
     LibraryDestinations {}
     ArtistContext { width: Metrics.settingsMaxWidth; info: ({title:"Artist",genres:["Jazz","Soul Jazz"],compositions:8}) }
     DiscoveryEntry { width: Metrics.discoveryEntryWidth; entry: ({kind:"genre",name:"Jazz",art:{key:"jazz"}}); detail:"Explore styles in your library" }
@@ -16,6 +18,8 @@ TitledFlow {
     DiscoveryMosaic { width: Metrics.discoveryEntryWidth; height: Metrics.discoveryGenreHeight; label:"Jazz"; art:({key:"jazz"}) }
     DiscoveryActions { width:Metrics.settingsMaxWidth; selected:({kind:"genre",name:"Jazz"}); choices:["Overview","Albums","Artists","Tracks","Subgenres"]; overview:true }
     DiscoveryTools { width:Metrics.settingsMaxWidth; title:"Genres" }
+    DiscoveryBreadcrumb { title:"Genres"; trail:["Rock","Metal"] }
+    GenreSources { sources:[{key:"local:default",label:"Local library"},{key:"plugin:fixture",label:"Source"}] }
     ArtistCard { artist:({title:"Artist",sources:[]}); activeImages:false }
     CollectionHead { width:Metrics.settingsMaxWidth; title:"Artists" }
     ArtistPortrait { width:Metrics.artistPortrait; height:width; name:"Artist"; activeImages:false }

@@ -73,6 +73,21 @@ impl Library {
     /// The same, from only the records in `within` when it is given: those a
     /// filter of sources, qualities or formats leaves.
     pub fn artists_by_role_within(&self, role: ArtistRole, within: Option<&HashSet<i64>>) -> rusqlite::Result<Vec<StoredArtist>> {
+        self.artists_by_role_counted(role, within, None)
+    }
+
+    /// Discovery keeps the selected albums and counts only their allowed sources.
+    pub fn album_artists_excluding(&self, within: &HashSet<i64>, excluded: &[String]) -> rusqlite::Result<Vec<StoredArtist>> {
+        if within.is_empty() { return Ok(Vec::new()); }
+        if excluded.is_empty() { return self.artists_by_role_within(ArtistRole::Album, Some(within)); }
+        let (clause, args) = super::browse::clause(&super::browse::Filter { excluded_sources:excluded.to_vec(), ..Default::default() });
+        let counts = self.db.prepare(&format!("SELECT t.album_id,count(*) FROM tracks t {clause} AND t.album_id IS NOT NULL GROUP BY t.album_id"))?
+            .query_map(rusqlite::params_from_iter(args.iter().map(|arg| arg.as_ref())), |row| Ok((row.get(0)?, row.get::<_, i64>(1)? as usize)))?
+            .collect::<rusqlite::Result<HashMap<i64, usize>>>()?;
+        self.artists_by_role_counted(ArtistRole::Album, Some(within), Some(&counts))
+    }
+
+    fn artists_by_role_counted(&self, role: ArtistRole, within: Option<&HashSet<i64>>, counts: Option<&HashMap<i64, usize>>) -> rusqlite::Result<Vec<StoredArtist>> {
         let sql = match role {
             ArtistRole::Album => {
                 concat!("SELECT a.id, coalesce(p.name, trim(a.album_artist)), r.present_tracks, ", album_art!("a"), ", a.album_artist
@@ -102,6 +117,7 @@ impl Library {
             if within.is_some_and(|within| !within.contains(&album)) {
                 continue;
             }
+            let tracks = match counts { Some(counts) => match counts.get(&album) { Some(tracks) => *tracks, None => continue }, None => tracks };
             let various = is_various(&name);
             if various && !is_various(&credited) {
                 continue;

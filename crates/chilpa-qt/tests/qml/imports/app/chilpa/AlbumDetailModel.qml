@@ -1,5 +1,6 @@
 import QtQuick
 QtObject {
+    property string genreLinks: "{}"
     property int albumId: 0
     property int remoteRev: 0
     property int contentRev: 0

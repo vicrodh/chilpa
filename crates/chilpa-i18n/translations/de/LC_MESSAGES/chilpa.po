@@ -3628,6 +3628,12 @@ msgstr "Ungültige Argumente; :help zeigt die Syntax."
 msgid "Invalid audio check request."
 msgstr "Ungültige Anfrage zur Audioprüfung."
 
+msgid "Invalid discovery options."
+msgstr ""
+
+msgid "Invalid discovery selection."
+msgstr ""
+
 msgid "Invalid output identity."
 msgstr "Ungültige Ausgabeidentität."
 
