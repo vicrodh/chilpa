@@ -45,7 +45,7 @@ Controls.Popup {
     onAboutToShow: show(selected)
 
     background: Item {
-        RectangularShadow {
+        Shadow {
             anchors.fill: panel
             radius: panel.radius
             offset.y: Metrics.shadowElevatedY

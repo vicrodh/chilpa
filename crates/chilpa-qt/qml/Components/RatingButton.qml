@@ -57,7 +57,7 @@ Item {
 
         background: Item {
             Hold {}
-            RectangularShadow {
+            Shadow {
                 anchors.fill: panel
                 radius: panel.radius
                 offset.y: Metrics.shadowElevatedY

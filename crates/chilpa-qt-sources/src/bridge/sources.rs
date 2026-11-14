@@ -58,6 +58,8 @@ pub mod qobject {
         #[qinvokable]
         fn network(self: &Sources, name: &QString, rev: i32) -> QString;
         #[qinvokable]
+        fn network_allowed(self: &Sources, name: &QString, rev: i32) -> bool;
+        #[qinvokable]
         fn scene(self: &Sources, rev: i32) -> QString;
         #[qinvokable]
         fn scene_open(self: Pin<&mut Sources>, name: &QString, include_sources: bool);
@@ -118,6 +120,7 @@ impl qobject::Sources {
     pub fn album_libraries(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.album_libraries())) }
     pub fn page(&self, key: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.source_page(&key.to_string()))) }
     pub fn network(&self, name: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.artist_network(&name.to_string()))) }
+    pub fn network_allowed(&self, _name: &QString, _rev: i32) -> bool { crate::app::with(|api| api.artist_network_allowed()) }
     pub fn scene(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.artist_scene_json())) }
     pub fn scene_open(self: Pin<&mut Self>, name: &QString, include_sources: bool) {
         crate::app::with(|api| api.artist_scene_open(&name.to_string(), include_sources));

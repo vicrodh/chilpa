@@ -165,7 +165,7 @@ Item {
             }
             IconButton {
                 objectName: "networkAction"; visible: header.networkEnabled; round: true; size: Metrics.button32; glyph: SourceGlyphs.spiderWeb; iconFamily: SourceGlyphs.font; checked: header.networkOpen
-                tip: I18n.tr("Network", I18n.rev); onClicked: header.toggleNetwork()
+                tip: I18n.tr("About & connections", I18n.rev); onClicked: header.toggleNetwork()
             }
             // The scene and the artist's own links share the overflow menu.
             IconButton {

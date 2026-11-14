@@ -18,6 +18,21 @@ use std::path::PathBuf;
 /// The folder Chilpa's files sit in, under whichever base applies.
 const NAME: &str = "chilpa";
 
+/// The interpreter inside a Python environment on this platform.
+pub fn python_environment(directory: &std::path::Path) -> PathBuf {
+    directory.join(if std::env::consts::OS == "windows" { "Scripts/python.exe" } else { "bin/python" })
+}
+
+/// OS identity and transport variables for a private package installer.
+/// Python and package-manager configuration are deliberately not inherited.
+pub fn installer_environment(temporary: &std::path::Path) -> Vec<(&'static str, std::ffi::OsString)> {
+    let mut values: Vec<_> = ["SystemRoot", "WINDIR", "USERPROFILE", "LANG", "LC_ALL",
+        "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy"]
+        .into_iter().filter_map(|name| std::env::var_os(name).map(|value| (name,value))).collect();
+    values.extend(["TMPDIR", "TMP", "TEMP"].map(|name| (name,temporary.as_os_str().to_owned())));
+    values
+}
+
 /// Where settings go.
 ///
 /// - Linux, and anything unnamed below: `$XDG_CONFIG_HOME` or `~/.config`

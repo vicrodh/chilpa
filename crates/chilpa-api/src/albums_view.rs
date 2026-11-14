@@ -7,7 +7,7 @@ use chilpa_library::AlbumSort;
 use std::collections::HashSet;
 
 mod scope;
-mod artists;
+pub(crate) mod artists;
 pub use artists::{artist_cards, ListedArtist};
 
 /// The records a question leaves, and where each group starts among them.

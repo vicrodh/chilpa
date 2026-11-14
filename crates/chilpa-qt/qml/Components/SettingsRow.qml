@@ -72,7 +72,7 @@ Item {
             : row.control === "progress" ? progress
             : row.control === "status" ? status
             : row.control === "slider" ? slider
-            : row.control === "file" ? file
+            : row.control === "file" || row.control === "fileBusy" ? file
             : row.control === "theme" ? row.themePicker
             : row.control === "text" ? textField
             : null
@@ -196,12 +196,13 @@ Item {
     Component {
         id: file
         FileField {
+            objectName: "settingFile." + row.key; enabled: row.control !== "fileBusy"
             action: row.action
             value: row.value
             title: row.title
             clearTip: I18n.tr("Use the default", I18n.rev)
-            filters: [I18n.tr("Images", I18n.rev) + " (*.png *.jpg *.jpeg *.webp *.bmp)"]
-            onPicked: (path) => row.page.set(row.key, path)
+            filters: row.options.length > 0 ? row.options : [I18n.tr("Images", I18n.rev) + " (*.png *.jpg *.jpeg *.webp *.bmp)"]
+            onPickedUrl: file => row.page.setFile(row.key, file)
             onCleared: row.page.set(row.key, "")
         }
     }

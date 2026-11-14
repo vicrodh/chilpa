@@ -25,6 +25,7 @@ use chilpa_qt_controls as _;
 use chilpa_qt_gallery as _;
 use chilpa_qt_lyrics as _;
 use chilpa_qt_sources as _;
+use chilpa_qt_discovery as _;
 mod bridge;
 mod browse;
 mod registry;

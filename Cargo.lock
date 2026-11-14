@@ -683,6 +683,7 @@ dependencies = [
  "rand 0.10.3",
  "serde",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -773,6 +774,7 @@ dependencies = [
  "chilpa-qt-artwork",
  "chilpa-qt-controls",
  "chilpa-qt-devices",
+ "chilpa-qt-discovery",
  "chilpa-qt-dsp",
  "chilpa-qt-folders",
  "chilpa-qt-gallery",
@@ -860,6 +862,19 @@ version = "0.1.3"
 dependencies = [
  "chilpa-api",
  "chilpa-dirs",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+ "serde_json",
+]
+
+[[package]]
+name = "chilpa-qt-discovery"
+version = "0.1.3"
+dependencies = [
+ "chilpa-api",
  "chilpa-qt-kit",
  "cxx",
  "cxx-qt",

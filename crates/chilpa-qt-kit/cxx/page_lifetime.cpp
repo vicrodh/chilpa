@@ -2,6 +2,7 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QPointer>
 #include <QtCore/QSet>
+#include <QtCore/QUrl>
 #include <QtCore/QVariant>
 #include <QtQml/qqml.h>
 #include <QtQml/QQmlProperty>
@@ -11,11 +12,27 @@
 namespace {
 enum class Content { None, Loader, View, Repeater };
 
+void ownShadowMaterial(QObject *root)
+{
+    if (!root || !root->inherits("QQuickRectangularShadow")) return;
+    auto *material = root->property("material").value<QQuickItem *>();
+    // A closed popup's default material has not joined a window and can
+    // lack both parents. Custom materials already have a visual parent or
+    // QML context; keep their ownership when retiring the shadow.
+    if (material && !material->parent() && !qmlContext(material)
+            && std::strcmp(material->metaObject()->className(), "QQuickShaderEffect") == 0
+            && (!material->parentItem() || (material->parentItem() == root
+                && material->property("vertexShader").toUrl()
+                    == QUrl(QStringLiteral("qrc:/data/shaders/rectangularshadow.vert.qsb")))))
+        material->setParent(root);
+}
+
 void cancelTree(QObject *root, QSet<QObject *> &visited)
 {
     if (!root || visited.contains(root)) return;
     visited.insert(root);
     const QPointer<QObject> guard(root);
+    ownShadowMaterial(root);
     bool visual = false;
     Content content = Content::None;
     // Read the class hierarchy once without invoking every generated metacast.
@@ -55,6 +72,20 @@ void cancelTree(QObject *root, QSet<QObject *> &visited)
 }
 }
 
+PageLifetime *PageLifetime::qmlAttachedProperties(QObject *root)
+{
+    auto *lifetime = new PageLifetime(root);
+    lifetime->setOwnMaterial(true);
+    return lifetime;
+}
+
+void PageLifetime::setOwnMaterial(bool requested)
+{
+    if (!requested || materialRequested_) return;
+    ownShadowMaterial(parent());
+    materialRequested_ = true;
+}
+
 void PageLifetime::cancel(QObject *root)
 {
     QSet<QObject *> visited;
@@ -67,6 +98,9 @@ extern "C" void chilpa_page_lifetime_register_qml_type()
     if (registered) return;
     registered = true;
     qmlRegisterType<PageLifetime>("app.chilpa.kit", 1, 0, "PageLifetime");
+    // This primitive bootstrap uses Qt only; it exposes no facade state.
+    qmlRegisterUncreatableType<PageLifetime>("app.chilpa.kit.primitives", 1, 0, "MaterialLifetime",
+        "MaterialLifetime is attached by the shared Shadow primitive.");
 }
 
 Q_COREAPP_STARTUP_FUNCTION(chilpa_page_lifetime_register_qml_type)

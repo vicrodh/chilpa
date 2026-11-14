@@ -779,20 +779,22 @@ impl qobject::TrackListModel {
             if let Some(rows) = cached { self.home_arrived(asked, rows); }
             return;
         }
-        if kind == "tracks" {
+        if matches!(kind.as_str(), "tracks" | "discovery") {
             // Found on the worker; what is shown stays until it is back.
             let query = self.rust().key.to_string();
             let extras = browse::read(|s| s.filter.clone());
-            let asked = self.rust().asked + 1;
+            let asked = self.rust().asked.wrapping_add(1);
             self.as_mut().rust_mut().asked = asked;
             let thread = self.qt_thread();
-            chilpa_qt_kit::track_loading::submit(query, extras, move |found, timing| {
+            let expected_kind = kind.clone();
+            chilpa_qt_kit::track_loading::submit_collection(kind, query, extras, move |found, timing| {
+                let expected_kind = expected_kind.clone();
                 let _ = thread.queue(move |mut model| {
-                    if model.rust().asked == asked {
+                    if model.rust().asked == asked && model.kind().to_string() == expected_kind {
                         let timing = timing.next("delivery");
                         let ms = found.snapshot.totals.duration_ms;
                         (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
-                        model.as_mut().show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
+                        model.as_mut().show(expected_kind, Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
                         timing.published(*model.count());
                     }
                 });

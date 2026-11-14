@@ -6,6 +6,7 @@
 pub mod app;
 pub mod format;
 pub mod worker;
+pub mod browse;
 pub mod album_pages;
 pub mod album_rows;
 pub mod track_roles;

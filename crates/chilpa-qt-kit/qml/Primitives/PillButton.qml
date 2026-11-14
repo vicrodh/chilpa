@@ -62,9 +62,11 @@ Rectangle {
         Text {
             id: label
             anchors.verticalCenter: parent.verticalCenter
-            width: root.wrapText ? Math.max(0, root.width - root.horizontalPadding * 2 - (root.glyph !== "" ? icon.width + Metrics.gap6 : 0)) : implicitWidth // derived: the label between its padding and optional icon
+            width: Math.max(0, root.width - root.horizontalPadding * 2 - (root.glyph !== "" ? icon.width + Metrics.gap6 : 0)) // derived: the label between its padding and optional icon
             wrapMode: root.wrapText ? Text.WrapAtWordBoundaryOrAnywhere : Text.NoWrap
+            elide: root.wrapText ? Text.ElideNone : Text.ElideRight
             text: root.text
+            textFormat: Text.PlainText
             font.pointSize: root.ghost ? Type.small : Type.body
             font.weight: root.primary ? Type.semibold : Type.medium
             color: root.ink

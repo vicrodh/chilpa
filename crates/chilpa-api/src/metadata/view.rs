@@ -6,6 +6,7 @@ use super::fields::{self, Field, ALBUM, TRACK};
 use super::{Editor, Mode};
 use chilpa_meta::{Hit, Release};
 use chilpa_tags::edit::{Id3Version, Layers, Refusal};
+pub use super::preview::ChangeView;
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct MetadataView {
@@ -116,6 +117,13 @@ pub struct LayersView {
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct LookupView {
+    pub engine: &'static str,
+    pub runtime: String,
+    pub engine_version: String,
+    pub recommendation: String,
+    pub probing: bool,
+    pub beets_busy: bool,
+    pub changes: Vec<ChangeView>,
     /// "musicbrainz" | "discogs"
     pub provider: &'static str,
     pub searching: bool,
@@ -304,7 +312,8 @@ impl Editor {
                 done: self.progress.0,
                 total: self.progress.1,
             };
-            view.lookup.matched = self.release.as_ref().map_or(0, |r| super::apply::pair_for(draft, r, self.selected_disc).iter().flatten().count());
+            view.lookup.matched = self.preview_matched;
+            view.lookup.changes = self.changes.iter().filter(|change| change.differs(draft)).map(|change| change.view(draft)).collect();
         }
         view.cover = match &self.waiting {
             Some(waiting) => CoverView {
@@ -318,6 +327,12 @@ impl Editor {
         };
         view.layers = layers_view(&self.layers);
         view.lookup.provider = self.provider.name();
+        view.lookup.engine = if self.beets.enabled { "beets" } else { "native" };
+        view.lookup.runtime = self.beets.runtime.clone();
+        view.lookup.engine_version = self.beets.version.clone();
+        view.lookup.recommendation = self.beets.recommendation.clone();
+        view.lookup.probing = self.beets.probing;
+        view.lookup.beets_busy = self.beets.busy();
         view.lookup.searching = self.searching;
         view.lookup.loading = self.loading;
         view.lookup.hits = self.hits.clone();

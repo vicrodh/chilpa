@@ -1039,3 +1039,6 @@ colorspace
 luma
 subsamp
 turbojpeg
+# Qt's executable-picker option and the pinned Python package installer.
+dont
+uv

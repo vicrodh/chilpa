@@ -71,6 +71,7 @@ Item {
         visible: root.shaded && image.status === Image.Ready
         property variant source: image
         property size dims: Qt.size(width, height)
+        property size sourceDims: Qt.size(image.implicitWidth, image.implicitHeight)
         property vector4d corners: root.corners
         vertexShader: "../../assets/shaders/rounded.vert.qsb"
         fragmentShader: "../../assets/shaders/rounded.frag.qsb"

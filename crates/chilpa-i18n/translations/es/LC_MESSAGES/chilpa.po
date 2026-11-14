@@ -238,8 +238,14 @@ msgstr "API key"
 msgid "About"
 msgstr "Acerca de"
 
+msgid "About & connections"
+msgstr "Acerca de y conexiones"
+
 msgid "About Chilpa"
 msgstr "Acerca de Chilpa"
+
+msgid "About this composer"
+msgstr "Acerca de este compositor"
 
 msgid "Accent"
 msgstr "Acento"
@@ -447,6 +453,9 @@ msgstr "Los álbumes irán apareciendo conforme se lean"
 msgid "Albums from streaming services will not be synced."
 msgstr "Los álbumes de servicios de streaming no se sincronizarán."
 
+msgid "Albums in your library"
+msgstr "Álbumes en tu biblioteca"
+
 msgid "All"
 msgstr "Todo"
 
@@ -465,6 +474,9 @@ msgstr "Todos los discos"
 msgid "All episode types"
 msgstr "Todos los tipos de episodio"
 
+msgid "All files"
+msgstr "Todos los archivos"
+
 msgid "All groups"
 msgstr "Todos los grupos"
 
@@ -479,6 +491,9 @@ msgstr "Todas estas"
 
 msgid "All qualities"
 msgstr "Todas las calidades"
+
+msgid "All recordings"
+msgstr "Todas las grabaciones"
 
 msgid "All results"
 msgstr "Todos los resultados"
@@ -500,6 +515,9 @@ msgstr "Todo listo"
 
 msgid "All sources"
 msgstr "Todas las fuentes"
+
+msgid "All subgenres"
+msgstr "Todos los subgéneros"
 
 msgid "All themes"
 msgstr "Todos los temas"
@@ -654,14 +672,14 @@ msgstr "Aplicar"
 msgid "Apply import"
 msgstr "Aplicar perfil"
 
+msgid "Apply selected fields"
+msgstr "Aplicar campos seleccionados"
+
 msgid "Apply system tint to the icon"
 msgstr "Aplicar el color del sistema al icono"
 
 msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
 msgstr "Aplica la misma agrupación a todas las fuentes. Desactívala para mostrar una sola lista de playlists."
-
-msgid "Apply to the form"
-msgstr "Aplicar al formulario"
 
 msgid "Approve"
 msgstr "Aprobar"
@@ -701,6 +719,9 @@ msgstr "Artistas"
 
 msgid "Artists from this scene"
 msgstr "Artistas de esta escena"
+
+msgid "Artists in your library"
+msgstr "Artistas en tu biblioteca"
 
 msgid "Artwork"
 msgstr "Portada"
@@ -813,6 +834,9 @@ msgstr "Seguir la letra"
 msgid "Auto-tail"
 msgstr "Seguir automáticamente"
 
+msgid "Automatic beets installation is not available on this platform."
+msgstr "La instalación automática de beets no está disponible en esta plataforma."
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Las comprobaciones automáticas están pausadas hasta que continúes o descartes este escaneo. Descartarlo conserva los archivos ya añadidos."
 
@@ -833,6 +857,9 @@ msgstr "GPU disponibles"
 
 msgid "Available offline"
 msgstr "Disponible sin conexión"
+
+msgid "Available parts, grouped by album and performer. Work tags do not confirm a complete recording."
+msgstr "Partes disponibles por álbum e intérprete. Las etiquetas de obra no confirman que la grabación esté completa."
 
 msgid "Available version"
 msgstr "Versión disponible"
@@ -1034,14 +1061,23 @@ msgstr "Cancelar"
 msgid "Cancel Timer"
 msgstr "Cancelar temporizador"
 
+msgid "Cancel check"
+msgstr "Cancelar comprobación"
+
 msgid "Cancel download"
 msgstr "Cancelar descarga"
+
+msgid "Cancel lookup"
+msgstr "Cancelar búsqueda"
 
 msgid "Cancel stop after this track"
 msgstr "Cancelar la parada después de esta pista"
 
 msgid "Cancelled"
 msgstr "Cancelado"
+
+msgid "Cancelling the beets task…"
+msgstr "Cancelando la tarea de beets…"
 
 msgid "Cancelling update…"
 msgstr "Cancelando actualización…"
@@ -1124,6 +1160,9 @@ msgstr "Revisar de nuevo y volver a descargar si hace falta"
 msgid "Check all folders"
 msgstr "Comprobar todas las carpetas"
 
+msgid "Check beets"
+msgstr "Comprobar beets"
+
 msgid "Check for a newer version of Chilpa."
 msgstr "Buscar una versión más reciente de Chilpa."
 
@@ -1154,11 +1193,17 @@ msgstr "Revisa la dirección y su puerto, y que el servidor esté encendido y se
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "Revisa la dirección, que DLNA esté activado en los ajustes del servidor y que deje entrar a esta computadora; luego inténtalo de nuevo."
 
+msgid "Check the selected runtime and its beets version without looking up music."
+msgstr "Comprueba el entorno seleccionado y su versión de beets sin buscar música."
+
 msgid "Check the user and the password or the API key, then go back and try again."
 msgstr "Revisa el usuario y la contraseña o la API key; luego regresa e inténtalo de nuevo."
 
 msgid "Checking available space"
 msgstr "Comprobando espacio disponible"
+
+msgid "Checking beets…"
+msgstr "Comprobando beets…"
 
 msgid "Checking destination files"
 msgstr "Comprobando archivos de destino"
@@ -1367,6 +1412,9 @@ msgstr "Elige un valor"
 msgid "Choose an available writable storage."
 msgstr "Elige una memoria disponible que permita escritura."
 
+msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
+msgstr "Elige un entorno existente con beets 2.14.1 o deja esto vacío para usar la copia instalada por Chilpa."
+
 msgid "Choose an image"
 msgstr "Elige una imagen"
 
@@ -1387,6 +1435,9 @@ msgstr "Elegir carpeta de descargas"
 
 msgid "Choose download folder…"
 msgstr "Elegir carpeta de descargas…"
+
+msgid "Choose executable…"
+msgstr "Elegir ejecutable…"
 
 msgid "Choose fewer offline files for this action."
 msgstr "Selecciona menos archivos sin conexión para esta acción."
@@ -1421,8 +1472,17 @@ msgstr "Elige las colas y ordena cómo se combinarán. Se conservan las pistas r
 msgid "Choose storage"
 msgstr "Elige un almacenamiento"
 
+msgid "Choose the Python environment containing beets."
+msgstr "Elige el entorno de Python que contiene beets."
+
+msgid "Choose the Python executable for beets"
+msgstr "Elige el ejecutable de Python para beets"
+
 msgid "Choose the connected player and its storage first."
 msgstr "Primero elige el reproductor conectado y su memoria."
+
+msgid "Choose the engine used by the metadata editor."
+msgstr "Elige el motor que usa el editor de metadatos."
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
 msgstr "Elige el control de volumen de reproducción de esta salida. Chilpa lo verifica antes de guardar la elección."
@@ -1631,8 +1691,17 @@ msgstr "El trabajo terminado está guardado. Continuar vuelve a comprobar la car
 msgid "Composer"
 msgstr "Compositor"
 
+msgid "Composer not tagged"
+msgstr "Sin etiqueta de compositor"
+
 msgid "Composers"
 msgstr "Compositores"
+
+msgid "Composition"
+msgstr "Composición"
+
+msgid "Compositions"
+msgstr "Composiciones"
 
 msgid "Compressor ratio · 1–6"
 msgstr "Relación del compresor · 1–6"
@@ -1781,6 +1850,12 @@ msgstr "No se pudo mover la playlist."
 msgid "Could not read the analysis inventory."
 msgstr "No se pudo leer el inventario de análisis."
 
+msgid "Could not read the library"
+msgstr "No se pudo leer la biblioteca"
+
+msgid "Could not read track durations from the library."
+msgstr "No se pudieron leer las duraciones de las pistas de la biblioteca."
+
 msgid "Could not remove the saved profile."
 msgstr "No se pudo eliminar el perfil guardado."
 
@@ -1835,6 +1910,9 @@ msgstr "Elegidos por la crítica"
 msgid "Crossfeed · 0–50%"
 msgstr "Crossfeed · 0–50%"
 
+msgid "Current"
+msgstr "Actual"
+
 msgid "Current signal path"
 msgstr "Ruta actual de audio"
 
@@ -1855,6 +1933,9 @@ msgstr "Personalizado"
 
 msgid "Custom Image"
 msgstr "Imagen personalizada"
+
+msgid "Custom Python executable"
+msgstr "Ejecutable de Python personalizado"
 
 msgid "Custom image"
 msgstr "Imagen personalizada"
@@ -2276,11 +2357,20 @@ msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 msgid "Download"
 msgstr "Descargar"
 
+msgid "Download a private Python environment with beets. A successful installation becomes the default runtime."
+msgstr "Descarga un entorno privado de Python con beets. Al terminar, se usará como entorno predeterminado."
+
+msgid "Download a private copy managed by Chilpa."
+msgstr "Descarga una copia privada administrada por Chilpa."
+
 msgid "Download again"
 msgstr "Descargar de nuevo"
 
 msgid "Download album"
 msgstr "Descargar álbum"
+
+msgid "Download and install"
+msgstr "Descargar e instalar"
 
 msgid "Download cancelled."
 msgstr "Descarga cancelada."
@@ -2296,6 +2386,9 @@ msgstr "Descargando episodios…"
 
 msgid "Downloading for offline listening"
 msgstr "Descargando para escuchar sin conexión"
+
+msgid "Downloading the verified installer…"
+msgstr "Descargando el instalador verificado…"
 
 msgid "Downloading update…"
 msgstr "Descargando actualización…"
@@ -2383,6 +2476,9 @@ msgstr "Elevado"
 
 msgid "Embedded tags only"
 msgstr "Solo tags incrustados"
+
+msgid "Empty"
+msgstr "Vacío"
 
 msgid "Empty folders"
 msgstr "Folders vacíos"
@@ -2498,6 +2594,9 @@ msgstr "Modo exclusivo"
 msgid "Exclusive mode was requested."
 msgstr "Se solicitó el modo exclusivo."
 
+msgid "Existing genres are unselected by default."
+msgstr "Los géneros existentes quedan sin seleccionar por defecto."
+
 msgid "Exit Immersive"
 msgstr "Salir del modo inmersivo"
 
@@ -2512,6 +2611,9 @@ msgstr "Explícito"
 
 msgid "Explore"
 msgstr "Explorar"
+
+msgid "Explore works, recordings and albums credited to this composer."
+msgstr "Explora las obras, grabaciones y álbumes de este compositor."
 
 msgid "Export"
 msgstr "Exportar"
@@ -2615,6 +2717,9 @@ msgstr "Filtrar por género"
 msgid "Filter playlists"
 msgstr "Filtrar playlists"
 
+msgid "Filter recordings"
+msgstr "Filtrar grabaciones"
+
 msgid "Filter the library"
 msgstr "Filtrar la biblioteca"
 
@@ -2701,6 +2806,9 @@ msgstr "Las carpetas no están disponibles. Sus pistas existentes se conservan e
 
 msgid "Follow"
 msgstr "Seguir"
+
+msgid "Follow a style into its subgenres, or search for one directly."
+msgstr "Explora un estilo y sus subgéneros, o busca uno directamente."
 
 msgid "Follow lyrics"
 msgstr "Seguir la letra"
@@ -3253,6 +3361,12 @@ msgstr "Instala y activa un importador de playlists en Ajustes → Plugins."
 msgid "Install and enable the Mood plugin first."
 msgstr "Primero instala y activa el plugin Mood."
 
+msgid "Install beets"
+msgstr "Instalar beets"
+
+msgid "Install beets {} in the selected Python environment."
+msgstr "Instala beets {} en el entorno de Python seleccionado."
+
 msgid "Install from ZIP…"
 msgstr "Instalar desde ZIP…"
 
@@ -3280,8 +3394,14 @@ msgstr "Instalación"
 msgid "Installed"
 msgstr "Instalados"
 
+msgid "Installing beets and its pinned packages…"
+msgstr "Instalando beets y sus paquetes en las versiones fijadas…"
+
 msgid "Installing plugin…"
 msgstr "Instalando plugin…"
+
+msgid "Installing private Python…"
+msgstr "Instalando Python privado…"
 
 msgid "Instrument"
 msgstr "Instrumento"
@@ -3704,6 +3824,9 @@ msgstr "Buscando la letra…"
 msgid "Looking for players…"
 msgstr "Buscando reproductores…"
 
+msgid "Lookup cancelled."
+msgstr "Búsqueda cancelada."
+
 msgid "Lossless"
 msgstr "Sin pérdida"
 
@@ -3794,6 +3917,9 @@ msgstr "Ingeniero de masterización"
 msgid "Match"
 msgstr "Coincidir con"
 
+msgid "Match score: {}"
+msgstr "Coincidencia: {}"
+
 msgid "Match {} exactly"
 msgstr "Buscar {} exactamente"
 
@@ -3829,6 +3955,9 @@ msgstr "Mensaje"
 
 msgid "Metadata"
 msgstr "Metadatos"
+
+msgid "Metadata search engine"
+msgstr "Motor de búsqueda de metadatos"
 
 msgid "Micro"
 msgstr "Micro"
@@ -4166,17 +4295,29 @@ msgstr "Pistas sin álbum"
 msgid "No albums found"
 msgstr "No se encontraron álbumes"
 
+msgid "No albums in this selection"
+msgstr "No hay álbumes en esta selección"
+
 msgid "No artists from this scene were found."
 msgstr "No se encontraron artistas de esta escena."
 
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "No se encontraron artistas de esta escena en los plugins seleccionados."
 
+msgid "No artists in this selection"
+msgstr "No hay artistas en esta selección"
+
 msgid "No audio output is known yet; try again in a moment."
 msgstr "Todavía no se conoce ninguna salida de audio; inténtalo de nuevo en un momento."
 
+msgid "No changes to apply."
+msgstr "No hay cambios que aplicar."
+
 msgid "No composer"
 msgstr "Sin compositor"
+
+msgid "No composer credits yet. Add composers in the metadata editor."
+msgstr "Todavía no hay créditos de compositor. Agrégalos en el editor de metadatos."
 
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "Aún no hay condiciones. Agrega una abajo o haz clic en valores en Columnas."
@@ -4214,6 +4355,9 @@ msgstr "Ninguna carpeta coincide con tu búsqueda."
 msgid "No genre"
 msgstr "Sin género"
 
+msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
+msgstr "Todavía no hay etiquetas de género. Agrégalas en el editor de metadatos para explorar."
+
 msgid "No genres in this period."
 msgstr "No hay géneros en este periodo."
 
@@ -4243,6 +4387,9 @@ msgstr "Esta pista no tiene letra."
 
 msgid "No matches"
 msgstr "Sin coincidencias"
+
+msgid "No matches. Try another search."
+msgstr "Sin coincidencias. Prueba otra búsqueda."
 
 msgid "No matching music."
 msgstr "No hay música que coincida."
@@ -4349,6 +4496,9 @@ msgstr "Aún no se han procesado pistas en esta sesión."
 msgid "No tracks in the selected libraries yet."
 msgstr "Aún no hay canciones en las bibliotecas seleccionadas."
 
+msgid "No tracks in this selection"
+msgstr "No hay pistas en esta selección"
+
 msgid "No tracks match all of these"
 msgstr "Ninguna pista cumple todas estas"
 
@@ -4360,6 +4510,9 @@ msgstr "Ninguna pista coincide con tu búsqueda."
 
 msgid "No tracks without an album match these filters."
 msgstr "Ninguna pista sin álbum coincide con estos filtros."
+
+msgid "No work tags in this selection. Composer credits are still available under Albums and Tracks."
+msgstr "No hay etiquetas de obra en esta selección. Puedes consultar los créditos de compositor en Álbumes y Pistas."
 
 msgid "No year"
 msgstr "Sin año"
@@ -4375,6 +4528,9 @@ msgstr "Normalización"
 
 msgid "Not answering"
 msgstr "No responde"
+
+msgid "Not checked"
+msgstr "Sin comprobar"
 
 msgid "Not compatible"
 msgstr "No compatibles"
@@ -4399,6 +4555,9 @@ msgstr "No está en tu biblioteca ni en tus fuentes"
 
 msgid "Not inspected"
 msgstr "Sin inspeccionar"
+
+msgid "Not installed"
+msgstr "Sin instalar"
 
 msgid "Not now"
 msgstr "Ahora no"
@@ -4766,6 +4925,9 @@ msgstr "Formato de salida"
 msgid "Output identity could not be saved."
 msgstr "No se pudo guardar la identidad de la salida."
 
+msgid "Overview"
+msgstr "Resumen"
+
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "no se pueden escribir muestras PCM en un flujo DSD nativo"
 
@@ -5075,6 +5237,9 @@ msgstr "Preparando el análisis Mood"
 msgid "Preparing analysis…"
 msgstr "Preparando análisis…"
 
+msgid "Preparing beets…"
+msgstr "Preparando beets…"
+
 msgid "Preparing playlists"
 msgstr "Preparando playlists"
 
@@ -5152,6 +5317,9 @@ msgstr "Perfil eliminado. No se pudo borrar parte del historial local de sincron
 
 msgid "Pronunciation"
 msgstr "Pronunciación"
+
+msgid "Proposed"
+msgstr "Propuesto"
 
 msgid "Provider identifiers"
 msgstr "Identificadores de proveedores"
@@ -5420,6 +5588,9 @@ msgstr "Playlists escuchadas recientemente en la biblioteca"
 msgid "Recording engineer"
 msgstr "Ingeniero de grabación"
 
+msgid "Recordings"
+msgstr "Grabaciones"
+
 msgid "Records"
 msgstr "Discos"
 
@@ -5458,6 +5629,9 @@ msgstr "Actualizar ajustes"
 
 msgid "Regenerate"
 msgstr "Regenerar"
+
+msgid "Reinstall"
+msgstr "Reinstalar"
 
 msgid "Release"
 msgstr "Lanzamiento"
@@ -5914,6 +6088,9 @@ msgstr "Buscar de nuevo"
 msgid "Search artists"
 msgstr "Buscar artistas"
 
+msgid "Search engine"
+msgstr "Motor de búsqueda"
+
 msgid "Search folders"
 msgstr "Buscar carpetas"
 
@@ -5967,6 +6144,9 @@ msgstr "Buscar en esta vista…"
 
 msgid "Search title, artist or album"
 msgstr "Buscar título, artista o álbum"
+
+msgid "Search your library"
+msgstr "Buscar en tu biblioteca"
 
 msgid "Searching MusicBrainz for {genre} artists…"
 msgstr "Buscando artistas de {genre} en MusicBrainz…"
@@ -6116,6 +6296,9 @@ msgstr "Cambiar preferencia"
 
 msgid "Set the overall light or dark polarity. Affects derived shades, borders and overlays."
 msgstr "Define la polaridad general, clara u oscura. Afecta los tonos derivados, los bordes y las superposiciones."
+
+msgid "Set up beets in Settings to look up metadata."
+msgstr "Configura beets en Ajustes para buscar metadatos."
 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Pone el grafo de PipeWire a la frecuencia de cada pista mientras Chilpa tiene la salida para él solo, así el DAC recibe la frecuencia que trae el archivo. La frecuencia regresa cuando Chilpa se detiene."
@@ -6524,6 +6707,9 @@ msgstr "Estudio 24/48"
 msgid "Stumbling"
 msgstr "Con fallas"
 
+msgid "Subgenres"
+msgstr "Subgéneros"
+
 msgid "Subscribe"
 msgstr "Suscribirme"
 
@@ -6696,6 +6882,24 @@ msgstr "La cuenta expiró; vuelve a conectarla."
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "La dirección con la que abres el servidor en un navegador, con su puerto, y el usuario con el que Chilpa inicia sesión."
 
+msgid "The beets installer could not be downloaded. Try again."
+msgstr "No se pudo descargar el instalador de beets. Inténtalo de nuevo."
+
+msgid "The beets lookup exceeded its metadata size limit."
+msgstr "La búsqueda con beets superó su límite de tamaño de metadatos."
+
+msgid "The beets lookup timed out. Try again."
+msgstr "La búsqueda con beets agotó su tiempo. Inténtalo de nuevo."
+
+msgid "The beets setting could not be changed while a task is running."
+msgstr "No se puede cambiar el ajuste de beets mientras se ejecuta una tarea."
+
+msgid "The beets task reached its time limit."
+msgstr "La tarea de beets agotó su tiempo."
+
+msgid "The beets task was cancelled."
+msgstr "Se canceló la tarea de beets."
+
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "La prueba integrada reproduce cuatro pistas con distintas profundidades de bits y frecuencias (16/44.1, 24/44.1, 24/96, 24/192) para que veas cambiar tu DAC. Cada una es la pista más escuchada de tu biblioteca en ese formato, o una señal de prueba generada si no tienes ninguna. Si prefieres usar tu propia cola, agrega primero una pista de cada tipo para probar todas las frecuencias."
 
@@ -6801,6 +7005,15 @@ msgstr "La imagen es demasiado grande"
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "No se pudo excluir la letra incorrecta. Inténtalo de nuevo."
 
+msgid "The installer archive could not be opened safely."
+msgstr "No se pudo abrir el archivo del instalador de forma segura."
+
+msgid "The installer did not match its pinned checksum."
+msgstr "El instalador no coincide con la suma de verificación fijada."
+
+msgid "The installer exceeded its output limit."
+msgstr "El instalador superó su límite de salida."
+
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "No se pudo cambiar la biblioteca. Inténtalo otra vez; el detalle de abajo dice qué pasó."
 
@@ -6876,6 +7089,9 @@ msgstr "La salida sigue reproduciendo"
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "La salida reproduce sólo Chilpa. Los demás programas esperan hasta que la suelte."
 
+msgid "The people behind the music in your library."
+msgstr "Quienes escribieron la música de tu biblioteca."
+
 msgid "The player is busy. Close the other file transfer application and try again."
 msgstr "El reproductor está ocupado. Cierra la otra aplicación de transferencia de archivos e inténtalo de nuevo."
 
@@ -6900,8 +7116,26 @@ msgstr "El plugin no respondió en 15 segundos. No se pudo comprobar el estado d
 msgid "The plugin interface could not be opened."
 msgstr "No se pudo abrir la interfaz del plugin."
 
+msgid "The previous beets lookup is still stopping."
+msgstr "La búsqueda anterior de beets aún se está deteniendo."
+
+msgid "The previous beets task is still stopping."
+msgstr "La tarea anterior de beets aún se está deteniendo."
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "La tasa de muestreo anterior no se estabilizó tras la comprobación."
+
+msgid "The private beets environment could not be installed. The previous runtime is unchanged."
+msgstr "No se pudo instalar el entorno privado de beets. Se conserva el entorno anterior."
+
+msgid "The private beets environment could not be saved."
+msgstr "No se pudo guardar el entorno privado de beets."
+
+msgid "The private beets environment exceeded its size limit."
+msgstr "El entorno privado de beets superó su límite de tamaño."
+
+msgid "The provider for Chilpa's lookup engine. Embedded tags only disables online lookup for both engines."
+msgstr "El proveedor del motor de búsqueda de Chilpa. Solo tags incrustados desactiva la búsqueda en línea para ambos motores."
 
 msgid "The publisher did not return an audio file."
 msgstr "El servidor del podcast no devolvió un archivo de audio."
@@ -6980,6 +7214,12 @@ msgstr "No se pudo iniciar el escaneo: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "El proceso de escaneo se detuvo inesperadamente."
+
+msgid "The selected Python environment could not start beets."
+msgstr "El entorno de Python seleccionado no pudo iniciar beets."
+
+msgid "The selected environment does not provide beets 2.14.1."
+msgstr "El entorno seleccionado no tiene beets 2.14.1."
 
 msgid "The selected hardware volume control is gone."
 msgstr "El control de volumen de hardware elegido ya no está disponible."
@@ -7826,6 +8066,9 @@ msgstr "Volumen {}%"
 msgid "Wait for the audio check to finish."
 msgstr "Espera a que termine la comprobación de audio."
 
+msgid "Wait for the beets installation or check to finish in Settings."
+msgstr "Espera a que termine la instalación o comprobación de beets en Ajustes."
+
 msgid "Wait for the queue to finish switching."
 msgstr "Espera a que termine el cambio de cola."
 
@@ -7927,9 +8170,6 @@ msgstr "¿Dónde está y quién inicia sesión?"
 msgid "Where is your music?"
 msgstr "¿Dónde está tu música?"
 
-msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
-msgstr "Dónde busca primero el editor de metadatos. \"Solo tags incrustados\" nunca sale a la red."
-
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Por dónde van las muestras: directo al dispositivo o a través de un servidor de sonido."
 
@@ -7993,6 +8233,9 @@ msgstr "Palabras en el título del disco y en el de la pista"
 msgid "Work"
 msgstr "Obra"
 
+msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
+msgstr "Obras identificadas por sus etiquetas de obra y compositor. Cada grabación conserva su álbum e intérprete."
+
 msgid "Write XML"
 msgstr "Escribir XML"
 
@@ -8052,6 +8295,9 @@ msgstr "Tu stack de audio está listo para reproducción bit-perfect."
 
 msgid "Your distribution"
 msgstr "Tu distribución"
+
+msgid "Your genre tags"
+msgstr "Tus etiquetas de género"
 
 msgid "Your music"
 msgstr "Tu música"
@@ -8214,6 +8460,24 @@ msgstr "pendiente de aprobación"
 
 msgid "be a plugin of another kind: {}"
 msgstr "ser un plugin de otro tipo: {}"
+
+msgid "beets 2.14.1 is ready."
+msgstr "beets 2.14.1 está listo."
+
+msgid "beets accepts up to {} tracks per lookup."
+msgstr "beets acepta hasta {} pistas por búsqueda."
+
+msgid "beets availability"
+msgstr "Disponibilidad de beets"
+
+msgid "beets could not return a valid metadata proposal."
+msgstr "beets no pudo devolver una propuesta de metadatos válida."
+
+msgid "beets settings"
+msgstr "Ajustes de beets"
+
+msgid "beets {} is ready."
+msgstr "beets {} está listo."
 
 msgid "between"
 msgstr "entre"
@@ -9460,6 +9724,16 @@ msgid_plural "{} albums"
 msgstr[0] "{} álbum"
 msgstr[1] "{} álbumes"
 
+msgid "{} album in your library"
+msgid_plural "{} albums in your library"
+msgstr[0] "{} álbum en tu biblioteca"
+msgstr[1] "{} álbumes en tu biblioteca"
+
+msgid "{} albumless track"
+msgid_plural "{} albumless tracks"
+msgstr[0] "{} pista sin álbum"
+msgstr[1] "{} pistas sin álbum"
+
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "{} analizadas, {} sin pulso, {} ilegibles"
 
@@ -9496,6 +9770,11 @@ msgid "{} channel"
 msgid_plural "{} channels"
 msgstr[0] "{} canal"
 msgstr[1] "{} canales"
+
+msgid "{} composition"
+msgid_plural "{} compositions"
+msgstr[0] "{} composición"
+msgstr[1] "{} composiciones"
 
 msgid "{} condition"
 msgid_plural "{} conditions"
@@ -9701,6 +9980,11 @@ msgstr "{} de {} formatos salen tal cual"
 
 msgid "{} of {} tracks match this release"
 msgstr "{} de {} pistas coinciden con este release"
+
+msgid "{} part"
+msgid_plural "{} parts"
+msgstr[0] "{} parte"
+msgstr[1] "{} partes"
 
 msgid "{} play"
 msgid_plural "{} plays"

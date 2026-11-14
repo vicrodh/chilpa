@@ -183,6 +183,14 @@ impl Network {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).clear();
     }
 
+    /// Drawing music does not opt into artist enrichment. Opening the
+    /// context panel calls `of`; the ordinary document only reads a result.
+    fn peek(&self, name: &str, musicbrainz: bool) -> Known {
+        if !chilpa_core::network::current().artist_network() { return Known::default(); }
+        let key = format!("{musicbrainz}:{}:{}", chilpa_core::network::current().proxy, name.trim());
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(&key).cloned().unwrap_or_default()
+    }
+
     pub(crate) fn of(&self, name: &str, mbids: &[String], musicbrainz: bool) -> Known {
         let name = name.trim();
         if name.is_empty() || !chilpa_core::network::current().artist_network() {
@@ -236,6 +244,7 @@ fn read(name: &str, mbid: Option<String>, musicbrainz: bool) -> Known {
 }
 
 impl crate::Chilpa {
+    pub fn artist_network_allowed(&self) -> bool { chilpa_core::network::current().artist_network() }
     pub fn musicbrainz_enabled(&self) -> bool {
         let policy = chilpa_core::network::current();
         !policy.offline && policy.musicbrainz
@@ -269,7 +278,7 @@ impl crate::Chilpa {
         let (records, guest, labels) = (collection.records, collection.appearances, collection.labels);
         let art = Some(collection.art).filter(|a| !a.is_empty())
             .and_then(|path| url::Url::from_file_path(path).ok()).map(|u| u.to_string()).unwrap_or_default();
-        let known = self.artist_network.of(name, &[], self.musicbrainz_enabled());
+        let known = self.artist_network.peek(name, self.musicbrainz_enabled());
         // The labels its records' tracks name, which the sidebar lists.
         let similar: Vec<Value> = known.similar.iter().take(12).cloned().collect::<Vec<_>>().into_iter()
             .map(|n| { let local = self.has_artist(&n); json!({"kind": "artist", "title": n, "local": local}) }).collect();
@@ -305,6 +314,8 @@ impl crate::Chilpa {
                 "description_url": known.bio_url,
                 "local": true,
                 "records": records.len(),
+                "genres": collection.genres,
+                "compositions": collection.compositions,
             },
             "shelves": shelves,
         });

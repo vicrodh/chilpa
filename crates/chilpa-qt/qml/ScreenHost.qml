@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/immersive/qml/Components"
 import "Screens"
 import "Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/discovery/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/metadata/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
@@ -54,6 +55,7 @@ PageTransition {
         case "albums": return albums
         case "tracks": return tracks
         case "artists": return artists
+        case "genres": case "composers": case "compositions": return discovery
         case "artist": return artist
         case "artistScene": return artistScene
         case "settings": return settings
@@ -83,6 +85,7 @@ PageTransition {
     Component { id: albums; AlbumsScreen {} }
     Component { id: tracks; TracksScreen {} }
     Component { id: artists; ArtistsScreen {} }
+    Component { id: discovery; DiscoveryScreen { mode: (parent?.pageRoute || "").split("\u001f")[1] || "genres"; routeKey: host.routeKeyOf(parent) } }
     // The library's artist is drawn by the same page as a source's.
     Component { id: artist; ArtistPage { key: "local artist:" + host.routeKeyOf(parent) } }
     Component { id: artistScene; ArtistScene {} }

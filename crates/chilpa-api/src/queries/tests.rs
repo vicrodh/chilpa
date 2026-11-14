@@ -4,6 +4,22 @@ use std::sync::mpsc::RecvTimeoutError;
 use std::time::Duration;
 
 #[test]
+fn a_checked_query_finishes_with_an_error_and_the_same_worker_can_recover() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    std::fs::create_dir(&path).unwrap();
+    let worker = QueryWorker::start(path.clone(), crate::source_catalog::Catalog::new()).unwrap();
+    let (sent, received) = channel();
+    assert!(worker.submit_checked(move |result| { let _ = sent.send(result.err().map(str::to_string)); }));
+    assert!(received.recv_timeout(Duration::from_secs(2)).unwrap().is_some());
+    std::fs::remove_dir(&path).unwrap();
+    let _library = chilpa_library::Library::open(&path).unwrap();
+    let (sent, received) = channel();
+    assert!(worker.submit_checked(move |result| { let _ = sent.send(result.is_ok()); }));
+    assert!(received.recv_timeout(Duration::from_secs(2)).unwrap());
+}
+
+#[test]
 fn a_failed_reader_open_is_retried_on_the_next_job() {
     let dir = std::env::temp_dir().join(format!("chilpa-reader-retry-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();

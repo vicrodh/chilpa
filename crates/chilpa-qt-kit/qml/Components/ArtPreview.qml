@@ -29,7 +29,7 @@ Popup {
     y: under ? target.height + Metrics.gap8 : -height - Metrics.gap8
 
     background: Item {
-        RectangularShadow {
+        Shadow {
             anchors.fill: frame
             radius: frame.radius
             offset.y: Metrics.shadowElevatedY

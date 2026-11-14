@@ -19,7 +19,7 @@ Item {
     implicitWidth: actions.implicitWidth + Metrics.selectionHorizontalPadding
     implicitHeight: Metrics.selectionBarHeight
 
-    RectangularShadow {
+    Shadow {
         anchors.fill: panel
         radius: panel.radius
         offset.y: Metrics.shadowElevatedY

@@ -242,7 +242,7 @@ pub(crate) fn genre_key(name: &str) -> String {
 }
 
 /// How many letters apart two words are, past `most` counted as `most + 1`.
-fn distance(a: &[char], b: &[char], most: usize) -> usize {
+pub(crate) fn distance(a: &[char], b: &[char], most: usize) -> usize {
     if a.len().abs_diff(b.len()) > most { return most + 1; }
     let mut previous: Vec<usize> = (0..=b.len()).collect();
     for (i, ca) in a.iter().enumerate() {

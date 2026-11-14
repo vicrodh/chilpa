@@ -23,6 +23,7 @@ pub mod qobject {
         /// Opening, saving, or waiting for something it asked for.
         #[qproperty(bool, busy)]
         #[qproperty(bool, discogs_quota)]
+        #[qproperty(bool, choosing_beets_runtime)]
         type MetadataEditor = super::MetadataEditorRust;
 
         /// Zero as the track opens the record on its first.
@@ -40,6 +41,12 @@ pub mod qobject {
         #[qinvokable] fn set_secondary_layers(self: Pin<&mut MetadataEditor>, on: bool);
         /// "musicbrainz" | "discogs"
         #[qinvokable] fn set_provider(self: Pin<&mut MetadataEditor>, provider: &QString) -> bool;
+        #[qinvokable] fn set_engine(self: Pin<&mut MetadataEditor>, engine: &QString) -> bool;
+        #[qinvokable] fn set_beets_runtime(self: Pin<&mut MetadataEditor>, runtime: &QString) -> bool;
+        #[qinvokable] fn choose_beets_runtime(self: Pin<&mut MetadataEditor>);
+        #[qinvokable] fn probe_beets(self: Pin<&mut MetadataEditor>) -> bool;
+        #[qinvokable] fn cancel_lookup(self: Pin<&mut MetadataEditor>);
+        #[qinvokable] fn choose_change(self: Pin<&mut MetadataEditor>, key: &QString, selected: bool) -> bool;
         #[qinvokable] fn search(self: Pin<&mut MetadataEditor>) -> bool;
         #[qinvokable] fn load(self: Pin<&mut MetadataEditor>, hit: i32) -> bool;
         #[qinvokable] fn select_disc(self: Pin<&mut MetadataEditor>, disc: i32) -> bool;
@@ -74,6 +81,7 @@ pub struct MetadataEditorRust {
     open: bool,
     busy: bool,
     discogs_quota: bool,
+    choosing_beets_runtime: bool,
     saving: bool,
     /// Cleared by the poll that sees the editor closed, which stops its thread.
     polling: Option<Arc<AtomicBool>>,
@@ -90,6 +98,11 @@ impl qobject::MetadataEditor {
     pub fn set_id3(self: Pin<&mut Self>, version: &QString) -> bool { let version = version.to_string(); self.then(|api| api.metadata_set_id3(&version)) }
     pub fn set_secondary_layers(self: Pin<&mut Self>, on: bool) { self.then(|api| api.metadata_set_secondary_layers(on)) }
     pub fn set_provider(self: Pin<&mut Self>, provider: &QString) -> bool { let provider = provider.to_string(); self.then(|api| api.metadata_set_provider(&provider)) }
+    pub fn set_engine(self: Pin<&mut Self>, engine: &QString) -> bool { let engine = engine.to_string(); self.then(|api| api.metadata_set_engine(&engine)) }
+    pub fn set_beets_runtime(self: Pin<&mut Self>, runtime: &QString) -> bool { let runtime = runtime.to_string(); self.then(|api| api.metadata_set_beets_runtime(&runtime)) }
+    pub fn probe_beets(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_probe_beets()) }
+    pub fn cancel_lookup(self: Pin<&mut Self>) { self.then(|api| api.metadata_cancel_lookup()) }
+    pub fn choose_change(self: Pin<&mut Self>, key: &QString, selected: bool) -> bool { let key = key.to_string(); self.then(|api| api.metadata_choose_change(&key, selected)) }
     pub fn search(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_search()) }
     pub fn load(self: Pin<&mut Self>, hit: i32) -> bool { self.then(|api| api.metadata_load(hit.max(0) as usize)) }
     pub fn select_disc(self: Pin<&mut Self>, disc: i32) -> bool {
@@ -120,6 +133,23 @@ impl qobject::MetadataEditor {
         });
     }
 
+    pub fn choose_beets_runtime(mut self: Pin<&mut Self>) {
+        if *self.choosing_beets_runtime() { return; }
+        self.as_mut().set_choosing_beets_runtime(true);
+        let title = app::t("Choose the Python executable for beets");
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            let picked = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).pick_file());
+            let _ = thread.queue(move |mut editor| {
+                editor.as_mut().set_choosing_beets_runtime(false);
+                if let Some(file) = picked {
+                    let runtime = file.path().to_string_lossy().into_owned();
+                    editor.then(|api| api.metadata_set_beets_runtime(&runtime));
+                }
+            });
+        });
+    }
+
     /// Asks the facade for something and then shows what it says.
     fn then<R>(mut self: Pin<&mut Self>, ask: impl FnOnce(&mut chilpa_api::Chilpa) -> R) -> R {
         let answer = app::with(ask);
@@ -136,7 +166,7 @@ impl qobject::MetadataEditor {
     fn sync(mut self: Pin<&mut Self>) {
         let (rev, state, waiting) = app::with(|api| {
             let view = api.metadata_view();
-            (view.rev as i32, view.state, view.lookup.searching || view.lookup.loading || view.artwork.searching || view.artwork.loading)
+            (view.rev as i32, view.state, view.state != "closed" && (view.lookup.searching || view.lookup.loading || view.lookup.beets_busy || view.artwork.searching || view.artwork.loading))
         });
         let (open, saving) = (state != "closed", state == "saving");
         let was_saving = std::mem::replace(&mut self.as_mut().rust_mut().saving, saving);

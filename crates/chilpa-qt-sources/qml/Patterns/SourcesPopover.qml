@@ -40,14 +40,14 @@ Popup {
 
     background: Item {
         Hold {}
-        RectangularShadow {
+        Shadow {
             anchors.fill: panel
             radius: panel.radius
             offset.y: Metrics.shadowElevatedY
             blur: Metrics.shadowElevatedBlur
             color: Theme.color.shadowElevated
         }
-        RectangularShadow {
+        Shadow {
             anchors.fill: panel
             radius: panel.radius
             offset.y: Metrics.shadowKeyY

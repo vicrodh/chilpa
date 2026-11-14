@@ -55,7 +55,7 @@ Rectangle {
 
                 width: segment.modelData.text ? words.implicitWidth + Metrics.gap12 * 2 - (count > 0 ? Metrics.gap4 : 0) : Metrics.segmentWidth // derived: padding on both sides, narrower beside a count
                 height: Metrics.segmentHeight
-                RectangularShadow {
+                Shadow {
                     anchors.fill: segmentPanel
                     visible: segment.active
                     radius: segmentPanel.radius

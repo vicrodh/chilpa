@@ -258,9 +258,19 @@ pub const SECTIONS: &[Section] = &[
                 settings: &[setting(
                     "library.metaSrc",
                     Chilpa::mark("Look records up in"),
-                    Chilpa::mark("Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."),
+                    Chilpa::mark("The provider for Chilpa's lookup engine. Embedded tags only disables online lookup for both engines."),
                     Control::Select,
                 )],
+            },
+            Group {
+                title: Chilpa::mark("Metadata search engine"),
+                settings: &[
+                    setting(crate::beets_runtime::ENGINE, Chilpa::mark("Search engine"), Chilpa::mark("Choose the engine used by the metadata editor."), Control::Segmented),
+                    setting("metadata.beets.status", Chilpa::mark("beets availability"), "", Control::Status),
+                    action("metadata.beets.install", Chilpa::mark("Install beets"), Chilpa::mark("Download a private Python environment with beets. A successful installation becomes the default runtime."), Control::Progress, Chilpa::mark("Download and install")),
+                    action(crate::beets_runtime::PYTHON, Chilpa::mark("Custom Python executable"), Chilpa::mark("Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."), Control::File, Chilpa::mark("Choose executable…")),
+                    action("metadata.beets.check", Chilpa::mark("Check beets"), Chilpa::mark("Check the selected runtime and its beets version without looking up music."), Control::Button, Chilpa::mark("Check")),
+                ],
             },
             Group {
                 title: Chilpa::mark("Ratings"),
@@ -488,11 +498,28 @@ mod tests {
     }
 
     #[test]
-    fn every_key_lives_in_its_own_section() {
+    fn settings_follow_their_namespace_with_metadata_tools_under_library() {
+        // Runtime preferences retain their metadata namespace in Library.
+        let metadata = [
+            (crate::beets_runtime::ENGINE, Control::Segmented),
+            ("metadata.beets.status", Control::Status),
+            ("metadata.beets.install", Control::Progress),
+            (crate::beets_runtime::PYTHON, Control::File),
+            ("metadata.beets.check", Control::Button),
+        ];
         for s in SECTIONS {
             for set in s.groups.iter().flat_map(|g| g.settings) {
-                assert!(set.key.starts_with(&format!("{}.", s.id)), "{} is not under {}", set.key, s.id);
+                if let Some((_, control)) = metadata.iter().find(|(key, _)| *key == set.key) {
+                    assert_eq!(s.id, "library", "{} must be configured in Library", set.key);
+                    assert_eq!(set.control, *control, "{} has the wrong setup control", set.key);
+                } else {
+                    assert!(set.key.starts_with(&format!("{}.", s.id)), "{} is not under {}", set.key, s.id);
+                }
             }
+        }
+        for (key, _) in metadata {
+            assert!(section("library").groups.iter().flat_map(|g| g.settings).any(|set| set.key == key),
+                "{key} is missing from Library");
         }
     }
 

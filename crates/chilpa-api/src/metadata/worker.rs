@@ -26,6 +26,7 @@ pub(crate) enum Job {
     Open { session: u64, tracks: Vec<EditTrack>, hosted: Vec<HomeState>, reach: Option<Reach> },
     Search { session: u64, turn: u64, provider: Provider, title: String, artist: String, catalog_number: String },
     Load { session: u64, turn: u64, provider: Provider, id: String },
+    Beets { session: u64, turn: u64, task: super::beets::Task },
     ArtworkSearch { session: u64, turn: u64, provider: Provider, title: String, artist: String, catalog_number: String },
     ArtworkFetch { session: u64, turn: u64, provider: Provider, url: String },
     ArtworkFile { session: u64, turn: u64, path: PathBuf },
@@ -37,6 +38,7 @@ pub(crate) enum Done {
     Opened { session: u64, tracks: Vec<EditTrack>, reads: Vec<Read>, homes: Vec<HomeState>, layers: Layers, server: Option<ServerState> },
     Found { session: u64, turn: u64, account_epoch:u64, hits: Result<Vec<Hit>, Failure> },
     Loaded { session: u64, turn: u64, account_epoch:u64, release: Result<Release, Failure> },
+    Beets { session: u64, turn: u64, slot: Arc<super::beets::Slot> },
     Candidates { session: u64, turn: u64, account_epoch:u64, candidates: Result<Vec<Candidate>, Failure> },
     Cover { session: u64, turn: u64, cover: Result<Waiting, String> },
     Progress { session: u64, done: usize, total: usize },
@@ -51,6 +53,7 @@ impl Done {
             Done::Opened { session, .. }
             | Done::Found { session, .. }
             | Done::Loaded { session, .. }
+            | Done::Beets { session, .. }
             | Done::Candidates { session, .. }
             | Done::Cover { session, .. }
             | Done::Progress { session, .. }
@@ -226,6 +229,7 @@ fn run(job: Job, http: &dyn Http, credential: &discogs::CredentialProvider,accou
             };
             Done::Loaded { session, turn, account_epoch, release }
         }
+        Job::Beets { session, turn, task } => Done::Beets { session, turn, slot:task.run() },
         Job::ArtworkSearch { session, turn, provider, title, artist, catalog_number } => {
             Done::Candidates { session, turn, account_epoch, candidates: artwork::find(http, session, turn, provider, &title, &artist, &catalog_number,credential) }
         }

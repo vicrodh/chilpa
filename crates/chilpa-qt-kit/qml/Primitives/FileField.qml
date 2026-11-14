@@ -14,6 +14,7 @@ Row {
     property var filters: []
 
     signal picked(string path)
+    signal pickedUrl(url file)
     signal cleared()
 
     spacing: Metrics.gap8
@@ -33,8 +34,12 @@ Row {
     }
     FileDialog {
         id: picker
+        options: FileDialog.DontResolveSymlinks
         title: field.title
         nameFilters: field.filters
-        onAccepted: field.picked(decodeURIComponent(selectedFile.toString().replace(/^file:\/\//, "")))
+        onAccepted: {
+            field.pickedUrl(selectedFile)
+            field.picked(decodeURIComponent(selectedFile.toString().replace(/^file:\/\//, "")))
+        }
     }
 }

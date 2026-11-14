@@ -38,12 +38,16 @@ impl Reader {
 /// The library's artists, and the sources' the library lacks, in one list
 /// by name. A source's artist is the library's when their names match the
 /// way the library keys its own.
-fn listed(library: Vec<Artist>, index: &SourceIndex, extras: &Filter, everyone: bool, image: impl Fn(i64) -> String) -> Vec<ListedArtist> {
+pub(crate) fn listed(library: Vec<Artist>, index: &SourceIndex, extras: &Filter, everyone: bool, image: impl Fn(i64) -> String) -> Vec<ListedArtist> {
+    listed_within(library, index, extras, everyone, None, image)
+}
+
+pub(crate) fn listed_within(library: Vec<Artist>, index: &SourceIndex, extras: &Filter, everyone: bool, within: Option<&HashSet<i64>>, image: impl Fn(i64) -> String) -> Vec<ListedArtist> {
     let through = Prepared::new(&Filter { excluded_sources: extras.excluded_sources.clone(), ..Filter::default() });
     let stars = Stars::default();
     // By the library's key, then by plugin: the source's spelling and records.
     let mut found: BTreeMap<String, BTreeMap<String, (String, Vec<i64>)>> = BTreeMap::new();
-    for item in index.items.iter().filter(|item| item.saved_album && item.album != 0 && through.passes(item, &stars)) {
+    for item in index.items.iter().filter(|item| item.saved_album && item.album != 0 && within.is_none_or(|ids| ids.contains(&item.album)) && through.passes(item, &stars)) {
         let names: Vec<&String> = if everyone { item.artists.iter().chain([&item.album_artist]).collect() } else { vec![&item.album_artist] };
         for name in names {
             let name = name.trim();

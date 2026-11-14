@@ -58,6 +58,7 @@ TestCase {
         verify(choice.options[0].disabled, "the server is shown, and cannot be chosen")
         compare(choice.options[0].tip, "only an administrator of this server can change its metadata")
         verify(findChild(header, "metadataSaveToSays").text.indexOf("only an administrator") >= 0, "and why is said")
+        verify(waitForRendering(choice), "the replacement options must settle before a pointer click")
         mouseClick(choice, 8, choice.height / 2)
         compare(MetadataEditor.modes, [], "a click on the server chooses nothing")
         choice.forceActiveFocus()

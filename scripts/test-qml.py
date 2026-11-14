@@ -15,6 +15,7 @@ root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("tests", type=Path, nargs="+")
 parser.add_argument("--strict-incubation", action="store_true")
+parser.add_argument("--platform", default="offscreen", choices=("offscreen", "xcb", "wayland", "cocoa", "windows"))
 arguments = parser.parse_args()
 tests = [path.resolve(strict=True) for path in arguments.tests]
 qtpaths = os.environ.get("QT_BIN_DIR")
@@ -73,7 +74,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     if native_spectrum:
         module = imports / "app/chilpa/graphics/qmldir"
         module.write_text("\n".join(line for line in module.read_text().splitlines() if not line.startswith("SpectrumItem ")) + "\n")
-    environment = dict(os.environ, QT_QPA_PLATFORM="offscreen", CHILPA_QML_RESOURCES=str(temporary / "resources.rcc"),
+    environment = dict(os.environ, QT_QPA_PLATFORM=arguments.platform, CHILPA_QML_RESOURCES=str(temporary / "resources.rcc"),
                        LD_PRELOAD=str(temporary / "loader.so"), QML_XHR_ALLOW_FILE_READ="1")
     failed = []
     for test in tests:

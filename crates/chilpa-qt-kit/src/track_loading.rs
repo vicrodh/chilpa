@@ -31,3 +31,11 @@ pub fn submit(query: String, extras: Filter, mut emit: impl FnMut(FoundTracks, T
         reader.tracks_progressive(&query, &extras, |found| emit(found, timing.next("read")));
     });
 }
+
+/// Discovery keeps its scoped snapshot; Tracks retains the progressive sheet.
+pub fn submit_collection(kind: String, query: String, extras: Filter, mut emit: impl FnMut(FoundTracks, Timing) + Send + 'static) {
+    if kind == "tracks" { return submit(query, extras, emit); }
+    let timing = Timing::start();
+    worker::submit(move |reader| reader.collection_tracks(&kind, &query, &extras,
+        |found| emit(found, timing.next("read"))));
+}

@@ -77,11 +77,11 @@ pub(crate) fn pair_for(draft: &Draft, release: &Release, medium: u16) -> Vec<Opt
     pairs
 }
 
-fn names(credits: &[Credit]) -> String {
+pub(super) fn names(credits: &[Credit]) -> String {
     join(&credits.iter().map(|c| c.name.clone()).collect::<Vec<_>>())
 }
 
-fn ids(credits: &[Credit]) -> String {
+pub(super) fn ids(credits: &[Credit]) -> String {
     join(&credits.iter().map(|c| c.id.clone()).filter(|id| !id.is_empty()).collect::<Vec<_>>())
 }
 
@@ -93,84 +93,11 @@ pub(crate) fn apply(draft: &mut Draft, release: &Release, spelled: &dyn Fn(&str)
     apply_for(draft, release, 0, spelled)
 }
 
+#[cfg(test)]
 pub(crate) fn apply_for(draft: &mut Draft, release: &Release, medium: u16, spelled: &dyn Fn(&str) -> String) -> usize {
-    let from_musicbrainz = release.provider == Provider::MusicBrainz;
-    let at_disc = fields::track("disc_number").unwrap_or(0);
-    let local_discs: std::collections::BTreeSet<u16> = draft.rows.iter()
-        .filter_map(|row| row.cells[at_disc].now.parse().ok()).collect();
-    let whole_box = local_discs.len() > 1;
-    if whole_box && release.catalog_numbers.len() > 1 {
-        let at_catalog = fields::album("catalog_number").unwrap_or(0);
-        let cell = &mut draft.album[at_catalog];
-        if cell.dirty() && release.catalog_numbers.iter().any(|number| number.eq_ignore_ascii_case(&cell.now)) {
-            // A disc number entered to find the box is a lookup hint, not
-            // the catalogue number to stamp on every disc of the box.
-            cell.revert();
-        }
-    }
-    let genres: Vec<String> = release.genres.iter().map(|g| spelled(g)).collect();
-    let mut album: Vec<(&str, String)> = vec![
-        ("title", release.title.clone()),
-        ("album_artist", display(&release.credits)),
-        ("album_artists", names(&release.credits)),
-        ("genres", join(&genres)),
-        ("label", release.label.clone()),
-    ];
-    let catalog = if whole_box || (medium == 0 && release.catalog_numbers.len() > 1) { String::new() }
-        else if medium > 0 { release.catalog_numbers.get(usize::from(medium - 1)).cloned().unwrap_or_else(|| release.catalog_number.clone()) }
-        else { release.catalog_number.clone() };
-    album.push(("catalog_number", catalog));
-    if fields::is_date(&release.date) {
-        album.push(("date", release.date.clone()));
-    }
-    if from_musicbrainz {
-        album.push(("musicbrainz_release_id", release.id.clone()));
-        album.push(("musicbrainz_release_group_id", release.release_group_id.clone()));
-        album.push(("musicbrainz_album_artist_ids", ids(&release.credits)));
-    } else {
-        album.push(("discogs_release_id", release.id.clone()));
-    }
-    for (name, value) in album {
-        // What the release does not say is left as it is.
-        if !value.is_empty() && (medium == 0 || !whole_box) {
-            draft.set_album(name, &value);
-        }
-    }
-
-    let pairs = pair_for(draft, release, medium);
-    for (row, found) in pairs.iter().enumerate() {
-        let Some(track) = found.and_then(|at| release.tracks.get(at)) else { continue };
-        let id = draft.rows[row].track.id;
-        let mut filled: Vec<(&str, String)> = vec![("title", track.title.clone())];
-        if track.disc > 0 {
-            filled.push(("disc_number", track.disc.to_string()));
-            if let Some(subtitle) = release.media_titles.get(usize::from(track.disc - 1)).filter(|title| !title.trim().is_empty()) {
-                filled.push(("disc_subtitle", subtitle.trim().to_string()));
-            }
-        }
-        if track.number > 0 {
-            // Refused for a track inside a disc, which keeps its own.
-            filled.push(("track_number", track.number.to_string()));
-        }
-        // A track nobody is credited on keeps the artist it had.
-        if !track.credits.is_empty() {
-            filled.push(("artist_credit", display(&track.credits)));
-            filled.push(("artists", names(&track.credits)));
-            if from_musicbrainz {
-                filled.push(("musicbrainz_artist_ids", ids(&track.credits)));
-            }
-        }
-        if from_musicbrainz {
-            filled.push(("musicbrainz_recording_id", track.recording_id.clone()));
-            filled.push(("musicbrainz_track_id", track.track_id.clone()));
-        }
-        for (name, value) in filled {
-            if !value.is_empty() {
-                draft.set_track(id, name, &value);
-            }
-        }
-    }
-    pairs.iter().flatten().count()
+    let projection = super::preview::project(draft, release, medium, spelled, None);
+    for change in &projection.changes { change.apply(draft); }
+    projection.matched
 }
 
 impl Chilpa {
@@ -178,6 +105,8 @@ impl Chilpa {
     pub fn metadata_set_provider(&mut self, provider: &str) -> bool {
         let Some(provider) = Provider::from_name(provider) else { return false };
         if provider == Provider::MusicBrainz && !self.musicbrainz_enabled() { return false; }
+        if self.metadata.beets.enabled && provider != Provider::MusicBrainz { return false; }
+        self.metadata_cancel_lookup();
         let editor = &mut self.metadata;
         editor.provider = provider;
         editor.lookup_turn += 1;
@@ -193,6 +122,7 @@ impl Chilpa {
     /// Searches with what the form holds: the record's title, its artist
     /// and its catalogue number.
     pub fn metadata_search(&mut self) -> bool {
+        if self.metadata.beets.enabled { return self.metadata_beets_search(); }
         let off = self.metadata_lookups_off();
         let musicbrainz_off = !self.musicbrainz_enabled();
         let editor = &mut self.metadata;
@@ -216,6 +146,7 @@ impl Chilpa {
         editor.loading = false;
         editor.hits.clear();
         editor.release = None;
+        editor.changes.clear(); editor.preview_matched = 0;
         editor.selected_disc = 0;
         editor.error.clear();
         editor.notice.clear();
@@ -241,9 +172,18 @@ impl Chilpa {
         if musicbrainz_off && provider == Provider::MusicBrainz {
             return editor.refuse(chilpa_i18n::t("MusicBrainz is turned off in Integrations"));
         }
+        if editor.beets.enabled {
+            let Some(candidate) = editor.beets.candidates.get(hit) else { return false };
+            let release = super::beets::release(candidate);
+            editor.beets.selected = Some(hit);
+            editor.release = Some(release); editor.selected_disc = 0;
+            editor.error.clear(); editor.notice.clear(); editor.rebuild_preview(); editor.refresh();
+            return true;
+        }
         editor.lookup_turn += 1;
         editor.loading = true;
         editor.release = None;
+        editor.changes.clear(); editor.preview_matched = 0;
         editor.selected_disc = 0;
         editor.error.clear();
         editor.notice.clear();
@@ -256,24 +196,15 @@ impl Chilpa {
     /// Lays the release loaded over the form. Returns how many tracks
     /// found their pair.
     pub fn metadata_apply(&mut self) -> usize {
-        if self.metadata.state != State::Ready {
-            return 0;
-        }
-        let Some(release) = self.metadata.release.clone() else { return 0 };
-        // The library is asked first and the form is filled after: both
-        // live in `self`.
-        let spellings: Vec<(String, String)> = match self.library() {
-            Some(lib) => release
-                .genres
-                .iter()
-                .map(|g| (g.clone(), lib.genre_spelling(g).ok().flatten().unwrap_or_else(|| g.clone())))
-                .collect(),
-            None => Vec::new(),
-        };
-        let spelled = |genre: &str| spellings.iter().find(|(from, _)| from == genre).map_or_else(|| genre.to_string(), |(_, to)| to.clone());
         let editor = &mut self.metadata;
+        if editor.state != State::Ready || editor.release.is_none() { return 0; }
+        if editor.changes.is_empty() { editor.rebuild_preview(); }
+        let matched = editor.preview_matched;
         let Some(draft) = editor.draft.as_mut() else { return 0 };
-        let matched = apply_for(draft, &release, editor.selected_disc, &spelled);
+        for change in &editor.changes {
+            if change.selected && change.differs(draft) && change.view(draft).invalid.is_empty() { change.apply(draft); }
+        }
+        editor.changes.retain(|change| change.differs(draft));
         editor.refresh();
         matched
     }
@@ -285,6 +216,7 @@ impl Chilpa {
         if disc > release.discs { return false; }
         editor.selected_disc = disc;
         editor.notice.clear();
+        editor.rebuild_preview();
         editor.refresh();
         true
     }

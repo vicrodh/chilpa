@@ -238,8 +238,14 @@ msgstr "Ключ API"
 msgid "About"
 msgstr "Описание"
 
+msgid "About & connections"
+msgstr ""
+
 msgid "About Chilpa"
 msgstr "О Chilpa"
+
+msgid "About this composer"
+msgstr ""
 
 msgid "Accent"
 msgstr "Акцент"
@@ -448,6 +454,9 @@ msgstr "Альбомы появляются по мере чтения"
 msgid "Albums from streaming services will not be synced."
 msgstr ""
 
+msgid "Albums in your library"
+msgstr ""
+
 msgid "All"
 msgstr "Все"
 
@@ -466,6 +475,9 @@ msgstr "Все диски"
 msgid "All episode types"
 msgstr "Все типы выпусков"
 
+msgid "All files"
+msgstr ""
+
 msgid "All groups"
 msgstr "Все группы"
 
@@ -480,6 +492,9 @@ msgstr "Все эти"
 
 msgid "All qualities"
 msgstr "Все качества"
+
+msgid "All recordings"
+msgstr ""
 
 msgid "All results"
 msgstr "Все результаты"
@@ -501,6 +516,9 @@ msgstr "Всё готово"
 
 msgid "All sources"
 msgstr "Все источники"
+
+msgid "All subgenres"
+msgstr ""
 
 msgid "All themes"
 msgstr "Все темы"
@@ -655,14 +673,14 @@ msgstr "Применить"
 msgid "Apply import"
 msgstr "Применить импорт"
 
+msgid "Apply selected fields"
+msgstr ""
+
 msgid "Apply system tint to the icon"
 msgstr "Применять системный оттенок к значку"
 
 msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
 msgstr "Применять одинаковую группировку ко всем источникам. Выключите, чтобы показывать один общий список плейлистов."
-
-msgid "Apply to the form"
-msgstr "Применить к форме"
 
 msgid "Approve"
 msgstr "Одобрить"
@@ -702,6 +720,9 @@ msgstr "Исполнители"
 
 msgid "Artists from this scene"
 msgstr "Исполнители этой сцены"
+
+msgid "Artists in your library"
+msgstr ""
 
 msgid "Artwork"
 msgstr "Обложка"
@@ -814,6 +835,9 @@ msgstr "Автопрокрутка"
 msgid "Auto-tail"
 msgstr "Автопрокрутка"
 
+msgid "Automatic beets installation is not available on this platform."
+msgstr ""
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Автоматические проверки приостановлены до продолжения или сброса этого сканирования. Уже добавленные файлы сохраняются."
 
@@ -834,6 +858,9 @@ msgstr "Доступные GPU"
 
 msgid "Available offline"
 msgstr "Доступно офлайн"
+
+msgid "Available parts, grouped by album and performer. Work tags do not confirm a complete recording."
+msgstr ""
 
 msgid "Available version"
 msgstr "Доступная версия"
@@ -1036,14 +1063,23 @@ msgstr "Отмена"
 msgid "Cancel Timer"
 msgstr "Отменить таймер"
 
+msgid "Cancel check"
+msgstr ""
+
 msgid "Cancel download"
 msgstr "Отменить загрузку"
+
+msgid "Cancel lookup"
+msgstr ""
 
 msgid "Cancel stop after this track"
 msgstr "Отменить остановку после этого трека"
 
 msgid "Cancelled"
 msgstr "Отменено"
+
+msgid "Cancelling the beets task…"
+msgstr ""
 
 msgid "Cancelling update…"
 msgstr "Отмена обновления…"
@@ -1126,6 +1162,9 @@ msgstr "Проверить снова и при необходимости ск�
 msgid "Check all folders"
 msgstr "Проверить все папки"
 
+msgid "Check beets"
+msgstr ""
+
 msgid "Check for a newer version of Chilpa."
 msgstr "Проверить наличие новой версии Chilpa."
 
@@ -1156,11 +1195,17 @@ msgstr "Проверьте адрес и порт, а также что серв
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "Проверьте адрес, включён ли DLNA в настройках сервера и пускает ли он этот компьютер, затем попробуйте снова."
 
+msgid "Check the selected runtime and its beets version without looking up music."
+msgstr ""
+
 msgid "Check the user and the password or the API key, then go back and try again."
 msgstr "Проверьте пользователя и пароль или API-ключ, затем вернитесь и попробуйте снова."
 
 msgid "Checking available space"
 msgstr "Проверка свободного места"
+
+msgid "Checking beets…"
+msgstr ""
 
 msgid "Checking destination files"
 msgstr "Проверка файлов назначения"
@@ -1369,6 +1414,9 @@ msgstr "Выберите значение"
 msgid "Choose an available writable storage."
 msgstr ""
 
+msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
+msgstr ""
+
 msgid "Choose an image"
 msgstr "Выберите изображение"
 
@@ -1389,6 +1437,9 @@ msgstr "Выбрать папку для загрузки"
 
 msgid "Choose download folder…"
 msgstr "Выбрать папку для загрузки…"
+
+msgid "Choose executable…"
+msgstr ""
 
 msgid "Choose fewer offline files for this action."
 msgstr "Выберите меньше офлайн-файлов для этого действия."
@@ -1423,7 +1474,16 @@ msgstr "Выберите очереди и расположите их по по
 msgid "Choose storage"
 msgstr ""
 
+msgid "Choose the Python environment containing beets."
+msgstr ""
+
+msgid "Choose the Python executable for beets"
+msgstr ""
+
 msgid "Choose the connected player and its storage first."
+msgstr ""
+
+msgid "Choose the engine used by the metadata editor."
 msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
@@ -1633,8 +1693,17 @@ msgstr "Выполненная работа сохранена. Продолже
 msgid "Composer"
 msgstr "Композитор"
 
+msgid "Composer not tagged"
+msgstr ""
+
 msgid "Composers"
 msgstr "Композиторы"
+
+msgid "Composition"
+msgstr ""
+
+msgid "Compositions"
+msgstr ""
 
 msgid "Compressor ratio · 1–6"
 msgstr "Коэффициент компрессора · 1–6"
@@ -1783,6 +1852,12 @@ msgstr "Не удалось переместить плейлист."
 msgid "Could not read the analysis inventory."
 msgstr "Не удалось прочитать перечень анализа."
 
+msgid "Could not read the library"
+msgstr ""
+
+msgid "Could not read track durations from the library."
+msgstr ""
+
 msgid "Could not remove the saved profile."
 msgstr ""
 
@@ -1837,6 +1912,9 @@ msgstr "Выбор критиков"
 msgid "Crossfeed · 0–50%"
 msgstr "Кроссфид · 0–50%"
 
+msgid "Current"
+msgstr ""
+
 msgid "Current signal path"
 msgstr "Текущий путь сигнала"
 
@@ -1857,6 +1935,9 @@ msgstr "Свой"
 
 msgid "Custom Image"
 msgstr "Своё изображение"
+
+msgid "Custom Python executable"
+msgstr ""
 
 msgid "Custom image"
 msgstr "Своё изображение"
@@ -2278,11 +2359,20 @@ msgstr "Готово. Эту вкладку можно закрыть и вер�
 msgid "Download"
 msgstr "Скачать"
 
+msgid "Download a private Python environment with beets. A successful installation becomes the default runtime."
+msgstr ""
+
+msgid "Download a private copy managed by Chilpa."
+msgstr ""
+
 msgid "Download again"
 msgstr "Скачать снова"
 
 msgid "Download album"
 msgstr "Скачать альбом"
+
+msgid "Download and install"
+msgstr ""
 
 msgid "Download cancelled."
 msgstr "Загрузка отменена."
@@ -2298,6 +2388,9 @@ msgstr ""
 
 msgid "Downloading for offline listening"
 msgstr "Загрузка для прослушивания офлайн"
+
+msgid "Downloading the verified installer…"
+msgstr ""
 
 msgid "Downloading update…"
 msgstr "Загрузка обновления…"
@@ -2385,6 +2478,9 @@ msgstr "Приподнятый"
 
 msgid "Embedded tags only"
 msgstr "Только встроенные теги"
+
+msgid "Empty"
+msgstr ""
 
 msgid "Empty folders"
 msgstr "Пустые папки"
@@ -2500,6 +2596,9 @@ msgstr "Эксклюзивный режим"
 msgid "Exclusive mode was requested."
 msgstr "Запрошен исключительный режим."
 
+msgid "Existing genres are unselected by default."
+msgstr ""
+
 msgid "Exit Immersive"
 msgstr "Выйти из иммерсивного режима"
 
@@ -2514,6 +2613,9 @@ msgstr "Откровенное содержание"
 
 msgid "Explore"
 msgstr "Исследовать"
+
+msgid "Explore works, recordings and albums credited to this composer."
+msgstr ""
 
 msgid "Export"
 msgstr "Экспорт"
@@ -2617,6 +2719,9 @@ msgstr "Фильтр по жанру"
 msgid "Filter playlists"
 msgstr "Фильтр плейлистов"
 
+msgid "Filter recordings"
+msgstr ""
+
 msgid "Filter the library"
 msgstr "Фильтровать библиотеку"
 
@@ -2703,6 +2808,9 @@ msgstr "Папки недоступны. Их существующие трек�
 
 msgid "Follow"
 msgstr "Подписаться"
+
+msgid "Follow a style into its subgenres, or search for one directly."
+msgstr ""
 
 msgid "Follow lyrics"
 msgstr "Следовать за текстом песни"
@@ -3256,6 +3364,12 @@ msgstr "Установите и включите импортёр плейлис
 msgid "Install and enable the Mood plugin first."
 msgstr "Сначала установите и включите плагин настроения."
 
+msgid "Install beets"
+msgstr ""
+
+msgid "Install beets {} in the selected Python environment."
+msgstr ""
+
 msgid "Install from ZIP…"
 msgstr "Установить из ZIP…"
 
@@ -3283,8 +3397,14 @@ msgstr "Установка"
 msgid "Installed"
 msgstr "Установлено"
 
+msgid "Installing beets and its pinned packages…"
+msgstr ""
+
 msgid "Installing plugin…"
 msgstr "Установка плагина…"
+
+msgid "Installing private Python…"
+msgstr ""
 
 msgid "Instrument"
 msgstr "Инструмент"
@@ -3709,6 +3829,9 @@ msgstr "Поиск текста песни…"
 msgid "Looking for players…"
 msgstr ""
 
+msgid "Lookup cancelled."
+msgstr ""
+
 msgid "Lossless"
 msgstr "Lossless"
 
@@ -3799,6 +3922,9 @@ msgstr "Мастеринг-инженер"
 msgid "Match"
 msgstr "Совпадение"
 
+msgid "Match score: {}"
+msgstr ""
+
 msgid "Match {} exactly"
 msgstr "Искать {} точно"
 
@@ -3834,6 +3960,9 @@ msgstr "Сообщение"
 
 msgid "Metadata"
 msgstr "Метаданные"
+
+msgid "Metadata search engine"
+msgstr ""
 
 msgid "Micro"
 msgstr "Микро"
@@ -4171,17 +4300,29 @@ msgstr ""
 msgid "No albums found"
 msgstr "Альбомы не найдены"
 
+msgid "No albums in this selection"
+msgstr ""
+
 msgid "No artists from this scene were found."
 msgstr "Исполнители этой сцены не найдены."
 
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "Исполнители из выбранных плагинов в этой сцене не найдены."
 
+msgid "No artists in this selection"
+msgstr ""
+
 msgid "No audio output is known yet; try again in a moment."
 msgstr "Аудиовывод пока неизвестен; попробуйте ещё раз через мгновение."
 
+msgid "No changes to apply."
+msgstr ""
+
 msgid "No composer"
 msgstr "Без композитора"
+
+msgid "No composer credits yet. Add composers in the metadata editor."
+msgstr ""
 
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "Условий пока нет. Добавьте ниже или нажмите на значения в «Столбцах»."
@@ -4219,6 +4360,9 @@ msgstr "Нет папок по вашему запросу."
 msgid "No genre"
 msgstr "Без жанра"
 
+msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
+msgstr ""
+
 msgid "No genres in this period."
 msgstr "Нет жанров за этот период."
 
@@ -4248,6 +4392,9 @@ msgstr "Нет текста песни для этого трека."
 
 msgid "No matches"
 msgstr "Нет совпадений"
+
+msgid "No matches. Try another search."
+msgstr ""
 
 msgid "No matching music."
 msgstr "Подходящая музыка не найдена."
@@ -4354,6 +4501,9 @@ msgstr "В этом запуске пока не обработано ни од�
 msgid "No tracks in the selected libraries yet."
 msgstr "В выбранных библиотеках пока нет треков."
 
+msgid "No tracks in this selection"
+msgstr ""
+
 msgid "No tracks match all of these"
 msgstr "Нет треков, подходящих под все условия"
 
@@ -4364,6 +4514,9 @@ msgid "No tracks match your search."
 msgstr "Нет треков по вашему запросу."
 
 msgid "No tracks without an album match these filters."
+msgstr ""
+
+msgid "No work tags in this selection. Composer credits are still available under Albums and Tracks."
 msgstr ""
 
 msgid "No year"
@@ -4380,6 +4533,9 @@ msgstr "Нормализация"
 
 msgid "Not answering"
 msgstr "Не отвечает"
+
+msgid "Not checked"
+msgstr ""
 
 msgid "Not compatible"
 msgstr "Несовместим"
@@ -4404,6 +4560,9 @@ msgstr "Нет ни в вашей библиотеке, ни в ваших ис�
 
 msgid "Not inspected"
 msgstr "Не проверен"
+
+msgid "Not installed"
+msgstr ""
 
 msgid "Not now"
 msgstr "Не сейчас"
@@ -4771,6 +4930,9 @@ msgstr "Формат вывода"
 msgid "Output identity could not be saved."
 msgstr "Не удалось сохранить идентификатор выхода."
 
+msgid "Overview"
+msgstr ""
+
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "Сэмплы PCM нельзя записать в нативный поток DSD"
 
@@ -5080,6 +5242,9 @@ msgstr "Подготовка анализа настроения"
 msgid "Preparing analysis…"
 msgstr "Подготовка анализа…"
 
+msgid "Preparing beets…"
+msgstr ""
+
 msgid "Preparing playlists"
 msgstr "Подготовка плейлистов"
 
@@ -5157,6 +5322,9 @@ msgstr ""
 
 msgid "Pronunciation"
 msgstr "Произношение"
+
+msgid "Proposed"
+msgstr ""
 
 msgid "Provider identifiers"
 msgstr "Идентификаторы поставщиков"
@@ -5425,6 +5593,9 @@ msgstr "Недавно прослушанные плейлисты в библи
 msgid "Recording engineer"
 msgstr "Звукорежиссёр записи"
 
+msgid "Recordings"
+msgstr ""
+
 msgid "Records"
 msgstr "Альбомы"
 
@@ -5463,6 +5634,9 @@ msgstr "Обновить настройки"
 
 msgid "Regenerate"
 msgstr "Создать заново"
+
+msgid "Reinstall"
+msgstr ""
 
 msgid "Release"
 msgstr "Релиз"
@@ -5920,6 +6094,9 @@ msgstr "Искать снова"
 msgid "Search artists"
 msgstr "Поиск исполнителей"
 
+msgid "Search engine"
+msgstr ""
+
 msgid "Search folders"
 msgstr "Поиск папок"
 
@@ -5973,6 +6150,9 @@ msgstr "Поиск в этом представлении…"
 
 msgid "Search title, artist or album"
 msgstr "Поиск по названию, исполнителю или альбому"
+
+msgid "Search your library"
+msgstr ""
 
 msgid "Searching MusicBrainz for {genre} artists…"
 msgstr "Поиск в MusicBrainz исполнителей {genre}…"
@@ -6123,6 +6303,9 @@ msgstr "Задать параметр"
 
 msgid "Set the overall light or dark polarity. Affects derived shades, borders and overlays."
 msgstr "Задаёт общую светлую или тёмную полярность. Влияет на производные оттенки, границы и наложения."
+
+msgid "Set up beets in Settings to look up metadata."
+msgstr ""
 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Переключает граф PipeWire на частоту каждого трека, пока вывод принадлежит только Chilpa, так что DAC получает ту частоту, которая записана в файле. Когда Chilpa останавливается, частота возвращается."
@@ -6532,6 +6715,9 @@ msgstr "Студийное 24/48"
 msgid "Stumbling"
 msgstr "С перебоями"
 
+msgid "Subgenres"
+msgstr ""
+
 msgid "Subscribe"
 msgstr "Подписаться"
 
@@ -6706,6 +6892,24 @@ msgstr "Срок действия учётной записи истёк; под
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "Адрес, по которому вы открываете сервер в браузере, с портом, и пользователь, под которым входит Chilpa."
 
+msgid "The beets installer could not be downloaded. Try again."
+msgstr ""
+
+msgid "The beets lookup exceeded its metadata size limit."
+msgstr ""
+
+msgid "The beets lookup timed out. Try again."
+msgstr ""
+
+msgid "The beets setting could not be changed while a task is running."
+msgstr ""
+
+msgid "The beets task reached its time limit."
+msgstr ""
+
+msgid "The beets task was cancelled."
+msgstr ""
+
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "Встроенный тест воспроизводит четыре трека с разной разрядностью и частотой дискретизации (16/44.1, 24/44.1, 24/96, 24/192), чтобы вы увидели, как переключается DAC. Каждый из них — самый часто воспроизводимый трек вашей библиотеки в этом формате, а если такого нет, — сгенерированный тестовый сигнал. Если хотите использовать собственную очередь, сначала добавьте по одному треку каждого вида, чтобы проверить все частоты."
 
@@ -6811,6 +7015,15 @@ msgstr "Изображение слишком большое"
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "Не удалось исключить неверный текст. Повторите попытку."
 
+msgid "The installer archive could not be opened safely."
+msgstr ""
+
+msgid "The installer did not match its pinned checksum."
+msgstr ""
+
+msgid "The installer exceeded its output limit."
+msgstr ""
+
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Не удалось изменить библиотеку. Попробуйте снова; ниже указано, что произошло."
 
@@ -6886,6 +7099,9 @@ msgstr "Вывод всё ещё воспроизводится"
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "Вывод воспроизводит только Chilpa. Другие программы ждут, пока Chilpa его не освободит."
 
+msgid "The people behind the music in your library."
+msgstr ""
+
 msgid "The player is busy. Close the other file transfer application and try again."
 msgstr ""
 
@@ -6910,8 +7126,26 @@ msgstr "Плагин не ответил за 15 секунд. Состояни�
 msgid "The plugin interface could not be opened."
 msgstr ""
 
+msgid "The previous beets lookup is still stopping."
+msgstr ""
+
+msgid "The previous beets task is still stopping."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "Прежняя частота дискретизации не стабилизировалась после проверки."
+
+msgid "The private beets environment could not be installed. The previous runtime is unchanged."
+msgstr ""
+
+msgid "The private beets environment could not be saved."
+msgstr ""
+
+msgid "The private beets environment exceeded its size limit."
+msgstr ""
+
+msgid "The provider for Chilpa's lookup engine. Embedded tags only disables online lookup for both engines."
+msgstr ""
 
 msgid "The publisher did not return an audio file."
 msgstr ""
@@ -6990,6 +7224,12 @@ msgstr "Не удалось начать сканирование: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "Процесс сканирования неожиданно остановился."
+
+msgid "The selected Python environment could not start beets."
+msgstr ""
+
+msgid "The selected environment does not provide beets 2.14.1."
+msgstr ""
 
 msgid "The selected hardware volume control is gone."
 msgstr "Выбранный регулятор аппаратной громкости исчез."
@@ -7837,6 +8077,9 @@ msgstr "Громкость {}%"
 msgid "Wait for the audio check to finish."
 msgstr "Дождитесь завершения проверки звука."
 
+msgid "Wait for the beets installation or check to finish in Settings."
+msgstr ""
+
 msgid "Wait for the queue to finish switching."
 msgstr "Дождитесь завершения переключения очереди."
 
@@ -7939,9 +8182,6 @@ msgstr "Где он и кто входит?"
 msgid "Where is your music?"
 msgstr "Где ваша музыка?"
 
-msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
-msgstr "Где редактор метаданных ищет в первую очередь. «Только встроенные теги» никогда не обращается к сети."
-
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Куда идут сэмплы: прямо на устройство или через звуковой сервер."
 
@@ -8005,6 +8245,9 @@ msgstr "Слова в названии альбома и в названии т�
 msgid "Work"
 msgstr "Произведение"
 
+msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
+msgstr ""
+
 msgid "Write XML"
 msgstr "Записать XML"
 
@@ -8064,6 +8307,9 @@ msgstr "Ваш аудиостек готов к воспроизведению b
 
 msgid "Your distribution"
 msgstr "Ваш дистрибутив"
+
+msgid "Your genre tags"
+msgstr ""
 
 msgid "Your music"
 msgstr "Ваша музыка"
@@ -8226,6 +8472,24 @@ msgstr "ожидает одобрения"
 
 msgid "be a plugin of another kind: {}"
 msgstr "быть плагином другого вида: {}"
+
+msgid "beets 2.14.1 is ready."
+msgstr ""
+
+msgid "beets accepts up to {} tracks per lookup."
+msgstr ""
+
+msgid "beets availability"
+msgstr ""
+
+msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets settings"
+msgstr ""
+
+msgid "beets {} is ready."
+msgstr ""
 
 msgid "between"
 msgstr "между"
@@ -9475,6 +9739,18 @@ msgstr[0] "{} альбом"
 msgstr[1] "{} альбома"
 msgstr[2] "{} альбомов"
 
+msgid "{} album in your library"
+msgid_plural "{} albums in your library"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "{} albumless track"
+msgid_plural "{} albumless tracks"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "Проанализировано: {}, без пульса: {}, нечитаемых: {}"
 
@@ -9513,6 +9789,12 @@ msgid_plural "{} channels"
 msgstr[0] "{} канал"
 msgstr[1] "{} канала"
 msgstr[2] "{} каналов"
+
+msgid "{} composition"
+msgid_plural "{} compositions"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 msgid "{} condition"
 msgid_plural "{} conditions"
@@ -9735,6 +10017,12 @@ msgstr "Форматов без изменений: {} из {}"
 
 msgid "{} of {} tracks match this release"
 msgstr "Треков, совпадающих с этим релизом: {} из {}"
+
+msgid "{} part"
+msgid_plural "{} parts"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 msgid "{} play"
 msgid_plural "{} plays"

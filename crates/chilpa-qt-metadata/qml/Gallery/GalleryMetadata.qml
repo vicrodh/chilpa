@@ -30,7 +30,9 @@ TitledFlow {
         cover: { path: "", waiting: true, width: 1400, height: 1400, from: "musicbrainz" },
         save: { mode: "files", files_allowed: true, files_refused: "", id3: "2.4", secondary_layers: false, done: 0, total: 0 },
         layers: { files: 12, canonical: [{ name: "Vorbis comments", files: 12 }], present: [{ name: "Vorbis comments", files: 12 }, { name: "ID3v2", files: 2 }], conflicting: 2 },
-        lookup: { provider: "musicbrainz", searching: false, loading: false, matched: 12,
+        lookup: { provider: "musicbrainz", engine:"native", searching: false, loading: false, matched: 2,
+                  changes:[{key:"album:title",field:"title",label:"Album",current:"Nevermind",proposed:"Nevermind (Remastered)",selected:true},
+                    {key:"album:genres",field:"genres",label:"Genres",current:"Alternative Rock",proposed:"Rock",selected:false}],
                   hits: [{ title: "Nevermind", artist: "Nirvana", date: "1991-09-24", country: "US", label: "DGC", catalog_number: "DGC-24425", format: "CD", tracks: 12 },
                          { title: "Nevermind", artist: "Nirvana", date: "2011", country: "XE", label: "Geffen", catalog_number: "", format: "4xCD", tracks: 70 }],
                   release: { title: "Nevermind", date: "1991-09-24", url: "" } },
@@ -48,6 +50,8 @@ TitledFlow {
     MetadataTrackRow { width: section.width; track: section.sample.tracks[1]; rowIndex: 1 }
     ReleaseHitRow { width: Metrics.metadataColumnMin; hit: section.sample.lookup.hits[0]; chosen: true }
     ReleaseHitRow { width: Metrics.metadataColumnMin; hit: section.sample.lookup.hits[1]; rowIndex: 1 }
+    MetadataChangeRow { width:Metrics.metadataColumnMin; change:section.sample.lookup.changes[0] }
+    MetadataChanges { width:Metrics.metadataColumnMin; changes:section.sample.lookup.changes }
     CoverCandidate { candidate: section.sample.artwork.candidates[0] }
     MetadataHeader { width: section.width; doc: section.sample }
     MetadataTracks { width: section.width * 2 / 3; height: Metrics.metadataDetails * 2; doc: section.sample } // derived: two thirds of the section, room for the rows
