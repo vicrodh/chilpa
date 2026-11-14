@@ -10,11 +10,21 @@ TestCase {
     property int retiredShelves:0
     property int uncancelledShelves:0
     property int cancelledViews:0
+    property int genreRequests:0
     name: "MusicDiscovery"
     when: windowShown
     visible: true
     width: 1100; height: 820
     Component { id: maker; DiscoveryScreen { width: 1100; height: 820 } }
+    Component { id: genreBrowserMaker; AlbumGenreBrowser {} }
+    Component {
+        id: albumHeroMaker
+        AlbumHero {
+            width:1100
+            detail:AlbumDetailModel { selectedId:17;title:"Album";genreLinks:'{"items":[],"total":9,"hasMore":true}' }
+            onGenresRequested:test.genreRequests++
+        }
+    }
     function init() { failOnWarning(/ReferenceError|TypeError|Binding loop|invalid context/);Visit.kept = ({}); Navigation.went = []; Navigation.page = ""; Navigation.selectedId = 0 }
     function test_a_deep_genre_keeps_its_path_in_the_route() {
         const page = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:"Death Metal",trail:["Metal","Death Metal"]})})
@@ -52,6 +62,54 @@ TestCase {
         verify(model.cancellations > 0)
         page.visible = true
         tryVerify(() => model.requests.length > requests)
+    }
+    function test_album_genres_are_virtual_and_keep_the_opaque_source_route() {
+        const browser = createTemporaryObject(genreBrowserMaker, this, {albumId:17})
+        verify(browser)
+        browser.open()
+        const model = findChild(browser, "albumGenreModel")
+        tryVerify(() => model.requests.length > 0)
+        compare(model.requests[0].kind, "album_genres")
+        compare(model.requests[0].key, "17")
+        const key = JSON.stringify({kind:"genre",name:"Heavy Metal",excluded_sources:["plugin:other"]})
+        model.document = JSON.stringify({total:20000,items:[{name:"heavy-metal",key:key}]})
+        const rows = findChild(browser, "albumGenreRows")
+        tryCompare(rows, "count", 20000)
+        verify(rows.width > 0 && rows.height > 0, "The genre viewport has visible room: " + rows.width + " by " + rows.height)
+        verify(rows.contentItem.children.length < 40)
+        tryVerify(() => !!findChild(rows.contentItem, "albumGenreResult:0"))
+        const first = findChild(rows.contentItem, "albumGenreResult:0")
+        first.forceActiveFocus(); keyClick(Qt.Key_Return)
+        compare(Navigation.went, ["genres",key])
+        tryCompare(browser, "visible", false)
+        verify(model.cancellations > 0)
+    }
+    function test_album_header_composition_forwards_the_genre_browser_action() {
+        genreRequests=0
+        const hero=createTemporaryObject(albumHeroMaker,this)
+        verify(hero)
+        findChild(hero,"albumGenresMore").clicked()
+        compare(genreRequests,1)
+    }
+    function test_closed_album_genres_cancel_debounce_and_do_not_request_hidden_pages() {
+        const browser = createTemporaryObject(genreBrowserMaker, this, {albumId:-7})
+        browser.open()
+        const model = findChild(browser, "albumGenreModel")
+        tryVerify(() => model.requests.length > 0)
+        findChild(browser, "albumGenreSearch").text = "metal"
+        browser.close()
+        const requests = model.requests.length
+        Library.remoteRev++
+        wait(400)
+        compare(model.requests.length, requests)
+        browser.open()
+        tryVerify(() => model.requests.length > requests)
+        model.document = JSON.stringify({total:20000,items:[]})
+        const rows = findChild(browser, "albumGenreRows")
+        rows.contentY = 10000
+        tryVerify(() => model.seeks.length > 0 && model.seeks[model.seeks.length - 1].first > 60)
+        browser.albumId = -8
+        tryCompare(browser, "visible", false)
     }
     function test_search_order_and_scroll_return_after_leaving_the_route() {
         let page = createTemporaryObject(maker, this, {mode:"compositions"})
@@ -113,7 +171,7 @@ TestCase {
         page.changeTab(3)
         const list=findChild(page,"discoveryTrackList")
         verify(list)
-        list.model.append({title:"Old source track",rowKind:0})
+        list.model.append({title:"Old source track",artist:"Artist",album:"Album",rowKind:0,trackId:1,playing:false,selected:false,available:true})
         list.model.ready=false
         verify(!findChild(page,"discoveryPlay").enabled)
         verify(!findChild(page,"discoveryQueue").enabled)
@@ -128,6 +186,27 @@ TestCase {
         page.routeKey=JSON.stringify({kind:"genre",name:"Heavy Metal",excluded_sources:["server:fixture"]})
         compare(findChild(page,"genreSources").excluded,["server:fixture"])
         compare(JSON.parse(page.collectionKey).excluded_sources,["server:fixture"])
+    }
+    function test_an_album_genre_hydrates_its_source_scope_until_the_listener_changes_it() {
+        const key={kind:"genre",name:"Curated genre",album:17,genreToken:"opaque",albumScope:true}
+        const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify(key)})
+        const model=findChild(page,"discoveryModel")
+        const picker=findChild(page,"genreSources")
+        tryVerify(() => model.requests.length > 0)
+        compare(JSON.parse(page.collectionKey).albumScope,true)
+        model.document=JSON.stringify({items:[],total:0,excluded_sources:["plugin:other"]})
+        compare(picker.excluded,["plugin:other"])
+        page.open({kind:"genre",name:"Child style"})
+        compare(JSON.parse(Navigation.went[1]).excluded_sources,["plugin:other"])
+        picker.chosen(["local:default"])
+        compare(JSON.parse(page.collectionKey).albumScope,false)
+        compare(JSON.parse(page.collectionKey).genreToken,"opaque")
+        model.document=JSON.stringify({items:[],total:1,excluded_sources:["plugin:other"]})
+        compare(picker.excluded,["local:default"])
+        page.destroy();wait(1)
+        const restored=createTemporaryObject(maker,this,{routeKey:JSON.stringify(key)})
+        compare(JSON.parse(restored.collectionKey).albumScope,false)
+        compare(findChild(restored,"genreSources").excluded,["local:default"])
     }
     function test_genre_source_choices_are_local_to_this_view_and_survive_return() {
         let page = createTemporaryObject(maker, this)

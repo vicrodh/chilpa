@@ -17,6 +17,7 @@ Column {
     property bool contrasted: false
     property bool externalInformation: false
     signal information()
+    signal genresRequested()
     signal artwork()
     // A right click on the cover, where the pointer is in the header.
     signal artworkMenu(real left, real top)
@@ -77,7 +78,7 @@ Column {
                 explicitContent: header.info.kind === "album" && (header.record ? header.record.explicitContent === true : header.info.explicit === true)
                 font.pointSize: Type.display; font.weight: Type.bold; color: header.contrasted ? Theme.color.backdropText : Theme.color.textPrimary
             }
-            AlbumCredits { width: parent.width; visible: header.cardId !== 0; albumId: header.cardId; record: header.record || null; showGenres: header.info.kind === "album"; contrasted: header.contrasted; color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary }
+            AlbumCredits { width: parent.width; visible: header.cardId !== 0; albumId: header.cardId; record: header.record || null; showGenres: header.info.kind === "album"; contrasted: header.contrasted; color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary; onGenresRequested: header.genresRequested() }
             Text {
                 visible: header.cardId === 0 && !!header.info.artist; text: header.info.artist || ""; textFormat: Text.PlainText
                 color: header.contrasted ? Theme.color.backdropText : Theme.color.textSecondary; font.pointSize: Type.body

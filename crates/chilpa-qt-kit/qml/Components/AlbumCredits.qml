@@ -9,6 +9,7 @@ Column {
     property bool contrasted: false
     property bool showGenres: true
     property color color: Theme.color.textPrimary
+    signal genresRequested()
     spacing: Metrics.gap6
     AlbumArtistLine {
         width: parent.width; albumId: credits.albumId; contrasted: credits.contrasted; color: credits.color
@@ -18,5 +19,6 @@ Column {
     AlbumGenreLine {
         width: parent.width; contrasted: credits.contrasted
         document: credits.showGenres && credits.record ? JSON.parse(credits.record.genreLinks || "{}") : ({})
+        onMoreRequested: credits.genresRequested()
     }
 }

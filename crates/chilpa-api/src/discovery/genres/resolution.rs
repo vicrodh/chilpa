@@ -20,8 +20,6 @@ pub(super) fn resolve(original: &str) -> Resolution {
 
 fn resolve_with(original: &str, mut distance: impl FnMut(&[char], &[char], usize) -> usize) -> Resolution {
     let mut result = Resolution { original:original.to_string(), recognized:None, method:"unknown", source:"user", alternatives:Vec::new(), node:None };
-    // Personal prose and very long tags are kept literally. DP rows are bounded.
-    if original.chars().count() > 128 { return result; }
     let graph = graph();
     let key = genre_key(original);
     let found = if let Some(id) = graph.by_key.get(&key) {
@@ -37,6 +35,9 @@ fn resolve_with(original: &str, mut distance: impl FnMut(&[char], &[char], usize
             None
         }
     } else {
+        // Exact spellings, normalized forms, and unique aliases are checked
+        // first. Only uncertain long text bypasses bounded fuzzy matching.
+        if original.chars().count() > 128 { return result; }
         let letters: Vec<_> = key.chars().collect();
         if letters.len() < 8 { return result; }
         let most = if letters.len() >= 16 { 2 } else { 1 };

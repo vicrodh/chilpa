@@ -13,6 +13,8 @@ mod tests;
 mod measurement;
 #[cfg(test)]
 mod source_tests;
+#[cfg(test)]
+mod album_genres_tests;
 use crate::{AlbumsFound, Filter, Reader, Snapshot, TrackOrder};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -35,6 +37,10 @@ pub struct Selection {
     pub recording_title: String,
     pub performer: String,
     pub album: i64,
+    #[serde(rename = "genreToken", skip_serializing_if = "String::is_empty")]
+    pub genre_token: String,
+    #[serde(rename = "albumScope")]
+    pub album_scope: bool,
     pub excluded_sources: Vec<String>,
 }
 
@@ -42,6 +48,9 @@ impl Selection {
     pub fn parse(key: &str) -> Option<Self> {
         (key.len() <= 65536).then(|| serde_json::from_str::<Self>(key).ok()).flatten()
             .filter(|selected| options::valid_sources(&selected.excluded_sources))
+            .filter(|selected| !selected.album_scope || !selected.genre_token.is_empty())
+            .filter(|selected| selected.genre_token.is_empty() || selected.kind == "genre" && selected.album != 0
+                && selected.genre_token.len() == 64 && selected.genre_token.bytes().all(|byte|byte.is_ascii_hexdigit()))
     }
 }
 
@@ -101,6 +110,10 @@ impl Reader {
     /// source integration and copy grouping apply to genre/composer journeys.
     pub fn discovery_snapshot(&self, key: &str) -> Snapshot {
         let Some(selected) = Selection::parse(key) else { return Snapshot::default() };
+        let selected = if selected.genre_token.is_empty() { selected } else {
+            let Ok(selected) = self.resolve_album_genre_using(selected,&self.source_index().1) else { return Snapshot::default() };
+            selected
+        };
         if selected.kind == "work" { return self.work_snapshot(&selected); }
         if !matches!(selected.kind.as_str(), "genre" | "composer") || selected.name.is_empty() { return Snapshot::default(); }
         let filter = self.discovery_filter(&selected);
@@ -110,6 +123,7 @@ impl Reader {
 
     pub fn discovery_artists(&self, key: &str) -> Vec<crate::ListedArtist> {
         let selected = Selection::parse(key).unwrap_or_default();
+        let Ok(selected) = self.resolve_album_genre_using(selected,&self.source_index().1) else { return Vec::new() };
         let extras = Filter { excluded_sources:if selected.kind == "genre" { selected.excluded_sources } else { Vec::new() }, ..Default::default() };
         let ids: HashSet<_> = self.discovery_snapshot(key).album_ids.into_iter().collect();
         let pictures = self.lib.artist_pictures().unwrap_or_default();
@@ -138,11 +152,25 @@ impl Reader {
 
     pub fn discovery_page_options(&self, kind: &str, key: &str, text: &str, options: &str, page: usize) -> Value {
         let Some(options) = options::Options::parse(options) else { return json!({"error":chilpa_i18n::t("Invalid discovery options."), "items":[], "total":0}); };
+        if kind == "album_genres" && (key.len() > 32 || text.len() > 1024) {
+            return json!({"error":chilpa_i18n::t("Invalid discovery selection."),"items":[],"total":0});
+        }
+        let text = chilpa_library::store::query::fold(text.trim());
+        if kind == "album_genres" {
+            return match key.parse::<i64>() {
+                Ok(album) if album != 0 => self.album_genres_page_using(album,&text,page,PAGE,options.descending(),&self.source_index().1),
+                _ => json!({"error":chilpa_i18n::t("Invalid discovery selection."),"items":[],"total":0}),
+            };
+        }
         let selected = if key.is_empty() { Selection::default() } else {
             let Some(selected) = Selection::parse(key) else { return json!({"error":chilpa_i18n::t("Invalid discovery selection."), "items":[], "total":0}); };
             selected
         };
-        let text = chilpa_library::store::query::fold(text.trim());
+        let (_, index) = self.source_index();
+        let selected = match self.resolve_album_genre_using(selected,&index) {
+            Ok(selected) => selected,
+            Err(error) => return json!({"error":error,"items":[],"total":0}),
+        };
         if kind == "recordings" { return self.recordings_page_ordered(&selected, &text, page, options.descending()); }
         if kind == "compositions" || selected.kind == "composer" {
             let composer = if selected.kind == "composer" { selected.name.as_str() } else { "" };
@@ -165,8 +193,9 @@ impl Reader {
             }).collect();
             return json!({"total":total,"items":items});
         }
-        let excluded = options.excluded_sources.as_deref().unwrap_or(&selected.excluded_sources);
-        self.genre_page_using(&selected, &text, &options, excluded, page, &self.source_index().1)
+        let excluded: &[String] = if selected.album_scope { &selected.excluded_sources }
+            else { options.excluded_sources.as_deref().unwrap_or(&selected.excluded_sources) };
+        self.genre_page_using(&selected, &text, &options, excluded, page, &index)
     }
 
     fn genre_page_using(&self, selected: &Selection, text: &str, options: &options::Options, excluded: &[String], page: usize, index: &crate::library_sources::SourceIndex) -> Value {

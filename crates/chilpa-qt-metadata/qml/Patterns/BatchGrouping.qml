@@ -43,8 +43,8 @@ Column {
         values:["join","split"]; options:[I18n.tr("Join as a multidisc album",I18n.rev),I18n.tr("Separate by disc",I18n.rev)];value:form.operation
         onPicked:value=>form.operation=value
     }
-    TextField { id:album; width:parent.width; visible:form.operation === "join"; enabled:!form.busy; placeholder:I18n.tr("Album title",I18n.rev) }
-    TextField { id:artist; width:parent.width; visible:form.operation === "join"; enabled:!form.busy; placeholder:I18n.tr("Album artist",I18n.rev) }
+    TextField { id:album; objectName:"batchJoinTitle"; width:parent.width; visible:form.operation === "join"; enabled:!form.busy; placeholder:I18n.tr("Album title",I18n.rev) }
+    TextField { id:artist; objectName:"batchJoinArtist"; width:parent.width; visible:form.operation === "join"; enabled:!form.busy; placeholder:I18n.tr("Album artist",I18n.rev) }
     Repeater {
         model:form.discs.length <= 32 ? form.discs.length : 0
         Column {

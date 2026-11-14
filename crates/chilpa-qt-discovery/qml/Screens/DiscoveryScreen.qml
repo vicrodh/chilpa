@@ -26,9 +26,10 @@ Item {
     property var positions: ({})
     property bool restoring: false
     property bool playSelection: false
+    property bool sourceOverride: false
     readonly property string memory: "discovery." + mode + "." + routeKey
     readonly property var about: decode(results.document)
-    readonly property string collectionKey: mode === "genres" ? JSON.stringify(Object.assign({}, selected, {excluded_sources:find.excludedSources})) : routeKey
+    readonly property string collectionKey: mode === "genres" ? JSON.stringify(Object.assign({}, selected, {excluded_sources:find.excludedSources}, selected.albumScope !== undefined ? {albumScope:selected.albumScope === true && !sourceOverride} : {})) : routeKey
     readonly property var breadcrumb: (selected.trail || []).length > 1 ? selected.trail : about.breadcrumb || selected.trail || []
     readonly property bool listing: !detail || composer && tab === 0 || work && tab === 0 || genre && tab === 4
     readonly property string queryKind: work ? "recordings" : mode
@@ -45,6 +46,7 @@ Item {
             positions = shifted; tab++
         }
         find.text = state.text || ""; find.order = state.order || "name"; find.scope = state.scope || "all"
+        sourceOverride = state.sourceOverride === true
         find.excludedSources = selected.excluded_sources || state.excludedSources || []
         restoredPosition = positions[tab] || state.position || 0; restoring = restoredPosition > 0
         schedule()
@@ -54,7 +56,7 @@ Item {
         const previous = Visit.recall("discovery.visits", {})
         const next = {}
         for (const key of Object.keys(previous).filter(key => key !== memory).slice(-63)) next[key] = previous[key]
-        next[memory] = {version:2, tab:tab, order:find.order, scope:find.scope, excludedSources:find.excludedSources, text:find.text, positions:positions, position:positions[tab] || 0}
+        next[memory] = {version:2, tab:tab, order:find.order, scope:find.scope, sourceOverride:sourceOverride, excludedSources:find.excludedSources, text:find.text, positions:positions, position:positions[tab] || 0}
         Visit.keep("discovery.visits", next)
     }
     function changeTab(next) {
@@ -80,7 +82,7 @@ Item {
     Connections { target: content.item; function onReadyChanged() { Qt.callLater(discoveryPage.restoreViewport) } }
     Component.onCompleted: { restore(); updateContent(); settle.triggered() }
     Component.onDestruction: remember()
-    onRouteKeyChanged: { playSelection = false; tab = 0; find.text = ""; find.excludedSources = decode(routeKey).excluded_sources || []; schedule() }
+    onRouteKeyChanged: { playSelection = false; sourceOverride = false; tab = 0; find.text = ""; find.excludedSources = decode(routeKey).excluded_sources || []; if (results) results.cancel(); schedule() }
     function schedule() { if (visible) settle.restart() }
     onVisibleChanged: {
         if (visible) { restoredPosition = positions[tab] || 0; restoring = restoredPosition > 0 }
@@ -88,7 +90,14 @@ Item {
         if (visible) schedule(); else { settle.stop(); results.cancel() }
     }
     Connections { target: Library; function onContentRevChanged() { discoveryPage.schedule() } function onRemoteRevChanged() { discoveryPage.schedule() } }
-    DiscoveryModel { id: results; objectName: "discoveryModel" }
+    DiscoveryModel {
+        id: results
+        objectName: "discoveryModel"
+        onDocumentChanged: {
+            const document = discoveryPage.decode(results.document)
+            if (discoveryPage.selected.albumScope === true && !discoveryPage.sourceOverride && Array.isArray(document.excluded_sources)) find.excludedSources = document.excluded_sources
+        }
+    }
     Timer {
         id: settle
         interval: Motion.searchSettle
@@ -123,6 +132,7 @@ Item {
             tracks: discoveryPage.detail && discoveryPage.tab === (discoveryPage.genre ? 3 : 2)
             sources: discoveryPage.about.sources || []
             onSourcesChosen: excluded => {
+                discoveryPage.sourceOverride = true
                 find.excludedSources = excluded; discoveryPage.playSelection = false; discoveryPage.positions = ({}); discoveryPage.restoring = false
                 if (content.item?.scrollView) content.item.scrollView.contentY = 0
                 discoveryPage.remember(); discoveryPage.schedule()

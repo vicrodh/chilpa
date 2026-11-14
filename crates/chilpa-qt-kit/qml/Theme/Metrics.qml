@@ -9,6 +9,7 @@ QtObject {
     readonly property int discoveryEntryHeight: 88
     readonly property int discoveryGenreHeight: 220
     readonly property int discoveryHeroHeight: 300
+    readonly property int albumGenresHeight: 600
     readonly property int metadataChangeHeight: 112
     readonly property int metadataChangeInvalid: 36
     readonly property int metadataPreviewRows: 3

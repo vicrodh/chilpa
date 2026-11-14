@@ -8,23 +8,20 @@ pub(super) use art::art;
 use resolution::{resolve, Resolution};
 use taxonomy::graph;
 use std::collections::{HashMap, HashSet};
-pub(super) fn link(original: &str) -> (Identity, String) {
-    let found = resolve(original);
-    if matches!(found.method, "exact" | "normalized" | "alias") {
-        (found.identity(), found.recognized.unwrap_or(original).to_string())
-    } else { (Identity::literal(original), original.to_string()) }
-}
-
 pub(super) const VERSION: &str = taxonomy::VERSION;
 
 pub(super) fn strong_identity(original: &str) -> String {
+    link(original).0
+}
+
+pub(super) fn link(original: &str) -> (String, &str) {
     let key = crate::library_query::genre_key(original);
     let graph = graph();
     let known = graph.by_key.get(&key).copied().or_else(||
         graph.aliases.get(&key).filter(|ids| ids.len() == 1).map(|ids| ids[0]));
     match known {
-        Some(node) => format!("known:{node}"),
-        None => format!("literal:{}", if key.is_empty() { original.to_lowercase() } else { key }),
+        Some(node) => (format!("known:{}", graph.nodes[node].name), graph.nodes[node].name),
+        None => (format!("literal:{}", if key.is_empty() { original.to_lowercase() } else { key }), original),
     }
 }
 

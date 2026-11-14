@@ -1979,6 +1979,9 @@ msgstr ""
 msgid "Could not move the playlist."
 msgstr ""
 
+msgid "Could not read genres"
+msgstr ""
+
 msgid "Could not read the analysis inventory."
 msgstr ""
 
@@ -4250,6 +4253,9 @@ msgstr ""
 msgid "More actions"
 msgstr ""
 
+msgid "More genres"
+msgstr ""
+
 msgid "More options"
 msgstr ""
 
@@ -6367,6 +6373,9 @@ msgstr ""
 msgid "Search folders"
 msgstr ""
 
+msgid "Search genres"
+msgstr ""
+
 msgid "Search listens"
 msgstr ""
 
@@ -7837,6 +7846,9 @@ msgstr ""
 
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+
+msgid "This genre is no longer present on the album."
+msgstr ""
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr ""

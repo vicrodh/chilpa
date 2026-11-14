@@ -1979,6 +1979,9 @@ msgstr "De afbeelding kon niet worden geladen"
 msgid "Could not move the playlist."
 msgstr "Kon de afspeellijst niet verplaatsen."
 
+msgid "Could not read genres"
+msgstr ""
+
 msgid "Could not read the analysis inventory."
 msgstr "Kon het analyse-overzicht niet lezen."
 
@@ -4250,6 +4253,9 @@ msgstr "Meer"
 msgid "More actions"
 msgstr "Meer acties"
 
+msgid "More genres"
+msgstr ""
+
 msgid "More options"
 msgstr "Meer opties"
 
@@ -6367,6 +6373,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "Mappen zoeken"
 
+msgid "Search genres"
+msgstr ""
+
 msgid "Search listens"
 msgstr "Beluisteringen zoeken"
 
@@ -7837,6 +7846,9 @@ msgstr ""
 
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "Dit formaat is vanaf teken {} niet leesbaar, dus Discord krijgt een lege regel. Sluit elke %, [, ( en elk aanhalingsteken, en gebruik alleen de functies die onder Titel staan."
+
+msgid "This genre is no longer present on the album."
+msgstr ""
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Dit duurt langer dan gebruikelijk. MusicBrainz is mogelijk druk. Probeer het over een moment opnieuw."

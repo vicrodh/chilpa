@@ -1979,6 +1979,9 @@ msgstr "Das Bild konnte nicht geladen werden"
 msgid "Could not move the playlist."
 msgstr "Die Playlist konnte nicht verschoben werden."
 
+msgid "Could not read genres"
+msgstr ""
+
 msgid "Could not read the analysis inventory."
 msgstr "Die Analyse-Übersicht konnte nicht gelesen werden."
 
@@ -4250,6 +4253,9 @@ msgstr "Mehr"
 msgid "More actions"
 msgstr "Weitere Aktionen"
 
+msgid "More genres"
+msgstr ""
+
 msgid "More options"
 msgstr "Weitere Optionen"
 
@@ -6367,6 +6373,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "Ordner suchen"
 
+msgid "Search genres"
+msgstr ""
+
 msgid "Search listens"
 msgstr "Hörverlauf durchsuchen"
 
@@ -7837,6 +7846,9 @@ msgstr ""
 
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "Dieses Format ist ab Zeichen {} nicht lesbar, daher bekommt Discord eine leere Zeile. Schließe jedes %, [, ( und Anführungszeichen und verwende nur die unter Titel aufgeführten Funktionen."
+
+msgid "This genre is no longer present on the album."
+msgstr ""
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Das dauert länger als gewöhnlich. MusicBrainz ist möglicherweise ausgelastet. Versuche es gleich noch einmal."

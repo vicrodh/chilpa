@@ -1,5 +1,6 @@
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
+import "qrc:/qt/qml/app/chilpa/discovery/qml/Patterns"
 import QtQuick
 import app.chilpa
 import app.chilpa.folders

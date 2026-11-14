@@ -1977,6 +1977,9 @@ msgstr "画像を読み込めませんでした"
 msgid "Could not move the playlist."
 msgstr "プレイリストを移動できませんでした。"
 
+msgid "Could not read genres"
+msgstr ""
+
 msgid "Could not read the analysis inventory."
 msgstr "解析一覧を読み取れませんでした。"
 
@@ -4245,6 +4248,9 @@ msgstr "その他"
 msgid "More actions"
 msgstr "その他の操作"
 
+msgid "More genres"
+msgstr ""
+
 msgid "More options"
 msgstr "その他の操作"
 
@@ -6361,6 +6367,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "フォルダーを検索"
 
+msgid "Search genres"
+msgstr ""
+
 msgid "Search listens"
 msgstr "再生履歴を検索"
 
@@ -7826,6 +7835,9 @@ msgstr ""
 
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "このフォーマットは {} 文字目から読み取れないため、Discord には空の行が送られます。%、[、( と引用符をすべて閉じ、「タイトル」に記載された関数だけを使ってください。"
+
+msgid "This genre is no longer present on the album."
+msgstr ""
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "通常より時間がかかっています。MusicBrainzが混雑している可能性があります。しばらくしてからもう一度お試しください。"

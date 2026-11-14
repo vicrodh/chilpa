@@ -2,7 +2,7 @@ use super::*;
 use crate::library_sources::{SourceIndex, SourceItem};
 use std::rc::Rc;
 
-fn fixture() -> (Reader, Rc<SourceIndex>) {
+pub(super) fn fixture() -> (Reader, Rc<SourceIndex>) {
     let lib = chilpa_library::Library::in_memory().unwrap();
     lib.connection().execute_batch("INSERT INTO sources(id,provider,instance) VALUES (1,'local','default'),(2,'server','home');
         INSERT INTO albums(id,title,album_artist) VALUES (1,'First','Player'),(2,'Second','Other');
@@ -83,11 +83,11 @@ fn album_genre_links_preserve_exact_edition_sources_and_original_labels() {
     let before=reader.lib.track_genres(1).unwrap();
     let revision=reader.lib.read_revision().unwrap();
     let links=reader.album_genre_links_using(1,&index);
-    assert_eq!(links["excluded_sources"],json!(["plugin:alpha","plugin:beta"]));
     let entries=links["items"].as_array().unwrap();
     assert_eq!(entries.len(),4,"all original tags of both contributing sources are linked");
-    let route=|name:&str| Selection::parse(entries.iter().find(|row|row["name"]==name).unwrap()["key"].as_str().unwrap()).unwrap();
+    let route=|name:&str| reader.resolve_album_genre_using(Selection::parse(entries.iter().find(|row|row["name"]==name).unwrap()["key"].as_str().unwrap()).unwrap(),&index).unwrap();
     assert_eq!(route("heavy-metal").name,"Heavy Metal");
+    assert_eq!(route("heavy-metal").excluded_sources,["plugin:alpha","plugin:beta"]);
     assert_eq!(route("Progresive Metal").name,"Progresive Metal","fuzzy decisions keep their original route evidence");
     let custom=route("My Sunday collection");
     assert_eq!(custom.name,"My Sunday collection");
@@ -95,12 +95,12 @@ fn album_genre_links_preserve_exact_edition_sources_and_original_labels() {
     assert_eq!(custom_page["parents"],json!([]));
     assert_eq!(custom_page["summary"]["albums"],1);
     let remote=reader.album_genre_links_using(-10,&index);
-    assert_eq!(remote["excluded_sources"],json!(["local:default","plugin:beta","server:home"]));
     assert_eq!(remote["items"].as_array().unwrap().len(),2);
-    let remote_key=Selection::parse(remote["items"][0]["key"].as_str().unwrap()).unwrap();
+    let remote_key=reader.resolve_album_genre_using(Selection::parse(remote["items"][0]["key"].as_str().unwrap()).unwrap(),&index).unwrap();
     assert_eq!(remote_key.excluded_sources,vec!["local:default","plugin:beta","server:home"]);
     let second=reader.album_genre_links_using(2,&index);
-    assert_eq!(second["excluded_sources"],json!(["local:default","plugin:alpha","plugin:beta"]));
+    let second_key=reader.resolve_album_genre_using(Selection::parse(second["items"][0]["key"].as_str().unwrap()).unwrap(),&index).unwrap();
+    assert_eq!(second_key.excluded_sources,["local:default","plugin:alpha","plugin:beta"]);
     let page=reader.album_page(1,true).unwrap();
     assert!(!page.heading.meta.contains("heavy-metal"));
     assert_eq!(serde_json::from_str::<Value>(&page.genre_links).unwrap()["items"].as_array().unwrap().len(),4);
@@ -126,35 +126,35 @@ fn album_genre_links_merge_only_strong_identities_and_preserve_every_spelling() 
     for album in [1, -10] {
         let links = reader.album_genre_links_using(album, &index);
         let entries = links["items"].as_array().unwrap();
-        let route = |row: &Value| Selection::parse(row["key"].as_str().unwrap()).unwrap().name;
+        let route = |row: &Value| reader.resolve_album_genre_using(Selection::parse(row["key"].as_str().unwrap()).unwrap(),&index).unwrap().name;
         let heavy: Vec<_> = entries.iter().filter(|row| route(row) == "Heavy Metal").collect();
         assert_eq!(heavy.len(), 1);
         assert_eq!(heavy[0]["name"], "Heavy Metal");
         let heavy_originals = if album > 0 { json!(["Heavy Metal", "heavy-metal"]) }
             else { json!(["Heavy Metal", "heavy metal", "heavy-metal"]) };
-        assert_eq!(heavy[0]["originals"], heavy_originals);
+        assert_eq!(heavy[0]["originalsCount"], heavy_originals.as_array().unwrap().len());
         let aliases: Vec<_> = entries.iter().filter(|row| route(row) == "Drum and Bass").collect();
         assert_eq!(aliases.len(), 1);
         assert_eq!(aliases[0]["name"], "dnb");
-        assert_eq!(aliases[0]["originals"], json!(["dnb", "Drum and Bass"]));
+        assert_eq!(aliases[0]["originalsCount"], 2);
         for name in ["Progresive Metal", "Progressive Metal", "Personal Corner"] {
             let row = entries.iter().find(|row| row["name"] == name).unwrap();
             assert_eq!(route(row), name);
-            assert_eq!(row["originals"], json!([name]));
+            assert_eq!(row["originalsCount"], 1);
         }
-        let originals: HashSet<_> = entries.iter().flat_map(|row| row["originals"].as_array().unwrap())
-            .map(|name| name.as_str().unwrap()).filter(|name| *name != "Jazz").collect();
+        let originals: u64 = entries.iter().filter(|row|row["name"] != "Jazz")
+            .map(|row|row["originalsCount"].as_u64().unwrap()).sum();
         // SQLite already retains one spelling for case-only duplicates.
         let expected = if album > 0 { &before } else { &tags };
-        assert_eq!(originals, expected.iter().map(String::as_str).collect());
+        assert_eq!(originals as usize,expected.len());
         assert_eq!(entries.len(), if album > 0 { 8 } else { 7 });
         let custom = entries.iter().find(|row| row["name"] == "personal shelf").unwrap();
-        assert_eq!(custom["originals"], json!(["personal shelf", "Personal-Shelf"]));
+        assert_eq!(custom["originalsCount"], 2);
         assert_eq!(route(custom), "personal shelf");
         assert!(genres::parents(&route(custom)).is_empty());
         let uncertain = entries.iter().find(|row| row["name"] == "Wardcore").unwrap();
         assert_eq!(route(uncertain), "Wardcore");
-        assert_eq!(uncertain["originals"], if album > 0 { json!(["Wardcore"]) } else { json!(["Wardcore", "wardcore"]) });
+        assert_eq!(uncertain["originalsCount"], if album > 0 { 1 } else { 2 });
         assert!(genres::parents(&route(uncertain)).is_empty());
     }
     assert_eq!(reader.lib.track_genres(1).unwrap(), before);

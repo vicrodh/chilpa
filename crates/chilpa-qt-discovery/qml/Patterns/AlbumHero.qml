@@ -4,6 +4,7 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 // The head of a record's page: cover, kind and year, title, artist, the
 // line of facts and the buttons (design/06 Album).
@@ -22,6 +23,7 @@ Item {
     // A right click on the cover, where the pointer is in the hero.
     signal artworkMenu(real left, real top)
     signal information()
+    signal genresRequested()
 
     implicitHeight: Math.max(Metrics.heroArt, body.implicitHeight)
 
@@ -65,6 +67,7 @@ Item {
         AlbumCredits {
             width: parent.width; albumId: hero.detail.selectedId; contrasted: hero.contrasted
             record: hero.detail
+            onGenresRequested: hero.genresRequested()
             color: hero.contrasted ? Theme.color.backdropText : Theme.color.textPrimary
         }
         Text {

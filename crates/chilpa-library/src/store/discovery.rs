@@ -23,6 +23,27 @@ fn scoped(sql: &str, excluded: &[String]) -> String {
 }
 
 impl Library {
+    /// Stream exact-album associations into a bounded query-owned index.
+    /// Duplicates are handled by the consumer without a library-wide sort.
+    pub fn visit_album_genres(&self, album: i64, mut visit: impl FnMut(&str, &str) -> rusqlite::Result<()>) -> rusqlite::Result<()> {
+        let mut statement = self.db.prepare("SELECT g.name,s.provider || ':' || s.instance FROM tracks t
+            JOIN sources s ON s.id=t.source_id LEFT JOIN track_genres tg ON tg.track_id=t.id
+            LEFT JOIN genres g ON g.id=tg.genre_id
+            WHERE t.album_id=?1 AND t.present=1 AND s.enabled=1")?;
+        let mut rows = statement.query([album])?;
+        while let Some(row) = rows.next()? {
+            let tag = row.get_ref(0)?;
+            let name = match tag {
+                rusqlite::types::ValueRef::Null => "",
+                rusqlite::types::ValueRef::Text(bytes) if bytes.len() <= crate::genre_index::MAX_TAG_BYTES => std::str::from_utf8(bytes)
+                    .map_err(|error|rusqlite::Error::FromSqlConversionFailure(0,rusqlite::types::Type::Text,Box::new(error)))?,
+                _ => return Err(rusqlite::Error::InvalidParameterName("Genre text exceeds the 1 MiB query limit.".into())),
+            };
+            visit(name,&row.get::<_,String>(1)?)?;
+        }
+        Ok(())
+    }
+
     /// Original spellings attached to present tracks in enabled sources.
     /// Discovery needs names, not the per-release counts of the facet query.
     /// Each genre's indexed existence lookup stops at its first eligible track.
