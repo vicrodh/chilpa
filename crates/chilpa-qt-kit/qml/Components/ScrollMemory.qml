@@ -9,6 +9,8 @@ Item {
     property string key: ""
     property real pending: -1
     property bool applying: false
+    property bool hasOrigin: false
+    property real knownOrigin: 0
     visible: false
 
     function origin() { return viewport ? (viewport.originY || 0) - (viewport.topMargin || 0) : 0 }
@@ -21,12 +23,19 @@ Item {
         resume()
     }
     function cancel() { pending = -1; remember() }
-    function rebase() { resume(true) }
+    function rebase() {
+        // Virtualized fractional strides can change origin by floating-point noise
+        // before contentY observers remember the user's new position.
+        if (pending < 0 && hasOrigin && Math.abs(origin() - knownOrigin) < 0.001) return
+        resume(true)
+    }
     function resume(rebase) {
         if (!enabled || !viewport || (!rebase && pending < 0)) return
         const offset = pending >= 0 ? pending : Visit.recall(key, 0)
         if (!rebase && typeof viewport.forceLayout === "function") viewport.forceLayout()
         const start = origin()
+        knownOrigin = start
+        hasOrigin = true
         const end = Math.max(0, viewport.contentHeight - viewport.height
             + (viewport.topMargin || 0) + (viewport.bottomMargin || 0))
         applying = true
@@ -35,7 +44,7 @@ Item {
         if (end >= pending) pending = -1
     }
     onKeyChanged: restore()
-    onViewportChanged: if (viewport) Qt.callLater(restore)
+    onViewportChanged: { hasOrigin=false; if (viewport) Qt.callLater(restore) }
     Connections {
         target: memory.viewport
         ignoreUnknownSignals: true

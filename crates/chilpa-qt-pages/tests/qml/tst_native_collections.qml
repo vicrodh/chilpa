@@ -7,6 +7,8 @@ import "../../qml/Screens"
 import "../../qml/Components"
 import "../../qml/Patterns"
 import "../../qml" as PageHosts
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as KitUi
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns" as KitPatterns
 
 TestCase {
     id: test
@@ -19,10 +21,28 @@ TestCase {
     Component { id: webFactory; SourceWebScreen { width: test.width; height: test.height; source: "fixture native:journal" } }
     Component { id: hostFactory; PageHosts.NativeSourceHost { width:test.width; height:test.height; source:"fixture native:saved:all" } }
     Component { id: tileFactory; CollectionTile { width:200; height:250; plugin:"fixture"; entry:({rowToken:"row:1",kind:"track",ref:"track:1",title:"Song"}) } }
+    Component {
+        id: scrollHostFactory
+        Item {
+            width:test.width;height:test.height
+            property alias page:nativeHost.item
+            PageHosts.NativeSourceHost { id:nativeHost;anchors.fill:parent;source:"fixture native:saved:all";presentation:({layout:"collection"}) }
+            KitUi.ScrollMemory { viewport:nativeHost.scrollView;key:"fixture-native-scroll" }
+        }
+    }
+    Component {
+        id: routedHostFactory
+        KitPatterns.PageTransition {
+            width:test.width;height:test.height
+            route:"fixture\u001fsource\u001f0\u001fnative-collection-router-scroll"
+            sourceComponent: Component { PageHosts.NativeSourceHost { source:"fixture native:saved:all";presentation:({layout:"collection"}) } }
+        }
+    }
     Component { id: treeFactory; SourceNavigationTree { width:240; pluginId:"fixture"; controller:treeController; entries:[{id:"view:library",title:"Collection",route:"fixture native:saved:all",children:[{id:"view:library/artists",title:"Artists",route:"fixture native:saved:artists"}]}] } }
     QtObject { id:treeController; property var expandedSources:({}); property var sourceView:({}) }
     SignalSpy { id: menus; signalName:"menuRequested" }
     SignalSpy { id: reads; target: Sources; signalName: "pageRequested" }
+    SignalSpy { id: scrollPointers; signalName:"scrollViewChanged" }
     function document(extra) {
         return JSON.stringify(Object.assign({layout:"collection",plugin:"fixture",title:"Collection",items:[
             {rowToken:"row:0",kind:"album",ref:"album:1",title:"Record",_host:{card_id:-1,track_row:-1}},
@@ -207,6 +227,33 @@ TestCase {
         tryVerify(()=>window.calls.some(call=>call[0] === "refresh" && call[1] === true))
         compare(window.calls.filter(call=>call[0] === "refresh" && call[1] === true).length,1)
         compare(page.silentWork,false);compare(findChild(page,"collectionLoadingFeedback").visible,true)
+    }
+    function test_collection_scroll_survives_the_router_scroll_memory() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:1000})}
+        const wrapper=createTemporaryObject(scrollHostFactory,test)
+        tryVerify(()=>wrapper.page && wrapper.page.count === 1000)
+        wait(80)
+        wrapper.page.positionViewAtEnd()
+        wait(80)
+        verify(wrapper.page.contentY>1000,"the router must not reset the requested collection position")
+    }
+    function test_collection_scroll_survives_the_complete_page_transition() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:1000})}
+        const router=createTemporaryObject(routedHostFactory,test)
+        tryCompare(router,"phase","content")
+        tryVerify(()=>router.item?.item?.count === 1000)
+        const page=router.item.item
+        wait(80);page.positionViewAtEnd();wait(80)
+        verify(page.contentY>1000,"the integrated page must keep the requested collection position")
+    }
+    function test_scrolling_does_not_publish_a_new_viewport_identity() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:1000})}
+        const host=createTemporaryObject(hostFactory,test,{presentation:{layout:"collection"}})
+        tryVerify(()=>host.item?.count === 1000)
+        wait(80);scrollPointers.target=host;scrollPointers.clear()
+        host.item.positionViewAtEnd();wait(80)
+        compare(scrollPointers.count,0,"scrolling keeps the same viewport QObject")
+        scrollPointers.target=null
     }
     function test_web_module_stays_unloaded_when_not_permitted() {
         const page=createTemporaryObject(webFactory,test)
