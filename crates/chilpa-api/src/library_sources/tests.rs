@@ -1,7 +1,7 @@
 use super::*;
 use crate::{Reader, TrackOrder};
 use rusqlite::params;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Two records of the library and, from a source, a saved record whose
 /// tracks were read, a saved record whose tracks were not, and a saved
@@ -39,7 +39,7 @@ fn labels(entries: &[FacetEntry]) -> Vec<(&str, usize)> {
 }
 
 fn refresh(reader: &Reader, index: SourceIndex, filter: &Filter, order: TrackOrder) -> (crate::Facets, crate::Snapshot) {
-    reader.refresh_using(filter, order, || true, ((1, vec![("guest".into(), true, true)]), Rc::new(index))).unwrap()
+    reader.refresh_using(filter, order, || true, ((1, vec![("guest".into(), true, true)]), Arc::new(index))).unwrap()
 }
 
 #[test]
@@ -266,7 +266,7 @@ fn measured_on_a_real_library() {
         label: format!("Label {}", n % 90), composers: vec![format!("Writer {}", n % 300)], tier: "lossless", format: "flac",
         tracks: if n % 3 == 0 { 10 } else { 1 }, saved_track: n % 2 == 0, saved_album: n % 2 == 1, playable: true, ..SourceItem::default()
     }).collect();
-    let index = Rc::new(SourceIndex::new(items, Vec::new()));
+    let index = Arc::new(SourceIndex::new(items, Vec::new()));
     let median = |run: &dyn Fn() -> ()| {
         let mut times: Vec<u128> = (0..5).map(|_| { let t = std::time::Instant::now(); run(); t.elapsed().as_micros() }).collect();
         times.sort();

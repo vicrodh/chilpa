@@ -64,6 +64,17 @@ impl Cache {
         Ok(())
     }
 
+    pub fn live_signature(&self, now: u64, hash: &mut impl std::hash::Hasher) {
+        use std::hash::Hash;
+        for (key, entry) in &self.entries {
+            if entry.at <= now && now < entry.expires() { (key, &entry.composers).hash(hash); }
+        }
+    }
+
+    pub fn next_change(&self, now: u64) -> u64 {
+        self.entries.values().flat_map(|entry| [entry.at, entry.expires()]).filter(|at| *at > now).min().unwrap_or(u64::MAX)
+    }
+
     pub fn get(&self, isrc: &str, now: u64) -> Option<&[String]> {
         self.entries.get(&isrc_key(isrc)?).filter(|e| e.at <= now && now < e.expires()).map(|e| e.composers.as_slice())
     }

@@ -35,6 +35,28 @@ mod tests {
     #[test]
     fn local_artwork_identity_does_not_wait_for_catalog_access() {
         let catalog = Catalog::new();
+        let natives = std::sync::Arc::new(crate::natives::Natives::default());
+        let plugin = format!("fixture.genre-art-{}", std::process::id());
+        let manifest: chilpa_plugin::Manifest = serde_json::from_value(json!({"id":plugin,"name":"Fixture","version":"1.0.0",
+            "api_version":1,"kind":"source"})).unwrap();
+        let (client, _pipe_ends) = crate::natives::tests::channel();
+        crate::natives::tests::started(&natives, manifest.clone(), std::path::Path::new("/nonexistent"), &client);
+        crate::natives::tests::remember_source(&natives, manifest, json!({"library":["albums"]}));
+        *catalog.natives.lock().unwrap() = Some(natives.clone());
+        let preferences = crate::Chilpa::plugins_dir().join(".integration");
+        let profile = std::path::PathBuf::from(std::env::var_os("CHILPA_TEST_PROFILE_ROOT").expect("run API tests in the isolated profile"));
+        assert!(preferences.starts_with(&profile));
+        std::fs::create_dir_all(&preferences).unwrap();
+        let preference = preferences.join(format!("{plugin}.json"));
+        std::fs::write(&preference, r#"{"integrate_albums":true}"#).unwrap();
+        assert!(crate::library_sources::integrated_now(&natives).contains(&(plugin.clone(), true, false)));
+        {
+            let mut inner = catalog.lock();
+            let album = inner.store.take_item(&plugin, &json!({"kind":"album","ref":"album:1","title":"Fixture",
+                "genres":["Heavy Metal"]}), 1).unwrap();
+            inner.store.shelves.insert(format!("{plugin} section:albums"), super::super::store::Shelf { cards:vec![album], ..Default::default() });
+        }
+        assert_eq!(catalog.integrated_items(&[plugin], &[]).len(), 1);
         let held = catalog.lock();
         let source = catalog.clone();
         let (send, receive) = std::sync::mpsc::channel();
@@ -51,7 +73,9 @@ mod tests {
         let result = receive.recv_timeout(std::time::Duration::from_secs(5));
         drop(held);
         thread.join().unwrap();
+        std::fs::remove_file(preference).unwrap();
         assert!(result.unwrap().is_ok());
+        assert!(!*catalog.started.lock().unwrap());
     }
 
     #[test]

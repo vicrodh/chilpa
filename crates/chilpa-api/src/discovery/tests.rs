@@ -263,7 +263,7 @@ fn genre_case_variants_keep_literal_facets_and_case_insensitive_membership() {
 #[test]
 fn recognized_genre_selection_combines_local_and_source_spellings_once_per_record() {
     use crate::library_sources::{SourceIndex, SourceItem};
-    use std::rc::Rc;
+    use std::sync::Arc;
     let reader = reader();
     reader.lib.set_track_genres(1, &["heavy metal".into(), "heavy-metal".into()]).unwrap();
     reader.lib.set_track_genres(2, &["Heavy Metal".into()]).unwrap();
@@ -273,7 +273,7 @@ fn recognized_genre_selection_combines_local_and_source_spellings_once_per_recor
         album_title:format!("Source record {album}"),album_artist:"Player".into(),artists:vec!["Player".into()],
         genres:tags,saved_track:true,saved_album:true,playable:true,tracks:1,..Default::default()
     };
-    let index = Rc::new(SourceIndex::new(vec![
+    let index = Arc::new(SourceIndex::new(vec![
         item(-101,-100,vec!["heavy metal".into(),"Heavy Metal".into(),"heavy-metal".into()]),
         item(-102,-100,vec!["HEAVY-METAL".into()]),
         item(-201,-200,vec!["Heavy Metal".into()]),

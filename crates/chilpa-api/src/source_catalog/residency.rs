@@ -265,7 +265,9 @@ impl Catalog {
         inner.queue.covers.retain(|image| images.contains(image));
         inner.queue.covers_queued.retain(|image| images.contains(image));
         inner.dirty = true;
+        let retired = inner.retire_integrated_index();
         drop(inner);
+        drop(retired);
         self.changed();
         Ok(())
     }

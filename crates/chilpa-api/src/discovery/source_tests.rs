@@ -1,8 +1,8 @@
 use super::*;
 use crate::library_sources::{SourceIndex, SourceItem};
-use std::rc::Rc;
+use std::sync::Arc;
 
-pub(super) fn fixture() -> (Reader, Rc<SourceIndex>) {
+pub(super) fn fixture() -> (Reader, Arc<SourceIndex>) {
     let lib = chilpa_library::Library::in_memory().unwrap();
     lib.connection().execute_batch("INSERT INTO sources(id,provider,instance) VALUES (1,'local','default'),(2,'server','home');
         INSERT INTO albums(id,title,album_artist) VALUES (1,'First','Player'),(2,'Second','Other');
@@ -17,7 +17,7 @@ pub(super) fn fixture() -> (Reader, Rc<SourceIndex>) {
         artists:vec![format!("Artist {plugin}")],genres:vec![tag.into()],saved_track:true,playable:true,tracks:1,..Default::default() };
     let index = SourceIndex::new(vec![item(-11,-10,"alpha","prog metal"),item(-12,-10,"alpha","heavy-metal"),
         item(-21,-20,"beta","Technical Death Metal"),item(-22,-20,"beta","My Sunday collection")],Vec::new());
-    (Reader::of(lib),Rc::new(index))
+    (Reader::of(lib),Arc::new(index))
 }
 
 #[test]

@@ -1,6 +1,6 @@
 use super::*;
 use crate::library_sources::{SourceIndex, SourceItem};
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[test]
 fn megabyte_genre_labels_remain_searchable_and_routes_preserve_collections() {
@@ -108,7 +108,7 @@ fn remote_long_genre_routes_preserve_albumless_tracks_and_explicit_source_scope(
     let item = |track, album, plugin: &str| SourceItem { track, album, plugin:plugin.into(), genres:vec![name.clone()],
         saved_track:true, playable:true, tracks:1, album_identity:format!("album:{album}"), ..Default::default() };
     for album in [0, -10] {
-        let index = Rc::new(SourceIndex::new(vec![item(-11, album, "alpha"), item(-21, -20, "beta")], Vec::new()));
+        let index = Arc::new(SourceIndex::new(vec![item(-11, album, "alpha"), item(-21, -20, "beta")], Vec::new()));
         let excluded = vec!["plugin:beta".into()];
         let options = options::Options::parse(r#"{"scope":"tags"}"#).unwrap();
         let page = reader.genre_page_using(&Selection::default(), "remote tail", &options, &excluded, 0, &index);

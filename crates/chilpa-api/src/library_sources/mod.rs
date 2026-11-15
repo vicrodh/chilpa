@@ -8,8 +8,8 @@
 //! snapshot carries. Nothing here asks a plugin: a stale listing is queued
 //! with the catalog, and what arrives shows on the next read.
 //!
-//! Bounded by what the catalog keeps (6,000 records, 30,000 tracks); the
-//! index lives in the worker's reader and is replaced, never grown.
+//! One catalog owns the current index. A query holds its immutable Arc only
+//! while reading; retained rows follow the catalog's existing residency rules.
 
 mod facets;
 mod groups;
@@ -159,13 +159,15 @@ pub(crate) type Stamp = (u64, Vec<(String, bool, bool)>);
 /// library, by the listener's choice and what each plugin lists.
 fn integrated(natives: &crate::natives::Natives) -> Vec<(String, bool, bool)> {
     let root = crate::Chilpa::plugins_dir();
-    natives.ids().into_iter().filter_map(|id| {
+    let mut chosen: Vec<_> = natives.ids().into_iter().filter_map(|id| {
         let kinds = natives.library_kinds(&id);
         let chosen = crate::source_integration::read(&root, &id);
         let albums = chosen.integrate_albums && kinds.iter().any(|k| k == "albums");
         let tracks = chosen.integrate_tracks && kinds.iter().any(|k| k == "tracks");
         (albums || tracks).then_some((id, albums, tracks))
-    }).collect()
+    }).collect();
+    chosen.sort();
+    chosen
 }
 
 impl crate::Reader {
@@ -173,50 +175,25 @@ impl crate::Reader {
     /// listener changed what is integrated. Nothing integrated is one stamp
     /// whatever the catalog does, so the refreshes it causes are answered
     /// from the cache.
-    pub(crate) fn source_index(&self) -> (Stamp, std::rc::Rc<SourceIndex>) {
-        // Nothing integrated any more: what was kept of the last index goes.
-        let none = || { self.sources.borrow_mut().take(); Default::default() };
-        let Some(catalog) = &self.catalog else { return none() };
-        let Some(natives) = catalog.natives() else { return none() };
+    pub(crate) fn source_index(&self) -> (Stamp, std::sync::Arc<SourceIndex>) {
+        let Some(catalog) = &self.catalog else { return Default::default() };
+        let epoch = catalog.integration_epoch();
+        let Some(natives) = catalog.natives() else {
+            catalog.clear_integrated_index();
+            return Default::default();
+        };
         let chosen = integrated(&natives);
-        if chosen.is_empty() { return none(); }
-        let stamp = (catalog.integrated_signature(&chosen), chosen);
-        if let Some((held, index)) = self.sources.borrow().as_ref().filter(|(held, _)| *held == stamp) {
-            return (held.clone(), index.clone());
-        }
-        let index = std::rc::Rc::new(SourceIndex::read(catalog, &natives, &stamp.1));
-        *self.sources.borrow_mut() = Some((stamp.clone(), index.clone()));
-        (stamp, index)
-    }
-}
-
-impl SourceIndex {
-    /// The integrated listings of those plugins, queued for a read when they
-    /// are stale.
-    pub(crate) fn read(catalog: &crate::source_catalog::Catalog, natives: &crate::natives::Natives, chosen: &[(String, bool, bool)]) -> Self {
         let root = crate::Chilpa::plugins_dir();
-        let albums: Vec<String> = chosen.iter().filter(|(_, albums, _)| *albums).map(|(id, ..)| id.clone()).collect();
-        let tracks: Vec<String> = chosen.iter().filter(|(.., tracks)| *tracks).map(|(id, ..)| id.clone()).collect();
-        for key in albums.iter().map(|id| format!("{id} section:albums")).chain(tracks.iter().map(|id| format!("{id} section:tracks"))) {
-            catalog.shelf(&key);
-        }
-        let items = catalog.integrated_items(&albums, &tracks);
-        let records = catalog.integrated_records(chosen);
-        let mut sources: Vec<FacetEntry> = Vec::new();
-        for item in &items {
-            let key = item.source_key();
-            match sources.iter_mut().find(|entry| entry.key == key) {
-                Some(entry) => entry.albums += item.tracks,
-                None => sources.push(FacetEntry {
-                    key, albums: item.tracks, year: None,
-                    label: catalog.name(&item.plugin).unwrap_or_else(|| natives.display_name(&item.plugin)),
-                    icon: crate::plugin_icons::image_url(&root, &item.plugin),
-                }),
+        let sources: Vec<_> = chosen.iter().map(|(id, albums, tracks)| {
+            for section in [albums.then_some("albums"), tracks.then_some("tracks")].into_iter().flatten() {
+                catalog.shelf(&format!("{id} section:{section}"));
             }
-        }
-        let mut index = Self::new(items, sources);
-        index.versions.extend(records.into_iter().map(|record| (record.id, record.version())));
-        index
+            crate::source_catalog::integrated_index::Source {
+                id: id.clone(), albums: *albums, tracks: *tracks,
+                name: natives.display_name(id), icon: crate::plugin_icons::image_url(&root, id),
+            }
+        }).collect();
+        catalog.integrated_index(&sources, epoch)
     }
 }
 

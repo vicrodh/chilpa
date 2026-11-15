@@ -28,6 +28,7 @@ mod revalidation;
 mod native;
 mod library_index;
 mod genre_anchor;
+pub(crate) mod integrated_index;
 pub(crate) mod genres;
 mod composers;
 pub(crate) use library_index::SourceRecord;
@@ -107,6 +108,9 @@ struct Queue {
 
 #[derive(Default)]
 struct Inner {
+    integrated_index: Option<integrated_index::Publication>,
+    index_serial: u64,
+    index_epoch: u64,
     genres: genres::State,
     composers: composers::State,
     quality_requested: HashMap<i64, Instant>,
@@ -155,6 +159,9 @@ struct Inner {
 
 pub(crate) struct Catalog {
     inner: Mutex<Inner>,
+    index_builder: Mutex<()>,
+    #[cfg(test)]
+    index_captures: AtomicU64,
     wake: Condvar,
     covers_wake: Condvar,
     plugins: Mutex<Option<Arc<Mutex<Plugins>>>>,
@@ -192,6 +199,9 @@ impl Catalog {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
             inner: Mutex::new(Inner::default()),
+            index_builder: Mutex::new(()),
+            #[cfg(test)]
+            index_captures: AtomicU64::new(0),
             wake: Condvar::new(),
             covers_wake: Condvar::new(),
             plugins: Mutex::new(None),
@@ -847,6 +857,7 @@ impl Catalog {
 
     pub fn forget_plugin(&self, plugin: &str) {
         let mut inner = self.lock();
+        let retired = inner.retire_integrated_index();
         inner.collection_epochs.invalidate(plugin, false);
         inner.residency.forget(plugin);
         inner.store.forget_plugin(plugin);
@@ -866,6 +877,7 @@ impl Catalog {
         inner.epochs.remove(plugin);
         inner.dirty = true;
         drop(inner);
+        drop(retired);
         self.wake.notify_one();
         self.changed();
     }

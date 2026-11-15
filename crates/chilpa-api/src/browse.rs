@@ -360,9 +360,6 @@ pub struct Reader {
     pub(crate) lib: chilpa_library::Library,
     pub(crate) catalog: Option<std::sync::Arc<crate::source_catalog::Catalog>>,
     refresh_cache: std::cell::RefCell<RefreshCache>,
-    /// What the listener integrated from the sources, while the catalog and
-    /// the choice of what to integrate stay as they were.
-    pub(crate) sources: std::cell::RefCell<Option<(crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)>>,
 }
 
 /// The library's editions, whether editions are one card, and the copies
@@ -409,7 +406,7 @@ impl<T> PageCache<T> {
 impl Reader {
     #[cfg(test)]
     pub(crate) fn of(lib: chilpa_library::Library) -> Self {
-        Self { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() }
+        Self { lib, catalog: None, refresh_cache: Default::default() }
     }
 
     /// Forgets the answers kept for repeated filters, so a measurement reads.
@@ -419,7 +416,7 @@ impl Reader {
     }
 
     pub(crate) fn open(path: &std::path::Path) -> Result<Self, String> {
-        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() })
+        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None, refresh_cache: Default::default() })
             .map_err(|e| format!("could not open library reader at {}: {e}", path.display()))
     }
 
@@ -654,7 +651,7 @@ impl Reader {
 
     /// The same, with the integrated sources given.
     pub(crate) fn refresh_using(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool,
-        (stamp, index): (crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)) -> Option<(Facets, Snapshot)> {
+        (stamp, index): (crate::library_sources::Stamp, std::sync::Arc<crate::library_sources::SourceIndex>)) -> Option<(Facets, Snapshot)> {
         let unrated = crate::rating_switch::applied(filter, crate::rating_switch::on());
         let filter = unrated.as_ref();
         // A genre typed close to one there is reads as that one too, and
@@ -1173,7 +1170,7 @@ mod tests {
                     rusqlite::params![source, format!("/{release}/{number}.flac"), artist, credit, id, bits]).unwrap();
             }
         }
-        let reader = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() };
+        let reader = Reader { lib, catalog: None, refresh_cache: Default::default() };
         for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B"] {
             let mut filter = Filter::default();
             filter.queries[5] = artist.into();
@@ -1202,7 +1199,7 @@ mod tests {
                 VALUES (?1,?2,?3,'Song',1,?4,?5,1)", rusqlite::params![id,source,format!("/{id}.flac"),3 - (id - 1) / 500,id]).unwrap();
         }
         lib.connection().execute_batch("COMMIT").unwrap();
-        let reader = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() };
+        let reader = Reader { lib, catalog: None, refresh_cache: Default::default() };
         let mut ids: Vec<i64> = (1..=1205).rev().collect();
         ids.insert(2, 9999); ids.push(1); ids.push(1205);
         let paths = reader.paths(&ids);
@@ -1248,7 +1245,7 @@ mod tests {
                 [source],
             )
             .unwrap();
-        let found = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() }.folder_matches("rock");
+        let found = Reader { lib, catalog: None, refresh_cache: Default::default() }.folder_matches("rock");
         let paths: Vec<_> = found.folders.iter().map(|folder| folder.path.as_str()).collect();
         assert_eq!(paths, ["/music/Rock", "/music/Rock/Album"]);
     }
