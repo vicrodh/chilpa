@@ -1,6 +1,7 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.artwork
 import app.chilpa.discovery
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns" as ArtistUi
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -8,6 +9,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Patterns"
+import "../Components"
 
 Item {
     id: discoveryPage
@@ -33,6 +35,12 @@ Item {
     readonly property var breadcrumb: (selected.trail || []).length > 1 ? selected.trail : about.breadcrumb || selected.trail || []
     readonly property bool listing: !detail || composer && tab === 0 || work && tab === 0 || genre && tab === 4
     readonly property string queryKind: work ? "recordings" : mode
+    readonly property bool needsMetadata: !selected.recording && (listing || genre)
+    readonly property string queryIdentity: JSON.stringify([queryKind,collectionKey,find.text,find.order,find.scope])
+    property string requestedIdentity: ""
+    readonly property bool queryPending: needsMetadata && (requestedIdentity !== queryIdentity || results.loading || !Array.isArray(about.items))
+    readonly property string failure: !queryPending && needsMetadata && about.error ? about.error : content.item?.error || ""
+    readonly property bool waiting: failure === "" && (queryPending || !content.item || content.item.ready === false)
     readonly property Component contentComponent: selected.recording ? recordingParts : overview ? genreOverview : listing ? (mode === "compositions" || composer) && !work ? workTable : navigationList : composer || work ? tab === 1 ? albums : tracks : tab === 1 ? albums : tab === 2 ? artists : tracks
     readonly property var choices: composer ? [I18n.tr("Compositions", I18n.rev), I18n.tr("Albums", I18n.rev), I18n.tr("Tracks", I18n.rev)]
         : work ? [I18n.tr("Recordings", I18n.rev), I18n.tr("Albums", I18n.rev)]
@@ -84,12 +92,17 @@ Item {
     Component.onDestruction: remember()
     onRouteKeyChanged: { playSelection = false; sourceOverride = false; tab = 0; find.text = ""; find.excludedSources = decode(routeKey).excluded_sources || []; if (results) results.cancel(); schedule() }
     function schedule() { if (visible) settle.restart() }
+    function retry() {
+        if (needsMetadata && about.error) { requestedIdentity = ""; schedule() }
+        else if (content.item?.retry) content.item.retry()
+    }
     onVisibleChanged: {
         if (visible) { restoredPosition = positions[tab] || 0; restoring = restoredPosition > 0 }
         updateContent()
         if (visible) schedule(); else { settle.stop(); results.cancel() }
     }
     Connections { target: Library; function onContentRevChanged() { discoveryPage.schedule() } function onRemoteRevChanged() { discoveryPage.schedule() } }
+    Connections { target: Artwork; function onRevChanged() { discoveryPage.schedule() } }
     DiscoveryModel {
         id: results
         objectName: "discoveryModel"
@@ -102,7 +115,10 @@ Item {
     Timer {
         id: settle
         interval: Motion.searchSettle
-        onTriggered: if (discoveryPage.visible && !discoveryPage.selected.recording && (discoveryPage.listing || discoveryPage.genre)) results.request(discoveryPage.queryKind, discoveryPage.collectionKey, find.text, JSON.stringify({order:find.order,scope:find.scope,excluded_sources:find.excludedSources}), Library.contentRev + Library.remoteRev)
+        onTriggered: if (discoveryPage.visible && discoveryPage.needsMetadata) {
+            discoveryPage.requestedIdentity = discoveryPage.queryIdentity
+            results.request(discoveryPage.queryKind, discoveryPage.collectionKey, find.text, JSON.stringify({order:find.order,scope:find.scope,excluded_sources:find.excludedSources}), Library.contentRev + Library.remoteRev + Artwork.rev)
+        }
     }
     function open(entry) {
         if (entry.kind === "recording") {
@@ -157,7 +173,7 @@ Item {
         DiscoveryActions {
             width: parent.width
             selected:discoveryPage.selected; about:discoveryPage.about; choices:discoveryPage.choices
-            tab:discoveryPage.tab; overview:discoveryPage.overview; loading:results.loading
+            tab:discoveryPage.tab; overview:discoveryPage.overview; loading:discoveryPage.queryPending
             onOpenRequested: entry => discoveryPage.open(entry)
             onTabRequested: tab => discoveryPage.changeTab(tab)
         }
@@ -165,6 +181,7 @@ Item {
     RetiringLoader {
         id: content
         objectName: "discoveryContent"
+        visible: !discoveryPage.waiting && discoveryPage.failure === ""
         anchors.left: heading.left; anchors.right: heading.right; anchors.top: heading.bottom; anchors.topMargin: Metrics.gap20
         anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.contentBottom
         onLoaded: Qt.callLater(discoveryPage.restoreViewport)
@@ -172,12 +189,18 @@ Item {
     Component {
         id: genreOverview
         GenreOverview {
-            key:discoveryPage.collectionKey; filter:find.text; order:find.order; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:results.loading
+            key:discoveryPage.collectionKey; filter:find.text; order:find.order; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:discoveryPage.queryPending
             artistsContent: Component {
                 Item {
                     AlbumGridModel { id:people; kind:"discoveryArtists"; key:discoveryPage.collectionKey; filter:find.text; order:find.order; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
-                    ArtistUi.ArtistCardGrid { id:grid; anchors.fill:parent; artists:people; flow:GridView.FlowTopToBottom; flickableDirection:Flickable.HorizontalFlick }
-                    Text { anchors.centerIn:parent; visible:people.ready && people.albums === 0; text:I18n.tr("No artists in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
+                    ArtistUi.ArtistCardGrid { id:grid; anchors.fill:parent; artists:people; visible:people.ready && people.error === ""; flow:GridView.FlowTopToBottom; flickableDirection:Flickable.HorizontalFlick }
+                    ShelfSkeleton { anchors.fill:parent; visible:!people.ready; round:true }
+                    Column {
+                        anchors.centerIn:parent; spacing:Metrics.gap12
+                        Text { text:people.error || I18n.tr("No artists in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
+                        PillButton { anchors.horizontalCenter:parent.horizontalCenter; visible:people.error !== ""; text:I18n.tr("Retry", I18n.rev); onClicked:people.retry() }
+                        visible:people.ready && (people.error !== "" || people.albums === 0)
+                    }
                 }
             }
             onActivated: entry => discoveryPage.open(entry)
@@ -204,40 +227,24 @@ Item {
     }
     Component {
         id: albums
-        Item {
-            readonly property alias scrollView: grid.scrollView
-            readonly property bool ready: records.ready
-            AlbumGridModel { id: records; kind: "discovery"; key: discoveryPage.collectionKey; filter: find.text; order:find.order.replace("name", "title"); columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
-            AlbumGrid { id: grid; anchors.fill: parent; model: records; onOpen: albumId => Navigation.go("album", albumId) }
-            Text { anchors.centerIn: parent; visible: records.ready && records.albums === 0; text: I18n.tr("No albums in this selection", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
-        }
+        DiscoveryAlbums { key:discoveryPage.collectionKey; filter:find.text; order:find.order.replace("name","title") }
     }
     Component {
         id: artists
-        Item {
-            readonly property alias scrollView: grid
-            readonly property bool ready: people.ready
-            AlbumGridModel { id: people; kind: "discoveryArtists"; key: discoveryPage.collectionKey; filter: find.text; order:find.order; columns: grid.columns; contentRev: Library.contentRev + Library.remoteRev }
-            ArtistUi.ArtistCardGrid { id: grid; anchors.fill: parent; artists: people }
-            Text { anchors.centerIn: parent; visible: people.ready && people.albums === 0; text: I18n.tr("No artists in this selection", I18n.rev); font.pointSize: Type.body; color: Theme.color.textSecondary }
+        DiscoveryArtists {
+            key:discoveryPage.collectionKey; filter:find.text; order:find.order
+            cards: Component { ArtistUi.ArtistCardGrid { artists:parent.artists } }
         }
     }
     Component { id: tracks; DiscoveryTracks { key: discoveryPage.collectionKey; autoPlay:discoveryPage.playSelection; onPlayed:discoveryPage.playSelection = false } }
     Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.collectionKey; recording: true } }
-    Column {
-        anchors.centerIn: content
-        width: Math.min(content.width, Metrics.settingsMaxWidth)
-        spacing: Metrics.gap12
-        visible: discoveryPage.listing && !discoveryPage.selected.recording && (results.loading || !!discoveryPage.about.error || (discoveryPage.about.items || []).length === 0)
-        Text {
-            width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; textFormat: Text.PlainText
-            text: results.loading ? I18n.tr("Loading…", I18n.rev) : discoveryPage.about.error ? I18n.tr("Could not read the library", I18n.rev)
-                : find.text !== "" ? I18n.tr("No matches. Try another search.", I18n.rev)
-                : discoveryPage.mode === "genres" ? I18n.tr("No genre tags yet. Add genres in the metadata editor to start exploring.", I18n.rev)
+    DiscoveryStatus {
+        anchors.fill:content; loading:discoveryPage.waiting; failure:discoveryPage.failure
+        empty:discoveryPage.listing && !discoveryPage.selected.recording && (discoveryPage.about.items || []).length === 0
+        emptyText: find.text !== "" ? I18n.tr("No matches. Try another search.", I18n.rev)
+                : discoveryPage.mode === "genres" ? I18n.tr("No genres with albums in this selection", I18n.rev)
                 : discoveryPage.mode === "composers" && !discoveryPage.composer ? I18n.tr("No composer credits yet. Add composers in the metadata editor.", I18n.rev)
                 : I18n.tr("No work tags in this selection. Composer credits are still available under Albums and Tracks.", I18n.rev)
-            font.pointSize: Type.body; color: Theme.color.textSecondary
-        }
-        PillButton { anchors.horizontalCenter: parent.horizontalCenter; visible: !!discoveryPage.about.error; text: I18n.tr("Retry", I18n.rev); onClicked: discoveryPage.schedule() }
+        onRetryRequested:discoveryPage.retry()
     }
 }

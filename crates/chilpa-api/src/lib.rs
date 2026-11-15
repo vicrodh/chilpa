@@ -56,6 +56,7 @@ pub mod listening;
 pub mod list_changes;
 mod metadata;
 mod metadata_batch;
+pub use metadata_batch::{MetadataBatchPhase, MetadataBatchProgress};
 mod native_collections;
 pub use native_collections::NativeCollectionWindow;
 mod beets_runtime;

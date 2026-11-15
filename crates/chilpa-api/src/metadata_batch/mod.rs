@@ -13,6 +13,8 @@ mod groups;
 mod lookup;
 mod model;
 mod plans;
+mod progress;
+pub use progress::{MetadataBatchPhase, MetadataBatchProgress};
 #[cfg(test)]
 mod tests;
 mod worker;
@@ -50,6 +52,7 @@ pub(crate) struct BatchEditor {
     closing: bool,
     beets_view: Value,
     looking_up: bool,
+    progress: MetadataBatchProgress,
 }
 impl Default for BatchEditor {
     fn default() -> Self {
@@ -60,6 +63,7 @@ impl Default for BatchEditor {
             closing: false,
             beets_view: Value::Null,
             looking_up: false,
+            progress: MetadataBatchProgress::default(),
             view: json!({"session":0,"revision":0,"dataRevision":0,"state":"closed","busy":false,"dirty":false,"error":"",
             "counts":{"files":0,"groups":0,"selected":0},"summary":{"changed":0,"unchanged":0,"unsupported":0,"failed":0,"saved":0},"items":[]}),
         }
@@ -104,6 +108,7 @@ impl BatchEditor {
             if let Some(value) = self.worker.as_ref().and_then(Worker::take) {
                 self.view = value;
             }
+            self.progress = self.worker.as_ref().unwrap().progress.read();
             self.worker.take();
             self.looking_up = false;
             self.view["busy"] = json!(false);
@@ -118,6 +123,11 @@ impl BatchEditor {
 }
 
 impl Chilpa {
+    pub fn metadata_batch_progress(&self) -> MetadataBatchProgress {
+        self.metadata_batch.worker.as_ref().map(|worker| worker.progress.read())
+            .unwrap_or(self.metadata_batch.progress)
+    }
+
     pub fn metadata_batch_session(&self) -> u64 {
         self.metadata_batch.session
     }

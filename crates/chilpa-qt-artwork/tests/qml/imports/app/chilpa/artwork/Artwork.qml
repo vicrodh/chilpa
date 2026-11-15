@@ -8,6 +8,7 @@ QtObject {
     property var chosenAlbums: ({})
     property var addresses: ({})
     property var artists: ({})
+    property var genres: ({})
     property var asked: []
     function albumChosen(albumId, rev) { return chosenAlbums[albumId] === true }
     function albumAddress(albumId, rev) { return addresses[albumId] || "" }
@@ -18,4 +19,7 @@ QtObject {
     function chooseArtist(name) { asked = asked.concat(["choose " + name]) }
     function forgetArtist(name) { asked = asked.concat(["forget " + name]) }
     function saveArtist(name, shown) { asked = asked.concat(["save " + name]) }
+    function genre(key, revision) { return genres[key] || "" }
+    function chooseGenre(key) { asked = asked.concat(["choose genre " + key]) }
+    function forgetGenre(key) { asked = asked.concat(["forget genre " + key]) }
 }

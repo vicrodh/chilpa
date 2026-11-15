@@ -678,6 +678,9 @@ msgstr "Anima la marca de la pista que suena con barras de ecualizador. Apagada 
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Fondo animado con los colores de la portada detrás de toda la app. Usa bastantes recursos: va por la GPU."
 
+msgid "Another Chilpa process is updating this library. Try opening it again shortly."
+msgstr "Otra instancia de Chilpa está actualizando esta biblioteca. Intenta abrirla de nuevo en un momento."
+
 msgid "Another device profile update is still running."
 msgstr "Todavía se está guardando otro cambio en los perfiles de dispositivos."
 
@@ -4577,11 +4580,11 @@ msgstr "Ninguna carpeta coincide con tu búsqueda."
 msgid "No genre"
 msgstr "Sin género"
 
-msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
-msgstr "Todavía no hay etiquetas de género. Agrégalas en el editor de metadatos para explorar."
-
 msgid "No genres in this period."
 msgstr "No hay géneros en este periodo."
+
+msgid "No genres with albums in this selection"
+msgstr "No hay géneros con álbumes en esta selección"
 
 msgid "No grouping"
 msgstr "Sin agrupar"
@@ -5111,6 +5114,15 @@ msgstr "Abriendo…"
 msgid "Operating system"
 msgstr "Sistema operativo"
 
+msgid "Operation cancelled"
+msgstr "Operación cancelada"
+
+msgid "Operation complete"
+msgstr "Operación terminada"
+
+msgid "Operation stopped with errors"
+msgstr "La operación se detuvo con errores"
+
 msgid "Optional access token for private playlists"
 msgstr "Token de acceso opcional para playlists privadas"
 
@@ -5482,6 +5494,9 @@ msgstr "Preparando análisis…"
 
 msgid "Preparing beets…"
 msgstr "Preparando beets…"
+
+msgid "Preparing metadata changes…"
+msgstr "Preparando los cambios de metadata…"
 
 msgid "Preparing playlists"
 msgstr "Preparando playlists"
@@ -5923,6 +5938,9 @@ msgstr "Límite de imágenes remotas"
 
 msgid "Remove"
 msgstr "Quitar"
+
+msgid "Remove a chosen genre image before adding another."
+msgstr "Quita una imagen de género elegida antes de agregar otra."
 
 msgid "Remove condition"
 msgstr "Quitar condición"
@@ -7347,6 +7365,12 @@ msgstr "Se guardó la metadata de la carpeta."
 msgid "The folder scan policy is invalid."
 msgstr "La política de escaneo de la carpeta no es válida."
 
+msgid "The genre image preferences are invalid."
+msgstr "Las preferencias de imágenes de géneros no son válidas."
+
+msgid "The genre image preferences are too large."
+msgstr "Las preferencias de imágenes de géneros son demasiado grandes."
+
 msgid "The group belongs to another metadata session."
 msgstr "El álbum pertenece a otra sesión de edición de metadata."
 
@@ -7377,6 +7401,9 @@ msgstr "El instalador superó su límite de salida."
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "No se pudo cambiar la biblioteca. Inténtalo otra vez; el detalle de abajo dice qué pasó."
 
+msgid "The library could not be opened."
+msgstr ""
+
 msgid "The library could not be read."
 msgstr "No se pudo leer la biblioteca."
 
@@ -7388,6 +7415,9 @@ msgstr "La biblioteca siguió ocupada con otra tarea, así que no se guardó est
 
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "La biblioteca siguió ocupada con otra tarea. No se quitó nada más; inténtalo otra vez en un momento."
+
+msgid "The library update stopped while preparing its backup at {}: {}"
+msgstr "La actualización de la biblioteca se detuvo al preparar su copia de seguridad en {}: {}"
 
 msgid "The line being sung stays in view."
 msgstr "La línea que se canta se mantiene a la vista."
@@ -8778,6 +8808,9 @@ msgstr "Escribir a un archivo"
 
 msgid "Writer"
 msgstr "Autor"
+
+msgid "Writing reviewed changes…"
+msgstr "Guardando los cambios revisados…"
 
 msgid "Wrong lyric"
 msgstr "Letra incorrecta"
@@ -10226,9 +10259,6 @@ msgstr "guardar archivos descargados en la carpeta que elijas para este plugin"
 msgid "write the address alone: no user, password or query in it"
 msgstr "escribe solo la dirección, sin usuario, contraseña ni parámetros"
 
-msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
-msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
-
 msgid "your sources"
 msgstr "tus fuentes"
 
@@ -10366,6 +10396,11 @@ msgid "{} file has pending changes"
 msgid_plural "{} files have pending changes"
 msgstr[0] "{} archivo tiene cambios pendientes"
 msgstr[1] "{} archivos tienen cambios pendientes"
+
+msgid "{} file read"
+msgid_plural "{} files read"
+msgstr[0] "{} archivo leído"
+msgstr[1] "{} archivos leídos"
 
 msgid "{} file saved"
 msgid_plural "{} files saved"
@@ -10509,6 +10544,9 @@ msgstr "{} de {} elegidas"
 msgid "{} of {} downloaded. {} failed."
 msgstr "{} de {} descargados. {} fallidos."
 
+msgid "{} of {} files processed"
+msgstr "{} de {} archivos procesados"
+
 msgid "{} of {} files removed. {} failed."
 msgstr "{} de {} archivos eliminados. {} fallidos."
 
@@ -10568,6 +10606,9 @@ msgstr[1] "{} discos o pistas editados aquí ya no aparecen en el servidor; sus 
 
 msgid "{} required"
 msgstr "{} necesarios"
+
+msgid "{} saved · {} failed"
+msgstr "{} guardados · {} con errores"
 
 msgid "{} sel"
 msgstr "{} sel."

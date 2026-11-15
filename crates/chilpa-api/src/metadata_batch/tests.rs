@@ -1138,3 +1138,38 @@ fn group_credit_and_artist_selection_preserve_album_artist_with_guest_credits() 
         ""
     );
 }
+
+#[test]
+fn save_progress_freezes_targets_and_retry_counts_only_pending_files() {
+    use super::MetadataBatchPhase as Phase;
+    use std::sync::atomic::Ordering;
+    let directory = tempfile::tempdir().unwrap();
+    let first = mp3(directory.path(), "first", "Artist A");
+    mp3(directory.path(), "second", "Artist A");
+    let session = session(directory.path());
+    let cancelled = AtomicBool::new(false);
+    session.progress.begin(7, Phase::Opening);
+    session.open(&[directory.path().into(), first.clone()], &cancelled).unwrap();
+    assert_eq!(session.progress.read().completed, 2);
+    session.select(&all()).unwrap();
+    session.patch(&patch("title", "set", json!("New title"))).unwrap();
+    let before = std::fs::read(&first).unwrap();
+    let revision = session.revision;
+    cancelled.store(true, Ordering::Release);
+    session.progress.begin(7, Phase::Saving);
+    session.save(&cancelled).unwrap();
+    let stopped = session.progress.read();
+    assert_eq!((stopped.completed, stopped.total, stopped.saved), (0, 2, 0));
+    assert_eq!(std::fs::read(&first).unwrap(), before);
+    cancelled.store(false, Ordering::Release);
+    std::fs::remove_file(&first).unwrap();
+    session.progress.begin(7, Phase::Saving);
+    session.save(&cancelled).unwrap();
+    let partial = session.progress.read();
+    assert_eq!((partial.completed, partial.total, partial.saved, partial.failed), (2, 2, 1, 1));
+    assert_eq!(session.revision, revision, "counter updates do not publish data revisions");
+    session.progress.begin(7, Phase::Saving);
+    session.save(&cancelled).unwrap();
+    let retry = session.progress.read();
+    assert_eq!((retry.completed, retry.total, retry.saved, retry.failed), (1, 1, 0, 1));
+}

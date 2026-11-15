@@ -11,6 +11,9 @@ ListModel {
     property int fresh: -1
     property bool mixed: false
     property bool ready: true
+    property string error: ""
+    property int retries: 0
+    function retry() { retries++; error=""; ready=false }
     function albumId(index, revision) { return kind === "source" ? -(index + 1) : index + 1 }
     function title(index, revision) { return "Record " + index }
     property var explicitRows: []

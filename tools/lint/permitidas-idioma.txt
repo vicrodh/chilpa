@@ -1057,3 +1057,8 @@ rtc
 # Binary cache units and least-recently-used eviction.
 kib
 lru
+
+# Region named by the external genre taxonomy and SQLite error constants.
+Asian
+ioerr
+fsync

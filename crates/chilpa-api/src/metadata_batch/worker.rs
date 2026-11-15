@@ -5,6 +5,7 @@ use super::{
     files,
     model::{MAX_PAGE_BYTES, Row},
 };
+use super::progress::{MetadataBatchPhase as Phase, Progress};
 use chilpa_library::{Library, metadata_manifest::MetadataManifest};
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
@@ -50,6 +51,7 @@ pub(super) struct Worker {
     pub library_changed: Arc<AtomicBool>,
     response: Arc<Mutex<Option<Value>>>,
     thread: JoinHandle<()>,
+    pub progress: Progress,
 }
 
 fn failed_view(session: u64, error: String, mut outcome: Value) -> Value {
@@ -75,6 +77,9 @@ fn failed_view(session: u64, error: String, mut outcome: Value) -> Value {
 impl Worker {
     pub fn start(session: u64, paths: Vec<PathBuf>, library: PathBuf) -> Result<Self, String> {
         let (jobs, asked) = mpsc::sync_channel(1);
+        let progress = Progress::default();
+        progress.begin(session, Phase::Opening);
+        let worker_progress = progress.clone();
         let cancelled = Arc::new(AtomicBool::new(false));
         let closing = Arc::new(AtomicBool::new(false));
         let response = Arc::new(Mutex::new(None));
@@ -95,8 +100,10 @@ impl Worker {
                     &mailbox,
                     changes,
                     outcome.clone(),
+                    worker_progress.clone(),
                 );
                 if let Err(error) = result {
+                    worker_progress.finish(cancel.load(Ordering::Acquire), true);
                     let held = outcome
                         .lock()
                         .unwrap_or_else(|error| error.into_inner())
@@ -113,6 +120,7 @@ impl Worker {
             library_changed,
             response,
             thread,
+            progress,
         })
     }
     pub fn ask(&self, job: Job) -> bool {
@@ -157,6 +165,7 @@ pub(super) struct Session {
     recovery: std::cell::RefCell<Option<(i64, Row)>>,
     outcome: Arc<Mutex<Value>>,
     library_changed: Arc<AtomicBool>,
+    pub(super) progress: Progress,
 }
 
 impl Session {
@@ -179,6 +188,7 @@ impl Session {
             recovery: std::cell::RefCell::new(None),
             outcome: Arc::new(Mutex::new(json!({"completedFileSaves":0,"items":[]}))),
             library_changed: Arc::new(AtomicBool::new(false)),
+            progress: Progress::default(),
         })
     }
 
@@ -234,10 +244,12 @@ impl Session {
     }
 
     fn add(&self, row: &Row) -> Result<(), String> {
+        if self.manifest.contains_path(&row.path).map_err(|error| error.to_string())? { return Ok(()); }
         self.manifest
             .insert(&row.entry(0)?)
-            .map(|_| ())
-            .map_err(|error| error.to_string())
+            .map_err(|error| error.to_string())?;
+        self.progress.update(|p| p.completed += 1);
+        Ok(())
     }
 
     pub fn open(&self, paths: &[PathBuf], cancel: &AtomicBool) -> Result<(), String> {
@@ -644,6 +656,8 @@ impl Session {
 
     pub fn save(&self, cancel: &AtomicBool) -> Result<(), String> {
         self.recover_record()?;
+        let total = self.manifest.save_target_count().map_err(|error| error.to_string())?;
+        self.progress.update(|p| { p.total = total; p.total_known = true; });
         let mut library = None;
         let mut after = 0;
         let mut reconciled = false;
@@ -694,9 +708,15 @@ impl Session {
                 }
                 row.error = error;
             }
+            self.progress.update(|p| {
+                p.completed += 1;
+                p.saved += u64::from(row.status == "saved");
+                p.failed += u64::from(!row.error.is_empty());
+            });
             self.record_saved_row(entry.id, row)?;
         }
         if reconciled {
+            self.progress.update(|p| p.phase = Phase::Finalizing);
             let result = library
                 .as_ref()
                 .unwrap()
@@ -723,6 +743,10 @@ impl Session {
                             row.error = error.clone();
                         }
                     }
+                    self.progress.update(|p| {
+                        p.saved += u64::from(row.status == "saved");
+                        p.failed += u64::from(!row.error.is_empty());
+                    });
                     self.record_saved_row(entry.id, row)?;
                 }
             }
@@ -741,6 +765,7 @@ fn run(
     mailbox: &Mutex<Option<Value>>,
     library_changed: Arc<AtomicBool>,
     outcome: Arc<Mutex<Value>>,
+    progress: Progress,
 ) -> Result<(), String> {
     let mut session = Session::new(
         number,
@@ -749,7 +774,9 @@ fn run(
     )?;
     session.library_changed = library_changed;
     session.outcome = outcome;
+    session.progress = progress;
     session.open(&paths, cancel)?;
+    session.progress.finish(cancel.load(Ordering::Acquire), false);
     let publish = |value| {
         *mailbox.lock().unwrap_or_else(|error| error.into_inner()) = Some(value);
     };
@@ -781,6 +808,9 @@ fn run(
         if user_work {
             session.error.clear();
             session.notice.clear();
+        }
+        if user_work {
+            session.progress.begin(number, if saving { Phase::Saving } else { Phase::Working });
         }
         let result = match job {
             Job::Select(selection) => session.select(&selection),
@@ -825,6 +855,7 @@ fn run(
             Job::Discard => session.discard(),
             Job::Close => break,
         };
+        if user_work { session.progress.finish(cancel.load(Ordering::Acquire), result.is_err()); }
         if mutation && (result.is_ok() || saving) {
             session.revision += 1;
         }

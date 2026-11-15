@@ -133,4 +133,26 @@ TestCase {
         verify(findChild(page,"batchApplyPlan").enabled)
         compare(model.saves,0)
     }
+    function test_global_progress_keeps_the_full_operation_when_the_preview_is_filtered() {
+        const page=createTemporaryObject(maker,this,{routeKey:'["/music"]'})
+        const model=findChild(page,"folderMetadataModel")
+        model.progress=JSON.stringify({session:1,operationId:3,revision:5,phase:"saving",completed:7,total:20,totalKnown:true,saved:6,failed:1})
+        const bar=findChild(page,"batchProgressBar")
+        tryCompare(bar,"value",0.35)
+        model.count=1;model.groupKey="one-album"
+        compare(bar.value,0.35,"the visible preview must not replace the operation total")
+        compare(findChild(page,"batchProgressCounts").text,"7 of 20 files processed")
+        compare(model.saves,0)
+    }
+    function test_cancelled_progress_keeps_partial_results_and_finalizing_does_not_claim_completion() {
+        const page=createTemporaryObject(maker,this,{routeKey:'["/music"]'})
+        const model=findChild(page,"folderMetadataModel")
+        model.progress=JSON.stringify({session:1,operationId:3,revision:5,phase:"finalizing",completed:4,total:4,totalKnown:true,saved:3,failed:1})
+        tryCompare(findChild(page,"batchProgressTitle"),"text","Updating the library…")
+        compare(findChild(page,"batchProgressBar").value,0)
+        model.progress=JSON.stringify({session:1,operationId:4,revision:6,phase:"cancelled",completed:2,total:4,totalKnown:true,saved:1,failed:1,cancelled:true})
+        tryCompare(findChild(page,"batchProgressBar"),"value",0.5)
+        compare(findChild(page,"batchProgressTitle").text,"Operation cancelled")
+        compare(model.saves,0)
+    }
 }

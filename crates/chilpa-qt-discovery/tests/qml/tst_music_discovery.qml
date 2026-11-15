@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.artwork
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../../qml/Screens"
 import "../../qml/Patterns"
@@ -26,6 +27,92 @@ TestCase {
         }
     }
     function init() { failOnWarning(/ReferenceError|TypeError|Binding loop|invalid context/);Visit.kept = ({}); Navigation.went = []; Navigation.page = ""; Navigation.selectedId = 0 }
+    function test_a_delayed_genre_overview_shows_a_skeleton_until_the_summary_arrives() {
+        const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Asian"})})
+        const model=findChild(page,"discoveryModel")
+        const content=findChild(page,"discoveryContent")
+        const skeleton=findChild(page,"discoveryLoading")
+        model.loading=true
+        tryVerify(()=>model.requests.length>0)
+        verify(skeleton.visible)
+        verify(!content.visible)
+        verify(!findChild(page,"discoveryMessage").visible)
+        Library.contentRev++
+        tryVerify(()=>model.requests.length>1)
+        verify(skeleton.visible,"a pending query must not turn into an empty result")
+        model.document=JSON.stringify({items:[],total:0,summary:{albums:6,images:[]}})
+        verify(!content.visible,"the summary is not published until loading finishes")
+        model.loading=false
+        tryVerify(()=>content.visible)
+        verify(!skeleton.visible)
+        verify(findChild(page,"genrePlay").enabled)
+        findChild(page,"genreSources").chosen(["local:default"])
+        verify(skeleton.visible,"the previous source's summary must disappear before debounce")
+        verify(!content.visible)
+    }
+    function test_a_failed_genre_summary_offers_retry_without_a_zero_album_header() {
+        const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Asian"})})
+        const model=findChild(page,"discoveryModel")
+        tryVerify(()=>model.requests.length>0)
+        model.document=JSON.stringify({items:[],total:0,error:"reader temporarily unavailable"})
+        tryVerify(()=>findChild(page,"discoveryMessage").visible)
+        verify(!findChild(page,"discoveryContent").visible)
+        compare(page.failure,"reader temporarily unavailable")
+        const count=model.requests.length
+        findChild(page,"discoveryRetry").clicked()
+        verify(findChild(page,"discoveryLoading").visible)
+        tryVerify(()=>model.requests.length>count)
+        model.document=JSON.stringify({items:[],total:0,summary:{albums:6,images:[]}})
+        tryVerify(()=>findChild(page,"discoveryContent").visible)
+        verify(!findChild(page,"discoveryMessage").visible)
+    }
+    function test_album_queries_keep_loading_and_errors_distinct_from_an_empty_result() {
+        const page=createTemporaryObject(maker,this,{mode:"composers",routeKey:JSON.stringify({kind:"composer",name:"Writer"})})
+        page.changeTab(1)
+        const records=findChild(page,"discoveryAlbumModel")
+        const content=findChild(page,"discoveryContent")
+        records.ready=false
+        verify(findChild(page,"discoveryLoading").visible)
+        verify(!content.visible)
+        verify(!findChild(page,"discoveryMessage").visible)
+        records.error="could not open library reader";records.ready=true
+        verify(findChild(page,"discoveryMessage").visible)
+        verify(!content.visible)
+        findChild(page,"discoveryRetry").clicked()
+        compare(records.retries,1)
+        verify(findChild(page,"discoveryLoading").visible)
+        records.ready=true
+        verify(content.visible,"only a completed successful result may show the empty selection")
+    }
+    function test_a_delayed_album_shelf_keeps_the_summary_and_shows_loading_or_retry() {
+        const page=createTemporaryObject(maker,this,{height:1100,routeKey:JSON.stringify({kind:"genre",name:"Asian"})})
+        findChild(page,"discoveryModel").document=JSON.stringify({items:[],total:0,summary:{albums:6,images:[]}})
+        let records
+        tryVerify(()=>{records=findChild(page,"genreAlbumModel");return !!records})
+        records.ready=false
+        verify(findChild(page,"genreAlbumsLoading").visible)
+        verify(!findChild(page,"genreAlbumsMessage").visible)
+        verify(findChild(page,"genreHero").visible)
+        records.error="reader temporarily unavailable";records.ready=true
+        verify(findChild(page,"genreAlbumsMessage").visible)
+        verify(!findChild(page,"genreAlbumsLoading").visible)
+        findChild(page,"genreAlbumsRetry").clicked()
+        compare(records.retries,1)
+        verify(findChild(page,"genreAlbumsLoading").visible)
+        records.albums=6;records.ready=true
+        verify(!findChild(page,"genreAlbumsMessage").visible)
+    }
+    function test_leaving_the_injected_artist_grid_cancels_its_view_before_removal() {
+        const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Metal"})})
+        page.changeTab(2)
+        findChild(page,"discoveryArtistModel").albums=40
+        const view=findChild(page,"discoveryContent").item.scrollView
+        verify(view && view.model===40)
+        test.cancelledViews=0
+        view.modelChanged.connect(()=>{if(view.model===null || view.model===undefined)test.cancelledViews++})
+        page.changeTab(1)
+        compare(test.cancelledViews,1)
+    }
     function test_a_deep_genre_keeps_its_path_in_the_route() {
         const page = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:"Death Metal",trail:["Metal","Death Metal"]})})
         verify(page)
@@ -311,7 +398,7 @@ TestCase {
         const view = findChild(page, "discoveryEntries")
         let tile
         tryVerify(() => { tile = findChild(page, "discoveryEntry:Style 0"); return !!tile })
-        const picture = findChild(tile, "discoveryMosaicImage0")
+        const picture = findChild(tile, "discoveryGenrePortrait")
         verify(picture)
         tryVerify(() => picture.source.toString().length > 0)
         view.contentY = view.cellHeight
@@ -323,6 +410,26 @@ TestCase {
         page.visible = false
         tryCompare(tile, "activeImages", false)
         compare(picture.source.toString(), "")
+    }
+    function test_genre_image_actions_keep_the_opaque_genre_key() {
+        const route=JSON.stringify({kind:"genre",name:"heavy-metal",identity:"opaque:genre"})
+        const page=createTemporaryObject(maker,this,{routeKey:route})
+        const key=page.collectionKey
+        const model=findChild(page,"discoveryModel")
+        model.document=JSON.stringify({items:[],total:0,summary:{albums:0,images:[]}})
+        let choose
+        tryVerify(()=>{choose=findChild(page,"genreChooseImage");return !!choose})
+        Artwork.asked=[]
+        choose.clicked()
+        compare(Artwork.asked,["choose genre " + key])
+        const chosen={};chosen[key]="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'/%3E"
+        Artwork.genres=chosen;Artwork.rev++
+        const forget=findChild(page,"genreForgetImage")
+        tryCompare(forget,"visible",true)
+        forget.clicked()
+        compare(Artwork.asked[1],"forget genre " + key)
+        compare(page.routeKey,route)
+        Artwork.genres=({});Artwork.rev++
     }
     function test_a_work_table_row_opens_its_recordings_by_keyboard_on_a_narrow_page() {
         const page = createTemporaryObject(maker, this, {width:560,mode:"compositions"})

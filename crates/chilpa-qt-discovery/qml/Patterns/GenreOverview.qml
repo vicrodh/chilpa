@@ -2,9 +2,11 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.artwork
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 
@@ -21,6 +23,8 @@ Item {
     readonly property alias scrollView: view
     readonly property var summary: about.summary || ({})
     readonly property var subgenres: (about.items || []).slice(0, Metrics.discoveryPreview)
+    readonly property url chosenImage: Artwork.genre(key, Artwork.rev)
+    readonly property bool customImage: chosenImage.toString() !== ""
     property bool layoutReady: false
     function settleLayout() { subgenreGrid.forceLayout(); body.forceLayout(); layoutReady = true }
     Component.onCompleted: Qt.callLater(settleLayout)
@@ -54,7 +58,7 @@ Item {
                 id: hero
                 objectName: "genreHero"
                 width: parent.width; height: Metrics.discoveryHeroHeight
-                DiscoveryMosaic { anchors.fill: parent; images: overview.summary.images || []; art:overview.about.art || ({}); label: overview.name; activeImages: overview.inView(hero) }
+                DiscoveryMosaic { anchors.fill: parent; images: overview.customImage ? [overview.chosenImage] : overview.summary.images || []; art:overview.about.art || ({}); label: overview.name; activeImages: overview.inView(hero) }
                 Rectangle {
                     anchors.fill: parent; radius: Metrics.radiusCard
                     gradient: Gradient {
@@ -72,6 +76,8 @@ Item {
                         PillButton { objectName: "genrePlay"; text: I18n.tr("Play", I18n.rev); kind: "primary"; enabled: (overview.summary.albums || 0) + (overview.summary.looseTracks || 0) > 0; onClicked: overview.playRequested() }
                         PillButton { text: I18n.tr("Tracks", I18n.rev); kind: "backdrop"; onClicked: overview.browseRequested("tracks") }
                         PillButton { text: I18n.tr("Subgenres", I18n.rev); kind: "backdrop"; visible: (overview.about.total || 0) > 0; onClicked: overview.browseRequested("subgenres") }
+                        PillButton { objectName: "genreChooseImage"; text: overview.customImage ? I18n.tr("Change image", I18n.rev) : I18n.tr("Add image", I18n.rev); kind: "backdrop"; onClicked: Artwork.chooseGenre(overview.key) }
+                        PillButton { objectName: "genreForgetImage"; text: I18n.tr("Remove image", I18n.rev); kind: "backdrop"; visible: overview.customImage; onClicked: Artwork.forgetGenre(overview.key) }
                     }
                 }
             }
@@ -93,9 +99,16 @@ Item {
                 active:false
                 onWantedActiveChanged:overview.showShelf(albums,wantedActive)
                 sourceComponent: Item {
-                    AlbumGridModel { id: records; kind:"discovery"; key:overview.key; filter:overview.filter; order:overview.order.replace("name", "title"); maxRows:1; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
-                    AlbumGrid { id:grid; anchors.fill:parent; model:records; onOpen: albumId => Navigation.go("album", albumId) }
-                    Text { anchors.centerIn:parent; visible:records.ready && records.albums === 0; text:I18n.tr("No albums in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
+                    AlbumGridModel { id: records; objectName:"genreAlbumModel"; kind:"discovery"; key:overview.key; filter:overview.filter; order:overview.order.replace("name", "title"); maxRows:1; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
+                    AlbumGrid { id:grid; anchors.fill:parent; model:records; visible:records.ready && records.error === ""; onOpen: albumId => Navigation.go("album", albumId) }
+                    ShelfSkeleton { objectName:"genreAlbumsLoading"; anchors.fill:parent; visible:!records.ready }
+                    Column {
+                        objectName:"genreAlbumsMessage"
+                        anchors.centerIn:parent; spacing:Metrics.gap12
+                        visible:records.ready && (records.error !== "" || records.albums === 0)
+                        Text { text:records.error || I18n.tr("No albums in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
+                        PillButton { objectName:"genreAlbumsRetry"; anchors.horizontalCenter:parent.horizontalCenter; visible:records.error !== ""; text:I18n.tr("Retry", I18n.rev); onClicked:records.retry() }
+                    }
                 }
             }
             Row {
@@ -121,14 +134,14 @@ Item {
                 id: subgenreGrid
                 width: parent.width; spacing: Metrics.gap12
                 visible: overview.subgenres.length > 0
-                readonly property int columns: Math.max(1, Math.floor((width + spacing) / Metrics.discoveryEntryWidth))
+                readonly property int columns: Math.max(1, Math.floor((width + spacing) / Metrics.sceneCardWidth))
                 Repeater {
                     model: overview.subgenres
                     DiscoveryEntry {
                         id: tile
                         required property var modelData
                         width: (parent.width - parent.spacing * (parent.columns - 1)) / parent.columns
-                        height: Metrics.discoveryGenreHeight
+                        height: Metrics.sceneCardHeight
                         entry: modelData; detail:I18n.trCount("{} album", "{} albums", modelData.albums || 0, I18n.rev)
                         activeImages: overview.inView(tile)
                         onClicked: overview.activated(modelData)

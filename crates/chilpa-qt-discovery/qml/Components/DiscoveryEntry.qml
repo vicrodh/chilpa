@@ -15,7 +15,9 @@ Button {
     readonly property bool recording: entry.kind === "recording"
     readonly property bool genre: entry.kind === "genre"
     readonly property bool composer: entry.kind === "composer"
-    implicitHeight: genre ? Metrics.discoveryGenreHeight : composer ? Metrics.sceneCardHeight : Metrics.discoveryEntryHeight
+    readonly property string genreImage: entry.portrait || (entry.art?.key ? "qrc:/qt/qml/app/chilpa/discovery/assets/genres/" + entry.art.key + ".jpg" : (entry.images || [])[0] || "")
+    function initials() { return (entry.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase() }
+    implicitHeight: genre || composer ? Metrics.sceneCardHeight : Metrics.discoveryEntryHeight
     padding: genre || composer ? 0 : Metrics.gap16
     hoverEnabled: true
     Accessible.name: entry.name || ""
@@ -29,47 +31,44 @@ Button {
         FocusRing { visible: card.activeFocus }
     }
     contentItem: Item {
-        DiscoveryMosaic {
-            anchors.fill: parent
-            visible: card.genre
-            images: card.genre ? card.entry.images || [] : []
-            art: card.entry.art || ({})
-            label: card.entry.name || ""; activeImages: card.activeImages
-        }
-        Rectangle {
-            anchors.fill: parent
-            visible: card.genre
-            radius: Metrics.radiusCard
-            gradient: Gradient {
-                GradientStop { position: 0; color: "transparent" }
-                GradientStop { position: 1; color: Theme.color.overlayScrim }
-            }
-        }
-        Column {
-            anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Metrics.gap16
-            spacing: Metrics.gap4; visible: card.genre
-            Text { width: parent.width; text: card.entry.name || ""; textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.backdropText }
-            Text { width: parent.width; text: card.detail; textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.backdropTextMuted }
-        }
-        ArtistPortrait {
+        Loader {
             id: portrait
             width: Math.min(parent.width - Metrics.gap24, parent.height - Metrics.cardTextHeight - Metrics.cardTextGap)
             height: width; anchors.top: parent.top; anchors.topMargin: Metrics.gap12; anchors.horizontalCenter: parent.horizontalCenter
-            radius: width / 2 // derived: a circular portrait
-            visible: card.composer
-            chosen: card.entry.portrait || ""
-            name: card.composer ? card.entry.name || "" : ""
-            activeImages: card.composer && card.activeImages
-            Text {
-                anchors.centerIn: parent; visible: !portrait.ready
-                text: (card.entry.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase()
-                color: Theme.color.textSecondary; font.pointSize: Type.section
+            active: card.genre || card.composer
+            visible: active
+            sourceComponent: card.genre ? genrePortrait : composerPortrait
+        }
+        Component {
+            id: genrePortrait
+            ArtTile {
+                id: genreArt
+                objectName: "discoveryGenrePortrait"
+                radius: width / 2 // derived: the artist card's circular image
+                source: card.activeImages ? card.genreImage : ""
+                Text { anchors.centerIn: parent; visible: !genreArt.ready; text: card.initials(); color: Theme.color.textSecondary; font.pointSize: Type.section }
+                HoverHandler {
+                    onHoveredChanged: hovered && card.entry.art?.key && !card.entry.portrait
+                        ? TipState.show([card.entry.art.credit,card.entry.art.license,card.entry.art.licenseUrl,card.entry.art.page].filter(Boolean).join("\n"), genreArt) : TipState.hide(genreArt)
+                }
+                onSourceChanged: if (source.toString() === "") TipState.hide(genreArt)
+                Component.onDestruction: TipState.hide(genreArt)
+            }
+        }
+        Component {
+            id: composerPortrait
+            ArtistPortrait {
+                id: composerArt
+                radius: width / 2 // derived: a circular portrait
+                chosen: card.entry.portrait || ""; name: card.entry.name || ""
+                activeImages: card.activeImages
+                Text { anchors.centerIn: parent; visible: !composerArt.ready; text: card.initials(); color: Theme.color.textSecondary; font.pointSize: Type.section }
             }
         }
         Column {
             anchors.left: parent.left; anchors.right: parent.right; anchors.top: portrait.bottom
             anchors.topMargin: Metrics.cardTextGap; anchors.margins: Metrics.gap8
-            visible: card.composer; spacing: Metrics.gap4
+            visible: card.genre || card.composer; spacing: Metrics.gap4
             Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: card.entry.name || ""; textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.body; font.weight: Type.semibold; color: Theme.color.textPrimary }
             Text { width: parent.width; horizontalAlignment: Text.AlignHCenter; text: card.detail; textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.textSecondary }
         }

@@ -679,6 +679,9 @@ msgstr "Анимировать значок воспроизводимого т�
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Анимированный фон из обложки альбома за всем приложением. Высокое потребление ресурсов: ускоряется на GPU."
 
+msgid "Another Chilpa process is updating this library. Try opening it again shortly."
+msgstr ""
+
 msgid "Another device profile update is still running."
 msgstr ""
 
@@ -4582,11 +4585,11 @@ msgstr "Нет папок по вашему запросу."
 msgid "No genre"
 msgstr "Без жанра"
 
-msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
-msgstr ""
-
 msgid "No genres in this period."
 msgstr "Нет жанров за этот период."
+
+msgid "No genres with albums in this selection"
+msgstr ""
 
 msgid "No grouping"
 msgstr "Без группировки"
@@ -5116,6 +5119,15 @@ msgstr "Открываем…"
 msgid "Operating system"
 msgstr "Операционная система"
 
+msgid "Operation cancelled"
+msgstr ""
+
+msgid "Operation complete"
+msgstr ""
+
+msgid "Operation stopped with errors"
+msgstr ""
+
 msgid "Optional access token for private playlists"
 msgstr "Необязательный токен доступа для закрытых плейлистов"
 
@@ -5486,6 +5498,9 @@ msgid "Preparing analysis…"
 msgstr "Подготовка анализа…"
 
 msgid "Preparing beets…"
+msgstr ""
+
+msgid "Preparing metadata changes…"
 msgstr ""
 
 msgid "Preparing playlists"
@@ -5928,6 +5943,9 @@ msgstr "Лимит удалённых изображений"
 
 msgid "Remove"
 msgstr "Удалить"
+
+msgid "Remove a chosen genre image before adding another."
+msgstr ""
 
 msgid "Remove condition"
 msgstr "Удалить условие"
@@ -7357,6 +7375,12 @@ msgstr ""
 msgid "The folder scan policy is invalid."
 msgstr "Политика сканирования папки недействительна."
 
+msgid "The genre image preferences are invalid."
+msgstr ""
+
+msgid "The genre image preferences are too large."
+msgstr ""
+
 msgid "The group belongs to another metadata session."
 msgstr ""
 
@@ -7387,6 +7411,9 @@ msgstr ""
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Не удалось изменить библиотеку. Попробуйте снова; ниже указано, что произошло."
 
+msgid "The library could not be opened."
+msgstr ""
+
 msgid "The library could not be read."
 msgstr "Не удалось прочитать библиотеку."
 
@@ -7398,6 +7425,9 @@ msgstr "Библиотека оставалась занята другой за
 
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "Библиотека оставалась занята другой задачей. Больше ничего не удалено; попробуйте снова чуть позже."
+
+msgid "The library update stopped while preparing its backup at {}: {}"
+msgstr ""
 
 msgid "The line being sung stays in view."
 msgstr "Текущая строка остаётся в поле зрения."
@@ -8790,6 +8820,9 @@ msgstr "Записать в файл"
 
 msgid "Writer"
 msgstr "Автор"
+
+msgid "Writing reviewed changes…"
+msgstr ""
 
 msgid "Wrong lyric"
 msgstr "Неверный текст"
@@ -10240,9 +10273,6 @@ msgstr "записывать скачанные файлы в папку, кот
 msgid "write the address alone: no user, password or query in it"
 msgstr "укажите только адрес: без пользователя, пароля и запроса"
 
-msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
-msgstr "вашу библиотеку нужно обновить, но сначала не удалось сохранить её копию в {}: {}. Освободите там место или перенесите библиотеку туда, где оно есть, и снова откройте Chilpa"
-
 msgid "your sources"
 msgstr "ваши источники"
 
@@ -10389,6 +10419,12 @@ msgstr[2] "{} элементов избранного ожидают отпра�
 
 msgid "{} file has pending changes"
 msgid_plural "{} files have pending changes"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+msgid "{} file read"
+msgid_plural "{} files read"
 msgstr[0] ""
 msgstr[1] ""
 msgstr[2] ""
@@ -10549,6 +10585,9 @@ msgstr "Выбрано {} из {}"
 msgid "{} of {} downloaded. {} failed."
 msgstr "Загружено {} из {}. Ошибок {}."
 
+msgid "{} of {} files processed"
+msgstr ""
+
 msgid "{} of {} files removed. {} failed."
 msgstr "Удалено {} из {} файлов. Ошибок {}."
 
@@ -10613,6 +10652,9 @@ msgstr[1] "{} отредактированные здесь записи или 
 msgstr[2] "{} отредактированных здесь записей или треков сервер больше не показывает; изменения сохранены."
 
 msgid "{} required"
+msgstr ""
+
+msgid "{} saved · {} failed"
 msgstr ""
 
 msgid "{} sel"

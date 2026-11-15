@@ -186,8 +186,7 @@ impl Library {
         query::register(&db)?;
         schema::apply_pragmas(&db)?;
         // Before the shape of the file changes, and only when it is going to.
-        schema::back_up_before_upgrading(&db, path)?;
-        schema::migrate(&db)?;
+        schema::upgrade(&db, path)?;
         // Not only after a scan: a library that already exists carries the
         // statistics of an empty database and would keep them until its next
         // scan, which may be never.

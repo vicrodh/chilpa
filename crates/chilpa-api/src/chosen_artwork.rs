@@ -58,8 +58,10 @@ pub(crate) fn keep(picked: &Path, into: &Path) -> Result<String, String> {
         let unwritable = |_| chilpa_i18n::t("The image could not be kept");
         std::fs::create_dir_all(into).map_err(unwritable)?;
         let part = path.with_extension("part");
-        std::fs::write(&part, &bytes).map_err(unwritable)?;
-        std::fs::rename(&part, &path).map_err(unwritable)?;
+        if let Err(error) = std::fs::write(&part, &bytes).and_then(|_| std::fs::rename(&part, &path)) {
+            let _ = std::fs::remove_file(&part);
+            return Err(unwritable(error));
+        }
     }
     Ok(path.display().to_string())
 }
@@ -76,6 +78,11 @@ impl crate::Chilpa {
     /// Moves on every choice the listener makes.
     pub fn artwork_rev(&self) -> i32 {
         self.artwork.rev
+    }
+
+    pub(crate) fn genre_art_changed(&mut self) {
+        self.artwork.rev += 1;
+        self.mark_library_changed();
     }
 
     /// The cover chosen for a record, if one was: of the library when the

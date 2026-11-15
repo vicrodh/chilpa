@@ -260,6 +260,10 @@ impl MetadataManifest {
                 "path":r.get::<_,String>(7)?,"unsupported":r.get::<_,i64>(8)?,"conflicts":[]})))?.collect()
     }
 
+    pub fn save_target_count(&self) -> rusqlite::Result<u64> {
+        self.db.query_row("SELECT count(*) FROM entries WHERE selected=1 AND dirty=1 AND state!='unsupported'", [], |row| row.get::<_, i64>(0)).map(|count| count as u64)
+    }
+
     pub fn summary(&self) -> rusqlite::Result<serde_json::Value> {
         self.db.query_row("SELECT count(*),count(DISTINCT group_key),coalesce(sum(selected),0),
             coalesce(sum(selected AND dirty AND state<>'unsupported'),0),coalesce(sum(selected AND NOT dirty AND state='unchanged'),0),

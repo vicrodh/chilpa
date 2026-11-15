@@ -112,15 +112,15 @@ fn composer_portraits_reuse_the_chosen_person_image_without_fetching_metadata() 
 }
 
 #[test]
-fn canonical_families_do_not_depend_on_the_library_or_alias_only_names() {
+fn canonical_families_require_populated_albums_and_alias_only_names_stay_in_tags() {
     let reader = reader();
     reader.lib.set_track_genres(1, &["Personal shelf".into(), "Aakhar".into()]).unwrap();
     let names = |value: Value| value["items"].as_array().unwrap().iter().map(|row| row["name"].as_str().unwrap().to_string()).collect::<Vec<_>>();
     let all = names(reader.discovery_page("genres", "", "", 0));
-    assert!(all.contains(&"Classical".into()) && all.contains(&"Rock".into()));
+    assert!(!all.contains(&"Classical".into()) && all.contains(&"Rock".into()));
     assert!(!all.contains(&"Personal shelf".into()) && !all.contains(&"Aakhar".into()));
     reader.lib.connection().execute_batch("DELETE FROM track_genres").unwrap();
-    assert_eq!(names(reader.discovery_page("genres", "", "", 0)), all);
+    assert!(names(reader.discovery_page("genres", "", "", 0)).is_empty());
     assert!(names(reader.discovery_page_options("genres", "", "", r#"{"scope":"library"}"#, 0)).is_empty());
 }
 

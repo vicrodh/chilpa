@@ -678,6 +678,9 @@ msgstr "Anima a marca da faixa que está tocando com barras de equalizador. Desa
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Plano de fundo animado com a capa do álbum atrás de todo o app. Alto uso de recursos: acelerado por GPU."
 
+msgid "Another Chilpa process is updating this library. Try opening it again shortly."
+msgstr ""
+
 msgid "Another device profile update is still running."
 msgstr ""
 
@@ -4577,11 +4580,11 @@ msgstr "Nenhuma pasta corresponde à sua busca."
 msgid "No genre"
 msgstr "Sem gênero"
 
-msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
-msgstr ""
-
 msgid "No genres in this period."
 msgstr "Nenhum gênero neste período."
+
+msgid "No genres with albums in this selection"
+msgstr ""
 
 msgid "No grouping"
 msgstr "Sem agrupamento"
@@ -5111,6 +5114,15 @@ msgstr "Abrindo…"
 msgid "Operating system"
 msgstr "Sistema operacional"
 
+msgid "Operation cancelled"
+msgstr ""
+
+msgid "Operation complete"
+msgstr ""
+
+msgid "Operation stopped with errors"
+msgstr ""
+
 msgid "Optional access token for private playlists"
 msgstr "Token de acesso opcional para playlists privadas"
 
@@ -5481,6 +5493,9 @@ msgid "Preparing analysis…"
 msgstr "Preparando a análise…"
 
 msgid "Preparing beets…"
+msgstr ""
+
+msgid "Preparing metadata changes…"
 msgstr ""
 
 msgid "Preparing playlists"
@@ -5923,6 +5938,9 @@ msgstr "Limite de imagens remotas"
 
 msgid "Remove"
 msgstr "Remover"
+
+msgid "Remove a chosen genre image before adding another."
+msgstr ""
 
 msgid "Remove condition"
 msgstr "Remover condição"
@@ -7347,6 +7365,12 @@ msgstr ""
 msgid "The folder scan policy is invalid."
 msgstr "A política de verificação da pasta é inválida."
 
+msgid "The genre image preferences are invalid."
+msgstr ""
+
+msgid "The genre image preferences are too large."
+msgstr ""
+
 msgid "The group belongs to another metadata session."
 msgstr ""
 
@@ -7377,6 +7401,9 @@ msgstr ""
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Não foi possível alterar a biblioteca. Tente de novo; o detalhe abaixo diz o que aconteceu."
 
+msgid "The library could not be opened."
+msgstr ""
+
 msgid "The library could not be read."
 msgstr "Não foi possível ler a biblioteca."
 
@@ -7388,6 +7415,9 @@ msgstr "A biblioteca continuou ocupada com outra tarefa, então esta escolha nã
 
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "A biblioteca continuou ocupada com outra tarefa. Nada mais foi removido; tente de novo em um momento."
+
+msgid "The library update stopped while preparing its backup at {}: {}"
+msgstr ""
 
 msgid "The line being sung stays in view."
 msgstr "A linha que está sendo cantada permanece à vista."
@@ -8778,6 +8808,9 @@ msgstr "Gravar em um arquivo"
 
 msgid "Writer"
 msgstr "Autor"
+
+msgid "Writing reviewed changes…"
+msgstr ""
 
 msgid "Wrong lyric"
 msgstr "Letra incorreta"
@@ -10226,9 +10259,6 @@ msgstr "gravar os arquivos baixados na pasta que você selecionar para este plug
 msgid "write the address alone: no user, password or query in it"
 msgstr "escreva apenas o endereço: sem usuário, senha nem parâmetros de consulta"
 
-msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
-msgstr "sua biblioteca precisa ser atualizada e não foi possível guardar antes uma cópia dela em {}: {}. Libere espaço lá, ou mova a biblioteca para um lugar com espaço, e abra o Chilpa novamente"
-
 msgid "your sources"
 msgstr "suas fontes"
 
@@ -10364,6 +10394,11 @@ msgstr[1] "{} favoritos aguardam envio: {}"
 
 msgid "{} file has pending changes"
 msgid_plural "{} files have pending changes"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} file read"
+msgid_plural "{} files read"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -10509,6 +10544,9 @@ msgstr "{} de {} escolhidas"
 msgid "{} of {} downloaded. {} failed."
 msgstr "{} de {} baixados. {} falharam."
 
+msgid "{} of {} files processed"
+msgstr ""
+
 msgid "{} of {} files removed. {} failed."
 msgstr "{} de {} arquivos removidos. {} falharam."
 
@@ -10567,6 +10605,9 @@ msgstr[0] "{} disco ou faixa editado aqui já não aparece no servidor; as alter
 msgstr[1] "{} discos ou faixas editados aqui já não aparecem no servidor; as alterações são mantidas."
 
 msgid "{} required"
+msgstr ""
+
+msgid "{} saved · {} failed"
 msgstr ""
 
 msgid "{} sel"

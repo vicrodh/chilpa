@@ -72,6 +72,20 @@ impl Library {
         self.db.prepare(&scoped(GENRE_NAMES, excluded))?.query_map(rusqlite::params_from_iter(excluded), |row| row.get(0))?.collect()
     }
 
+    /// Stream populated album tags for navigation eligibility. The existence
+    /// lookup stops at one album-bearing track and retains no second tag list.
+    pub fn visit_album_genre_names_excluding(&self, excluded: &[String], mut visit: impl FnMut(&str)) -> rusqlite::Result<()> {
+        let sql = GENRE_NAMES.replace("/* scope */", "AND t.album_id IS NOT NULL /* scope */");
+        let mut statement = self.db.prepare(&scoped(&sql, excluded))?;
+        let mut rows = statement.query(rusqlite::params_from_iter(excluded))?;
+        while let Some(row) = rows.next()? {
+            let name = row.get_ref(0)?.as_str().map_err(|error|
+                rusqlite::Error::FromSqlConversionFailure(0, rusqlite::types::Type::Text, Box::new(error)))?;
+            visit(name);
+        }
+        Ok(())
+    }
+
     /// Original tags and contributing sources of this exact visible edition.
     /// Other editions and disabled or absent tracks do not contribute links.
     pub fn album_genre_sources(&self, album: i64) -> rusqlite::Result<(Vec<String>, Vec<String>)> {

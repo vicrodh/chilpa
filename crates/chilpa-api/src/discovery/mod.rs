@@ -4,10 +4,12 @@
 //! Hidden screens submit no queries.
 mod genres;
 mod genre_summary;
+mod album_population;
 mod works;
 mod options;
 mod sources;
 mod presentation;
+mod chosen_art;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
@@ -18,6 +20,8 @@ mod source_tests;
 mod album_genres_tests;
 #[cfg(test)]
 mod presentation_tests;
+#[cfg(test)]
+mod album_population_tests;
 use crate::{AlbumsFound, Filter, Reader, Snapshot, TrackOrder};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -85,11 +89,15 @@ impl Reader {
     }
 
     fn discovery_names_using(&self, composers: bool, excluded: &[String], index: &crate::library_sources::SourceIndex) -> Vec<(String, usize)> {
+        self.discovery_names_checked(composers, excluded, index).unwrap_or_default()
+    }
+
+    fn discovery_names_checked(&self, composers: bool, excluded: &[String], index: &crate::library_sources::SourceIndex) -> Result<Vec<(String, usize)>, String> {
         // Genre spellings remain separate inputs to the derived index. SQL's
         // NOCASE does not equate every Unicode case variant when filtering.
         let key = |name: &str| if composers { name.to_lowercase() } else { name.to_string() };
-        let local: Vec<_> = if composers { self.lib.facet_composers(&Filter::default()).unwrap_or_default().into_iter().map(|row| (row.label,row.albums)).collect() }
-            else { self.lib.genre_names_excluding(excluded).unwrap_or_default().into_iter().map(|name| (name,0)).collect() };
+        let local: Vec<_> = if composers { self.lib.facet_composers(&Filter::default()).map_err(|error|error.to_string())?.into_iter().map(|row| (row.label,row.albums)).collect() }
+            else { self.lib.genre_names_excluding(excluded).map_err(|error|error.to_string())?.into_iter().map(|name| (name,0)).collect() };
         let mut names: BTreeMap<String, (String, usize)> = local.into_iter()
             .map(|(name, albums)| (key(&name), (name, albums))).collect();
         let through = sources::through(excluded);
@@ -105,7 +113,7 @@ impl Reader {
                 }
             }
         }
-        names.into_values().collect()
+        Ok(names.into_values().collect())
     }
 
     fn discovery_filter(&self, selected: &Selection) -> Filter {
@@ -214,9 +222,17 @@ impl Reader {
     }
 
     fn genre_page_using(&self, selected: &Selection, text: &str, options: &options::Options, excluded: &[String], page: usize, index: &crate::library_sources::SourceIndex) -> Value {
-        let tags: Vec<_> = self.discovery_names_using(false, excluded, index).into_iter().map(|(name, _)| name).collect();
+        let tags = match self.discovery_names_checked(false, excluded, index) {
+            Ok(names) => names.into_iter().map(|(name, _)| name).collect::<Vec<_>>(),
+            Err(error) => return json!({"error":error,"items":[],"total":0}),
+        };
         let inventory = genres::Inventory::new(&tags);
+        let populated = match self.populated_genres(&inventory, excluded, index) {
+            Ok(populated) => populated,
+            Err(error) => return json!({"error":error,"items":[],"total":0}),
+        };
         let mut names = inventory.browse((selected.kind == "genre").then_some(selected.name.as_str()), &text, &options.scope);
+        names.retain(|name| inventory.populated_by(name, &populated));
         if options.descending() { names.reverse(); }
         let total = names.len();
         let names: Vec<_> = names.into_iter().skip(page.saturating_mul(PAGE)).take(PAGE).collect();
@@ -226,12 +242,14 @@ impl Reader {
             Ok(summaries) => summaries,
             Err(error) => return json!({"error":error,"items":[],"total":0}),
         };
+        let chosen = chosen_art::choices();
         let items = names.into_iter().zip(&summaries).map(|(name, summary)| {
             let styles = inventory.records_for(&name).len();
             let label = presentation::Label::new(&name);
             let key = self.genre_entry_key(&name, &label, excluded, index)?;
+            let portrait = chosen_art::portrait(&chosen, &name);
             Ok(json!({"kind":"genre", "name":label.text, "nameTruncated":label.truncated, "nameChars":label.chars,
-                "key":key, "styles":styles, "albums":summary.albums, "looseTracks":summary.loose_tracks, "images":summary.images, "art":genres::art(&name)}))
+                "key":key, "portraitChosen":!portrait.is_empty(), "portrait":portrait, "styles":styles, "albums":summary.albums, "looseTracks":summary.loose_tracks, "images":summary.images, "art":genres::art(&name)}))
         }).collect::<Result<Vec<_>,String>>();
         let items = match items {
             Ok(items) => items,
@@ -239,7 +257,8 @@ impl Reader {
         };
         let resolutions = inventory.records_for(&selected.name);
         let breadcrumb: Vec<_> = genres::breadcrumb(&selected.name).iter().map(|name|presentation::Label::new(name)).collect();
-        json!({"total":total, "excluded_sources":excluded, "sources":self.discovery_sources_using(index), "art":genres::art(&selected.name), "taxonomyVersion":genres::VERSION, "resolutions":resolutions.iter().take(PAGE).map(|record|presentation::resolution(record)).collect::<Vec<_>>(),
+        let portrait = chosen_art::portrait(&chosen, &selected.name);
+        json!({"portraitChosen":!portrait.is_empty(), "portrait":portrait, "total":total, "excluded_sources":excluded, "sources":self.discovery_sources_using(index), "art":genres::art(&selected.name), "taxonomyVersion":genres::VERSION, "resolutions":resolutions.iter().take(PAGE).map(|record|presentation::resolution(record)).collect::<Vec<_>>(),
             "resolutionTotal":resolutions.len(), "parents":genres::parents(&selected.name), "parentRelations":genres::parent_relations(&selected.name),
             "breadcrumb":breadcrumb.iter().map(|label|&label.text).collect::<Vec<_>>(),
             "breadcrumbTruncated":breadcrumb.iter().map(|label|label.truncated).collect::<Vec<_>>(),

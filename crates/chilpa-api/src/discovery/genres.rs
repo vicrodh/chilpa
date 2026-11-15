@@ -72,6 +72,14 @@ impl Inventory {
         self.groups.get(&resolve(name).identity()).into_iter().flatten().map(|at| &self.records[*at]).collect()
     }
 
+    pub fn original_indices(&self) -> HashMap<&str, usize> {
+        self.records.iter().enumerate().map(|(at, record)| (record.original.as_str(), at)).collect()
+    }
+
+    pub fn populated_by(&self, name: &str, originals: &HashSet<usize>) -> bool {
+        self.groups.get(&resolve(name).identity()).is_some_and(|members| members.iter().any(|at| originals.contains(at)))
+    }
+
     pub fn browse(&self, parent: Option<&str>, text: &str, scope: &str) -> Vec<String> {
         if scope == "tags" {
             let within = parent.map(|name| self.matching(name));

@@ -678,6 +678,9 @@ msgstr "Animeer de markering van het huidige nummer met equalizerbalken. Standaa
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Geanimeerde achtergrond met albumhoes achter de hele app. Hoog resourcegebruik: GPU-versneld."
 
+msgid "Another Chilpa process is updating this library. Try opening it again shortly."
+msgstr ""
+
 msgid "Another device profile update is still running."
 msgstr ""
 
@@ -4577,11 +4580,11 @@ msgstr "Geen mappen komen overeen met je zoekopdracht."
 msgid "No genre"
 msgstr "Geen genre"
 
-msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
-msgstr ""
-
 msgid "No genres in this period."
 msgstr "Geen genres in deze periode."
+
+msgid "No genres with albums in this selection"
+msgstr ""
 
 msgid "No grouping"
 msgstr "Geen groepering"
@@ -5111,6 +5114,15 @@ msgstr "Wordt geopend…"
 msgid "Operating system"
 msgstr "Besturingssysteem"
 
+msgid "Operation cancelled"
+msgstr ""
+
+msgid "Operation complete"
+msgstr ""
+
+msgid "Operation stopped with errors"
+msgstr ""
+
 msgid "Optional access token for private playlists"
 msgstr "Optioneel toegangstoken voor privéafspeellijsten"
 
@@ -5481,6 +5493,9 @@ msgid "Preparing analysis…"
 msgstr "Analyse voorbereiden…"
 
 msgid "Preparing beets…"
+msgstr ""
+
+msgid "Preparing metadata changes…"
 msgstr ""
 
 msgid "Preparing playlists"
@@ -5923,6 +5938,9 @@ msgstr "Limiet voor externe afbeeldingen"
 
 msgid "Remove"
 msgstr "Verwijderen"
+
+msgid "Remove a chosen genre image before adding another."
+msgstr ""
 
 msgid "Remove condition"
 msgstr "Voorwaarde verwijderen"
@@ -7347,6 +7365,12 @@ msgstr ""
 msgid "The folder scan policy is invalid."
 msgstr "Het scanbeleid voor de map is ongeldig."
 
+msgid "The genre image preferences are invalid."
+msgstr ""
+
+msgid "The genre image preferences are too large."
+msgstr ""
+
 msgid "The group belongs to another metadata session."
 msgstr ""
 
@@ -7377,6 +7401,9 @@ msgstr ""
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "De bibliotheek kon niet worden gewijzigd. Probeer het opnieuw; het detail hieronder zegt wat er gebeurde."
 
+msgid "The library could not be opened."
+msgstr ""
+
 msgid "The library could not be read."
 msgstr "De bibliotheek kon niet worden gelezen."
 
@@ -7388,6 +7415,9 @@ msgstr "De bibliotheek bleef bezig met een andere taak, dus deze keuze is niet b
 
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "De bibliotheek bleef bezig met een andere taak. Er is niets meer verwijderd; probeer het zo opnieuw."
+
+msgid "The library update stopped while preparing its backup at {}: {}"
+msgstr ""
 
 msgid "The line being sung stays in view."
 msgstr "De regel die wordt gezongen blijft in beeld."
@@ -8778,6 +8808,9 @@ msgstr "Naar een bestand schrijven"
 
 msgid "Writer"
 msgstr "Auteur"
+
+msgid "Writing reviewed changes…"
+msgstr ""
 
 msgid "Wrong lyric"
 msgstr "Onjuiste songtekst"
@@ -10226,9 +10259,6 @@ msgstr "gedownloade bestanden schrijven naar de map die je voor deze plug-in kie
 msgid "write the address alone: no user, password or query in it"
 msgstr "vul alleen het adres in: geen gebruiker, wachtwoord of query erin"
 
-msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
-msgstr "je bibliotheek moet worden bijgewerkt en er kon eerst geen kopie van worden bewaard, op {}: {}. Maak daar ruimte vrij, of verplaats de bibliotheek naar een plek met ruimte, en open Chilpa opnieuw"
-
 msgid "your sources"
 msgstr "je bronnen"
 
@@ -10364,6 +10394,11 @@ msgstr[1] "{} favorieten wachten op verzending: {}"
 
 msgid "{} file has pending changes"
 msgid_plural "{} files have pending changes"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} file read"
+msgid_plural "{} files read"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -10509,6 +10544,9 @@ msgstr "{} van {} gekozen"
 msgid "{} of {} downloaded. {} failed."
 msgstr "{} van {} gedownload. {} mislukt."
 
+msgid "{} of {} files processed"
+msgstr ""
+
 msgid "{} of {} files removed. {} failed."
 msgstr "{} van {} bestanden verwijderd. {} mislukt."
 
@@ -10567,6 +10605,9 @@ msgstr[0] "{} hier bewerkt album of nummer staat niet meer op de server; de wijz
 msgstr[1] "{} hier bewerkte albums of nummers staan niet meer op de server; de wijzigingen blijven bewaard."
 
 msgid "{} required"
+msgstr ""
+
+msgid "{} saved · {} failed"
 msgstr ""
 
 msgid "{} sel"

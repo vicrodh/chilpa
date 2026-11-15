@@ -46,6 +46,13 @@ pub mod qobject {
         /// Asks where, and copies the picture the artist's page shows.
         #[qinvokable]
         fn save_artist(self: Pin<&mut Artwork>, name: &QString, shown: &QUrl);
+        /// The image chosen for a genre's strong identity, independent of its tags.
+        #[qinvokable]
+        fn genre(self: &Artwork, key: &QString, rev: i32) -> QUrl;
+        #[qinvokable]
+        fn choose_genre(self: Pin<&mut Artwork>, key: &QString);
+        #[qinvokable]
+        fn forget_genre(self: Pin<&mut Artwork>, key: &QString);
     }
 
     impl cxx_qt::Threading for Artwork {}
@@ -112,6 +119,21 @@ impl qobject::Artwork {
         if let Some((from, suggested)) = app::with(|api| api.artist_art_to_save(&name, &shown)) {
             self.save(app::t("Save the image"), from, suggested);
         }
+    }
+
+    pub fn genre(&self, key: &QString, _rev: i32) -> QUrl {
+        let path = app::with(|api| api.genre_art(&key.to_string()));
+        if path.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(path)) }
+    }
+
+    pub fn choose_genre(self: Pin<&mut Self>, key: &QString) {
+        let key = key.to_string();
+        self.pick(app::t("Choose an image"), move |api, path| api.choose_genre_art(&key, Some(path)));
+    }
+
+    pub fn forget_genre(self: Pin<&mut Self>, key: &QString) {
+        app::with(|api| api.choose_genre_art(&key.to_string(), None));
+        self.follow();
     }
 
     /// The revision the facade is at, so whatever reads it asks again.

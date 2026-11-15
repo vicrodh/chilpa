@@ -8,6 +8,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Patterns"
+import "../Components"
 
 Item {
     id: page
@@ -59,6 +60,10 @@ Item {
         Text { text:I18n.tr("Folder metadata", I18n.rev); font.pointSize:Type.title; font.weight:Type.bold; color:Theme.color.textPrimary }
         Text { width:parent.width; text:I18n.trCount("{} selected file","{} selected files",page.doc.counts?.selected || 0,I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body; wrapMode:Text.Wrap }
         Text { width:parent.width; visible:page.doc.state === "opening"; text:I18n.tr("Reading folder metadata…",I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.meta; wrapMode:Text.Wrap }
+        BatchProgress {
+            width: parent.width
+            progress: { try { return JSON.parse(batch.progress || "{}") } catch (_) { return {} } }
+        }
         Text { width:parent.width; visible:(page.doc.summary?.changed || 0) > 0; text:I18n.trCount("{} file has pending changes","{} files have pending changes",page.doc.summary?.changed || 0,I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.meta; wrapMode:Text.Wrap }
         Flow {
             width:parent.width; spacing:Metrics.gap8

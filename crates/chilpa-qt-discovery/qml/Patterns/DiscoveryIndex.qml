@@ -13,9 +13,9 @@ Item {
     readonly property int total: dataSource ? dataSource.count : entries.length
     property bool ready: true
     property string kind: "genres"
-    readonly property bool composers: kind === "composers"
-    readonly property int entryWidth: composers ? Metrics.sceneCardWidth : Metrics.discoveryEntryWidth
-    readonly property int entryHeight: composers ? Metrics.sceneCardHeight : kind === "genres" ? Metrics.discoveryGenreHeight : Metrics.discoveryEntryHeight
+    readonly property bool portraits: kind === "composers" || kind === "genres"
+    readonly property int entryWidth: portraits ? Metrics.sceneCardWidth : Metrics.discoveryEntryWidth
+    readonly property int entryHeight: portraits ? Metrics.sceneCardHeight : Metrics.discoveryEntryHeight
     readonly property alias scrollView: grid
     signal activated(var entry)
     function decoded(row) { try { return JSON.parse(row || "{}") } catch (_) { return {} } }

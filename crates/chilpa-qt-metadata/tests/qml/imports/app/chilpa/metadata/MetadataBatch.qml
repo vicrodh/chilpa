@@ -1,6 +1,7 @@
 import QtQuick
 QtObject {
     property string document: "{}"
+    property string progress: "{}"
     property string kind: "items"
     property string groupKey: ""
     property bool active: false

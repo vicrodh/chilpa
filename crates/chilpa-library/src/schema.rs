@@ -26,6 +26,9 @@ mod offline_audio;
 mod rating_sync;
 mod favorite_sync;
 mod local_presentation;
+mod upgrade;
+#[cfg(test)]
+mod upgrade_tests;
 
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
@@ -72,26 +75,16 @@ pub fn backup_path(library: &Path) -> PathBuf {
 /// If it cannot be taken, the upgrade does not happen. Chilpa opening at all
 /// costs less than a library that cannot be gone back to.
 pub fn back_up_before_upgrading(db: &Connection, library: &Path) -> rusqlite::Result<()> {
-    let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-    // Zero is a file that was just created: there is nothing in it yet.
-    if actual == 0 || actual >= VERSION {
-        return Ok(());
-    }
-    let backup = backup_path(library);
-    // VACUUM INTO refuses to write over a file that is already there.
-    let _ = std::fs::remove_file(&backup);
-    db.execute("VACUUM INTO ?1", [&backup.to_string_lossy().as_ref()]).map_err(|e| {
-        rusqlite::Error::SqliteFailure(
-            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CANTOPEN),
-            Some(chilpa_i18n::t_args(
-                "your library needs updating and a copy of it could not be kept first, \
-                 at {}: {}. Make room there, or move the library somewhere with room, \
-                 and open Chilpa again",
-                &[&backup.display().to_string(), &e.to_string()],
-            )),
-        )
-    })?;
-    Ok(())
+    let actual: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    if actual == 0 || actual >= VERSION { return Ok(()); }
+    let gate = migration_gate(db);
+    let _process = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|error| error.into_inner()));
+    let _file = upgrade::lock(library)?;
+    upgrade::backup(db, library)
+}
+
+pub(crate) fn upgrade(db: &Connection, library: &Path) -> rusqlite::Result<()> {
+    upgrade::run(db, library)
 }
 
 /// Builds a database stopped at an older version, as a shipped Chilpa would
@@ -110,6 +103,15 @@ pub(crate) fn stop_at(db: &Connection, version: usize) {
 
 /// Creates or upgrades the schema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
+    let gate = migration_gate(db);
+    let _migration = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner()));
+    let actual: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    let _file = db.path().filter(|path| !path.is_empty() && actual < VERSION)
+        .map(|path| upgrade::lock(Path::new(path))).transpose()?;
+    migrate_locked(db)
+}
+
+fn migrate_locked(db: &Connection) -> rusqlite::Result<()> {
     let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
     if actual > VERSION {
         // A database from a newer version is left alone: downgrading loses
@@ -127,10 +129,6 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
         ));
     }
     if actual == VERSION { return Ok(()); }
-    // I let one startup connection upgrade a file at a time; otherwise
-    // their per-step writer transactions can starve each other's timeout.
-    let gate = migration_gate(db);
-    let _migration = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner()));
     for (i, step) in STEPS.iter().enumerate() {
         let target = i as i64 + 1;
         if actual >= target {
@@ -155,10 +153,12 @@ fn migration_gate(db: &Connection) -> Option<std::sync::Arc<std::sync::Mutex<()>
     use std::sync::{Arc, Mutex, Weak};
     static GATES: Mutex<Option<std::collections::HashMap<String, Weak<Mutex<()>>>>> = Mutex::new(None);
     let path = db.path().filter(|path| !path.is_empty())?;
+    let path = std::fs::canonicalize(path).unwrap_or_else(|_| PathBuf::from(path));
+    let path = path.to_string_lossy();
     let mut gates = GATES.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let gates = gates.get_or_insert_with(Default::default);
     gates.retain(|_, gate| gate.strong_count() > 0);
-    if let Some(gate) = gates.get(path).and_then(Weak::upgrade) { return Some(gate); }
+    if let Some(gate) = gates.get(path.as_ref()).and_then(Weak::upgrade) { return Some(gate); }
     let gate = Arc::new(Mutex::new(()));
     gates.insert(path.to_string(), Arc::downgrade(&gate));
     Some(gate)
@@ -271,6 +271,25 @@ pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_failed_backup_keeps_the_previous_copy_and_original_sqlite_code() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("library.db");
+        let db = Connection::open(&path).unwrap();
+        db.execute_batch("CREATE TABLE fixture(id INTEGER); PRAGMA user_version=55;").unwrap();
+        let backup = backup_path(&path);
+        let saved = Connection::open(&backup).unwrap();
+        saved.execute_batch("CREATE TABLE fixture(id INTEGER); INSERT INTO fixture VALUES(19); PRAGMA user_version=54;").unwrap();
+        drop(saved);
+        let before = std::fs::read(&backup).unwrap();
+        db.execute_batch("PRAGMA query_only=ON").unwrap();
+        let error = back_up_before_upgrading(&db, &path).unwrap_err();
+        assert_eq!(std::fs::read(&backup).unwrap(), before);
+        assert_eq!(error.sqlite_error_code(), Some(rusqlite::ErrorCode::ReadOnly));
+        assert_eq!(db.query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0)).unwrap(), 55);
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 3);
+    }
 
     #[test]
     fn concurrent_connections_do_not_apply_the_same_migration_twice() {

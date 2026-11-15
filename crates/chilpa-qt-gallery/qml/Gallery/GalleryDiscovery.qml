@@ -41,5 +41,10 @@ TitledFlow {
         entries: [{kind:"work",name:"Suite",composers:["Composer"],albums:3,tracks:12}]
     }
     DiscoveryTracks { width: Metrics.discoveryEntryWidth * 2; height: Metrics.queueMin } // derived: the same two-card preview width
+    DiscoveryAlbums { width:Metrics.settingsMaxWidth; height:Metrics.queueMin }
+    DiscoveryArtists { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; cards: Component { ArtistCardGrid { artists:parent.artists } } }
+    DiscoveryStatus { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; loading:true }
+    DiscoveryStatus { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; failure:"A library read failed" }
+    DiscoveryStatus { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; empty:true; emptyText:"No albums in this selection" }
     GenreOverview { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; name:"Jazz"; about:({summary:{albums:4,images:[]},items:[],total:0}) }
 }

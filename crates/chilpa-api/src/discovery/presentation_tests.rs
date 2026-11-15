@@ -112,9 +112,14 @@ fn remote_long_genre_routes_preserve_albumless_tracks_and_explicit_source_scope(
         let excluded = vec!["plugin:beta".into()];
         let options = options::Options::parse(r#"{"scope":"tags"}"#).unwrap();
         let page = reader.genre_page_using(&Selection::default(), "remote tail", &options, &excluded, 0, &index);
-        assert_eq!(page["total"], 1);
-        assert_eq!(page["items"][0]["name"].as_str().unwrap().chars().count(), 128);
-        let mut route: Value = serde_json::from_str(page["items"][0]["key"].as_str().unwrap()).unwrap();
+        assert_eq!(page["total"], usize::from(album != 0));
+        let label = presentation::Label::new(&name);
+        let key = reader.genre_entry_key(&name, &label, &excluded, &index).unwrap();
+        if album != 0 {
+            assert_eq!(page["items"][0]["name"].as_str().unwrap().chars().count(), 128);
+            assert_eq!(page["items"][0]["key"], key);
+        }
+        let mut route: Value = serde_json::from_str(&key).unwrap();
         assert_eq!(route[if album == 0 { "genreTrack" } else { "album" }], if album == 0 { -11 } else { -10 });
         route["excluded_sources"] = json!(excluded);
         let selected = reader.resolve_album_genre_using(Selection::parse(&route.to_string()).unwrap(), &index).unwrap();

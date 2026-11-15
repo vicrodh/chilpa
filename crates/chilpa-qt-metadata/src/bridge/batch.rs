@@ -10,6 +10,7 @@ pub mod qobject {
         #[qobject]
         #[qml_element]
         #[qproperty(QString, document)]
+        #[qproperty(QString, progress)]
         #[qproperty(QString, kind)]
         #[qproperty(QString, group_key)]
         #[qproperty(i32, count)]
@@ -48,7 +49,7 @@ const JSON_LIMIT: usize = 1024 * 1024;
 
 #[derive(Default)]
 pub struct BatchRust {
-    document: QString, kind: QString, group_key: QString, count: i32, revision: i32, busy: bool, active: bool,
+    document: QString, progress: QString, kind: QString, group_key: QString, count: i32, revision: i32, busy: bool, active: bool,
     session: u64, owned_session: u64, data_revision: u64, request_id: u64,
     pending: Option<(u64, usize, String, String, u64)>,
     pages: BatchCache,
@@ -56,6 +57,7 @@ pub struct BatchRust {
     needs_first: bool,
     configuring: bool,
     plan_id: String,
+    progress_stamp: Option<(u64, u64)>,
 }
 impl Drop for BatchRust {
     fn drop(&mut self) {
@@ -153,6 +155,7 @@ impl qobject::MetadataBatch {
     pub fn poll(mut self: Pin<&mut Self>) {
         if !*self.active() || !self.owns_current() { return; }
         if app::with(|api| api.metadata_batch_poll()) { self.as_mut().sync(); }
+        else { self.as_mut().sync_progress(); }
         self.pump();
     }
     pub fn seek(mut self: Pin<&mut Self>, first: i32, last: i32) {
@@ -167,6 +170,7 @@ impl qobject::MetadataBatch {
         self.rust().pages.get(index).map_or_else(|| QString::from("{}"), QString::from)
     }
     fn sync(mut self: Pin<&mut Self>) {
+        self.as_mut().sync_progress();
         let mut view = app::with(|api| api.metadata_batch_view());
         let session = view["session"].as_u64().unwrap_or(0);
         if session != 0 && session != self.rust().owned_session {
@@ -224,6 +228,19 @@ impl qobject::MetadataBatch {
         let next = self.revision().wrapping_add(1);
         self.as_mut().set_revision(next);
         self.pump();
+    }
+    fn sync_progress(mut self: Pin<&mut Self>) {
+        if self.rust().owned_session == 0 {
+            self.as_mut().rust_mut().progress_stamp = None;
+            self.set_progress(QString::from("{}"));
+            return;
+        }
+        let progress = app::with(|api| api.metadata_batch_progress());
+        if progress.session != self.rust().owned_session { return; }
+        let stamp = (progress.session, progress.revision);
+        if self.rust().progress_stamp == Some(stamp) { return; }
+        self.as_mut().rust_mut().progress_stamp = Some(stamp);
+        self.set_progress(QString::from(serde_json::to_string(&progress).unwrap_or_else(|_| "{}".into())));
     }
     fn pump(mut self: Pin<&mut Self>) {
         if !*self.active() || *self.busy() || self.rust().pending.is_some() || !self.owns_current() { return; }

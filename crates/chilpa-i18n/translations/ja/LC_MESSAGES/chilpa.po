@@ -677,6 +677,9 @@ msgstr "再生中のトラックのマークをイコライザーバーでアニ
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "アプリ全体の背後にアルバムアートのアニメーション背景を表示します。リソース使用量が多く、GPUアクセラレーションを使います。"
 
+msgid "Another Chilpa process is updating this library. Try opening it again shortly."
+msgstr ""
+
 msgid "Another device profile update is still running."
 msgstr ""
 
@@ -4572,11 +4575,11 @@ msgstr "検索に一致するフォルダーはありません。"
 msgid "No genre"
 msgstr "ジャンルなし"
 
-msgid "No genre tags yet. Add genres in the metadata editor to start exploring."
-msgstr ""
-
 msgid "No genres in this period."
 msgstr "この期間にジャンルはありません。"
+
+msgid "No genres with albums in this selection"
+msgstr ""
 
 msgid "No grouping"
 msgstr "グループ化なし"
@@ -5106,6 +5109,15 @@ msgstr "開いています…"
 msgid "Operating system"
 msgstr "オペレーティングシステム"
 
+msgid "Operation cancelled"
+msgstr ""
+
+msgid "Operation complete"
+msgstr ""
+
+msgid "Operation stopped with errors"
+msgstr ""
+
 msgid "Optional access token for private playlists"
 msgstr "非公開プレイリスト用の任意のアクセストークン"
 
@@ -5476,6 +5488,9 @@ msgid "Preparing analysis…"
 msgstr "解析を準備しています…"
 
 msgid "Preparing beets…"
+msgstr ""
+
+msgid "Preparing metadata changes…"
 msgstr ""
 
 msgid "Preparing playlists"
@@ -5918,6 +5933,9 @@ msgstr "リモート画像の上限"
 
 msgid "Remove"
 msgstr "削除"
+
+msgid "Remove a chosen genre image before adding another."
+msgstr ""
 
 msgid "Remove condition"
 msgstr "条件を削除"
@@ -7337,6 +7355,12 @@ msgstr ""
 msgid "The folder scan policy is invalid."
 msgstr "フォルダーのスキャン設定が無効です。"
 
+msgid "The genre image preferences are invalid."
+msgstr ""
+
+msgid "The genre image preferences are too large."
+msgstr ""
+
 msgid "The group belongs to another metadata session."
 msgstr ""
 
@@ -7367,6 +7391,9 @@ msgstr ""
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "ライブラリを変更できませんでした。もう一度お試しください。下の詳細に何が起きたかが書かれています。"
 
+msgid "The library could not be opened."
+msgstr ""
+
 msgid "The library could not be read."
 msgstr "ライブラリを読み取れませんでした。"
 
@@ -7378,6 +7405,9 @@ msgstr "ライブラリが別の処理で使用中のままだったため、こ
 
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "ライブラリが別の処理で使用中のままでした。これ以上は削除されていません。少ししてからもう一度お試しください。"
+
+msgid "The library update stopped while preparing its backup at {}: {}"
+msgstr ""
 
 msgid "The line being sung stays in view."
 msgstr "歌っている行が常に表示されます。"
@@ -8766,6 +8796,9 @@ msgstr "ファイルに書き出す"
 
 msgid "Writer"
 msgstr "作者"
+
+msgid "Writing reviewed changes…"
+msgstr ""
 
 msgid "Wrong lyric"
 msgstr "歌詞が違う"
@@ -10212,9 +10245,6 @@ msgstr "このプラグイン用に選んだフォルダーにダウンロード
 msgid "write the address alone: no user, password or query in it"
 msgstr "アドレスのみを書いてください。ユーザー、パスワード、クエリは含めないでください"
 
-msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
-msgstr "ライブラリの更新が必要ですが、先に{}にコピーを保持できませんでした: {}。そこに空き容量を作るか、空きのある場所にライブラリを移動して、Chilpaをもう一度開いてください"
-
 msgid "your sources"
 msgstr "あなたのソース"
 
@@ -10339,6 +10369,10 @@ msgstr[0] "{}件のお気に入りが送信待ちです: {}"
 
 msgid "{} file has pending changes"
 msgid_plural "{} files have pending changes"
+msgstr[0] ""
+
+msgid "{} file read"
+msgid_plural "{} files read"
 msgstr[0] ""
 
 msgid "{} file saved"
@@ -10469,6 +10503,9 @@ msgstr "{} / {} 件を選択"
 msgid "{} of {} downloaded. {} failed."
 msgstr "{} / {} 件をダウンロードしました。失敗 {} 件。"
 
+msgid "{} of {} files processed"
+msgstr ""
+
 msgid "{} of {} files removed. {} failed."
 msgstr "{} / {} ファイルを削除しました。失敗 {} 件。"
 
@@ -10521,6 +10558,9 @@ msgid_plural "{} records or tracks edited here are ones the server no longer lis
 msgstr[0] "ここで編集した{}件のアルバムまたはトラックはサーバーに表示されなくなりました。編集内容は保持されます。"
 
 msgid "{} required"
+msgstr ""
+
+msgid "{} saved · {} failed"
 msgstr ""
 
 msgid "{} sel"

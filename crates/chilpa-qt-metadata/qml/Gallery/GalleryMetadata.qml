@@ -14,6 +14,7 @@ TitledFlow {
     id: section
     title: "Metadata editor"
     BatchPreviewRow { width:Metrics.settingsMaxWidth; entry:({key:"1:1",path:"Album/01.flac",title:"Track",artist:"Artist",album:"Album",selected:true,changes:[{field:"genres",before:["Power Metal"],after:["Power Metal","Symphonic Metal"]}]}) }
+    BatchProgress { width:Metrics.settingsMaxWidth; progress:({operationId:1,phase:"saving",completed:7,total:20,totalKnown:true,saved:6,failed:1}) }
     BatchPatch { width:Metrics.metadataColumnMin; selected:4; fields:[{key:"genres",label:"Genres",type:"list",operations:["keep","set","clear","append_unique","remove_values"]}] }
     BatchSelection { width:Metrics.metadataColumnMin }
     BatchPreview { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; batch:({count:0,busy:false}) }
