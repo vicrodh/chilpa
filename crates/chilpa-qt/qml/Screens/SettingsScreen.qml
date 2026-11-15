@@ -141,7 +141,6 @@ Item {
     PluginManager {
         id: pluginManager
         visible: page.section === "plugins" && search.text === ""
-        page: rows
         purchaseCard: page.purchaseCard
         anchors.top: title.bottom
         anchors.topMargin: Metrics.section

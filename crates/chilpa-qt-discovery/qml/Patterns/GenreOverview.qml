@@ -8,7 +8,6 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
-import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
 import "../Components"
 
 Item {
@@ -24,7 +23,7 @@ Item {
     readonly property alias scrollView: view
     readonly property var summary: about.summary || ({})
     readonly property var subgenres: (about.items || []).slice(0, Metrics.discoveryPreview)
-    readonly property url chosenImage: Artwork.genre(key, Artwork.rev)
+    readonly property url chosenImage: Artwork.genreHeader(key, Artwork.rev)
     readonly property bool customImage: chosenImage.toString() !== ""
     property bool layoutReady: false
     function settleLayout() { subgenreGrid.forceLayout(); body.forceLayout(); layoutReady = true }
@@ -71,26 +70,11 @@ Item {
                     objectName: "genreChooseImage"
                     anchors.top: parent.top; anchors.right: parent.right; anchors.margins: Metrics.gap16
                     glyph: Icons.pencil; tone: "overlay"; round: true
-                    tip: overview.customImage ? I18n.tr("Change image", I18n.rev) : I18n.tr("Add image", I18n.rev)
-                    onClicked: Artwork.chooseGenre(overview.key)
+                    tip: I18n.tr("Genre images", I18n.rev)
+                    onClicked: { imageEditor.replace(artworkEditor, true); imageEditor.item.open() }
                 }
-                TapHandler {
-                    acceptedButtons: Qt.RightButton
-                    onTapped: point => {
-                        imageMenu.active = true
-                        imageMenu.item.popupAt(point.position.x, point.position.y)
-                    }
-                }
-                Loader {
-                    id: imageMenu
-                    active: false
-                    sourceComponent: Component { CoverMenu {
-                        objectName: "genreImageMenu"
-                        parent: hero; kind: "genre"; custom: overview.customImage
-                        onChoose: Artwork.chooseGenre(overview.key)
-                        onForget: Artwork.forgetGenre(overview.key)
-                    } }
-                }
+                RetiringLoader { id: imageEditor }
+                Component { id: artworkEditor; GenreArtworkEditor { key: overview.key; onClosed: imageEditor.replace(null, false) } }
                 Column {
                     anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Metrics.gap24
                     spacing: Metrics.gap12

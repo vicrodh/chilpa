@@ -11,11 +11,31 @@ TestCase {
     QtObject {
         id: backend
         property var calls: []
+        property bool unchanged: false
         property var state: ({catalog: [{id: "entry", name: "Guest", light: "yellow", repository_id: "repo"}], installed: [], repositories: [], busy: false})
-        function pluginsJson() { return JSON.stringify(state) }
+        function pluginsJson() { return unchanged ? "" : JSON.stringify(state) }
         function pluginCommand(action, input) { calls = calls.concat([[action, JSON.parse(input)]]) }
     }
     PluginManager { id: manager; width: 600; height: 600; page: backend }
+    function test_an_unchanged_snapshot_keeps_the_open_settings_and_models() {
+        const plugin={id:"stable",name:"Stable",native:true,settings:true,enabled:true}
+        backend.state={installed:[plugin],catalog:[],busy:false}
+        manager.read();manager.settings(plugin)
+        tryCompare(manager.detailsView,"opened",true)
+        const view=manager.view, installed=manager.installedRows, catalog=manager.catalogRows
+        backend.unchanged=true
+        try {
+            for(let index=0;index<20;index++) manager.read()
+            verify(manager.view===view)
+            verify(manager.installedRows===installed)
+            verify(manager.catalogRows===catalog)
+            compare(manager.selected,plugin.id)
+            verify(manager.detailsView.opened)
+        } finally {
+            backend.unchanged=false
+            manager.detailsView.close()
+        }
+    }
     function test_missing_genres_switch_defaults_off_and_uses_the_integration_command() {
         let plugin = {id: "fixture", name: "Source", native: true, enabled: true, integration_available: true, library_kinds: ["albums"]}
         backend.state = {installed: [plugin], busy: false}

@@ -1154,6 +1154,9 @@ msgstr "Cancelling…"
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr ""
 
+msgid "Card image"
+msgstr "Card image"
+
 msgid "Cards"
 msgstr "Cards"
 
@@ -3113,6 +3116,9 @@ msgstr ""
 msgid "Genre"
 msgstr ""
 
+msgid "Genre images"
+msgstr "Genre images"
+
 msgid "Genres"
 msgstr ""
 
@@ -3223,6 +3229,9 @@ msgstr ""
 
 msgid "Hardware volume control"
 msgstr ""
+
+msgid "Header image"
+msgstr "Header image"
 
 msgid "Heard"
 msgstr ""

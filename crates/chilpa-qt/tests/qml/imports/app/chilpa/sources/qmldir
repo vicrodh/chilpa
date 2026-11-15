@@ -3,3 +3,5 @@ singleton Sources 1.0 Sources.qml
 singleton PlaylistImport 1.0 PlaylistImport.qml
 
 singleton OpenMedia 1.0 OpenMedia.qml
+
+PluginCenterModel 1.0 PluginCenterModel.qml

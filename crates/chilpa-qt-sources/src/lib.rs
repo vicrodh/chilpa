@@ -6,4 +6,5 @@ pub mod bridge {
     pub mod sources;
     pub mod importer;
     pub mod open_media;
+    pub mod plugin_center;
 }

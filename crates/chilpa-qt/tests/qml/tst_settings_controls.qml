@@ -1,6 +1,8 @@
 import QtQuick
 import QtTest
 import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns" as SourceUi
 import "../../qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 
@@ -41,6 +43,30 @@ TestCase {
     SettingsRow { id: format; y: 180; width: parent.width; rowKind: 1; key: "integrations.discord.titleFormat"; title: "Title"; description: ""; control: "text"; action: ""; value: "%title%"; options: []; optionValues: []; marks: []; page: actions }
     SettingsRow { id: runtime; y: 270; width: parent.width; rowKind: 1; key: "metadata.beetsPython"; title: "Custom Python executable"; description: ""; control: "file"; action: "Choose executable"; value: "/fixture/previous python"; options: ["All files (*)"]; optionValues: []; marks: []; page: actions }
     StorageSettingsActions { id: storage; rows: actions }
+    Component {
+        id: hiddenManagerFactory
+        SourceUi.PluginManager {
+            visible:false; width:600; height:600; page:probe
+            readonly property int backendReads:probe.reads
+            QtObject {
+                id:probe
+                property int reads:0
+                function pluginsJson() { reads++;return '{"installed":[],"catalog":[],"busy":false}' }
+                function pluginCommand(action,input) {}
+            }
+        }
+    }
+    function test_hidden_managers_wait_until_shown_and_stop_when_hidden_again() {
+        const hidden=createTemporaryObject(hiddenManagerFactory,this)
+        wait(Motion.poll*2)
+        compare(hidden.backendReads,0)
+        hidden.visible=true
+        tryVerify(()=>hidden.backendReads>0)
+        hidden.visible=false
+        const before=hidden.backendReads
+        wait(Motion.poll*2)
+        compare(hidden.backendReads,before)
+    }
     function init() {
         writes = []; presses = []; backgroundClicks = 0
         credits.value = "false"; PlayerLayout.mode = "floating"; runtime.control = "file"

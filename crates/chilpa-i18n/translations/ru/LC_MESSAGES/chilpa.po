@@ -1156,6 +1156,9 @@ msgstr ""
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Ограничивает усиление, чтобы самый громкий пик оставался ниже полной шкалы. Если выключено, тихие треки достигают целевой громкости, даже если их пики клиппируют."
 
+msgid "Card image"
+msgstr "Изображение карточки"
+
 msgid "Cards"
 msgstr "Карточки"
 
@@ -3115,6 +3118,9 @@ msgstr "Сгенерированный тестовый сигнал"
 msgid "Genre"
 msgstr "Жанр"
 
+msgid "Genre images"
+msgstr "Изображения жанра"
+
 msgid "Genres"
 msgstr "Жанры"
 
@@ -3225,6 +3231,9 @@ msgstr "Аппаратная громкость"
 
 msgid "Hardware volume control"
 msgstr "Аппаратное управление громкостью"
+
+msgid "Header image"
+msgstr "Изображение заголовка"
 
 msgid "Heard"
 msgstr "Прослушано"

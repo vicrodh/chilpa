@@ -15,6 +15,8 @@ TitledFlow {
     AlbumGenreLine { width:Metrics.settingsMaxWidth; document:({items:[{name:"Progressive Metal",key:'{"kind":"genre","name":"Progressive Metal"}'}]}) }
     AlbumCredits { width:Metrics.settingsMaxWidth; record:({artistInformation:'{"artist_html":"Artist"}',genreLinks:'{"items":[]}'}) }
     PillButton { text:"Album genres"; onClicked:{ browser.active = true; browser.item.open() } }
+    PillButton { text:"Genre images"; onClicked:artwork.open() }
+    GenreArtworkEditor { id:artwork; key:'{"kind":"genre","name":"Jazz"}' }
     Loader { id:browser; active:false; sourceComponent:AlbumGenreBrowser { albumId:1; onFinished:browser.active = false } }
     LibraryDestinations {}
     QtObject { id:sampleNavigation; property var expandedSources:({}); property var sourceView:({}) }

@@ -36,7 +36,20 @@ impl<K: Ord, V: Clone> SharedMap<K, V> {
     pub fn insert(&mut self, key: K, value: V) { self.changing(); self.0.insert(key, Arc::new(value)); }
     pub fn insert_shared(&mut self, key: K, value: Arc<V>) { self.changing(); self.0.insert(key, value); }
     pub fn remove<Q: Ord + ?Sized>(&mut self, key: &Q) where K: Borrow<Q> { self.changing(); self.0.remove(key); }
-    pub fn retain(&mut self, mut keep: impl FnMut(&K, &V) -> bool) { self.changing(); self.0.retain(|key, value| keep(key, value)); }
+    pub fn retain(&mut self, mut keep: impl FnMut(&K, &V) -> bool) {
+        let (entries, generation) = (&mut self.0, &mut self.1);
+        let mut invalidated = false;
+        entries.retain(|key, value| {
+            let kept = keep(key, value);
+            // The predicate borrows immutable values. Invalidate before the first
+            // removal so a later predicate panic cannot leave a stale generation.
+            if !kept && !invalidated {
+                *generation = fresh_generation();
+                invalidated = true;
+            }
+            kept
+        });
+    }
     pub fn keys(&self) -> impl Iterator<Item = &K> { self.0.keys() }
     pub fn values(&self) -> impl Iterator<Item = &V> { self.0.values().map(Arc::as_ref) }
     pub fn values_mut_where(&mut self, mut keep: impl FnMut(&V) -> bool) -> impl Iterator<Item = &mut V> { self.changing(); self.0.values_mut().filter(move |value| keep(value)).map(Arc::make_mut) }
@@ -128,6 +141,68 @@ mod generation_tests {
         changed(|map| { drop(map.iter_mut_where(|_, _| false)); });
         changed(|map| { drop(map.into_iter()); });
         changed(|map| { assert!(map.get_mut(&999).is_none()); });
+    }
+
+    #[test]
+    fn retaining_every_entry_preserves_generation_and_shared_payloads() {
+        let mut map = Map::default();
+        map.insert(1, "one".into());
+        map.insert(2, "two".into());
+        let before = map.clone();
+        let generation = map.generation();
+        let mut visited = Vec::new();
+        map.retain(|key, value| { visited.push((*key, value.clone())); true });
+        assert_eq!(visited, [(1, "one".into()), (2, "two".into())]);
+        assert!(map.matches_generation(&generation));
+        for key in [1, 2] {
+            assert!(Arc::ptr_eq(&before.shared(&key).unwrap(), &map.shared(&key).unwrap()));
+        }
+        let mut empty = Map::default();
+        let empty_generation = empty.generation();
+        empty.retain(|_, _| panic!("an empty map has no predicate calls"));
+        assert!(empty.matches_generation(&empty_generation));
+    }
+
+    #[test]
+    fn removing_entries_invalidates_once_and_preserves_retained_payloads() {
+        let mut map = Map::default();
+        for key in 1..=3 { map.insert(key, key.to_string()); }
+        let before = map.clone();
+        let generation = map.generation();
+        map.retain(|key, _| *key == 2);
+        assert!(!map.matches_generation(&generation));
+        assert!(before.matches_generation(&generation));
+        assert_eq!(map.keys().copied().collect::<Vec<_>>(), [2]);
+        assert!(Arc::ptr_eq(&before.shared(&2).unwrap(), &map.shared(&2).unwrap()));
+        assert_eq!(before.len(), 3);
+    }
+
+    #[test]
+    fn a_predicate_panic_after_removal_still_invalidates_the_generation() {
+        let mut map = Map::default();
+        map.insert(1, "one".into());
+        map.insert(2, "two".into());
+        let generation = map.generation();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            map.retain(|key, _| { assert_ne!(*key, 2, "injected predicate failure"); false });
+        }));
+        assert!(result.is_err());
+        assert!(!map.contains_key(&1));
+        assert!(map.contains_key(&2));
+        assert!(!map.matches_generation(&generation));
+    }
+
+    #[test]
+    fn mutable_access_to_retained_values_invalidates_even_without_a_length_change() {
+        let mut map = Map::default();
+        map.insert(1, "one".into());
+        let generation = map.generation();
+        map.retain(|_, _| true);
+        assert!(map.matches_generation(&generation));
+        for value in map.values_mut_where(|_| true) { value.push('!'); }
+        assert_eq!(map.len(), 1);
+        assert_eq!(map.get(&1).unwrap(), "one!");
+        assert!(!map.matches_generation(&generation));
     }
 
     #[test]

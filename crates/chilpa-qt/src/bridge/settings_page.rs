@@ -44,10 +44,6 @@ pub mod qobject {
         /// Reads the rows again: a sync moving, a server coming back.
         #[qinvokable]
         fn refresh(self: Pin<&mut SettingsPage>);
-        #[qinvokable]
-        fn plugins_json(self: &SettingsPage) -> QString;
-        #[qinvokable]
-        fn plugin_command(self: &SettingsPage, action: &QString, input: &QString);
     }
     unsafe extern "RustQt" {
         #[inherit]
@@ -126,28 +122,6 @@ impl qobject::SettingsPage {
 
     pub fn stop_for_diagnosis(&self) { app::with(|api| api.stop()); }
 
-    pub fn plugins_json(&self) -> QString { QString::from(app::with(|api| api.plugin_center_json())) }
-    pub fn plugin_command(&self, action: &QString, input: &QString) {
-        let action = action.to_string();
-        if !matches!(action.as_str(), "choose_icon" | "choose_package" | "choose_export_folder") {
-            return app::with(|api| api.plugin_center_command(&action, &input.to_string()));
-        }
-        let package = action == "choose_package";
-        let export = action == "choose_export_folder";
-        let title = if package { app::t("Install plugin from ZIP") } else if export { app::t("Choose download folder") } else { app::t("Choose plugin icon") };
-        let (thread, input) = (self.qt_thread(), input.to_string());
-        std::thread::spawn(move || {
-            let dialog = rfd::AsyncFileDialog::new().set_title(&title);
-            let dialog = if package { dialog.add_filter("ZIP", &["zip"]) }
-                else if export { dialog } else { dialog.add_filter("Images", &["svg", "png", "jpg", "jpeg"]) };
-            let picked = if export { pollster::block_on(dialog.pick_folder()) } else { pollster::block_on(dialog.pick_file()) };
-            if let (Some(file), Ok(mut input)) = (picked, serde_json::from_str::<serde_json::Value>(&input)) {
-                input["path"] = cxx_qt_lib::QUrl::from_local_file(&QString::from(file.path().display().to_string())).to_string().to_string().into();
-                let action = if package { "install_local" } else if export { "export_folder" } else { "icon" };
-                let _ = thread.queue(move |_| app::with(|api| api.plugin_center_command(action, &input.to_string())));
-            }
-        });
-    }
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
         let Some(row) = self.rust().rows.get(index.row().max(0) as usize) else {
             return QVariant::default();

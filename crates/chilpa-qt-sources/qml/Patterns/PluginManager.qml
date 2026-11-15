@@ -9,7 +9,9 @@ import "../Components"
 
 Item {
     id: manager
-    required property var page
+    property var page: nativeState
+    PluginCenterModel { id: nativeState }
+    property bool mounted: false
     property string initialDownloadsId: ""
     property Component purchaseCard: null
     property var view: ({})
@@ -31,6 +33,7 @@ Item {
     function read() {
         const wasBusy = view.busy === true
         const text = page.pluginsJson()
+        if (text === "") return
         if (JSON.stringify(view) !== text) view = JSON.parse(text)
         if (wasBusy && view.busy === false) Sources.refresh()
         const rows = tab === "installed" ? view.installed_catalog || [] : view.catalog || []
@@ -68,8 +71,9 @@ Item {
     function settings(plugin) { details.mode = "settings"; details.tab = "settings"; details.plugin = plugin; selected = plugin.id; details.open(); if (plugin.enabled !== false && (plugin.settings || plugin.origin)) command("settings", {id: plugin.id}) }
     function openDownloads(plugin) { downloadsId = plugin.id; command("downloads_open", {id: plugin.id}) }
     function downloadAction(request) { command("downloads_action", {id: downloadsId, request: request}) }
-    Component.onCompleted: read()
-    Timer { interval: Motion.poll; repeat: true; running: manager.visible; onTriggered: manager.read() }
+    Component.onCompleted: { mounted = true; if (visible) read() }
+    onVisibleChanged: if (mounted && visible) read()
+    Timer { interval: Motion.poll; repeat: true; running: manager.mounted && manager.visible; onTriggered: manager.read() }
     Timer {
         objectName: "accountSetupPoll"
         interval: Motion.accountCheck

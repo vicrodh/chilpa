@@ -424,21 +424,29 @@ TestCase {
         compare(choose.parent,hero)
         verify(choose.x > hero.width / 2 && choose.y < hero.height / 2,"the edit control belongs to the hero's top right")
         choose.clicked()
-        compare(Artwork.asked,["choose genre " + key])
-        const chosen={};chosen[key]="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'/%3E"
-        Artwork.genres=chosen;Artwork.rev++
-        tryVerify(()=>findChild(page,"discoveryContent").visible)
-        waitForRendering(hero)
-        mouseClick(hero,hero.width / 2,hero.height / 2,Qt.RightButton)
-        let menu
-        tryVerify(()=>{menu=findChild(page,"genreImageMenu");return !!menu && menu.opened})
-        const forget=menu.entries.findIndex(entry=>entry.act === "forget")
-        verify(forget>=0)
-        menu.chosen(forget)
-        menu.close()
-        compare(Artwork.asked[1],"forget genre " + key)
+        compare(Artwork.asked,[],"choose the artwork role before opening a file picker")
+        const editor=findChild(page,"genreArtworkEditor")
+        tryCompare(editor,"opened",true)
+        tryVerify(()=>!!findChild(editor.contentItem,"genreCardChoose"))
+        findChild(editor.contentItem,"genreCardChoose").clicked()
+        findChild(editor.contentItem,"genreHeaderChoose").clicked()
+        compare(Artwork.asked,["choose genre " + key,"choose genre header " + key])
+        const chosen={},headers={}
+        chosen[key]="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'/%3E"
+        headers[key]="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='4'/%3E"
+        Artwork.genres=chosen;Artwork.genreHeaders=headers;Artwork.rev++
+        tryCompare(findChild(editor.contentItem,"genreCardForget"),"visible",true)
+        tryCompare(findChild(editor.contentItem,"genreHeaderForget"),"visible",true)
+        compare(findChild(editor.contentItem,"genreCardPreview").source.toString(),chosen[key])
+        compare(findChild(editor.contentItem,"genreHeaderPreview").source.toString(),headers[key])
+        compare(findChild(page,"discoveryContent").item.chosenImage.toString(),headers[key])
+        findChild(editor.contentItem,"genreCardForget").clicked()
+        findChild(editor.contentItem,"genreHeaderForget").clicked()
+        compare(Artwork.asked.slice(2),["forget genre " + key,"forget genre header " + key])
+        editor.close()
+        tryVerify(()=>!findChild(page,"genreArtworkEditor"),5000,"closing releases the selector and both previews")
         compare(page.routeKey,route)
-        Artwork.genres=({});Artwork.rev++
+        Artwork.genres=({});Artwork.genreHeaders=({});Artwork.rev++
     }
     function test_discovery_scrollbars_never_overlap_content_data() {
         return [{tag:"genres",mode:"genres"},{tag:"composers",mode:"composers"},{tag:"compositions",mode:"compositions"}]

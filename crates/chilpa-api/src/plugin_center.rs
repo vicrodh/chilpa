@@ -1,17 +1,18 @@
 //! Background catalog, installation and compatibility settings workflow.
 #[path = "plugin_export.rs"]
 pub(crate) mod export;
+mod view;
+#[cfg(test)]
+use std::sync::atomic::AtomicUsize;
+use view::View;
 use crate::{plugins::Plugins, Chilpa, PluginRepositories, PreparedPlugin};
 use serde_json::{json, Value};
-use std::{path::PathBuf, sync::{Arc, Mutex, mpsc, atomic::{AtomicBool, AtomicUsize, Ordering}}};
+use std::{path::PathBuf, sync::{Arc, Mutex, mpsc, atomic::{AtomicBool, Ordering}}};
 
 pub(crate) struct PluginCenter {
     commands: Arc<mpsc::SyncSender<(String, Value)>>,
-    view: Arc<Mutex<Value>>,
-    busy: Arc<AtomicUsize>,
-    foreground: Arc<AtomicBool>,
+    view: Arc<View>,
     library_dirty: Arc<AtomicBool>,
-    operation: Arc<Mutex<String>>,
     removed: Arc<Mutex<Vec<String>>>,
     refreshed: Arc<Mutex<Vec<String>>>,
     inbox: Arc<Mutex<crate::plugin_notifications::Inbox>>,
@@ -22,16 +23,10 @@ impl PluginCenter {
     fn start(plugins: Arc<Mutex<Plugins>>, root: PathBuf, catalog: Arc<crate::source_catalog::Catalog>, playback_active: bool) -> Self {
         let (sender, receiver) = mpsc::sync_channel::<(String, Value)>(2);
         let commands = Arc::new(sender);
-        let view = Arc::new(Mutex::new(json!({})));
+        let view = Arc::new(View::default());
         let shared = view.clone();
-        let busy = Arc::new(AtomicUsize::new(0));
-        let active = busy.clone();
-        let foreground = Arc::new(AtomicBool::new(false));
-        let visible = foreground.clone();
         let library_dirty = Arc::new(AtomicBool::new(false));
         let changed = library_dirty.clone();
-        let operation = Arc::new(Mutex::new(String::new()));
-        let current = operation.clone();
         let removed = Arc::new(Mutex::new(Vec::new()));
         let deleted = removed.clone();
         let refreshed = Arc::new(Mutex::new(Vec::new()));
@@ -54,7 +49,7 @@ impl PluginCenter {
                 let (action, input) = match receiver.recv_timeout(std::time::Duration::from_secs(60)) {
                     Ok(command) => command,
                     Err(mpsc::RecvTimeoutError::Timeout) => {
-                        if active.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire).is_err() { continue; }
+                        if !shared.begin(true, "updates_tick") { continue; }
                         ("updates_tick".to_string(), json!({}))
                     }
                     Err(mpsc::RecvTimeoutError::Disconnected) => break,
@@ -83,11 +78,8 @@ impl PluginCenter {
                     })();
                     if updates.revision() != previous_revision { *notifications.lock().unwrap() = updates.clone(); }
                     if let Err(error) = result { state["error"] = error.into(); manager_changed = true; }
-                    if manager_changed { *shared.lock().unwrap() = state.clone(); }
-                    if action != "updates_tick" {
-                        current.lock().unwrap().clear(); visible.store(false, Ordering::Release);
-                    }
-                    active.fetch_sub(1, Ordering::AcqRel);
+                    if manager_changed { shared.publish(&state); }
+                    shared.finish(action == "updates_tick");
                     continue;
                 }
                 if action == "native_settings_result" {
@@ -109,7 +101,7 @@ impl PluginCenter {
                         } else {
                             state["error"] = input["error"].clone();
                         }
-                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        shared.publish(&state);
                     }
                     continue;
                 }
@@ -126,7 +118,7 @@ impl PluginCenter {
                         state["settings_loading_id"] = id.clone().into();
                         state["settings_id"] = id.clone().into();
                         state["error"] = Value::Null;
-                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        shared.publish(&state);
                         let revision = input["revision"].clone();
                         std::thread::spawn(move || {
                             let started = std::time::Instant::now();
@@ -154,11 +146,9 @@ impl PluginCenter {
                     } else {
                         eprintln!("warning: web-sign-in: step=start skipped={skipped}");
                         state["web_sign_in"] = false.into();
-                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        shared.publish(&state);
                     }
-                    if let Ok(mut operation) = current.lock() { operation.clear(); }
-                    visible.store(false, Ordering::Release);
-                    active.fetch_sub(1, Ordering::AcqRel);
+                    shared.finish(false);
                     continue;
                 }
                 if matches!(action.as_str(), "settings" | "submit") {
@@ -171,7 +161,7 @@ impl PluginCenter {
                         state["settings_id"] = id.into();
                         state["form"] = Value::Null;
                         state["error"] = Value::Null;
-                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        shared.publish(&state);
                         let id = id.to_string();
                         let completed_action = action.clone();
                         if let Some(sender) = completions.upgrade() {
@@ -187,9 +177,7 @@ impl PluginCenter {
                                 let _ = sender.send(("native_settings_result".into(), input));
                             });
                         }
-                        if let Ok(mut operation) = current.lock() { operation.clear(); }
-                        visible.store(false, Ordering::Release);
-                        active.fetch_sub(1, Ordering::AcqRel);
+                        shared.finish(false);
                         continue;
                     }
                     state["settings_loading_id"] = Value::Null;
@@ -223,38 +211,23 @@ impl PluginCenter {
                 if let Ok(host) = plugins.lock() {
                     if let Ok(requests) = host.network_requests.lock() { state["network_requests"] = json!(*requests); }
                 }
-                if let Ok(mut output) = shared.lock() { *output = state.clone(); }
-                if !matches!(action.as_str(), "tick" | "downloads_tick") {
-                    if let Ok(mut operation) = current.lock() { operation.clear(); }
-                    visible.store(false, Ordering::Release);
-                }
-                active.fetch_sub(1, Ordering::AcqRel);
+                shared.publish(&state);
+                shared.finish(matches!(action.as_str(), "tick" | "downloads_tick"));
             }
         });
-        Self { commands, view, busy, foreground, operation, library_dirty, removed, refreshed, inbox, playback }
+        Self { commands, view, library_dirty, removed, refreshed, inbox, playback }
     }
     fn command(&self, action: &str, input: Value) {
         let background = matches!(action, "tick" | "downloads_tick" | "updates_tick");
-        if background {
-            if self.foreground.load(Ordering::Acquire) || self.busy.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire).is_err() { return; }
-        } else {
-            if self.foreground.swap(true, Ordering::AcqRel) { return; }
-            self.busy.fetch_add(1, Ordering::AcqRel);
-            if let Ok(mut operation) = self.operation.lock() { *operation = action.into(); }
-        }
+        if !self.view.begin(background, action) { return; }
         // One foreground action can wait behind maintenance without being lost.
         if self.commands.try_send((action.to_string(), input)).is_err() {
-            if !background { self.foreground.store(false, Ordering::Release); }
-            self.busy.fetch_sub(1, Ordering::AcqRel);
+            self.view.reject(background);
         }
     }
 
     fn snapshot(&self) -> Value {
-        let mut value = self.view.lock().map(|value| value.clone()).unwrap_or(json!({}));
-        value["operation"] = self.operation.lock().map(|operation| operation.clone()).unwrap_or_default().into();
-        value["busy"] = self.foreground.load(Ordering::Acquire).into();
-        value["working"] = (self.busy.load(Ordering::Acquire) != 0).into();
-        value
+        self.view.snapshot()
     }
 }
 
@@ -285,6 +258,15 @@ impl Chilpa {
         let local = !self.plays.is_empty() || (self.player.is_none() && self.now.playing);
         local || self.listen.pending.is_some() || self.casting.local_start.is_some()
             || self.casting.active() && (self.now.playing || self.now.paused)
+    }
+    /// Advances pending plugin work and returns a document only after a visible change.
+    /// Keep the returned revision with the receiving view and pass `None` on its first read.
+    pub fn plugin_center_snapshot(&mut self, seen: Option<u64>) -> Option<(u64, String)> {
+        self.advance_plugins();
+        self.ensure_plugin_center();
+        self.advance_plugin_changes();
+        let center = self.plugin_center.as_ref()?;
+        center.view.snapshot_since(seen)
     }
     pub fn plugin_center_json(&mut self) -> String {
         self.advance_plugins();
@@ -703,7 +685,7 @@ mod tests {
     }
     fn wait_finished(center: &PluginCenter) -> Value {
         let deadline = Instant::now() + Duration::from_secs(10);
-        while center.busy.load(Ordering::Acquire) != 0 {
+        while center.view.working() != 0 {
             assert!(Instant::now() < deadline, "manager operation timed out");
             std::thread::sleep(Duration::from_millis(5));
         }
@@ -713,18 +695,121 @@ mod tests {
         let (commands, received) = mpsc::sync_channel(2);
         let center = PluginCenter {
             commands: Arc::new(commands),
-            view: Arc::new(Mutex::new(json!({}))),
-            busy: Arc::new(AtomicUsize::new(0)),
-            foreground: Arc::new(AtomicBool::new(false)),
+            view: Arc::new(View::default()),
             library_dirty: Arc::new(AtomicBool::new(false)),
             removed: Arc::new(Mutex::new(Vec::new())),
             refreshed: Arc::new(Mutex::new(Vec::new())),
-            operation: Arc::new(Mutex::new(String::new())),
             inbox: Arc::new(Mutex::new(Default::default())),
             playback: Arc::new(AtomicBool::new(playback)),
         };
         (center, received)
     }
+    #[test]
+    fn an_unchanged_manager_still_consumes_library_changes_and_preserves_the_legacy_getter() {
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(false);
+        center.view.publish(&json!({"catalog":[{"id":"fixture"}],"form":{"fields":[]}}));
+        api.plugin_center = Some(center);
+        let (revision, document) = api.plugin_center_snapshot(None).unwrap();
+        assert_eq!(document, api.plugin_center_json());
+        api.library_changed();
+        api.plugin_center.as_ref().unwrap().library_dirty.store(true, Ordering::Release);
+        assert!(api.plugin_center_snapshot(Some(revision)).is_none());
+        assert!(api.library_changed(), "global plugin changes advance even without a new manager document");
+        assert!(api.plugin_center_snapshot(Some(revision)).is_none());
+        assert!(!api.library_changed());
+    }
+
+    #[test]
+    fn rejected_manager_commands_publish_the_finished_activity() {
+        for action in ["install", "downloads_tick"] {
+            let (center, received) = quiet_center(false);
+            let (revision, _) = center.view.snapshot_since(None).unwrap();
+            drop(received);
+            center.command(action, json!({}));
+            let (next, text) = center.view.snapshot_since(Some(revision)).unwrap();
+            let document: Value = serde_json::from_str(&text).unwrap();
+            assert_eq!(document["busy"], false);
+            assert_eq!(document["working"], false);
+            assert_eq!(document["operation"], if action == "install" { "install" } else { "" });
+            assert!(center.view.snapshot_since(Some(next)).is_none());
+        }
+    }
+
+    #[test]
+    fn a_full_manager_mailbox_does_not_leave_activity_running() {
+        let (center, received) = quiet_center(false);
+        center.commands.try_send(("fixture-one".into(), json!({}))).unwrap();
+        center.commands.try_send(("fixture-two".into(), json!({}))).unwrap();
+        let (before, _) = center.view.snapshot_since(None).unwrap();
+        center.command("install", json!({}));
+        let (after, text) = center.view.snapshot_since(Some(before)).unwrap();
+        let document: Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(document["busy"], false);
+        assert_eq!(document["working"], false);
+        assert_eq!(document["operation"], "install");
+        assert_eq!(received.try_recv().unwrap().0, "fixture-one");
+        assert_eq!(received.try_recv().unwrap().0, "fixture-two");
+        assert!(received.try_recv().is_err());
+        assert!(center.view.snapshot_since(Some(after)).is_none());
+    }
+
+    fn wait_snapshot(center: &PluginCenter, previous: u64, ready: impl Fn(&Value) -> bool) -> (u64, Value) {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if let Some((revision, text)) = center.view.snapshot_since(Some(previous)) {
+                let document: Value = serde_json::from_str(&text).unwrap();
+                if ready(&document) { return (revision, document); }
+            }
+            assert!(Instant::now() < deadline, "manager did not publish its completion");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    #[test]
+    fn asynchronous_native_settings_errors_publish_after_the_command_has_finished() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let host = Plugins::new(root.clone()).unwrap();
+        let manifest = chilpa_plugin::Manifest::parse_for_runtime(
+            r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"}"#,
+            chilpa_plugin::Runtime::Process).unwrap();
+        let (client, pipes) = crate::natives::tests::channel();
+        crate::natives::tests::started(&host.natives, manifest, &root, &client);
+        // The native registry must contain a client to enter the asynchronous path.
+        // Closing its synthetic peer makes that RPC complete with a real channel error.
+        drop(pipes);
+        let center = PluginCenter::start(Arc::new(Mutex::new(host)), root, crate::source_catalog::Catalog::new(), false);
+        let (before, _) = center.view.snapshot_since(None).unwrap();
+        center.command("settings", json!({"id":"test.source"}));
+        let (completed, document) = wait_snapshot(&center, before, |document| {
+            document["settings_id"] == "test.source" && document["settings_loading_id"].is_null()
+                && document["busy"] == false && document["error"].as_str().is_some_and(|error| !error.is_empty())
+        });
+        assert_eq!(document["working"], false);
+        assert!(center.view.snapshot_since(Some(completed)).is_none());
+    }
+
+    #[test]
+    fn native_completion_inbox_publishes_forms_and_errors_without_a_foreground_command() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let host = Plugins::new(root.clone()).unwrap();
+        let center = PluginCenter::start(Arc::new(Mutex::new(host)), root, crate::source_catalog::Catalog::new(), false);
+        let (before, _) = center.view.snapshot_since(None).unwrap();
+        // The initial loading identity is null. Inject completions through the same
+        // worker inbox used by native RPC threads, without a process or account.
+        center.commands.send(("native_settings_result".into(), json!({"id":null,"action":"settings",
+            "form":{"fields":[{"key":"fixture","value":"ready"}]}}))).unwrap();
+        let (ready, document) = wait_snapshot(&center, before, |document| document["form"]["fields"][0]["value"] == "ready");
+        assert_eq!(document["busy"], false);
+        assert_eq!(document["working"], false);
+        center.commands.send(("native_settings_result".into(), json!({"id":null,"action":"settings","error":"fixture failure"}))).unwrap();
+        let (failed, document) = wait_snapshot(&center, ready, |document| document["error"] == "fixture failure");
+        assert_eq!(document["form"]["fields"][0]["value"], "ready");
+        assert!(center.view.snapshot_since(Some(failed)).is_none());
+    }
+
     #[test]
     fn a_new_manager_starts_with_the_current_playback_activity() {
         for active in [false, true] {

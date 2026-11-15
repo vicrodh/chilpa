@@ -110,3 +110,69 @@ fn track_only_and_unmatched_receipts_preserve_index_without_card_mutation() {
         assert_eq!(catalog.index_captures.load(Ordering::Relaxed), captures);
     }
 }
+
+#[test]
+fn cached_cover_persistence_with_no_evictions_keeps_the_hot_index() {
+    let (catalog, albums) = fixture();
+    let sources = [source()];
+    let (stamp, first) = catalog.integrated_index(&sources, catalog.integration_epoch());
+    let captures = catalog.index_captures.load(Ordering::Relaxed);
+    let before = catalog.lock().store.clone();
+    let mut saved = 0;
+    for receipt in 0..3 {
+        let path = format!("synthetic-cached-cover-{receipt}.jpg");
+        {
+            let mut inner = catalog.lock();
+            assert!(receive_cover(&mut inner, "https://example.invalid/album.jpg".into(), &path));
+            assert!(inner.dirty);
+        }
+        persist(&catalog, |snapshot| {
+            saved += 1;
+            assert_eq!(snapshot.cards.len(), before.cards.len());
+            assert_eq!(snapshot.tracks.len(), before.tracks.len());
+            assert_eq!(snapshot.shelves.len(), before.shelves.len());
+            for album in &albums { assert_eq!(snapshot.cards[album].art, path); }
+            Ok(())
+        });
+        assert!(!catalog.lock().dirty);
+        for _ in 0..3 {
+            let (current_stamp, current) = catalog.integrated_index(&sources, catalog.integration_epoch());
+            assert_eq!(current_stamp, stamp);
+            assert!(Arc::ptr_eq(&first, &current));
+        }
+        assert_eq!(catalog.index_captures.load(Ordering::Relaxed), captures,
+            "saving cached artwork without eviction must not capture the catalog again");
+        let inner = catalog.lock();
+        assert!(inner.store.cards.matches_generation(&before.cards.generation()));
+        assert!(inner.store.tracks.matches_generation(&before.tracks.generation()));
+        assert!(inner.store.shelves.matches_generation(&before.shelves.generation()));
+    }
+    assert_eq!(saved, 3);
+    for album in albums { assert!(before.cards[&album].art.is_empty()); }
+}
+
+#[test]
+fn persistence_that_removes_an_orphan_invalidates_the_captured_track_generation() {
+    let (catalog, _) = fixture();
+    let sources = [source()];
+    let orphan = {
+        let mut inner = catalog.lock();
+        inner.store.take_item_track("fixture", &json!({"kind":"track", "ref":"orphan",
+            "title":"Unreferenced", "duration_ms":500}), None, 100).unwrap()
+    };
+    let (stamp, first) = catalog.integrated_index(&sources, catalog.integration_epoch());
+    let captures = catalog.index_captures.load(Ordering::Relaxed);
+    let before = catalog.lock().store.tracks.clone();
+    catalog.lock().dirty = true;
+    persist(&catalog, |snapshot| { assert!(!snapshot.tracks.contains_key(&orphan)); Ok(()) });
+    assert!(before.contains_key(&orphan));
+    assert!(!catalog.lock().store.tracks.matches_generation(&before.generation()));
+    let (current_stamp, current) = catalog.integrated_index(&sources, catalog.integration_epoch());
+    assert_eq!(catalog.index_captures.load(Ordering::Relaxed), captures + 1,
+        "an actual removal must invalidate the conservative generation hint");
+    // The orphan was outside integrated membership, so the rebuilt fingerprint
+    // can reuse the same musical publication after checking the new input.
+    assert_eq!(current_stamp, stamp);
+    assert!(Arc::ptr_eq(&first, &current));
+    assert!(current.items.iter().all(|item| item.track != orphan));
+}
