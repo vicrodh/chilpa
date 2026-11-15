@@ -2,7 +2,7 @@
 //! OS advisory lock cover the same canonical library path. The zero-byte lock
 //! file stays in place; closing its handle releases ownership, including on
 //! process exit. Readers and current-schema opens never acquire the file lock.
-//! One temporary backup lives beside the destination until atomic publication.
+//! One private staging directory lives beside the destination until publication.
 use super::{backup_path, Connection, Path, VERSION};
 use std::fs::{File, OpenOptions, TryLockError};
 use std::time::{Duration, Instant};
@@ -65,11 +65,23 @@ pub(super) fn backup(db: &Connection, library: &Path) -> rusqlite::Result<()> {
     if actual == 0 || actual >= VERSION { return Ok(()); }
     let destination = backup_path(library);
     let parent = destination.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
-    let temporary = tempfile::Builder::new().prefix(".library-upgrade-").tempfile_in(parent)
+    let staging = tempfile::Builder::new().prefix(".library-upgrade-").tempdir_in(parent)
         .map_err(|error| io_error(&destination, error))?;
-    db.execute("VACUUM INTO ?1", [&temporary.path().to_string_lossy().as_ref()])
+    // Some platform SQLite builds reject even an existing empty output file.
+    // Reserve a private sibling directory and let SQLite create its child.
+    let reserved = tempfile::NamedTempFile::new_in(staging.path())
+        .map_err(|error| io_error(&destination, error))?;
+    let permissions = reserved.as_file().metadata().map_err(|error| io_error(&destination, error))?.permissions();
+    let temporary = reserved.path().to_owned();
+    reserved.close().map_err(|error| io_error(&destination, error))?;
+    db.execute("VACUUM INTO ?1", [&temporary.to_string_lossy().as_ref()])
         .map_err(|error| backup_error(&destination, error))?;
-    temporary.as_file().sync_all().map_err(|error| io_error(&destination, error))?;
-    temporary.persist(&destination).map_err(|error| io_error(&destination, error.error))?;
+    let copied = OpenOptions::new().read(true).write(true).open(&temporary)
+        .map_err(|error| io_error(&destination, error))?;
+    // Restore the private temporary-file permissions before publication.
+    copied.set_permissions(permissions).map_err(|error| io_error(&destination, error))?;
+    copied.sync_all().map_err(|error| io_error(&destination, error))?;
+    drop(copied);
+    std::fs::rename(&temporary, &destination).map_err(|error| io_error(&destination, error))?;
     Ok(())
 }

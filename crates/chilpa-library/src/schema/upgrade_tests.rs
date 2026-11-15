@@ -122,3 +122,64 @@ fn backup_context_retains_extended_io_failure_codes() {
     assert!(error.to_string().contains("disk I/O error"));
     assert!(!error.to_string().contains("Make room"));
 }
+
+#[test]
+fn an_existing_backup_is_replaced_by_a_complete_pre_upgrade_wal_snapshot() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("listener's library.db");
+    fixture(&path);
+    let destination = backup_path(&path);
+    let previous = Connection::open(&destination).unwrap();
+    previous.execute_batch("CREATE TABLE previous(value INTEGER); INSERT INTO previous VALUES(83); PRAGMA user_version=54;").unwrap();
+    drop(previous);
+    let old_bytes = std::fs::read(&destination).unwrap();
+    let writer = Connection::open(&path).unwrap();
+    apply_pragmas(&writer).unwrap();
+    writer.execute_batch("INSERT INTO tracks(id,source_id,external_id,title,album_id,added_at) VALUES(2,1,'/second','Recent song',1,2);").unwrap();
+    let wal = directory.path().join("listener's library.db-wal");
+    assert!(std::fs::metadata(&wal).unwrap().len() > 0, "the snapshot includes committed WAL data");
+    drop(crate::Library::open(&path).unwrap());
+    assert_ne!(std::fs::read(&destination).unwrap(), old_bytes);
+    let copied = Connection::open_with_flags(&destination, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+    assert_eq!(copied.query_row("SELECT title FROM tracks WHERE id=2", [], |row| row.get::<_, String>(0)).unwrap(), "Recent song");
+    drop(copied);
+    drop(writer);
+    verify(&path);
+    assert!(!std::fs::read_dir(directory.path()).unwrap().any(|entry| entry.unwrap().file_name().to_string_lossy().starts_with(".library-upgrade-")));
+}
+
+#[test]
+fn a_backup_failure_keeps_the_previous_backup_and_cleans_private_staging() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    fixture(&path);
+    let destination = backup_path(&path);
+    let previous = Connection::open(&destination).unwrap();
+    previous.execute_batch("CREATE TABLE previous(value INTEGER); INSERT INTO previous VALUES(91); PRAGMA user_version=54;").unwrap();
+    drop(previous);
+    let old_bytes = std::fs::read(&destination).unwrap();
+    let db = Connection::open(&path).unwrap();
+    db.execute_batch("PRAGMA query_only=ON").unwrap();
+    let error = upgrade::backup(&db, &path).unwrap_err();
+    assert_eq!(error.sqlite_error_code(), Some(rusqlite::ErrorCode::ReadOnly));
+    assert_eq!(std::fs::read(&destination).unwrap(), old_bytes);
+    assert_eq!(db.query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0)).unwrap(), VERSION - 1);
+    assert!(!std::fs::read_dir(directory.path()).unwrap().any(|entry| entry.unwrap().file_name().to_string_lossy().starts_with(".library-upgrade-")));
+}
+
+#[cfg(unix)]
+#[test]
+fn a_published_backup_keeps_private_temporary_file_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    fixture(&path);
+    let template = tempfile::NamedTempFile::new_in(directory.path()).unwrap();
+    let expected = template.as_file().metadata().unwrap().permissions().mode() & 0o777;
+    assert_eq!(expected & 0o077, 0, "temporary files exclude group and other access");
+    drop(template);
+    drop(crate::Library::open(&path).unwrap());
+    let actual = std::fs::metadata(backup_path(&path)).unwrap().permissions().mode() & 0o777;
+    assert_eq!(actual, expected, "publication preserves the earlier private backup permissions");
+    verify(&path);
+}
