@@ -8,6 +8,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
 import "../Components"
 
 Item {
@@ -49,7 +50,7 @@ Item {
         objectName: "genreOverviewScroll"
         anchors.fill: parent; contentWidth: width; contentHeight: body.height
         clip: true; boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { objectName: "genreOverviewScrollbar"; gutter: Metrics.pageGutter }
         Column {
             id: body
             width: view.width
@@ -66,6 +67,30 @@ Item {
                         GradientStop { position: 1; color: Theme.color.overlayScrim }
                     }
                 }
+                IconButton {
+                    objectName: "genreChooseImage"
+                    anchors.top: parent.top; anchors.right: parent.right; anchors.margins: Metrics.gap16
+                    glyph: Icons.pencil; tone: "overlay"; round: true
+                    tip: overview.customImage ? I18n.tr("Change image", I18n.rev) : I18n.tr("Add image", I18n.rev)
+                    onClicked: Artwork.chooseGenre(overview.key)
+                }
+                TapHandler {
+                    acceptedButtons: Qt.RightButton
+                    onTapped: point => {
+                        imageMenu.active = true
+                        imageMenu.item.popupAt(point.position.x, point.position.y)
+                    }
+                }
+                Loader {
+                    id: imageMenu
+                    active: false
+                    sourceComponent: Component { CoverMenu {
+                        objectName: "genreImageMenu"
+                        parent: hero; kind: "genre"; custom: overview.customImage
+                        onChoose: Artwork.chooseGenre(overview.key)
+                        onForget: Artwork.forgetGenre(overview.key)
+                    } }
+                }
                 Column {
                     anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Metrics.gap24
                     spacing: Metrics.gap12
@@ -76,8 +101,6 @@ Item {
                         PillButton { objectName: "genrePlay"; text: I18n.tr("Play", I18n.rev); kind: "primary"; enabled: (overview.summary.albums || 0) + (overview.summary.looseTracks || 0) > 0; onClicked: overview.playRequested() }
                         PillButton { text: I18n.tr("Tracks", I18n.rev); kind: "backdrop"; onClicked: overview.browseRequested("tracks") }
                         PillButton { text: I18n.tr("Subgenres", I18n.rev); kind: "backdrop"; visible: (overview.about.total || 0) > 0; onClicked: overview.browseRequested("subgenres") }
-                        PillButton { objectName: "genreChooseImage"; text: overview.customImage ? I18n.tr("Change image", I18n.rev) : I18n.tr("Add image", I18n.rev); kind: "backdrop"; onClicked: Artwork.chooseGenre(overview.key) }
-                        PillButton { objectName: "genreForgetImage"; text: I18n.tr("Remove image", I18n.rev); kind: "backdrop"; visible: overview.customImage; onClicked: Artwork.forgetGenre(overview.key) }
                     }
                 }
             }

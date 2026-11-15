@@ -49,7 +49,7 @@ Item {
         model: table.total; clip: true; reuseItems: true
         cacheBuffer: Metrics.rowRich * 2
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { objectName: "discoveryScrollbar"; gutter: Metrics.pageGutter }
         onContentYChanged: table.requestVisible()
         onHeightChanged: Qt.callLater(table.requestVisible)
         delegate: Button {

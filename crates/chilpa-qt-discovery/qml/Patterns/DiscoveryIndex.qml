@@ -50,7 +50,7 @@ Item {
         reuseItems: true
         cacheBuffer: cellHeight
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { objectName: "discoveryScrollbar"; gutter: Metrics.pageGutter }
         onContentYChanged: parentView.requestVisible()
         onHeightChanged: Qt.callLater(parentView.requestVisible)
         onColumnsChanged: Qt.callLater(parentView.requestVisible)

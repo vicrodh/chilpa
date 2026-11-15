@@ -420,16 +420,40 @@ TestCase {
         let choose
         tryVerify(()=>{choose=findChild(page,"genreChooseImage");return !!choose})
         Artwork.asked=[]
+        const hero=findChild(page,"genreHero")
+        compare(choose.parent,hero)
+        verify(choose.x > hero.width / 2 && choose.y < hero.height / 2,"the edit control belongs to the hero's top right")
         choose.clicked()
         compare(Artwork.asked,["choose genre " + key])
         const chosen={};chosen[key]="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'/%3E"
         Artwork.genres=chosen;Artwork.rev++
-        const forget=findChild(page,"genreForgetImage")
-        tryCompare(forget,"visible",true)
-        forget.clicked()
+        tryVerify(()=>findChild(page,"discoveryContent").visible)
+        waitForRendering(hero)
+        mouseClick(hero,hero.width / 2,hero.height / 2,Qt.RightButton)
+        let menu
+        tryVerify(()=>{menu=findChild(page,"genreImageMenu");return !!menu && menu.opened})
+        const forget=menu.entries.findIndex(entry=>entry.act === "forget")
+        verify(forget>=0)
+        menu.chosen(forget)
+        menu.close()
         compare(Artwork.asked[1],"forget genre " + key)
         compare(page.routeKey,route)
         Artwork.genres=({});Artwork.rev++
+    }
+    function test_discovery_scrollbars_never_overlap_content_data() {
+        return [{tag:"genres",mode:"genres"},{tag:"composers",mode:"composers"},{tag:"compositions",mode:"compositions"}]
+    }
+    function test_discovery_scrollbars_never_overlap_content(data) {
+        const page=createTemporaryObject(maker,this,{mode:data.mode,width:560})
+        const model=findChild(page,"discoveryModel")
+        model.document=JSON.stringify({total:100,items:Array.from({length:100},(_,index)=>({kind:data.mode === "compositions" ? "work" : data.mode === "composers" ? "composer" : "genre",name:"Entry " + index,albums:1,tracks:1}))})
+        const view=findChild(page,"discoveryEntries")
+        let bar
+        tryVerify(()=>{bar=findChild(page,"discoveryScrollbar");return !!bar && bar.viewport===view})
+        tryVerify(()=>bar.mapToItem(page,0,0).x >= view.mapToItem(page,view.width,0).x + 5)
+        verify(bar.mapToItem(page,bar.width,0).x <= page.width,"the entire scrollbar stays within the page")
+        page.width=1100
+        tryVerify(()=>bar.mapToItem(page,0,0).x >= view.mapToItem(page,view.width,0).x + 5)
     }
     function test_a_work_table_row_opens_its_recordings_by_keyboard_on_a_narrow_page() {
         const page = createTemporaryObject(maker, this, {width:560,mode:"compositions"})
