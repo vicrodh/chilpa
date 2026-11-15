@@ -87,7 +87,7 @@ Modal {
                     enabled: !!entry.key
                     hoverEnabled: true
                     Accessible.name: entry.name || ""
-                    onClicked: { browser.close(); Navigation.goKey("genres", entry.key) }
+                    onClicked: { const key=entry.key; browser.close(); Navigation.goKey("genres", key) }
                     Keys.onReturnPressed: clicked()
                     Keys.onEnterPressed: clicked()
                     background: Rectangle {

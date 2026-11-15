@@ -20,6 +20,7 @@ pub struct GenreEntry {
     pub token: String,
     pub name: String,
     pub truncated: bool,
+    pub chars: usize,
     pub originals: usize,
 }
 
@@ -67,9 +68,11 @@ impl GenreIndex {
     pub fn page(&self, offset: usize, limit: usize, descending: bool) -> rusqlite::Result<(Vec<GenreEntry>, usize)> {
         let total = self.db.query_row("SELECT count(*) FROM groups WHERE matched=1",[],|row|row.get::<_,i64>(0))?;
         let order = if descending { "sort DESC,name DESC,token DESC" } else { "sort,name,token" };
-        let sql = format!("SELECT token,substr(name,1,128),length(name)>128,originals FROM groups WHERE matched=1 ORDER BY {order} LIMIT ?1 OFFSET ?2");
+        // Match the API presentation projection without loading full labels.
+        let sql = format!("SELECT token,CASE WHEN length(name)>128 THEN substr(name,1,95)||'…'||substr(name,-32) ELSE substr(name,1,128) END,
+            length(name)>128,originals,length(name) FROM groups WHERE matched=1 ORDER BY {order} LIMIT ?1 OFFSET ?2");
         let rows = self.db.prepare(&sql)?.query_map(params![limit.min(60) as i64,offset.min(i64::MAX as usize) as i64],|row|Ok(GenreEntry {
-            token:row.get(0)?,name:row.get(1)?,truncated:row.get(2)?,originals:row.get::<_,i64>(3)? as usize,
+            token:row.get(0)?,name:row.get(1)?,truncated:row.get(2)?,originals:row.get::<_,i64>(3)? as usize,chars:row.get::<_,i64>(4)? as usize,
         }))?.collect::<rusqlite::Result<_>>()?;
         Ok((rows,total as usize))
     }

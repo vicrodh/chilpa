@@ -23,9 +23,9 @@ impl Reader {
             let inventory = self.album_genres_index(album, text, index)?;
             let (rows, total) = inventory.index.page(page.saturating_mul(PAGE), limit, descending).map_err(|error|error.to_string())?;
             let items: Vec<_> = rows.into_iter().map(|row| {
-                let name = if row.truncated { format!("{}…", row.name) } else { row.name };
+                let name = row.name;
                 let key = json!({"kind":"genre","name":name,"album":album,"genreToken":row.token,"albumScope":true}).to_string();
-                json!({"name":name,"key":key,"originalsCount":row.originals,"nameTruncated":row.truncated})
+                json!({"name":name,"key":key,"originalsCount":row.originals,"nameTruncated":row.truncated,"nameChars":row.chars})
             }).collect();
             Ok::<_,String>(json!({"items":items,"total":total,"hasMore":total > page.saturating_mul(PAGE).saturating_add(limit)}))
         })();
@@ -65,6 +65,20 @@ impl Reader {
 
     pub(super) fn resolve_album_genre_using(&self, mut selected: Selection, index: &SourceIndex) -> Result<Selection,String> {
         if selected.genre_token.is_empty() { return Ok(selected); }
+        if selected.genre_id != 0 || selected.genre_track != 0 {
+            let original = if selected.genre_id > 0 {
+                self.lib.genre_name_by_id(selected.genre_id).map_err(|error|error.to_string())?
+            } else {
+                index.items.iter().filter(|item|item.track == selected.genre_track).flat_map(|item|&item.genres)
+                    .find(|name|presentation::token(name) == selected.genre_token).cloned()
+            };
+            let original = original.ok_or_else(||chilpa_i18n::t("This genre is no longer available."))?;
+            if presentation::token(&original) != selected.genre_token {
+                return Err(chilpa_i18n::t("This genre is no longer available."));
+            }
+            selected.name = genres::link(&original).1.to_string();
+            return Ok(selected);
+        }
         let inventory = self.album_genres_index(selected.album,"",index)?;
         selected.name = inventory.index.canonical(&selected.genre_token).map_err(|error|error.to_string())?
             .ok_or_else(||chilpa_i18n::t("This genre is no longer present on the album."))?;

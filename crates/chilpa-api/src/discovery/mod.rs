@@ -7,6 +7,7 @@ mod genre_summary;
 mod works;
 mod options;
 mod sources;
+mod presentation;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
@@ -15,6 +16,8 @@ mod measurement;
 mod source_tests;
 #[cfg(test)]
 mod album_genres_tests;
+#[cfg(test)]
+mod presentation_tests;
 use crate::{AlbumsFound, Filter, Reader, Snapshot, TrackOrder};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -39,6 +42,10 @@ pub struct Selection {
     pub album: i64,
     #[serde(rename = "genreToken", skip_serializing_if = "String::is_empty")]
     pub genre_token: String,
+    #[serde(rename = "genreId")]
+    pub genre_id: i64,
+    #[serde(rename = "genreTrack")]
+    pub genre_track: i64,
     #[serde(rename = "albumScope")]
     pub album_scope: bool,
     pub excluded_sources: Vec<String>,
@@ -48,9 +55,17 @@ impl Selection {
     pub fn parse(key: &str) -> Option<Self> {
         (key.len() <= 65536).then(|| serde_json::from_str::<Self>(key).ok()).flatten()
             .filter(|selected| options::valid_sources(&selected.excluded_sources))
-            .filter(|selected| !selected.album_scope || !selected.genre_token.is_empty())
-            .filter(|selected| selected.genre_token.is_empty() || selected.kind == "genre" && selected.album != 0
-                && selected.genre_token.len() == 64 && selected.genre_token.bytes().all(|byte|byte.is_ascii_hexdigit()))
+            .filter(Self::valid_genre_anchor)
+    }
+
+    fn valid_genre_anchor(&self) -> bool {
+        if self.genre_token.is_empty() {
+            return !self.album_scope && self.genre_id == 0 && self.genre_track == 0;
+        }
+        let anchors = usize::from(self.album != 0) + usize::from(self.genre_id > 0) + usize::from(self.genre_track < 0);
+        self.kind == "genre" && anchors == 1 && self.genre_id >= 0 && self.genre_track <= 0
+            && (!self.album_scope || self.album != 0) && self.genre_token.len() == 64
+            && self.genre_token.bytes().all(|byte|byte.is_ascii_hexdigit())
     }
 }
 
@@ -211,13 +226,24 @@ impl Reader {
             Ok(summaries) => summaries,
             Err(error) => return json!({"error":error,"items":[],"total":0}),
         };
-        let items: Vec<_> = names.into_iter().zip(&summaries).map(|(name, summary)| {
+        let items = names.into_iter().zip(&summaries).map(|(name, summary)| {
             let styles = inventory.records_for(&name).len();
-            json!({"kind":"genre", "name":name, "styles":styles, "albums":summary.albums, "looseTracks":summary.loose_tracks, "images":summary.images, "art":genres::art(&name)})
-        }).collect();
+            let label = presentation::Label::new(&name);
+            let key = self.genre_entry_key(&name, &label, excluded, index)?;
+            Ok(json!({"kind":"genre", "name":label.text, "nameTruncated":label.truncated, "nameChars":label.chars,
+                "key":key, "styles":styles, "albums":summary.albums, "looseTracks":summary.loose_tracks, "images":summary.images, "art":genres::art(&name)}))
+        }).collect::<Result<Vec<_>,String>>();
+        let items = match items {
+            Ok(items) => items,
+            Err(error) => return json!({"error":error,"items":[],"total":0}),
+        };
         let resolutions = inventory.records_for(&selected.name);
-        json!({"total":total, "excluded_sources":excluded, "sources":self.discovery_sources_using(index), "art":genres::art(&selected.name), "taxonomyVersion":genres::VERSION, "resolutions":resolutions.iter().take(PAGE).collect::<Vec<_>>(),
-            "resolutionTotal":resolutions.len(), "parents":genres::parents(&selected.name), "parentRelations":genres::parent_relations(&selected.name), "breadcrumb":genres::breadcrumb(&selected.name),
+        let breadcrumb: Vec<_> = genres::breadcrumb(&selected.name).iter().map(|name|presentation::Label::new(name)).collect();
+        json!({"total":total, "excluded_sources":excluded, "sources":self.discovery_sources_using(index), "art":genres::art(&selected.name), "taxonomyVersion":genres::VERSION, "resolutions":resolutions.iter().take(PAGE).map(|record|presentation::resolution(record)).collect::<Vec<_>>(),
+            "resolutionTotal":resolutions.len(), "parents":genres::parents(&selected.name), "parentRelations":genres::parent_relations(&selected.name),
+            "breadcrumb":breadcrumb.iter().map(|label|&label.text).collect::<Vec<_>>(),
+            "breadcrumbTruncated":breadcrumb.iter().map(|label|label.truncated).collect::<Vec<_>>(),
+            "breadcrumbChars":breadcrumb.iter().map(|label|label.chars).collect::<Vec<_>>(),
             "summary":if selected.kind == "genre" { summaries.last() } else { None }, "items":items})
     }
 }

@@ -7847,6 +7847,9 @@ msgstr ""
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "Ce format est illisible à partir du caractère {}, Discord reçoit donc une ligne vide. Fermez chaque %, [, ( et guillemet, et n'utilisez que les fonctions listées sous Titre."
 
+msgid "This genre is no longer available."
+msgstr ""
+
 msgid "This genre is no longer present on the album."
 msgstr ""
 

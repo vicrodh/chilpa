@@ -1,5 +1,6 @@
 //! Streaming, read-only associations for derived genre navigation.
 use super::Library;
+use rusqlite::OptionalExtension;
 
 // Stale statistics must not turn an unassigned genre into a full track scan.
 const GENRE_NAMES: &str = "SELECT g.name FROM genres g WHERE EXISTS (
@@ -23,6 +24,21 @@ fn scoped(sql: &str, excluded: &[String]) -> String {
 }
 
 impl Library {
+    /// Compact navigation anchors reuse the existing genre primary key.
+    pub fn genre_id_for_name(&self, name: &str) -> rusqlite::Result<Option<i64>> {
+        self.db.query_row("SELECT id FROM genres WHERE name=?1", [name], |row| row.get(0)).optional()
+    }
+
+    /// The caller validates the strong identity before using a stored route.
+    pub fn genre_name_by_id(&self, id: i64) -> rusqlite::Result<Option<String>> {
+        self.db.query_row("SELECT name FROM genres WHERE id=?1", [id], |row| {
+            let name = row.get_ref(0)?.as_str().map_err(|error|
+                rusqlite::Error::FromSqlConversionFailure(0,rusqlite::types::Type::Text,Box::new(error)))?;
+            crate::genre_index::validate_tag(name)?;
+            Ok(name.to_string())
+        }).optional()
+    }
+
     /// Stream exact-album associations into a bounded query-owned index.
     /// Duplicates are handled by the consumer without a library-wide sort.
     pub fn visit_album_genres(&self, album: i64, mut visit: impl FnMut(&str, &str) -> rusqlite::Result<()>) -> rusqlite::Result<()> {

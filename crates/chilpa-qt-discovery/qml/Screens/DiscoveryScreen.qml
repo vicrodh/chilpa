@@ -95,7 +95,8 @@ Item {
         objectName: "discoveryModel"
         onDocumentChanged: {
             const document = discoveryPage.decode(results.document)
-            if (discoveryPage.selected.albumScope === true && !discoveryPage.sourceOverride && Array.isArray(document.excluded_sources)) find.excludedSources = document.excluded_sources
+            const route = discoveryPage.decode(discoveryPage.routeKey)
+            if (route.albumScope === true && !discoveryPage.sourceOverride && Array.isArray(document.excluded_sources)) find.excludedSources = document.excluded_sources
         }
     }
     Timer {
@@ -109,8 +110,11 @@ Item {
             Navigation.goKey("compositions", JSON.stringify(next))
             return
         }
-        const next = {kind:entry.kind, name:entry.name, work:entry.work || "", composers:entry.composers || []}
-        if (entry.kind === "genre") { next.trail = (breadcrumb || []).concat([entry.name]); next.excluded_sources = find.excludedSources }
+        const next = entry.kind === "genre" && entry.key ? Object.assign({}, decode(entry.key)) : {kind:entry.kind, name:entry.name, work:entry.work || "", composers:entry.composers || []}
+        if (entry.kind === "genre") {
+            next.trail = (breadcrumb || []).concat([entry.name]); next.excluded_sources = find.excludedSources
+            if (next.albumScope !== undefined) next.albumScope = false
+        }
         Navigation.goKey(entry.kind === "genre" ? "genres" : entry.kind === "composer" ? "composers" : "compositions", JSON.stringify(next))
     }
     Column {

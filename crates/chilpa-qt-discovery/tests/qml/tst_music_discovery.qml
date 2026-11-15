@@ -54,7 +54,9 @@ TestCase {
         const page = createTemporaryObject(maker, this)
         const model = findChild(page, "discoveryModel")
         verify(model)
+        model.document=JSON.stringify({items:[{kind:"genre",name:"Rock"}],total:20000})
         page.visible = false
+        compare(model.count,0)
         const requests = model.requests.length
         Library.remoteRev++
         wait(400)
@@ -207,6 +209,16 @@ TestCase {
         const restored=createTemporaryObject(maker,this,{routeKey:JSON.stringify(key)})
         compare(JSON.parse(restored.collectionKey).albumScope,false)
         compare(findChild(restored,"genreSources").excluded,["local:default"])
+    }
+    function test_a_shortened_genre_entry_keeps_its_opaque_identity_and_source_scope() {
+        const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Rock",excluded_sources:["plugin:other"]})})
+        const key=JSON.stringify({kind:"genre",name:"Long genre…",genreId:42,genreToken:"opaque",album:17,albumScope:true})
+        page.open({kind:"genre",name:"Long genre…",key:key})
+        const selected=JSON.parse(Navigation.went[1])
+        compare(selected.genreId,42);compare(selected.genreToken,"opaque")
+        compare(selected.excluded_sources,["plugin:other"])
+        compare(selected.albumScope,false)
+        compare(selected.trail,["Long genre…"])
     }
     function test_genre_source_choices_are_local_to_this_view_and_survive_return() {
         let page = createTemporaryObject(maker, this)

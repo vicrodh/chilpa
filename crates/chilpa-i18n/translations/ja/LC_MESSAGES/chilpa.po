@@ -7836,6 +7836,9 @@ msgstr ""
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "このフォーマットは {} 文字目から読み取れないため、Discord には空の行が送られます。%、[、( と引用符をすべて閉じ、「タイトル」に記載された関数だけを使ってください。"
 
+msgid "This genre is no longer available."
+msgstr ""
+
 msgid "This genre is no longer present on the album."
 msgstr ""
 

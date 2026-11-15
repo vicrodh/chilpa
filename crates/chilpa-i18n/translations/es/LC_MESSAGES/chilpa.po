@@ -7847,6 +7847,9 @@ msgstr "Esta estructura de carpetas supera el límite del editor por lotes. Sele
 msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
 msgstr "Este formato no se puede leer desde el carácter {}, así que Discord recibe una línea vacía. Cierra cada %, [, ( y comilla, y usa solo las funciones que aparecen en Título."
 
+msgid "This genre is no longer available."
+msgstr "Este género ya no está disponible."
+
 msgid "This genre is no longer present on the album."
 msgstr "Este género ya no está presente en el álbum."
 
