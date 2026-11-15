@@ -4,6 +4,10 @@ use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicI64, Ordering};
 use sha2::{Digest, Sha256};
 
+#[cfg(test)]
+#[path = "lifecycle.rs"]
+mod lifecycle;
+
 struct Counted;
 static LIVE: AtomicI64 = AtomicI64::new(0);
 static PEAK: AtomicI64 = AtomicI64::new(0);

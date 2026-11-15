@@ -51,6 +51,20 @@ impl<K: Ord, V: Clone> SharedMap<K, V> {
     }
 }
 
+// Cached cover paths are absent from SourceItem, SourceVersion and their
+// fingerprint. Keep this operation closed over Card.art so callers cannot
+// mutate musical inputs while preserving the integrated-index generation.
+impl SharedMap<i64, super::store::Card> {
+    pub(super) fn cache_art_for_image(&mut self, image: &str, path: &str) -> bool {
+        let mut changed = false;
+        for card in self.0.values_mut().filter(|card| card.image == image && card.art != path) {
+            Arc::make_mut(card).art = path.to_owned();
+            changed = true;
+        }
+        changed
+    }
+}
+
 impl<K: Ord + Borrow<Q>, Q: Ord + ?Sized, V: Clone> Index<&Q> for SharedMap<K, V> {
     type Output = V;
     fn index(&self, key: &Q) -> &V { self.get(key).expect("catalog entry exists") }
