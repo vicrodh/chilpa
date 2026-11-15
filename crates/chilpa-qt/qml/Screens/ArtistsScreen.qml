@@ -17,6 +17,7 @@ Item {
 
     AlbumGridModel {
         id: everyone
+        objectName: "artistsPageModel"
         kind: "artists"
         key: page.role
         contentRev: Library.contentRev + Library.rev + Library.remoteRev
@@ -27,11 +28,12 @@ Item {
 
     CollectionHead {
         id: head
+        objectName: "artistsPageHeading"
         x: Metrics.contentX
         y: Metrics.contentTop
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
         title: I18n.tr("Artists", I18n.rev)
-        count: I18n.trCount("{} artist", "{} artists", everyone.albums, I18n.rev)
+        count: everyone.ready && everyone.error === "" ? I18n.trCount("{} artist", "{} artists", everyone.albums, I18n.rev) : ""
         order: page.order
         placeholder: I18n.tr("Filter artists", I18n.rev)
         onOrderPicked: value => { page.order = value; SettingsModel.keep("ui.artists.order", value) }
@@ -65,6 +67,8 @@ Item {
 
     ArtistCardGrid {
         id: grid
+        objectName: "artistsPageGrid"
+        visible: everyone.ready && everyone.error === ""
         anchors.top: head.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
@@ -72,5 +76,17 @@ Item {
         width: head.width
         bottomMargin: Metrics.contentBottom
         artists: everyone
+    }
+    ShelfSkeleton {
+        objectName:"artistsPageLoading"; anchors.fill:grid
+        visible:!everyone.ready && everyone.error === ""; round:true; oneRow:false
+        fixedCardWidth:Metrics.sceneCardWidth
+        count:grid.columns * Math.ceil(grid.height / (Metrics.sceneCardHeight + Metrics.sceneRowGap))
+    }
+    Column {
+        objectName:"artistsPageMessage"; anchors.centerIn:grid; width:Math.min(grid.width,Metrics.settingsMaxWidth); spacing:Metrics.gap12
+        visible:everyone.error !== "" || everyone.ready && everyone.albums === 0
+        Text { width:parent.width; horizontalAlignment:Text.AlignHCenter; wrapMode:Text.WrapAtWordBoundaryOrAnywhere; textFormat:Text.PlainText; text:everyone.error || I18n.tr("No artists in this selection",I18n.rev); font.pointSize:Type.body; color:Theme.color.textSecondary }
+        PillButton { objectName:"artistsPageRetry"; anchors.horizontalCenter:parent.horizontalCenter; visible:everyone.error !== ""; text:I18n.tr("Retry",I18n.rev); onClicked:everyone.retry() }
     }
 }

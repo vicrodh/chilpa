@@ -29,6 +29,7 @@ Item {
 
     AlbumGridModel {
         id: all
+        objectName: "albumsPageModel"
         kind: page.source ? "source" : "all"
         key: page.source ? page.source + (page.membership ? " " + page.membership : "") : ""
         order: page.source ? sourceControls.sort : Library.albumOrder
@@ -40,11 +41,12 @@ Item {
 
     ScreenHead {
         id: head
+        objectName: "albumsPageHeading"
         x: Metrics.contentX
         y: Metrics.contentTop
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
         title: page.source ? page.about.title || page.about.name || "" : I18n.tr("Albums", I18n.rev)
-        count: page.about.entity === "playlist" ? I18n.trCount("{} playlist", "{} playlists", all.albums, I18n.rev)
+        count: !all.ready || all.error !== "" ? "" : page.about.entity === "playlist" ? I18n.trCount("{} playlist", "{} playlists", all.albums, I18n.rev)
             : page.about.entity === "label" ? I18n.trCount("{} label", "{} labels", all.albums, I18n.rev)
             : page.about.entity === "artist" ? I18n.trCount("{} artist", "{} artists", all.albums, I18n.rev) : I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
         flexible: find
@@ -167,6 +169,8 @@ Item {
 
     AlbumGrid {
         id: grid
+        objectName: "albumsPageGrid"
+        visible: all.ready && all.error === ""
         anchors.top: kinds.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
@@ -182,17 +186,24 @@ Item {
 
     SourceState {
         anchors.centerIn: grid
-        visible: page.source !== "" && all.albums === 0
+        visible: page.source !== "" && all.albums === 0 && all.error === ""
         source: page.source
         about: page.about
     }
     ShelfSkeleton {
+        objectName: "albumsPageLoading"
         anchors.fill: grid
-        visible: !all.ready || (all.albums === 0 && page.about.loading === true)
+        visible: all.error === "" && (!all.ready || (all.albums === 0 && page.about.loading === true))
         round: page.about.round === true
         tracks: page.rows
         oneRow: false
         count: page.rows ? Math.ceil(grid.height / Metrics.rowRich)
             : grid.columns * Math.ceil(grid.height / Math.max(1, grid.rowHeight))
+    }
+    Column {
+        objectName:"albumsPageMessage"; anchors.centerIn:grid; width:Math.min(grid.width,Metrics.settingsMaxWidth); spacing:Metrics.gap12
+        visible:all.error !== ""
+        Text { width:parent.width; horizontalAlignment:Text.AlignHCenter; wrapMode:Text.WrapAtWordBoundaryOrAnywhere; textFormat:Text.PlainText; text:all.error; font.pointSize:Type.body; color:Theme.color.textSecondary }
+        PillButton { objectName:"albumsPageRetry"; anchors.horizontalCenter:parent.horizontalCenter; text:I18n.tr("Retry",I18n.rev); onClicked:all.retry() }
     }
 }
