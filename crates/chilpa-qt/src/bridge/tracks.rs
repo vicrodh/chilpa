@@ -295,7 +295,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
 }
 
 impl qobject::TrackListModel {
-    fn pending_collection(&self) -> bool { self.kind().to_string() == "discovery" && !*self.ready() }
+    fn pending_collection(&self) -> bool { matches!(self.kind().to_string().as_str(), "discovery" | "source") && !*self.ready() }
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
         // A group's name is known without reading the row's page.
         let section = (role == USER_ROLE + 17).then(|| chilpa_api::section_at(&self.rust().sections, index.row().max(0) as usize)).flatten();

@@ -7,12 +7,13 @@ use std::sync::Arc;
 pub(super) struct SelectionRoots {
     pub(super) cards: HashSet<(String, String)>,
     pub(super) tracks: HashSet<String>,
+    pub(super) shelves: HashSet<String>,
 }
 
 /// I release a menu's catalog roots when its request or picker closes.
 pub struct SelectionHold {
     catalog: Arc<Catalog>,
-    id: u64,
+    pub(super) id: u64,
 }
 
 impl SelectionHold {
@@ -43,7 +44,7 @@ impl Catalog {
     pub(super) fn hold_locked(self: &Arc<Self>, inner: &mut Inner, cards: impl IntoIterator<Item = (String, String)>, tracks: impl IntoIterator<Item = String>) -> SelectionHold {
         inner.selection_serial = inner.selection_serial.checked_add(1).expect("selection identifiers exhausted");
         let id = inner.selection_serial;
-        inner.selections.insert(id, SelectionRoots { cards: cards.into_iter().collect(), tracks: tracks.into_iter().collect() });
+        inner.selections.insert(id, SelectionRoots { cards: cards.into_iter().collect(), tracks: tracks.into_iter().collect(), ..Default::default() });
         inner.residency.changed();
         self.wake.notify_one();
         SelectionHold { catalog: self.clone(), id }
@@ -60,7 +61,7 @@ impl Catalog {
 
 impl Inner {
     pub(super) fn protected_shelves(&self) -> HashSet<String> {
-        self.navigation.shelves.iter().cloned().chain(self.running.iter().chain(self.queue.queued.iter()).filter_map(|job| match job {
+        self.navigation.shelves.iter().cloned().chain(self.selections.values().flat_map(|roots|roots.shelves.iter().cloned())).chain(self.running.iter().chain(self.queue.queued.iter()).filter_map(|job| match job {
             super::Job::Shelf(key) | super::Job::Append(key) => Some(key.clone()), _ => None,
         })).collect()
     }

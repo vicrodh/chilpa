@@ -1,6 +1,8 @@
 //! Generic paginated collections and lazy embedded web surfaces.
 pub(crate) use chilpa_qt_kit::app;
 mod native_pages;
+mod collection_cache;
+mod collection_model;
 
 unsafe extern "C" {
     fn chilpa_prepare_embedded_pages();

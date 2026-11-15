@@ -264,6 +264,20 @@ fn http(address: Option<&String>) -> String {
 }
 
 impl Store {
+    /// Monotonic counters distinguish action-only allocations from existing IDs.
+    pub(super) fn allocation_watermarks(&self) -> (i64, i64) { (self.next_card, self.next_track) }
+
+    pub(super) fn remove_action_orphans(&mut self, cards: &HashSet<i64>, tracks: &HashSet<i64>) {
+        for id in tracks {
+            if let Some(track) = self.tracks.get(id) { self.track_ids.remove(&track.path); }
+            self.tracks.remove(id);
+        }
+        for id in cards {
+            if let Some(card) = self.cards.get(id) { self.card_ids.remove(&(card.plugin.clone(), card.identity.clone())); }
+            self.cards.remove(id);
+        }
+    }
+
     pub fn forget_plugin(&mut self, plugin: &str) {
         self.cards.retain(|_, c| c.plugin != plugin);
         self.tracks.retain(|_, t| t.plugin != plugin);

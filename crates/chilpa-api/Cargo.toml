@@ -30,6 +30,8 @@ chilpa-appkit.workspace = true
 # Approvals are kept as JSON, readable by hand on purpose.
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
+# The bounded native-collection cache shares chilpa-library's SQLite build.
+rusqlite = "0.40"
 semver = "1"
 base64 = "0.22"
 # A cover is decoded once and kept at the size it is drawn (frontend
@@ -56,11 +58,7 @@ chilpa-audio.workspace = true
 # The test plugins are written in wasm text, so no separate toolchain is
 # needed.
 wat = "1"
-# For putting an ISRC on a scanned track, which is what lets the search
-# match what is local with what a source gives. It is the same rusqlite
-# chilpa-library already uses.
 chilpa-library.workspace = true
-rusqlite = "0.40"
 tiny_http = "0.12"
 native-tls = "0.2"
 

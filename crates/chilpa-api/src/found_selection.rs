@@ -169,6 +169,12 @@ impl Chilpa {
         let paths = self.catalog.tracks_by_ids(ids).into_iter().map(|(track, _)| track.path);
         self.catalog.hold([], paths)
     }
+
+    /// A path-based information panel owns its metadata before mounting.
+    /// This only registers an in-memory catalog root.
+    pub fn hold_catalog_path(&self, path: &str) -> SelectionHold {
+        self.catalog.hold([], std::iter::once(path).filter(|path| !path.is_empty()).map(str::to_string))
+    }
 }
 
 impl Reader {

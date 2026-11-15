@@ -1,3 +1,4 @@
 module app.chilpa.pages
 singleton NativePages 1.0 NativePages.qml
 NativeSourceHost 1.0 NativeSourceHost.qml
+NativeCollectionModel 1.0 NativeCollectionModel.qml

@@ -18,17 +18,17 @@ TestCase {
     Component { id: controlsFactory; CollectionControls { width: test.width; source: "fixture native:saved:all" } }
     Component { id: webFactory; SourceWebScreen { width: test.width; height: test.height; source: "fixture native:journal" } }
     Component { id: hostFactory; PageHosts.NativeSourceHost { width:test.width; height:test.height; source:"fixture native:saved:all" } }
-    Component { id: tileFactory; CollectionTile { width:200; height:250; plugin:"fixture"; entry:({kind:"track",ref:"track:1",title:"Song"}) } }
+    Component { id: tileFactory; CollectionTile { width:200; height:250; plugin:"fixture"; entry:({rowToken:"row:1",kind:"track",ref:"track:1",title:"Song"}) } }
     Component { id: treeFactory; SourceNavigationTree { width:240; pluginId:"fixture"; controller:treeController; entries:[{id:"view:library",title:"Collection",route:"fixture native:saved:all",children:[{id:"view:library/artists",title:"Artists",route:"fixture native:saved:artists"}]}] } }
     QtObject { id:treeController; property var expandedSources:({}); property var sourceView:({}) }
     SignalSpy { id: menus; signalName:"menuRequested" }
     SignalSpy { id: reads; target: Sources; signalName: "pageRequested" }
     function document(extra) {
         return JSON.stringify(Object.assign({layout:"collection",plugin:"fixture",title:"Collection",items:[
-            {kind:"album",ref:"album:1",title:"Record",_host:{card_id:-1,track_row:-1}},
-            {kind:"track",ref:"track:1",title:"First song",_host:{track_row:0}},
-            {kind:"artist",ref:"artist:1",title:"Artist",_host:{card_id:-2,track_row:-1}},
-            {kind:"track",ref:"track:2",title:"Second song",_host:{track_row:1}}
+            {rowToken:"row:0",kind:"album",ref:"album:1",title:"Record",_host:{card_id:-1,track_row:-1}},
+            {rowToken:"row:1",kind:"track",ref:"track:1",title:"First song",_host:{track_row:0}},
+            {rowToken:"row:2",kind:"artist",ref:"artist:1",title:"Artist",_host:{card_id:-2,track_row:-1}},
+            {rowToken:"row:3",kind:"track",ref:"track:2",title:"Second song",_host:{track_row:1}}
         ]},extra || {}))
     }
     function init() {
@@ -36,7 +36,7 @@ TestCase {
         Sources.pages = {"fixture native:saved:all":document(),"fixture native:journal":JSON.stringify({layout:"web",plugin:"fixture",title:"Journal"})}
         Sources.revision++
         NativePages.requests=[]; NativePages.revalidations=[]; NativePages.allowWeb=false
-        Navigation.went=[]; SettingsModel.preferences={};treeController.expandedSources={}
+        Navigation.went=[]; SettingsModel.preferences={};treeController.expandedSources={};Sources.asked=[]
     }
     function test_hidden_dispatcher_uses_the_initial_snapshot_and_keeps_outgoing_layout() {
         const host=createTemporaryObject(hostFactory,test,{visible:false,presentation:{layout:"collection"}})
@@ -44,7 +44,7 @@ TestCase {
         verify(host.item && host.item.refreshCollection !== undefined)
         reads.clear();Library.remoteRev++;wait(30);compare(reads.count,0)
         host.visible=true;wait(30);reads.clear()
-        Library.remoteRev++;wait(30);compare(reads.count,1,"only the leaf reads its page")
+        Library.remoteRev++;wait(30);compare(reads.count,0,"the collection owns its window instead of rereading the catalog document")
         host.leaving=true;host.presentation={layout:"web"}
         compare(host.about.layout,"collection")
         verify(host.item && host.item.refreshCollection !== undefined)
@@ -80,17 +80,18 @@ TestCase {
         verify(page)
         const model=findChild(page,"collectionTracks")
         verify(model)
-        model.append({rowKind:0,title:"First"});model.append({rowKind:0,title:"Second"})
         const items=JSON.parse(document()).items
         page.openItem(items[3])
-        compare(model.lastAction,"play");compare(model.lastRow,1)
+        tryCompare(model,"lastAction","play");compare(model.lastRow,1)
         model.lastAction=""
         page.openItem(Object.assign({},items[3],{available:false}))
-        compare(model.lastAction,"")
-        model.ready=false;page.openItem(items[1]);compare(model.lastAction,"")
-        page.openItem(items[0]);compare(Navigation.selectedId,-1)
-        page.openItem(items[2]);compare(Navigation.went,["source","fixture native:artist:1"])
+        wait(30);compare(model.lastAction,"")
+        model.ready=false;page.openItem(items[1]);wait(30);compare(model.lastAction,"")
+        model.ready=true;tryCompare(model,"lastAction","play");compare(model.lastRow,0)
+        page.openItem(items[0]);tryCompare(Navigation,"selectedId",-1)
+        page.openItem(items[2]);tryCompare(Navigation,"went",["source","fixture native:artist:1"])
     }
+
     function test_queries_keep_filters_and_order_and_drop_exclusions() {
         const controls=createTemporaryObject(controlsFactory,test,{about:{base_key:"fixture native:saved:all",filters:{hide_purchases:true,text:"kept"},order:"title",filter_controls:[]}})
         controls.applyField("membership","purchased",["hide_purchases"])
@@ -113,13 +114,99 @@ TestCase {
         const page=createTemporaryObject(collectionFactory,test)
         wait(350);compare(NativePages.revalidations.length,0)
     }
-    function test_next_page_uses_opaque_route_without_accumulating_rows() {
-        Sources.pages={"fixture native:saved:all":document({next_key:"fixture native:opaque-cursor"})}
+    function test_million_row_grid_creates_only_viewport_delegates() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:1000000})}
         const page=createTemporaryObject(collectionFactory,test)
-        const next=findChild(page,"collectionNextPage")
-        verify(next);next.clicked()
-        compare(Navigation.went,["source","fixture native:opaque-cursor"])
+        tryCompare(page,"count",1000000)
+        compare(findChild(page,"collectionNextPage"),null)
+        function cells(item) { let count=item.entry !== undefined && item.inViewport !== undefined ? 1 : 0;for (const child of item.children || []) count+=cells(child);return count }
+        wait(80);verify(cells(page)<100)
+        page.positionViewAtIndex(900000,GridView.Beginning);wait(80)
+        verify(cells(page)<100)
+        const window=findChild(page,"nativeCollectionModel")
+        verify(window.calls.some(call=>call[0] === "seek" && call[1]>800000))
+    }
+    function test_old_page_action_uses_its_frozen_track_page_after_eviction() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:1000})}
+        const page=createTemporaryObject(collectionFactory,test)
+        const window=findChild(page,"nativeCollectionModel"),tracks=findChild(page,"collectionTracks")
+        const old=JSON.parse(window.entry(0,window.revision))
+        window.seek(800,899)
+        compare(window.entry(0,window.revision),"{}")
+        window.resolved={"row:0":{lease:7,key:"fixture original-page|tracks",kind:"track",trackRow:0}}
+        tracks.ready=false;page.openItem(Object.assign({},old,{kind:"track"}))
+        wait(30);compare(tracks.lastAction,"")
+        tryCompare(tracks,"key","fixture original-page|tracks")
+        tracks.ready=true;tryCompare(tracks,"lastAction","play");compare(tracks.lastRow,0)
+        verify(window.calls.some(call=>call[0] === "action" && call[1] === "row:0"))
+    }
+    function test_leaving_retires_work_while_preserving_the_outgoing_projection() {
+        const page=createTemporaryObject(collectionFactory,test)
+        const window=findChild(page,"nativeCollectionModel")
         compare(page.count,4)
+        page.leaving=true
+        compare(window.key,"");compare(page.count,4)
+        const calls=window.calls.length
+        page.contentY=1000;Sources.revision++;Library.remoteRev++;wait(350)
+        compare(window.calls.length,calls)
+        page.visible=false;compare(page.count,0)
+    }
+    function test_return_restores_the_saved_window_without_reading_all_previous_rows() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:1000000,anchorIndex:800000})}
+        const page=createTemporaryObject(collectionFactory,test)
+        const window=findChild(page,"nativeCollectionModel")
+        tryVerify(()=>window.calls.some(call=>call[0] === "seek" && call[1]>=799990))
+        verify(window.calls.length<10)
+        verify(page.contentY>1000000)
+    }
+    function test_a_failed_occurrence_action_does_not_use_the_previous_track_model() {
+        const page=createTemporaryObject(collectionFactory,test)
+        const window=findChild(page,"nativeCollectionModel"),tracks=findChild(page,"collectionTracks")
+        window.resolved={"row:1":{failed:true,error:"The item changed."}}
+        page.openItem(JSON.parse(document()).items[1])
+        tryCompare(page,"actionError","The item changed.")
+        compare(tracks.lastAction,"");compare(page.pendingAction,null)
+    }
+    function test_favorite_resolves_the_opaque_occurrence_before_sending_its_reference() {
+        const page=createTemporaryObject(collectionFactory,test)
+        const window=findChild(page,"nativeCollectionModel")
+        window.resolved={"row:3":{lease:8,kind:"track",ref:"opaque:original-song"}}
+        page.requestAction({rowToken:"row:3",kind:"track"},"favorite",0,0,true)
+        tryVerify(()=>Sources.asked.length>0)
+        compare(Sources.asked[0],["native","fixture",JSON.stringify({action:"favorite",ref:"opaque:original-song",on:true})])
+        Sources.revision++;tryCompare(page,"favoriteAction",null)
+        tryVerify(()=>window.calls.some(call=>call[0] === "refresh" && call[1] === false))
+    }
+    function test_multiple_query_changes_share_the_sidebar_preference_key() {
+        const base="fixture native:saved:all"
+        const controls=createTemporaryObject(controlsFactory,test,{source:base+":filtered",about:{base_key:base,filters:{text:"one"},order:"added"}})
+        controls.navigate({filters:{text:"two"},order:"added"})
+        controls.source=base+":another-query"
+        controls.navigate({filters:{text:"two"},order:"title"})
+        compare(Object.keys(SettingsModel.preferences),["ui.source.collection."+base])
+        const tree=createTemporaryObject(treeFactory,test)
+        mouseClick(findChild(tree,"sourceChild"))
+        compare(Navigation.went,["source",SettingsModel.kept("ui.source.collection."+base)])
+    }
+    function test_background_revalidation_stays_quiet_and_explicit_refresh_waits_for_it() {
+        const page=createTemporaryObject(collectionFactory,test)
+        const window=findChild(page,"nativeCollectionModel")
+        wait(50)
+        const retained=page.itemAtIndex(0)
+        window.simulateAsync=true
+        page.refreshQuietly()
+        compare(window.busy,true);compare(page.silentWork,true)
+        compare(findChild(page,"collectionLoadingFeedback").visible,false)
+        compare(findChild(page,"collectionPagingFeedback").visible,false)
+        const refresh=findChild(page,"collectionRefresh")
+        compare(refresh.enabled,true);compare(page.itemAtIndex(0),retained)
+        refresh.clicked()
+        compare(page.manualRefreshPending,true)
+        compare(window.calls.filter(call=>call[0] === "refresh" && call[1] === true).length,0)
+        window.busy=false
+        tryVerify(()=>window.calls.some(call=>call[0] === "refresh" && call[1] === true))
+        compare(window.calls.filter(call=>call[0] === "refresh" && call[1] === true).length,1)
+        compare(page.silentWork,false);compare(findChild(page,"collectionLoadingFeedback").visible,true)
     }
     function test_web_module_stays_unloaded_when_not_permitted() {
         const page=createTemporaryObject(webFactory,test)

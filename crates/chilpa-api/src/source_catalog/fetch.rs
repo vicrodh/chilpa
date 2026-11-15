@@ -276,8 +276,8 @@ fn next(catalog: &Catalog, saved: &mut Instant) -> (Job, Arc<Mutex<Plugins>>) {
     }
 }
 
-const NATIVE_JOBS: usize = 4;
-const NATIVE_PER_PLUGIN: usize = 2;
+pub(super) const NATIVE_JOBS: usize = 4;
+pub(super) const NATIVE_PER_PLUGIN: usize = 2;
 
 fn job_plugin(inner: &Inner, job: &Job) -> Option<String> {
     match job {

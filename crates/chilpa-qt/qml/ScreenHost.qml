@@ -39,7 +39,7 @@ PageTransition {
     readonly property var sourceDocument: JSON.parse(Sources.snapshot || "{}")
     readonly property bool medium: ["radio", "podcasts"].indexOf(sourceDocument.medium) >= 0
     readonly property url displayEntry: screen === "source" && routeKey.indexOf(" ") < 0 ? Sources.display(routeKey, Sources.revision) : ""
-    readonly property var music: screen === "source" && String(displayEntry) === "" && !(medium && sourceDocument.source === routeKey) ? JSON.parse(Sources.page(routeKey, Library.remoteRev) || "{}") : ({})
+    readonly property var music: screen === "source" && String(displayEntry) === "" && !(medium && sourceDocument.source === routeKey) ? JSON.parse(NativePages.presentation(routeKey,Library.remoteRev+Sources.revision) || "{}") : ({})
 
     sourceComponent: {
         if (screen === "source" && String(displayEntry) !== "") return pluginDisplay

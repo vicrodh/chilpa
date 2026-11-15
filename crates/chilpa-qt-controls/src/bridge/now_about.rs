@@ -23,6 +23,9 @@ pub mod qobject {
         fn refetch_album(self: &NowAbout, path: &QString) -> bool;
         #[qinvokable]
         fn retry(self: &NowAbout, part: &QString, path: &QString) -> bool;
+        /// Pins a chosen source track while its information dialog is mounted.
+        #[qinvokable]
+        fn pin_subject(self: Pin<&mut NowAbout>, path: &QString);
         /// A menu asks the window to show what is known of a track: its
         /// path and the title its row shows.
         #[qsignal]
@@ -30,11 +33,19 @@ pub mod qobject {
     }
 }
 use cxx_qt_lib::QString;
+use cxx_qt::CxxQtType as _;
+use std::pin::Pin;
 
 #[derive(Default)]
-pub struct NowAboutRust;
+pub struct NowAboutRust { subject_hold: Option<chilpa_api::SelectionHold> }
 
 impl qobject::NowAbout {
+    pub fn pin_subject(mut self: Pin<&mut Self>, path: &QString) {
+        let path=path.to_string();
+        let hold=if path.is_empty() || path.len()>65536 { None }
+            else { Some(chilpa_qt_kit::app::with(|api| api.hold_catalog_path(&path))) };
+        self.as_mut().rust_mut().subject_hold=hold;
+    }
     pub fn refetch_album(&self, path: &QString) -> bool {
         chilpa_qt_kit::app::with(|api| api.refetch_album_about(&path.to_string()))
     }

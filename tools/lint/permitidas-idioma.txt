@@ -1053,3 +1053,7 @@ retag
 # Qt WebEngine settings property names.
 javascript
 rtc
+
+# Binary cache units and least-recently-used eviction.
+kib
+lru

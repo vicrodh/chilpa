@@ -10,8 +10,11 @@ QtObject {
     property var retried: ({})
     property bool allowRetry: true
     property string askedPath: ""
+    property string pinnedSubject: ""
+    property var reads: []
+    function pinSubject(path) { pinnedSubject=path }
     signal trackInfoRequested(string path, string title)
-    function track(path, rev) { calls.track++; askedPath = path; return JSON.stringify(trackAnswers[path] || trackAnswer) }
+    function track(path, rev) { calls.track++; askedPath = path; reads.push({path:path,pin:pinnedSubject});return JSON.stringify(trackAnswers[path] || trackAnswer) }
     function album(path, rev) { calls.album++; askedPath = path; return JSON.stringify(albumAnswer) }
     property string refetchedPath: ""
     property bool allowRefetch: true

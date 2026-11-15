@@ -223,6 +223,11 @@ impl Natives {
         client.call(method, params, timeout).map_err(|e| e.to_string())
     }
 
+    /// A collection cursor is valid only for the process that produced it.
+    pub(crate) fn collection_generation(&self, id: &str) -> u64 {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map_or(0, |known| known.generation)
+    }
+
     /// Calls a plugin and keeps its error whole, with what it added to it.
     pub(crate) fn call_raw(self: &Arc<Self>, id: &str, method: &str, params: Value, timeout: Duration) -> Result<Value, chilpa_plugin::native::NativeError> {
         let client = self.client(id).ok_or(chilpa_plugin::native::NativeError::Closed)?;

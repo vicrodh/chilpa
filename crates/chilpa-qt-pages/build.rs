@@ -23,6 +23,7 @@ fn main() {
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=cxx/pages.cpp");
     println!("cargo:rerun-if-changed=src/native_pages.rs");
+    println!("cargo:rerun-if-changed=src/collection_model.rs");
     CxxQtBuilder::library(Interface::default())
         .cc_builder(|cc| {
             cc.file("cxx/pages.cpp");
@@ -32,7 +33,7 @@ fn main() {
         .qt_module("Quick")
         .qml_module(QmlModule {
             uri: "app.chilpa.pages",
-            rust_files: &["src/native_pages.rs"],
+            rust_files: &["src/native_pages.rs", "src/collection_model.rs"],
             qml_files: &qml,
             qrc_files: &deferred,
             ..Default::default()

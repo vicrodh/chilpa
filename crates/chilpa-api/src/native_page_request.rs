@@ -10,7 +10,7 @@ pub(crate) struct Request {
     pub layout: String,
 }
 
-fn valid_reference(reference: &str) -> bool {
+pub(crate) fn valid_reference(reference: &str) -> bool {
     !reference.is_empty()
         && reference.len() <= 8192
         && !reference

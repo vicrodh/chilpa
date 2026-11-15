@@ -14,9 +14,11 @@ Item {
     property bool active: true
     property bool favorites: false
     property bool playable: false
+    property bool favoriteBusy: false
     signal opened()
     signal playRequested()
     signal menuRequested(real x, real y)
+    signal favoriteRequested(bool on)
     implicitHeight: card.implicitHeight
     AlbumCard {
         id: card
@@ -44,9 +46,9 @@ Item {
         filled: checked
         glyph: checked ? Icons.heartFilled : Icons.heart
         heart: true; round: true; tone: "overlay"
-        busy: Sources.favoritePending(tile.plugin, tile.entry.ref || "", Sources.revision)
+        busy: tile.favoriteBusy
         tip: checked ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
-        onClicked: Sources.command("native",tile.plugin,JSON.stringify({action:"favorite",ref:tile.entry.ref,on:!checked}))
+        onClicked: tile.favoriteRequested(!checked)
     }
     IconButton {
         objectName: "collectionPlay"

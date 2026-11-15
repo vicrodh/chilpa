@@ -23,17 +23,20 @@ TestCase {
     }
     SearchMenu { id: searchMenu; search: search }
     Component { id: playingInfo; TrackInfoModal {} }
+    Component { id: requestFactory; TrackInfoRequests {} }
     SignalSpy { id: asked; target: NowAbout; signalName: "trackInfoRequested" }
     SignalSpy { id: left; target: searchMenu; signalName: "left" }
 
     function host(of) { return findChild(of, "trackInfoRequestHost") }
     function init() {
+        failOnWarning(/Binding loop|ReferenceError|TypeError|Object or context destroyed during incubation/)
         Player.path = "/music/Playing.flac"
         Player.title = "Playing"
         NowAbout.trackAnswer = ({loading:false, facts:[], credits:[], file:{title:"File", value:"/music/Playing.flac", note:""}})
         NowAbout.trackAnswers = ({"/music/Gone/Chosen.flac": {loading:false, facts:[], credits:[], file:{title:"File", value:"/music/Gone/Chosen.flac", note:"Not found on disk"}}})
         NowAbout.albumAnswer = ({loading:false, facts:[], credits:[]})
         NowAbout.retried = ({})
+        NowAbout.reads=[]
         search.requestedAction = ""
         asked.clear()
         left.clear()
@@ -47,6 +50,7 @@ TestCase {
     function test_a_chosen_track_shows_its_own_information_not_the_playing_one() {
         compare(host(requests).active, false, "no modal exists until one is asked for")
         NowAbout.trackInfoRequested("/music/Gone/Chosen.flac", "Chosen")
+        compare(NowAbout.pinnedSubject,"/music/Gone/Chosen.flac")
         tryCompare(host(requests), "active", true)
         const modal = host(requests).item
         tryCompare(modal, "opened", true)
@@ -56,6 +60,7 @@ TestCase {
         tryCompare(findChild(media, "infoSectionCode"), "text", "/music/Gone/Chosen.flac")
         compare(media.cells[0].note, "Not found on disk")
         compare(NowAbout.askedPath, "/music/Gone/Chosen.flac")
+        verify(NowAbout.reads.filter(read=>read.path === "/music/Gone/Chosen.flac").every(read=>read.pin === read.path))
         const about = findChild(modal, "trackInfoSections")
         about.part = "album"
         tryCompare(NowAbout, "askedPath", "/music/Gone/Chosen.flac")
@@ -63,6 +68,26 @@ TestCase {
         compare(host(galleryCopy).active, false, "the Gallery's copy does not answer")
         keyClick(Qt.Key_Escape)
         tryCompare(host(requests), "active", false)
+        compare(NowAbout.pinnedSubject,"")
+    }
+    function test_destroying_a_passive_gallery_copy_keeps_the_information_subject() {
+        const passive=createTemporaryObject(requestFactory,test,{listenForRequests:false})
+        NowAbout.trackInfoRequested("native:fixture/chosen", "Chosen")
+        compare(NowAbout.pinnedSubject,"native:fixture/chosen")
+        passive.destroy();wait(0)
+        compare(NowAbout.pinnedSubject,"native:fixture/chosen","a passive gallery copy does not release the real dialog")
+        host(requests).item.close()
+        tryCompare(NowAbout,"pinnedSubject","")
+    }
+    function test_destroying_the_information_host_releases_its_subject() {
+        requests.listenForRequests=false
+        const chosen=createTemporaryObject(requestFactory,test)
+        NowAbout.trackInfoRequested("native:fixture/chosen", "Chosen")
+        tryCompare(host(chosen),"active",true)
+        compare(NowAbout.pinnedSubject,"native:fixture/chosen")
+        chosen.destroy();wait(0)
+        tryCompare(NowAbout,"pinnedSubject","")
+        requests.listenForRequests=true
     }
 
     function test_a_retry_from_a_chosen_track_retries_that_track() {

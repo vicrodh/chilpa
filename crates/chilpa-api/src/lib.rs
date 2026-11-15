@@ -56,6 +56,8 @@ pub mod listening;
 pub mod list_changes;
 mod metadata;
 mod metadata_batch;
+mod native_collections;
+pub use native_collections::NativeCollectionWindow;
 mod beets_runtime;
 pub mod navigation;
 pub mod discover_genres;
@@ -715,6 +717,7 @@ pub struct Chilpa {
     /// The metadata editor, and the record open in it if there is one.
     metadata: metadata::Editor,
     metadata_batch: metadata_batch::BatchEditor,
+    native_collections: Option<std::sync::Arc<native_collections::Broker>>,
     beets_runtime: Option<beets_runtime::Managed>,
     /// My servers: adding, syncing, watching and removing them (ADR-017).
     servers: servers::Servers,
@@ -838,6 +841,7 @@ impl Chilpa {
             outputs_listing,
             metadata: metadata::Editor::default(),
             metadata_batch: metadata_batch::BatchEditor::default(),
+            native_collections: None,
             beets_runtime: None,
             servers: servers::Servers::default(),
             casting: casting::Casting::default(),

@@ -11,11 +11,21 @@ Item {
     property string path: ""
     property string title: ""
     property bool shown: false
+    property bool ownsSubject: false
+    function releaseSubject() {
+        if (!ownsSubject) return
+        ownsSubject=false
+        NowAbout.pinSubject("")
+    }
+    onShownChanged: if (!shown) releaseSubject()
+    Component.onDestruction: releaseSubject()
 
     Connections {
         target: NowAbout
         enabled: host.listenForRequests
         function onTrackInfoRequested(path, title) {
+            NowAbout.pinSubject(path)
+            host.ownsSubject=true
             host.path = path
             host.title = title
             host.shown = true

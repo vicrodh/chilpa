@@ -32,6 +32,8 @@ mod composers;
 pub(crate) use library_index::SourceRecord;
 mod pages;
 mod collection_page;
+pub(crate) mod collection_window;
+mod collection_cleanup;
 pub(crate) mod store;
 pub(crate) mod view;
 mod sorting;
@@ -117,6 +119,8 @@ struct Inner {
     /// Queue entries stay readable even when no source listing owns them.
     protected_tracks: HashSet<String>,
     selections: HashMap<u64, selection::SelectionRoots>,
+    collection_ephemeral: collection_cleanup::Candidates,
+    collection_epochs: collection_window::Epochs,
     selection_serial: u64,
     navigation: navigation::NavigationRoots,
     residency: residency::State,
@@ -389,6 +393,7 @@ impl Catalog {
     /// A listing as it is known now, asking for it when it is missing or stale.
     pub fn shelf(&self, key: &str) -> Option<store::Shelf> {
         if key.trim().is_empty() { return None; }
+        if split(key).1.starts_with("_collection-action:") { return self.stored_shelf(key); }
         let mut inner = self.lock();
         let shelf = inner.store.shelves.get(key).cloned();
         // What an earlier run read is drawn at once and asked for again once.
@@ -441,6 +446,7 @@ impl Catalog {
     /// fresh.
     pub fn expire_personal_pages(&self, plugin: &str) {
         let mut inner = self.lock();
+        inner.collection_epochs.invalidate(plugin, true);
         for (_, shelf) in inner.store.shelves.iter_mut_where(|key, shelf| key.starts_with(&format!("{plugin} native:")) && shelf.document["personal"] == true) { shelf.read_at = 1; }
         inner.dirty = true;
         self.changed();
@@ -448,6 +454,7 @@ impl Catalog {
 
     pub fn expire_native_pages(&self, plugin: &str) {
         let mut inner = self.lock();
+        inner.collection_epochs.invalidate(plugin, false);
         for (_, shelf) in inner.store.shelves.iter_mut_where(|key, _| key.starts_with(&format!("{plugin} native:"))) { shelf.read_at = 0; }
         inner.dirty = true;
         self.changed();
@@ -458,6 +465,7 @@ impl Catalog {
     /// read again for it (the page around the card stays as it is).
     pub fn mark_native_favorite(&self, plugin: &str, reference: &str, on: bool) {
         let mut inner = self.lock();
+        inner.collection_epochs.invalidate(plugin, false);
         for card in inner.store.cards.values_mut_where(|c| c.plugin == plugin && c.identity == reference && !c.metadata.is_array()) {
             card.metadata["favorite"] = serde_json::json!(on);
         }
@@ -838,6 +846,7 @@ impl Catalog {
 
     pub fn forget_plugin(&self, plugin: &str) {
         let mut inner = self.lock();
+        inner.collection_epochs.invalidate(plugin, false);
         inner.residency.forget(plugin);
         inner.store.forget_plugin(plugin);
         let cards: HashSet<_> = inner.store.cards.keys().copied().collect();

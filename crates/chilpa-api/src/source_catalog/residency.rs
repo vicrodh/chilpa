@@ -152,7 +152,10 @@ impl Catalog {
         for (plugin, enabled) in states {
             if !enabled { inner.domains.remove(&plugin); }
             if enabled && inner.residency.unavailable_archives.remove(&plugin) { inner.residency.changed(); }
-            if inner.residency.sources.insert(plugin, enabled) != Some(enabled) { inner.residency.changed(); }
+            if inner.residency.sources.insert(plugin.clone(), enabled) != Some(enabled) {
+                inner.residency.changed();
+                inner.collection_epochs.invalidate(&plugin, false);
+            }
         }
         let cancelled: HashSet<_> = inner.queue.queued.iter().filter(|job| blocked(&inner, job)).cloned().collect();
         inner.queue.urgent.retain(|job| !cancelled.contains(job));
