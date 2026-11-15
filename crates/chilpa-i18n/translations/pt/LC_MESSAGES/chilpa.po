@@ -4442,6 +4442,9 @@ msgstr "Nenhum preset corresponde a esta busca."
 msgid "No purchases match the current view."
 msgstr "Nenhuma compra corresponde à visualização atual."
 
+msgid "No results"
+msgstr ""
+
 msgid "No results for"
 msgstr "Sem resultados para"
 
@@ -5650,6 +5653,9 @@ msgstr "Tipo de lançamento"
 
 msgid "Releases"
 msgstr "Lançamentos"
+
+msgid "Reload"
+msgstr ""
 
 msgid "Remember"
 msgstr "Lembrar"
@@ -6951,6 +6957,9 @@ msgstr "Não foi possível iniciar o processo de download."
 msgid "The downloaded file could not be verified as complete audio."
 msgstr "Não foi possível verificar se o arquivo baixado contém áudio completo."
 
+msgid "The embedded browser could not be loaded. Open this page in your browser."
+msgstr ""
+
 msgid "The engine reports unchanged samples on this route."
 msgstr "O motor informa amostras inalteradas neste caminho."
 
@@ -7441,6 +7450,9 @@ msgstr "Esta saída recebe DSD convertido para PCM. O DoP exige o modo exclusivo
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Esta saída recebe DSD convertido para PCM. Só uma placa em hw o recebe sem alteração; o que foi escolhido para a placa é mantido."
+
+msgid "This page is unavailable while offline or the source is disabled."
+msgstr ""
 
 msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
 msgstr "Isso apaga permanentemente os dados em cache do plugin. Pode ser necessário baixar o conteúdo novamente."
@@ -9886,6 +9898,11 @@ msgstr "{} não está disponível. O disco será aberto quando voltar."
 
 msgid "{} is still syncing its library for the first time. Try again when it finishes."
 msgstr "{} ainda está sincronizando a biblioteca pela primeira vez. Tente de novo quando terminar."
+
+msgid "{} item"
+msgid_plural "{} items"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."

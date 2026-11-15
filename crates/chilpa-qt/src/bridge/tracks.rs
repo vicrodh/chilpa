@@ -738,7 +738,7 @@ impl qobject::TrackListModel {
     /// Asks for a reload once this turn of the event loop is over, however
     /// many inputs changed in it.
     fn schedule(mut self: Pin<&mut Self>) {
-        if self.rust().kind.to_string() == "tracks" { self.as_mut().set_ready(false); }
+        if matches!(self.rust().kind.to_string().as_str(), "tracks" | "source") { self.as_mut().set_ready(false); }
         self.as_mut().rust_mut().asked = self.rust().asked.wrapping_add(1);
         if self.rust().pending {
             return;

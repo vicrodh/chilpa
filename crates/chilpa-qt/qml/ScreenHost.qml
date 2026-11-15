@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/immersive/qml/Components"
 import "Screens"
 import "Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
+import app.chilpa.pages
 import "qrc:/qt/qml/app/chilpa/discovery/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/metadata/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
@@ -46,8 +47,7 @@ PageTransition {
     sourceComponent: {
         if (screen === "source" && String(displayEntry) !== "") return pluginDisplay
         if (screen === "source" && medium && sourceDocument.source === routeKey) return mediaSource
-        if (music.music === true)
-            return music.artist === true || / (native:artist:|matching-artist-v[23]:)/.test(routeKey) ? sourceArtist : music.shelves !== undefined ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
+        if (music.music === true) return nativeSource
         switch (screen) {
         case "home": return home
         case "library": return library
@@ -112,10 +112,7 @@ PageTransition {
     Component { id: source; SourceScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: mediaSource; MediaSourceScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: mediaDetail; MediaDetailScreen { key: host.routeKeyOf(parent) } }
-    Component { id: sourceHome; SourceHome { key: host.routeKeyOf(parent) } }
-    Component { id: sourceArtist; ArtistPage { key: host.routeKeyOf(parent) } }
-    Component { id: sourceAlbums; AlbumsScreen { source: host.routeKeyOf(parent) } }
-    Component { id: sourceListing; SourceListing { source: host.routeKeyOf(parent) } }
+    Component { id: nativeSource; NativeSourceHost { source: host.routeKeyOf(parent); presentation: host.music } }
     Component { id: sourceEntry; SourceEntryScreen { key: host.routeKeyOf(parent) } }
     Component { id: pending; PendingScreen {} }
 

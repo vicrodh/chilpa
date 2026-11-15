@@ -1042,3 +1042,7 @@ turbojpeg
 # Qt's executable-picker option and the pinned Python package installer.
 dont
 uv
+
+# Qt WebEngine settings property names.
+javascript
+rtc

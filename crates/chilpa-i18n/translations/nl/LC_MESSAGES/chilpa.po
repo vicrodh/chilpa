@@ -4442,6 +4442,9 @@ msgstr "Geen presets komen overeen met deze zoekopdracht."
 msgid "No purchases match the current view."
 msgstr "Geen aankopen komen overeen met de huidige weergave."
 
+msgid "No results"
+msgstr ""
+
 msgid "No results for"
 msgstr "Geen resultaten voor"
 
@@ -5650,6 +5653,9 @@ msgstr "Soort uitgave"
 
 msgid "Releases"
 msgstr "Uitgaven"
+
+msgid "Reload"
+msgstr ""
 
 msgid "Remember"
 msgstr "Onthouden"
@@ -6951,6 +6957,9 @@ msgstr "Het downloadproces kon niet worden gestart."
 msgid "The downloaded file could not be verified as complete audio."
 msgstr "Het gedownloade bestand kon niet als volledige audio worden geverifieerd."
 
+msgid "The embedded browser could not be loaded. Open this page in your browser."
+msgstr ""
+
 msgid "The engine reports unchanged samples on this route."
 msgstr "De audiomotor meldt ongewijzigde samples op dit pad."
 
@@ -7441,6 +7450,9 @@ msgstr "Deze uitvoer krijgt DSD dat naar PCM is omgezet. DoP vereist de exclusie
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Deze uitvoer krijgt DSD dat naar PCM is omgezet. Alleen een kaart op hw krijgt het ongewijzigd; wat voor de kaart is gekozen, blijft behouden."
+
+msgid "This page is unavailable while offline or the source is disabled."
+msgstr ""
 
 msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
 msgstr "Dit wist de cachegegevens van de plug-in definitief. Inhoud moet mogelijk opnieuw worden gedownload."
@@ -9886,6 +9898,11 @@ msgstr "{} is niet beschikbaar. Het item wordt geopend zodra het weer beschikbaa
 
 msgid "{} is still syncing its library for the first time. Try again when it finishes."
 msgstr "{} synchroniseert zijn bibliotheek nog voor het eerst. Probeer het opnieuw als dat klaar is."
+
+msgid "{} item"
+msgid_plural "{} items"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."

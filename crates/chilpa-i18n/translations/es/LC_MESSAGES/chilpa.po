@@ -4442,6 +4442,9 @@ msgstr "No hay presets para esta búsqueda."
 msgid "No purchases match the current view."
 msgstr "Ninguna compra coincide con la vista actual."
 
+msgid "No results"
+msgstr "Sin resultados"
+
 msgid "No results for"
 msgstr "Sin resultados para"
 
@@ -5650,6 +5653,9 @@ msgstr "Tipo de lanzamiento"
 
 msgid "Releases"
 msgstr "Lanzamientos"
+
+msgid "Reload"
+msgstr "Recargar"
 
 msgid "Remember"
 msgstr "Recordar"
@@ -6951,6 +6957,9 @@ msgstr "No se pudo iniciar el proceso de descarga."
 msgid "The downloaded file could not be verified as complete audio."
 msgstr "No se pudo verificar que el archivo descargado contenga audio completo."
 
+msgid "The embedded browser could not be loaded. Open this page in your browser."
+msgstr "No se pudo cargar el navegador integrado. Abre esta página en tu navegador."
+
 msgid "The engine reports unchanged samples on this route."
 msgstr "El motor informa muestras sin cambios en esta ruta."
 
@@ -7441,6 +7450,9 @@ msgstr "Esta salida toma el DSD convertido a PCM. DoP necesita el modo exclusivo
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Esta salida recibe el DSD convertido a PCM. Solo una tarjeta en hw lo recibe intacto; lo elegido para la tarjeta se conserva."
+
+msgid "This page is unavailable while offline or the source is disabled."
+msgstr "Esta página no está disponible sin conexión o con el proveedor desactivado."
 
 msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
 msgstr "Esto borra permanentemente los datos en caché del plugin. Puede ser necesario descargar el contenido nuevamente."
@@ -9886,6 +9898,11 @@ msgstr "{} no está disponible. El disco se abrirá cuando regrese."
 
 msgid "{} is still syncing its library for the first time. Try again when it finishes."
 msgstr "{} todavía está sincronizando su biblioteca por primera vez. Vuelve a intentarlo cuando termine."
+
+msgid "{} item"
+msgid_plural "{} items"
+msgstr[0] "{} elemento"
+msgstr[1] "{} elementos"
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."

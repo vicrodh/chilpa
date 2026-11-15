@@ -31,6 +31,7 @@ pub(crate) mod genres;
 mod composers;
 pub(crate) use library_index::SourceRecord;
 mod pages;
+mod collection_page;
 pub(crate) mod store;
 pub(crate) mod view;
 mod sorting;
@@ -461,8 +462,15 @@ impl Catalog {
             card.metadata["favorite"] = serde_json::json!(on);
         }
         let pages = format!("{plugin} native:");
-        for (_, shelf) in inner.store.shelves.iter_mut_where(|key, shelf| key.starts_with(&pages) && shelf.document["header"]["ref"] == reference) {
-            shelf.document["header"]["favorite"] = serde_json::json!(on);
+        for (_, shelf) in inner.store.shelves.iter_mut_where(|key, _| key.starts_with(&pages)) {
+            if shelf.document["header"]["ref"] == reference { shelf.document["header"]["favorite"] = serde_json::json!(on); }
+            if collection_page::collection(&shelf.document) {
+                for item in shelf.document["items"].as_array_mut().into_iter().flatten().filter(|item| item["ref"] == reference) {
+                    item["favorite"] = serde_json::json!(on);
+                }
+                // The next visible read reconciles membership without forcing a remote refresh.
+                shelf.read_at = 1;
+            }
         }
         inner.dirty = true;
         self.changed();
@@ -499,6 +507,23 @@ impl Catalog {
         if inner.native_running.contains_key(&job) && !residency::blocked(&inner, &job) {
             inner.retry_after_running.insert(job.clone());
         }
+        self.queue(&mut inner, job, true);
+    }
+
+    pub(crate) fn manual_page(&self, key: &str) {
+        {
+            let mut inner = self.lock();
+            if !inner.store.shelves.contains_key(key) { inner.store.shelves.insert(key.into(), store::Shelf::default()); }
+        }
+        self.retry(key);
+    }
+
+    /// A visible page may continue provider synchronization without a manual refresh.
+    pub(crate) fn poll_page(&self, key: &str) {
+        let mut inner = self.lock();
+        let job = Job::Shelf(key.to_string());
+        if inner.running.contains(&job) || inner.native_running.contains_key(&job) { return; }
+        if let Some(shelf) = inner.store.shelves.get_mut(key) { shelf.read_at = now().saturating_sub(31).max(1); }
         self.queue(&mut inner, job, true);
     }
 

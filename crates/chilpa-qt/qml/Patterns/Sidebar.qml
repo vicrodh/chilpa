@@ -11,6 +11,7 @@ import "qrc:/qt/qml/app/chilpa/about/qml/Components" as AboutUi
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/pages/qml/Components"
 
 // The floating left panel (design/02 2): search, the main destinations and
 // the playlists. Collapsed, a column of icons.
@@ -156,24 +157,17 @@ Rectangle {
                             }
                             onMiddleClicked: group.modelData.key ? clicked() : SettingsModel.middleClickTabs ? Navigation.open(group.modelData.screen, 0) : Navigation.go(group.modelData.screen, 0)
                         }
-                        Repeater {
-                            model: group.modelData.children || []
-                            NavItem {
-                                required property var modelData
-                                objectName: "sourceChild"
-                                visible: !side.collapsed && side.expandedSources[group.modelData.key] === true
-                                x: Metrics.navItemPadding
-                                width: parent.width - x
-                                text: modelData.title
-                                glyph: Icons[modelData.icon] || Icons.folder
-                                active: modelData.route ? Navigation.routeKey === modelData.route && (modelData.route !== group.modelData.key || Navigation.screen === "source")
-                                    : side.sourceView.navigation_id === modelData.id
-                                onClicked: {
-                                    if (modelData.route) { Navigation.goKey("source", modelData.route); return }
-                                    side.openSource("child", group.modelData.key, modelData.id)
-                                }
-                                onMiddleClicked: clicked()
-                            }
+                        Loader {
+                            width: parent.width
+                            active: side.expandedSources[group.modelData.key] === true || item !== null
+                            visible: !side.collapsed && side.expandedSources[group.modelData.key] === true
+                            sourceComponent: Component { SourceNavigationTree {
+                                width: parent.width
+                                controller: side
+                                pluginId: group.modelData.key || ""
+                                entries: group.modelData.children || []
+                                onEntryClicked: entry => side.openSource("child", group.modelData.key, entry.id)
+                            } }
                         }
                     }
                 }
