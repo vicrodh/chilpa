@@ -18,6 +18,7 @@ use std::{collections::HashSet, path::Path, sync::Arc, time::Duration};
 const PASS: usize = 60;
 const RETRY: u64 = 300;
 
+#[derive(Clone)]
 pub(super) struct State {
     enabled: HashSet<String>,
     cache: Option<Arc<Cache>>,

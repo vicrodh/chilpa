@@ -82,28 +82,58 @@ fn choose(settings: &Path, into: &Path, identity: &str, picked: Option<&Path>) -
     Ok(changed)
 }
 
-impl Reader {
-    fn genre_art_identity(&self, key: &str) -> Result<String, String> {
-        let selected = Selection::parse(key).filter(|selected| selected.kind == "genre")
-            .ok_or_else(|| chilpa_i18n::t("Invalid discovery selection."))?;
-        let selected = self.resolve_album_genre_using(selected, &self.source_index().1)?;
+fn selection(key: &str) -> Result<Selection, String> {
+    Selection::parse(key).filter(|selected| selected.kind == "genre")
+        .ok_or_else(|| chilpa_i18n::t("Invalid discovery selection."))
+}
+
+fn identity(selected: &Selection, library: Option<&chilpa_library::Library>, catalog: Option<&crate::source_catalog::Catalog>) -> Result<String, String> {
+    if selected.genre_token.is_empty() {
         if selected.name.trim().is_empty() { return Err(chilpa_i18n::t("Invalid discovery selection.")); }
-        Ok(presentation::token(&selected.name))
+        return Ok(presentation::token(&selected.name));
+    }
+    let matches = |name: &str| !name.trim().is_empty() && presentation::token(name) == selected.genre_token;
+    let found = if selected.genre_id > 0 || selected.album > 0 {
+        let library = library.ok_or_else(|| chilpa_i18n::t("The library could not be opened."))?;
+        if selected.genre_id > 0 {
+            library.genre_name_by_id(selected.genre_id).map_err(|error| error.to_string())?.is_some_and(|name| matches(&name))
+        } else {
+            let mut found = false;
+            library.visit_album_genres(selected.album, |name, _| { found |= matches(name); Ok(()) }).map_err(|error| error.to_string())?;
+            found
+        }
+    } else {
+        catalog.is_some_and(|catalog| catalog.genre_anchor_matches(selected.album, selected.genre_track, matches))
+    };
+    if !found { return Err(chilpa_i18n::t("This genre is no longer available.")); }
+    Ok(selected.genre_token.clone())
+}
+
+#[cfg(test)]
+impl Reader {
+    pub(crate) fn genre_art_identity(&self, key: &str) -> Result<String, String> {
+        identity(&selection(key)?, Some(&self.lib), self.catalog.as_deref())
     }
 }
 
 impl crate::Chilpa {
+    fn genre_art_identity(&self, key: &str) -> Result<String, String> {
+        let selected = selection(key)?;
+        let reader = if !selected.genre_token.is_empty() && (selected.genre_id > 0 || selected.album > 0) { self.reader() } else { None };
+        identity(&selected, reader.as_ref().map(|reader| &reader.lib), Some(&self.catalog))
+    }
+
     pub fn genre_art(&mut self, key: &str) -> String {
-        let Some(reader) = self.reader() else { return String::new() };
-        let Ok(identity) = reader.genre_art_identity(key) else { return String::new() };
-        choices().get(&identity).map(|file| folder().join(file).to_string_lossy().into_owned()).unwrap_or_default()
+        let choices = choices();
+        if choices.is_empty() { return String::new(); }
+        let Ok(identity) = self.genre_art_identity(key) else { return String::new() };
+        choices.get(&identity).map(|file| folder().join(file).to_string_lossy().into_owned()).unwrap_or_default()
     }
 
     pub fn genre_art_chosen(&mut self, key: &str) -> bool { !self.genre_art(key).is_empty() }
 
     pub fn choose_genre_art(&mut self, key: &str, picked: Option<&Path>) -> bool {
-        let result = self.reader().ok_or_else(|| chilpa_i18n::t("The library could not be opened."))
-            .and_then(|reader| reader.genre_art_identity(key))
+        let result = self.genre_art_identity(key)
             .and_then(|identity| choose(&chilpa_core::settings::path(), &folder(), &identity, picked));
         match result {
             Ok(true) => { self.genre_art_changed(); true }

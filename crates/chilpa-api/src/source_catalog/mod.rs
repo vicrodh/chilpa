@@ -27,6 +27,7 @@ mod revisions;
 mod revalidation;
 mod native;
 mod library_index;
+mod genre_anchor;
 pub(crate) mod genres;
 mod composers;
 pub(crate) use library_index::SourceRecord;
