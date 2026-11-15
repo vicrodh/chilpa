@@ -1,3 +1,5 @@
+import "qrc:/qt/qml/app/chilpa/pages/qml/Components"
+import "qrc:/qt/qml/app/chilpa/pages/qml/Patterns"
 import QtQuick
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -15,6 +17,10 @@ TitledFlow {
     PillButton { text:"Album genres"; onClicked:{ browser.active = true; browser.item.open() } }
     Loader { id:browser; active:false; sourceComponent:AlbumGenreBrowser { albumId:1; onFinished:browser.active = false } }
     LibraryDestinations {}
+    QtObject { id:sampleNavigation; property var expandedSources:({}); property var sourceView:({}) }
+    SourceNavigationTree { width:Metrics.sidebarWidth; pluginId:"fixture"; controller:sampleNavigation; entries:[{id:"collection",title:"Collection",children:[{id:"all",title:"All"}]}] }
+    CollectionControls { width:Metrics.settingsMaxWidth; source:""; about:({filters:{},filter_controls:[{key:"search",type:"search",label:"Search collection"},{key:"hidden",type:"toggle",label:"Hide purchases"}]}) }
+    CollectionTile { width:CardLayout.cardWidth; plugin:"fixture"; entry:({kind:"artist",ref:"artist:1",title:"Artist",subtitle:"Collection"}) }
     ArtistContext { width: Metrics.settingsMaxWidth; info: ({title:"Artist",genres:["Jazz","Soul Jazz"],compositions:8}) }
     DiscoveryEntry { width: Metrics.discoveryEntryWidth; entry: ({kind:"genre",name:"Jazz",art:{key:"jazz"}}); detail:"Explore styles in your library" }
     DiscoveryEntry { width: Metrics.sceneCardWidth; activeImages:false; entry: ({kind:"composer",name:"Composer"}); detail:"3 albums" }

@@ -4664,6 +4664,9 @@ msgstr ""
 msgid "No purchases match the current view."
 msgstr "No purchases match the current view."
 
+msgid "No results"
+msgstr ""
+
 msgid "No results for"
 msgstr ""
 
@@ -5904,6 +5907,9 @@ msgid "Release type"
 msgstr "Release type"
 
 msgid "Releases"
+msgstr ""
+
+msgid "Reload"
 msgstr ""
 
 msgid "Remember"
@@ -7278,6 +7284,9 @@ msgstr "The download worker could not be started."
 msgid "The downloaded file could not be verified as complete audio."
 msgstr "The downloaded file could not be verified as complete audio."
 
+msgid "The embedded browser could not be loaded. Open this page in your browser."
+msgstr ""
+
 msgid "The engine reports unchanged samples on this route."
 msgstr ""
 
@@ -7917,6 +7926,9 @@ msgid "This output takes DSD converted to PCM. DoP needs exclusive mode, and a D
 msgstr ""
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
+msgstr ""
+
+msgid "This page is unavailable while offline or the source is disabled."
 msgstr ""
 
 msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
@@ -10412,6 +10424,11 @@ msgstr ""
 
 msgid "{} is still syncing its library for the first time. Try again when it finishes."
 msgstr ""
+
+msgid "{} item"
+msgid_plural "{} items"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."

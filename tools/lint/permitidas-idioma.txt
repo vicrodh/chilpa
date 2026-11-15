@@ -1049,3 +1049,7 @@ hardlinked
 nlink
 offscreen
 retag
+
+# Qt WebEngine settings property names.
+javascript
+rtc

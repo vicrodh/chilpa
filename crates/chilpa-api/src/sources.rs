@@ -65,7 +65,11 @@ pub struct Panel {
 /// An entry under a plugin's. `route` is the source screen's key when the
 /// catalog draws it; empty, the plugin's tree opens at `id`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
-pub struct PanelChild { pub id: String, pub title: String, pub icon: String, pub route: String }
+pub struct PanelChild {
+    pub id: String, pub title: String, pub icon: String, pub route: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<PanelChild>,
+}
 
 /// A step of the way from the root to where the window stands.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -337,11 +341,12 @@ impl Chilpa {
                     let children = if let Some(children) = self.sources.media_kinds.get(&id).and_then(|medium| navigation::media_children(medium)) { children } else if let Some(layout) = layout {
                         // Discover is the source's own page; the rest are its sections.
                         layout.ordered().into_iter().filter(|(_, section)| section.under.is_empty()).map(|(key, section)| PanelChild { id: format!("view:{key}"), title: section.title.clone(), icon: section.icon.clone(),
-                            route: if key == "discover" { id.clone() } else { format!("{id} section:{key}") } }).collect()
+                            route: if key == "discover" { id.clone() } else { format!("{id} section:{key}") }, children: Vec::new() }).collect()
                     } else if music {
                         let root = self.catalog.shelf(&format!("{id} root")).unwrap_or_default();
-                        root.folders.iter().take(64).map(|f| PanelChild { id: f.id.clone(), title: f.title.clone(), icon: String::new(), route: format!("{id} at:{}", f.id) }).collect()
-                    } else { self.sources.roots.get(&id).into_iter().flatten().map(|entry| PanelChild { id: entry.id.clone(), title: entry.title.clone(), icon: String::new(), route: String::new() }).collect() };
+                        root.folders.iter().take(64).map(|f| PanelChild { id: f.id.clone(), title: f.title.clone(), icon: String::new(), route: format!("{id} at:{}", f.id), children: Vec::new() }).collect()
+                    } else { self.sources.roots.get(&id).into_iter().flatten().map(|entry| PanelChild { id: entry.id.clone(), title: entry.title.clone(), icon: String::new(), route: String::new(), children: Vec::new() }).collect() };
+                    let children = self.natives.navigation(&id, children);
                     let artists = music && self.natives.has_pages(&id);
                     Panel { icon_tint: crate::plugin_icons::tint(&Self::plugins_dir(), &id), id, name, icon, icon_image, music, artists, children }
                 }).collect();
