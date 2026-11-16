@@ -70,6 +70,7 @@ pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
             ("ru", "Русский".into()),
             ("ja", "日本語".into()),
             ("nl", "Nederlands".into()),
+            ("zh_TW", "繁體中文".into()),
         ],
         crate::ambient::MODE => vec![
             ("off", chilpa_i18n::t("Off")),
