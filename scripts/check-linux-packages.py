@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 import tarfile
 import tempfile
+from appimage_audio_runtime import check_appimage_audio
 
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -35,6 +36,7 @@ with tarfile.open(tarball) as archive:
     assert executable.isfile() and executable.mode & 0o111
     with archive.extractfile(executable) as stream:
         assert hashlib.file_digest(stream, "sha256").hexdigest() == manifest["binary_sha256"]
+check_appimage_audio(args.dist.resolve() / f"Chilpa-{args.version}-{args.arch}.AppImage")
 assert subprocess.check_output(["dpkg-deb", "--field", str(deb), "Architecture"], text=True).strip() == deb_arch
 assert subprocess.check_output(["rpm", "-qp", "--queryformat", "%{ARCH}", str(rpm)], text=True).strip() == args.arch
 for kind, package in (("deb", deb), ("rpm", rpm)):
