@@ -15,6 +15,8 @@ pub mod qobject {
         #[qinvokable]
         fn cover_override(self: &NativePages, id: i64, rev: i32) -> QString;
         #[qinvokable]
+        fn reference_cover_override(self: &NativePages, plugin: &QString, reference: &QString, rev: i32) -> QString;
+        #[qinvokable]
         fn request_key(self: &NativePages, key: &QString, query: &QString) -> QString;
         #[qinvokable]
         fn same_navigation(
@@ -36,6 +38,9 @@ impl qobject::NativePages {
     }
     pub fn cover_override(&self, id: i64, _rev: i32) -> QString {
         QString::from(crate::app::with(|api| api.source_cover_override(id)))
+    }
+    pub fn reference_cover_override(&self, plugin: &QString, reference: &QString, _rev: i32) -> QString {
+        QString::from(crate::app::with(|api| api.source_reference_cover_override(&plugin.to_string(), &reference.to_string())))
     }
     pub fn request_key(&self, key: &QString, query: &QString) -> QString {
         QString::from(crate::app::with(|api| {

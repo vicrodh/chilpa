@@ -162,6 +162,12 @@ impl crate::Chilpa {
             .map(|url| url.to_string())
             .unwrap_or_default()
     }
+    pub fn source_reference_cover_override(&self, plugin: &str, reference: &str) -> String {
+        if plugin.len() > 256 || !valid_reference(reference) { return String::new(); }
+        self.catalog.chosen_art_reference(plugin, reference)
+            .and_then(|path| url::Url::from_file_path(path).ok())
+            .map(|url| url.to_string()).unwrap_or_default()
+    }
     pub fn source_page_same_navigation(&self, key: &str, navigation: &str) -> bool {
         if key == navigation {
             return true;

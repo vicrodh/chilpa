@@ -13,8 +13,15 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 Item {
     id: grid
 
-    property AlbumGridModel model
+    property var model
     readonly property alias scrollView: view
+    property alias header: view.header
+    property alias footer: view.footer
+    property alias topMargin: view.topMargin
+    property alias bottomMargin: view.bottomMargin
+    // A bounded window can provide a count without allocating a row model.
+    property int windowCount: -1
+    property Component cardDelegate: null
     readonly property int detailsRev: model ? model.rev : 0
     readonly property bool shelf: !!model && model.maxRows === 1
     // Grow with the rows instead of scrolling, for a shelf inside a page.
@@ -74,7 +81,7 @@ Item {
         interactive: grid.shelf ? contentWidth > width : !grid.fitContent
         // Scrolled rows stay inside the grid, not over what sits above it.
         clip: grid.shelf || !grid.fitContent
-        model: grid.model
+        model: grid.windowCount >= 0 ? Math.ceil(grid.windowCount / Math.max(1, grid.columns)) : grid.model
         leftMargin: grid.shelf ? Metrics.cardRing : 0
         rightMargin: grid.shelf ? Metrics.cardRing : 0
         spacing: grid.list ? Metrics.gap2 : Metrics.gridGap
@@ -104,74 +111,59 @@ Item {
             restoreMode: Binding.RestoreBindingOrValue
         }
 
-        delegate: Item {
+        delegate: Tools.AlbumGridRow {
             id: row
+            required property int index
+            required property var model
+            owner: grid
+            first: grid.windowCount >= 0 ? index * grid.columns : model.first
+            span: grid.windowCount >= 0 ? Math.min(grid.columns, grid.windowCount - first) : model.span
+            revision: grid.windowCount >= 0 ? grid.model.rev : model.revision
+            group: grid.windowCount >= 0 ? "" : model.group
+            listDelegate: Component {
+                AlbumRow {
+                    readonly property bool shown: true
 
-            required property int first
-            required property int span
-            required property int revision
-            // The group this row opens, if it opens one.
-            required property string group
-            readonly property real lead: group !== "" ? Metrics.rowGroup : 0
-            readonly property bool onScreen: grid.visible && y + height > grid.visibleTop && y < grid.visibleTop + (grid.viewport ? grid.viewport.height : view.height) && (!grid.shelf || x + width > view.contentX && x < view.contentX + view.width)
-            readonly property bool nearby: !grid.viewport || y + height >= grid.visibleTop - grid.viewport.height && y < grid.visibleTop + grid.viewport.height * 2
-
-            width: grid.shelf ? grid.cardWidth : grid.technical ? view.contentWidth : grid.width
-            height: lead + grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
-
-            Tools.AlbumGroupHeading {
-                visible: row.group !== ""
-                x: Metrics.cardRing
-                width: grid.layoutWidth
-                text: row.group
-            }
-
-            AlbumRow {
-                readonly property bool shown: grid.list && row.nearby
-
-                visible: shown
-                x: Metrics.cardRing
-                y: row.lead
-                width: grid.layoutWidth
-                technical: grid.technical
-                technicalColumns: grid.technicalColumns
-                rev: grid.detailsRev
-                albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
-                title: shown ? grid.model.title(row.first, row.revision) : ""
-                explicitContent: shown && grid.model.explicitContent(row.first, row.revision)
-                aiGenerated: shown && grid.model.aiGenerated(row.first, row.revision)
-                subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
-                year: shown ? grid.model.year(row.first, row.revision) : ""
-                art: shown && !grid.technical ? grid.model.art(row.first, row.revision, row.onScreen) : ""
-                columns: grid.listColumns
-                sources: shown && !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
-                mixed: !!grid.model && grid.model.mixed
-                tint: row.first
-                selected: shown && AlbumActions.selected(albumId, AlbumActions.rev)
-                expanded: shown && grid.model.expanded === row.first
-                available: !shown || AlbumActions.available(albumId, rev)
-                onClicked: (modifiers) => interaction.clicked(row.first, albumId, title, modifiers, available)
-                onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
-                onQuick: interaction.toggleQuick(row.first)
-                onMenu: (x, y) => {
-                    if (!available)
-                        return
-                    const p = mapToItem(grid, x, y)
-                    albumMenu.show(albumId, title, subtitle, row.first, p.x, p.y)
+                    visible: shown
+                    width: parent.width
+                    technical: grid.technical
+                    technicalColumns: grid.technicalColumns
+                    rev: grid.detailsRev
+                    albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
+                    title: shown ? grid.model.title(row.first, row.revision) : ""
+                    explicitContent: shown && grid.model.explicitContent(row.first, row.revision)
+                    aiGenerated: shown && grid.model.aiGenerated(row.first, row.revision)
+                    subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
+                    year: shown ? grid.model.year(row.first, row.revision) : ""
+                    art: shown && !grid.technical ? grid.model.art(row.first, row.revision, row.onScreen) : ""
+                    columns: grid.listColumns
+                    sources: shown && !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
+                    mixed: !!grid.model && grid.model.mixed
+                    tint: row.first
+                    selected: shown && AlbumActions.selected(albumId, AlbumActions.rev)
+                    expanded: shown && grid.model.expanded === row.first
+                    available: !shown || AlbumActions.available(albumId, rev)
+                    onClicked: (modifiers) => interaction.clicked(row.first, albumId, title, modifiers, available)
+                    onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
+                    onQuick: interaction.toggleQuick(row.first)
+                    onMenu: (x, y) => {
+                        if (!available)
+                            return
+                        const p = mapToItem(grid, x, y)
+                        albumMenu.show(albumId, title, subtitle, row.first, p.x, p.y)
+                    }
                 }
+
             }
 
-            Repeater {
-                // A fixed count: a recycled row keeps its cards and only
-                // rebinds them.
-                model: grid.list || !row.nearby ? 0 : grid.shelf ? 1 : grid.columns
-
+            cardDelegate: grid.cardDelegate || standardCard
+            Component {
+                id: standardCard
                 AlbumCard {
                     required property int index
                     readonly property bool occupied: index < row.span
                     readonly property int at: row.first + index
                     readonly property int rev: row.revision
-
                     x: Metrics.cardRing + index * (grid.cardWidth + Metrics.gridGap)
                     y: row.lead
                     width: grid.cardWidth
@@ -204,19 +196,11 @@ Item {
                     }
                 }
             }
-
-            Loader {
-                id: quick
-                objectName: "albumQuickLoader"
-
-                y: row.lead + grid.rowHeight + Metrics.gap8
-                x: (grid.shelf ? view.contentX - row.x : grid.viewportX) + Metrics.cardRing
-                width: Math.max(0, grid.viewportWidth - Metrics.cardRing * 2) // derived: the visible content area
-                active: grid.model.expanded >= row.first && grid.model.expanded < row.first + row.span
-                sourceComponent: AlbumQuickView {
+            quickDelegate: Component {
+                AlbumQuickView {
                     albumId: grid.model.albumId(grid.model.expanded, grid.model.rev)
-                    notchX: grid.list ? Metrics.button32 / 2 // derived: under the row's arrow
-                          : Math.max(Metrics.gap16, Math.min(width - Metrics.gap16, (grid.model.expanded - row.first + 0.5) * (grid.cardWidth + Metrics.gridGap) - Metrics.gridGap / 2 - grid.viewportX)) // derived: the visible card center
+                    notchX: grid.list ? Metrics.button32 / 2
+                          : Math.max(Metrics.gap16, Math.min(width - Metrics.gap16, (grid.model.expanded - row.first + 0.5) * (grid.cardWidth + Metrics.gridGap) - Metrics.gridGap / 2 - grid.viewportX))
                     onClose: grid.model.expanded = -1
                 }
             }

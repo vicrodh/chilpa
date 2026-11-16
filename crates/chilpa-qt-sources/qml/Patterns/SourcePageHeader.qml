@@ -1,6 +1,5 @@
 import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/TextLinks.js" as TextLinks
-import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
@@ -44,6 +43,8 @@ Column {
         implicitHeight: Math.max(portrait.height, body.height)
         ArtTile {
             id: portrait
+            fallbackGlyph: Lucide.imageFallback(header.info.image_fallback || (header.artist ? "user-star" : ""))
+            fallbackFamily: Lucide.font
             contain: header.info.art_fit === "contain" || !!header.info.chosen_art
             width: Math.min(Metrics.heroArt, parent.width / 3); height: width // derived: keep room for the text on narrow windows
             radius: header.artist ? width / 2 : Metrics.radiusCard // derived: circular artist portrait
@@ -52,15 +53,9 @@ Column {
         }
         AnimatedCover {
             anchors.fill: portrait
-            visible: (header.info.art_colors || []).length >= 3 && !portrait.ready
+            visible: portrait.fallbackGlyph === "" && (header.info.art_colors || []).length >= 3 && !portrait.ready
             colors: header.info.art_colors || []
             label: header.info.title || ""
-        }
-        Icon {
-            anchors.centerIn: portrait
-            visible: header.artist && !portrait.ready
-            glyph: SourceGlyphs.musicArtist; iconFamily: SourceGlyphs.font
-            size: Metrics.iconPlay; color: Theme.color.textSecondary
         }
         HoverHandler { parent: portrait; cursorShape: Qt.PointingHandCursor }
         TapHandler { parent: portrait; onTapped: header.artwork() }

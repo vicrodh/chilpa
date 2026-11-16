@@ -252,4 +252,16 @@ mod tests {
         epochs.invalidate("first", false);
         assert_ne!(epochs.read("first").0, personal.0);
     }
+    #[test]
+    fn chosen_reference_cover_does_not_adopt_a_card_or_load_an_index() {
+        let catalog=super::ready_test_catalog();
+        catalog.choose_art(std::collections::HashMap::from([(("fixture".into(),"label:one".into()),"/tmp/chosen-cover.png".into())]));
+        assert_eq!(catalog.chosen_art_reference("fixture","label:one").as_deref(),Some("/tmp/chosen-cover.png"));
+        assert!(catalog.chosen_art_reference("fixture","label:other").is_none());
+        let inner=catalog.lock();
+        assert!(inner.store.cards.is_empty());
+        assert!(inner.store.tracks.is_empty());
+        assert!(inner.store.shelves.is_empty());
+    }
+
 }

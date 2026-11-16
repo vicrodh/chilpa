@@ -64,12 +64,41 @@ pub(super) fn header(value: &Value, query: &Query) -> Result<Value, String> {
             header[field] = value.clone();
         }
     }
+    if let Some(entity) = value.get("header").filter(|entity| entity.is_object() && entity["title"].as_str().is_some_and(|title| !title.is_empty())) {
+        if entity.get("ref").is_some_and(|reference| !reference.as_str().is_some_and(crate::native_page_request::valid_reference)) {
+            return Err("The collection header reference is invalid.".into());
+        }
+        let mut projected = row(entity, String::new());
+        projected.as_object_mut().expect("projected header").remove("rowToken");
+        projected["plugin"] = json!(query.plugin);
+        header["entity"] = projected;
+    }
+    header["tabs"] = tabs(value, &query.plugin)?;
+    header["show_tabs"] = json!(value.get("show_tabs").is_none_or(|value| value == true));
     // Unknown provider metadata never crosses the display boundary.
     if serde_json::to_vec(&header).map_err(error)?.len() > 128 * 1024 {
         return Err("The collection controls exceed their display limit.".into());
     }
     Ok(header)
 }
+fn tabs(value: &Value, plugin: &str) -> Result<Value, String> {
+    let Some(tabs) = value.get("tabs") else { return Ok(json!([])); };
+    let tabs = tabs.as_array().filter(|tabs| tabs.len() <= 32)
+        .ok_or("The collection tabs exceed their limit.")?;
+    let mut references = std::collections::HashSet::new();
+    tabs.iter().map(|tab| {
+        let reference = tab["ref"].as_str()
+            .filter(|reference| crate::native_page_request::valid_reference(reference))
+            .filter(|reference| references.insert(*reference))
+            .ok_or("A collection tab reference is invalid.")?;
+        let title = tab["title"].as_str()
+            .filter(|title| !title.is_empty() && title.len() <= 1024 && title.chars().count() <= 256 && !title.chars().any(char::is_control))
+            .ok_or("A collection tab title is invalid.")?;
+        Ok(json!({"title":title,"active":tab["active"] == true,
+            "key":crate::native_page_request::route(plugin,reference,json!({}),"collection")}))
+    }).collect::<Result<Vec<_>, String>>().map(Value::Array)
+}
+
 pub(super) fn token(query: &Query, page: &Page, local: usize) -> String {
     format!(
         "{}:{}:{}:{}:{}",
@@ -92,9 +121,17 @@ pub(super) fn parse_token(token: &str) -> Option<(i64, i64, usize, usize, &str)>
         parts[4],
     ))
 }
+fn image_fallback(value: &Value) -> &str {
+    match value.as_str() {
+        Some(name @ ("user-star" | "disc" | "award")) => name,
+        _ => "",
+    }
+}
 pub(super) fn row(item: &Value, token: String) -> Value {
     let mut row = json!({"rowToken":token,"kind":label(&item["kind"],64),"title":label(&item["title"],256),
         "artist":label(&item["artist"],256),"subtitle":label(&item["subtitle"],256),"label":label(&item["label"],256),
+        "ref":item["ref"].as_str().filter(|reference|crate::native_page_request::valid_reference(reference)).unwrap_or_default(),
+        "image_fallback":image_fallback(&item["image_fallback"]),
         "image":item["image"].as_str().filter(|image|image.len()<=4096).unwrap_or_default(),
         "available":item["available"]!=false,"favorite":item["favorite"]==true,"art_fit":label(&item["art_fit"],16)});
     for field in [

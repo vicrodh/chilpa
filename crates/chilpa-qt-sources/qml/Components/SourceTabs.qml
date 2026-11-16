@@ -9,6 +9,7 @@ Row {
     id: tabs
 
     property var model: []
+    property var navigate: null
 
     spacing: Metrics.gap8
     visible: model.length > 0
@@ -20,7 +21,7 @@ Row {
             required property var modelData
             kind: modelData.active ? "primary" : "secondary"
             text: modelData.title
-            onClicked: if (!modelData.active) Navigation.goKey("source", modelData.key)
+            onClicked: if (!modelData.active) tabs.navigate ? tabs.navigate(modelData.key) : Navigation.goKey("source", modelData.key)
         }
     }
 }

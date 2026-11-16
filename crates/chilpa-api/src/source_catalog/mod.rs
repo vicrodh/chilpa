@@ -850,6 +850,11 @@ impl Catalog {
         inner.store.chosen.get(&(card.plugin.clone(), card.identity.clone())).cloned()
     }
 
+    /// Identity lookup does not adopt cards or decode an integrated index.
+    pub(crate) fn chosen_art_reference(&self, plugin: &str, reference: &str) -> Option<String> {
+        self.lock().store.chosen.get(&(plugin.to_string(), reference.to_string())).cloned()
+    }
+
     /// The address a record's cover came from, for opening it in a browser.
     pub(crate) fn image_of(&self, id: i64) -> String {
         self.lock().store.cards.get(&id).map(|c| c.image.clone()).filter(|i| i.starts_with("http")).unwrap_or_default()
