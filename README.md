@@ -15,7 +15,9 @@
 
 </div>
 
-### Chilpa is a Hi-Fi music player. Bit-perfect. Multi Platform. Multi Source
+# Chilpa
+
+A Hi-Fi music player. Bit-perfect. Multi Platform. Multi Source
 
 I took the name **Chilpa** from *chilpatl*, a Classical Nahuatl word for a
 **red wasp or hornet** (*avispa roja / avispón*).
@@ -46,7 +48,7 @@ Sure, here is: [Releases](https://github.com/vicrodh/chilpa/releases)
 - **A command line**, as if Vim and the Quake console had a child. Press `:`
   to open it. Try it :)
 - Configurable **keyboard shortcuts** and keyboard navigation.
-- **Multilingual** English, Spanish, German, French, Dutch, Portuguese, Russian and Japanese. Corrections from native speakers are welcome.
+- **Multilingual** English, Spanish, German, French, Dutch, Portuguese, Russian, Japanese and Traditional Chinese. Corrections from native speakers are welcome.
 
 
 ## Screenshots

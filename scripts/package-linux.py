@@ -14,6 +14,7 @@ import tempfile
 from release_version import release_notes, release_version, update_information
 from release_platform import architecture
 from package_native import package_native
+from appimage_audio_runtime import pipewire_runtime, check_appdir_audio
 
 
 def check_glibc(path, maximum):
@@ -128,7 +129,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
                        EXTRA_PLATFORM_PLUGINS=";".join(platforms))
     environment["PATH"] = str(args.tools) + os.pathsep + environment["PATH"]
     subprocess.run([str(args.tools / locked["linuxdeploy"]["asset"]), "--appimage-extract-and-run", "--appdir", str(appdir),
-                    "-e", str(bin_dir / "chilpa-qt"), "-d", str(desktop), "-i", str(icon), "--plugin", "qt"],
+                    "-e", str(bin_dir / "chilpa-qt"), "--library", str(pipewire_runtime(args.binary)),
+                    "-d", str(desktop), "-i", str(icon), "--plugin", "qt"],
                    cwd=work, env=environment, check=True)
     # I deploy Wayland's runtime plugins too: the platform plugin alone cannot
     # create a window or deliver its icon through the compositor's shell.
@@ -143,6 +145,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
         raise SystemExit("The Wayland XDG shell integration is missing.")
     subprocess.run([str(args.tools / locked["linuxdeploy"]["asset"]), "--appimage-extract-and-run", "--appdir", str(appdir),
                     *wayland], cwd=work, env=environment, check=True)
+    check_appdir_audio(appdir)
     updater = bin_dir / "chilpa-appimage-updater.AppImage"
     shutil.copy2(args.tools / locked["updater"]["asset"], updater)
     shutil.copy2(root / "packaging/linux/chilpa-restart", bin_dir / "chilpa-restart")
