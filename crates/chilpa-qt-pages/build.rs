@@ -17,9 +17,6 @@ fn main() {
     let mut qml = Vec::new();
     files(Path::new("qml"), &mut qml);
     qml.sort();
-    // The browser import must not be resolved until the listener opens its view.
-    let deferred = ["qml/EmbeddedWebPage.qml"];
-    qml.retain(|path| !path.ends_with("EmbeddedWebPage.qml"));
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=cxx/pages.cpp");
     println!("cargo:rerun-if-changed=src/native_pages.rs");
@@ -35,7 +32,6 @@ fn main() {
             uri: "app.chilpa.pages",
             rust_files: &["src/native_pages.rs", "src/collection_model.rs"],
             qml_files: &qml,
-            qrc_files: &deferred,
             ..Default::default()
         })
         .build();

@@ -18,7 +18,6 @@ TestCase {
     visible: true
     Component { id: collectionFactory; SourceCollectionScreen { width: test.width; height: test.height; source: "fixture native:saved:all" } }
     Component { id: controlsFactory; CollectionControls { width: test.width; source: "fixture native:saved:all" } }
-    Component { id: webFactory; SourceWebScreen { width: test.width; height: test.height; source: "fixture native:journal" } }
     Component { id: hostFactory; PageHosts.NativeSourceHost { width:test.width; height:test.height; source:"fixture native:saved:all" } }
     Component { id: tileFactory; CollectionTile { width:200; height:250; plugin:"fixture"; entry:({rowToken:"row:1",kind:"track",ref:"track:1",title:"Song"}) } }
     Component {
@@ -53,9 +52,9 @@ TestCase {
     }
     function init() {
         failOnWarning(/Binding loop detected|Cannot assign|is not a function|ReferenceError|TypeError/)
-        Sources.pages = {"fixture native:saved:all":document(),"fixture native:journal":JSON.stringify({layout:"web",plugin:"fixture",title:"Journal"})}
+        Sources.pages = {"fixture native:saved:all":document()}
         Sources.revision++
-        NativePages.requests=[]; NativePages.revalidations=[]; NativePages.allowWeb=false
+        NativePages.requests=[]; NativePages.revalidations=[]
         Navigation.went=[]; SettingsModel.preferences={};treeController.expandedSources={};Sources.asked=[]
     }
     function test_hidden_dispatcher_uses_the_initial_snapshot_and_keeps_outgoing_layout() {
@@ -65,7 +64,7 @@ TestCase {
         reads.clear();Library.remoteRev++;wait(30);compare(reads.count,0)
         host.visible=true;wait(30);reads.clear()
         Library.remoteRev++;wait(30);compare(reads.count,0,"the collection owns its window instead of rereading the catalog document")
-        host.leaving=true;host.presentation={layout:"web"}
+        host.leaving=true;host.presentation={layout:"mixed"}
         compare(host.about.layout,"collection")
         verify(host.item && host.item.refreshCollection !== undefined)
     }
@@ -254,13 +253,5 @@ TestCase {
         host.item.positionViewAtEnd();wait(80)
         compare(scrollPointers.count,0,"scrolling keeps the same viewport QObject")
         scrollPointers.target=null
-    }
-    function test_web_module_stays_unloaded_when_not_permitted() {
-        const page=createTemporaryObject(webFactory,test)
-        verify(page)
-        const loader=findChild(page,"embeddedPageLoader")
-        verify(loader);compare(loader.active,false);compare(String(loader.source),"")
-        page.visible=false;reads.clear();Sources.revision++;Library.remoteRev++;wait(50)
-        compare(reads.count,0);compare(loader.item,null)
     }
 }

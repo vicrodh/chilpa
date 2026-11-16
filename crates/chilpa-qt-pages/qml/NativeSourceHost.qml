@@ -18,12 +18,10 @@ Loader {
     Component.onCompleted: acceptPresentation()
     onLoaded: { if (item.leaving !== undefined) item.leaving = Qt.binding(() => page.leaving) }
     sourceComponent: {
-        if (about.layout === "web") return web
         if (["collection","mixed"].includes(about.layout)) return collection
         if (about.artist === true || / (native:artist:|matching-artist-v[23]:)/.test(source)) return artist
         return about.shelves !== undefined ? home : about.albumsOnly === false ? listing : albums
     }
-    Component { id:web; SourceWebScreen { source:page.source } }
     Component { id:collection; SourceCollectionScreen { source:page.source } }
     Component { id:artist; ArtistPage { key:page.source } }
     Component { id:home; SourceHome { key:page.source } }

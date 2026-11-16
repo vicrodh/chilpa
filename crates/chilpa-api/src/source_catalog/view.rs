@@ -48,7 +48,7 @@ mod tests {
             "id":"fixture","name":"Fixture","version":"1.0.0","api_version":1,
             "kind":"source","runtime":"process"})).unwrap();
         crate::natives::tests::remember_source(&app.natives, manifest, json!({"pages":true}));
-        for layout in ["collection", "web"] {
+        for layout in ["collection"] {
             let key = crate::native_page_request::route("fixture", "base", json!({}), layout);
             let presentation: serde_json::Value = serde_json::from_str(&app.source_page_presentation(&key)).unwrap();
             assert_eq!(presentation, json!({"music":true,"layout":layout}));
@@ -349,7 +349,7 @@ impl Chilpa {
         if self.natives.has_pages(plugin) {
             if let Some(request) = rest.strip_prefix("native:")
                 .and_then(|reference| crate::native_page_request::decode(reference).ok())
-                .filter(|request| matches!(request.layout.as_str(), "collection" | "web"))
+                .filter(|request| request.layout == "collection")
             {
                 return serde_json::json!({"music":true,"layout":request.layout}).to_string();
             }

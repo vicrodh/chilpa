@@ -25,14 +25,6 @@ pub mod qobject {
         ) -> bool;
         #[qinvokable]
         fn revalidate(self: &NativePages, key: &QString, manual: bool);
-        #[qinvokable]
-        fn web_allowed(
-            self: &NativePages,
-            plugin: &QString,
-            initial: &QString,
-            address: &QString,
-            rev: i32,
-        ) -> bool;
     }
 }
 use cxx_qt_lib::QString;
@@ -57,20 +49,5 @@ impl qobject::NativePages {
     }
     pub fn revalidate(&self, key: &QString, manual: bool) {
         crate::app::with(|api| api.source_page_revalidate(&key.to_string(), manual));
-    }
-    pub fn web_allowed(
-        &self,
-        plugin: &QString,
-        initial: &QString,
-        address: &QString,
-        _rev: i32,
-    ) -> bool {
-        crate::app::with(|api| {
-            api.source_web_allowed(
-                &plugin.to_string(),
-                &initial.to_string(),
-                &address.to_string(),
-            )
-        })
     }
 }

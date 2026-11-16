@@ -1,13 +1,5 @@
-//! Generic paginated collections and lazy embedded web surfaces.
+//! Generic paginated collections and hierarchical source navigation.
 pub(crate) use chilpa_qt_kit::app;
 mod native_pages;
 mod collection_cache;
 mod collection_model;
-
-unsafe extern "C" {
-    fn chilpa_prepare_embedded_pages();
-}
-/// Prepares shared graphics contexts before constructing the GUI application.
-pub fn prepare() {
-    unsafe { chilpa_prepare_embedded_pages() }
-}

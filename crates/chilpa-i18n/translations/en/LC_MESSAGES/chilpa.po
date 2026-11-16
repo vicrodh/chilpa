@@ -7608,9 +7608,6 @@ msgstr "The download worker could not be started."
 msgid "The downloaded file could not be verified as complete audio."
 msgstr "The downloaded file could not be verified as complete audio."
 
-msgid "The embedded browser could not be loaded. Open this page in your browser."
-msgstr ""
-
 msgid "The engine reports unchanged samples on this route."
 msgstr ""
 
@@ -8274,9 +8271,6 @@ msgid "This output takes DSD converted to PCM. DoP needs exclusive mode, and a D
 msgstr ""
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
-msgstr ""
-
-msgid "This page is unavailable while offline or the source is disabled."
 msgstr ""
 
 msgid "This permanently clears cached plugin data. Content may need to be downloaded again."

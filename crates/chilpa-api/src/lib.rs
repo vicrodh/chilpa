@@ -115,7 +115,6 @@ mod plugin_domains;
 mod natives;
 mod native_navigation;
 mod native_page_request;
-mod source_web;
 mod lyrics_client;
 mod lyrics_service;
 mod lyrics_view;

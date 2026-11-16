@@ -4,6 +4,10 @@ use crate::natives::Natives;
 use serde_json::{json, Value};
 use std::{sync::Arc, time::Duration};
 
+fn unsupported_page(value: &Value) -> bool {
+    value["layout"] == "web" || value.get("web").is_some()
+}
+
 fn ingest(catalog: &Catalog, plugin: &str, key: &str, value: &Value) {
     let stamp = now();
     let mut inner = catalog.lock();
@@ -74,8 +78,10 @@ pub(super) fn read(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, refe
         }
         Err(error) => return Err(error.to_string()),
     };
+    if unsupported_page(&answer) {
+        return Err(chilpa_i18n::t("this part of the source is not there now"));
+    }
     super::collection_page::validate(&answer)?;
-    if answer.get("web").is_some() { crate::source_web::validate(natives, plugin, &answer)?; }
     if !natives.is_native(plugin) { return Err("The plugin was disabled.".into()); }
     ingest_document(catalog, plugin, parent, &answer);
     if catalog.stored_shelf(&format!("{plugin} native:{reference}")).is_none_or(|s| s.epoch == 0 || now().saturating_sub(s.read_at) >= 30) {
@@ -357,6 +363,10 @@ impl crate::Chilpa {
         let key = format!("{plugin} native:{reference}");
         let shelf = self.catalog.shelf(&key).unwrap_or_default();
         let mut document = if shelf.document.is_object() { shelf.document.clone() } else { json!({"shelves":[]}) };
+        if unsupported_page(&document) {
+            return json!({"music":true,"plugin":plugin,"title":shelf.title,"shelves":[],
+                "loading":false,"error":chilpa_i18n::t("this part of the source is not there now")}).to_string();
+        }
         document["music"] = json!(true);
         document["native_page"] = json!(true);
         document["plugin"] = json!(plugin);
@@ -364,7 +374,7 @@ impl crate::Chilpa {
         document["title"] = json!(shelf.title);
         let request = crate::native_page_request::decode(reference).ok();
         if document["layout"].is_null() { if let Some(request) = request.as_ref().filter(|request|!request.layout.is_empty()) { document["layout"] = request.layout.clone().into(); } }
-        let managed = super::collection_page::collection(&document) || document["layout"] == "web";
+        let managed = super::collection_page::collection(&document);
         let loading = self.catalog.loading(&key);
         if managed {
             document["request_pending"] = loading.into();
@@ -410,6 +420,21 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn cached_web_pages_are_unavailable_without_exposing_browser_state() {
+        let mut app = crate::Chilpa::new();
+        app.catalog.lock().loaded = true;
+        for document in [json!({"layout":"web"}), json!({"web":{"url":"https://example.test/journal"}})] {
+            app.catalog.lock().store.shelves.insert("fixture native:journal:home".into(), Shelf {
+                title:"Journal".into(), document, epoch:1, read_at:now(), ..Default::default()
+            });
+            let page: Value = serde_json::from_str(&app.native_page_view("fixture", "journal:home")).unwrap();
+            assert_eq!(page["loading"], false);
+            assert!(!page["error"].as_str().unwrap().is_empty());
+            assert!(page.get("web").is_none() && page.get("layout").is_none());
+        }
+    }
+
     #[test]
     fn a_saved_header_keeps_membership_and_favorite_separate(){
         let app=crate::Chilpa::new();

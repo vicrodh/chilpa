@@ -24,6 +24,7 @@ pub(crate) fn apply(
     let mut identities = HashSet::new();
     let parsed = nodes
         .iter()
+        .filter(|node| node["layout"] != "web")
         .map(|node| parse(plugin, node, "", 1, &mut count, &mut identities))
         .collect::<Option<Vec<_>>>();
     let Some(parsed) = parsed else {
@@ -74,12 +75,13 @@ fn parse(
         None => Vec::new(),
         Some(Value::Array(children)) => children
             .iter()
+            .filter(|child| child["layout"] != "web")
             .map(|child| parse(plugin, child, &path, depth + 1, count, identities))
             .collect::<Option<Vec<_>>>()?,
         _ => return None,
     };
     let layout = node["layout"].as_str().unwrap_or("");
-    if !matches!(layout, "" | "collection" | "web") {
+    if !matches!(layout, "" | "collection") {
         return None;
     }
     let route = if layout.is_empty() {
@@ -147,6 +149,28 @@ mod tests {
             ),
         ] {
             assert_eq!(apply("fixture", &nodes, defaults()).len(), 2);
+        }
+    }
+
+    #[test]
+    fn obsolete_web_entries_do_not_discard_native_library_children() {
+        let nodes = json!([
+            {"id":"library","title":"Library","ref":"saved:all","layout":"collection","children":[
+                {"id":"all","title":"All","ref":"saved:all","layout":"collection"},
+                {"id":"journal","title":"Journal","ref":"journal:home","layout":"web"},
+                {"id":"artists","title":"Artists","ref":"saved:artists","layout":"collection"}
+            ]},
+            {"id":"journal","title":"Journal","ref":"journal:home","layout":"web"}
+        ]);
+        let tree = apply("fixture", &nodes, defaults());
+        assert_eq!(tree.len(), 2);
+        assert_eq!(tree[0].route, "fixture");
+        assert_eq!(tree[1].children.len(), 2);
+        assert_eq!(tree[1].children[0].id, "view:library/all");
+        assert_eq!(tree[1].children[1].id, "view:library/artists");
+        for child in &tree[1].children {
+            let (_, reference) = child.route.split_once(" native:").unwrap();
+            assert_eq!(crate::native_page_request::decode(reference).unwrap().layout, "collection");
         }
     }
 }

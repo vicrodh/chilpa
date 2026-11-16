@@ -25,6 +25,7 @@ use chilpa_qt_controls as _;
 use chilpa_qt_gallery as _;
 use chilpa_qt_lyrics as _;
 use chilpa_qt_sources as _;
+use chilpa_qt_pages as _;
 use chilpa_qt_discovery as _;
 mod bridge;
 mod browse;
@@ -95,8 +96,6 @@ fn main() {
     chilpa_api::startup_chain::arm();
     // An image installs its entry before Qt looks for one below.
     chilpa_api::appimage_desktop::integrate();
-    // The public Qt attribute permits a later, lazy browser import without changing the renderer.
-    chilpa_qt_pages::prepare();
     let mut app = QGuiApplication::new();
     // Named after its desktop entry only when one is installed: a build run
     // from the tree has none, and the portal refused it on every start.

@@ -7598,9 +7598,6 @@ msgstr "ダウンロード処理を開始できませんでした。"
 msgid "The downloaded file could not be verified as complete audio."
 msgstr "ダウンロードしたファイルが完全な音声であることを確認できませんでした。"
 
-msgid "The embedded browser could not be loaded. Open this page in your browser."
-msgstr ""
-
 msgid "The engine reports unchanged samples on this route."
 msgstr "エンジンはこの経路でサンプルが変更されていないと報告しています。"
 
@@ -8264,9 +8261,6 @@ msgstr "この出力はDSDをPCMに変換して受け取ります。DoPには排
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "この出力はDSDをPCMに変換して受け取ります。そのまま受け取るのはhwのカードだけです。カードに選んだ設定は保持されます。"
-
-msgid "This page is unavailable while offline or the source is disabled."
-msgstr ""
 
 msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
 msgstr "プラグインのキャッシュデータを完全に消去します。コンテンツの再ダウンロードが必要になる場合があります。"

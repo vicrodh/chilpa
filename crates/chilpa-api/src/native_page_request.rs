@@ -73,7 +73,7 @@ fn validate(mut value: Value) -> Result<Request, String> {
     }
     let layout = match object.remove("layout") {
         None => String::new(),
-        Some(Value::String(layout)) if matches!(layout.as_str(), "collection" | "web") => layout,
+        Some(Value::String(layout)) if layout == "collection" => layout,
         _ => return Err("The page layout is invalid".into()),
     };
     Ok(Request {
@@ -233,5 +233,14 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn saved_web_routes_cannot_restore_an_embedded_page() {
+        let saved = format!("{PREFIX}{}", URL_SAFE_NO_PAD.encode(
+            serde_json::to_vec(&json!({"ref":"journal:home","layout":"web"})).unwrap()
+        ));
+        assert!(decode(&saved).is_err());
+        assert!(encode("journal:home", json!({}), "web").is_err());
     }
 }

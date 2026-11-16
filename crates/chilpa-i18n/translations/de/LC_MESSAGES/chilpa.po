@@ -7608,9 +7608,6 @@ msgstr "Der Download-Prozess konnte nicht gestartet werden."
 msgid "The downloaded file could not be verified as complete audio."
 msgstr "Die heruntergeladene Datei konnte nicht als vollständige Audiodatei geprüft werden."
 
-msgid "The embedded browser could not be loaded. Open this page in your browser."
-msgstr ""
-
 msgid "The engine reports unchanged samples on this route."
 msgstr "Der Audiomotor meldet unveränderte Samples auf diesem Signalweg."
 
@@ -8275,9 +8272,6 @@ msgstr "Diese Ausgabe nimmt in PCM umgewandeltes DSD. DoP braucht den Exklusivmo
 
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Diese Ausgabe nimmt in PCM umgewandeltes DSD. Nur eine Karte an hw nimmt es unverändert an; die Auswahl für die Karte bleibt erhalten."
-
-msgid "This page is unavailable while offline or the source is disabled."
-msgstr ""
 
 msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
 msgstr "Die zwischengespeicherten Daten des Plugins werden endgültig gelöscht. Inhalte müssen möglicherweise erneut heruntergeladen werden."

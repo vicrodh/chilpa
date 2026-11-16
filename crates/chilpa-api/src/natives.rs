@@ -284,12 +284,6 @@ impl Natives {
         crate::native_navigation::apply(id, &known.capabilities["source_navigation"], fallback)
     }
 
-    pub(crate) fn web_allowed(&self, id: &str, initial: &str, address: &str) -> bool {
-        let known = self.known.lock().unwrap_or_else(|e| e.into_inner());
-        let Some(known) = known.get(id) else { return false };
-        known.capabilities["web_pages"] == 1 && crate::source_web::allowed(&known.manifest.allowed_domains(), &known.capabilities["web_origins"], initial, address)
-    }
-
     pub(crate) fn stop(&self, id: &str) {
         let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
         self.broker.revoke(id);
@@ -443,7 +437,7 @@ fn greeting(launched: &Launched, network: bool) -> Value {
         "protocol": PROTOCOL,
         "playback_events": 1,
         "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
-        "features": {"source_navigation": 1, "collection_pages": 1, "web_pages": 1},
+        "features": {"source_navigation": 1, "collection_pages": 1},
         "data_dir": launched.data,
         "cache_dir": launched.cache,
         "locale": chilpa_i18n::current_language(),
