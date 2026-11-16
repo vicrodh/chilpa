@@ -72,6 +72,10 @@ pub mod qobject {
         fn subtitle(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
         fn year(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
+        /// The original plugin contract requests artwork for a displayed row.
+        #[qinvokable]
+        #[cxx_name = "art"]
+        fn legacy_art(self: &AlbumGridModel, index: i32, rev: i32) -> QUrl;
         #[qinvokable]
         fn art(self: &AlbumGridModel, index: i32, rev: i32, visible: bool) -> QUrl;
         #[qinvokable]
@@ -217,6 +221,9 @@ impl qobject::AlbumGridModel {
     }
     pub fn year(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| a.year.map(|year| QString::from(&year.to_string())).unwrap_or_default()).unwrap_or_default()
+    }
+    pub fn legacy_art(&self, index: i32, rev: i32) -> QUrl {
+        self.art(index, rev, true)
     }
     pub fn art(&self, index: i32, _rev: i32, visible: bool) -> QUrl {
         self.rust().get(index, |album| chilpa_qt_kit::album_rows::artwork(album, visible)).unwrap_or_default()
