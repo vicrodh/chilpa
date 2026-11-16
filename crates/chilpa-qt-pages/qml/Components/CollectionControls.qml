@@ -56,6 +56,7 @@ Flow {
             Component {
                 id: choice
                 SortButton {
+                    glyph: Icons.filter
                     directed: false
                     value: String(field.value ?? "")
                     options: (field.entry.options || []).map(option => ({value: String(option.value), text: option.label}))

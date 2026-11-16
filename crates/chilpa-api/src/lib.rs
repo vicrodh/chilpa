@@ -58,7 +58,7 @@ mod metadata;
 mod metadata_batch;
 pub use metadata_batch::{MetadataBatchPhase, MetadataBatchProgress};
 mod native_collections;
-pub use native_collections::NativeCollectionWindow;
+pub use native_collections::{NativeArticleWindow, NativeCollectionWindow};
 mod beets_runtime;
 pub mod navigation;
 pub mod discover_genres;

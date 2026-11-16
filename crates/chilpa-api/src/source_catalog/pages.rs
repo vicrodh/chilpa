@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use std::{sync::Arc, time::Duration};
 
 fn unsupported_page(value: &Value) -> bool {
-    value["layout"] == "web" || value.get("web").is_some()
+    value["layout"] == "web" || value.get("web").is_some() || value["layout"] == "article" || value.get("article").is_some()
 }
 
 fn ingest(catalog: &Catalog, plugin: &str, key: &str, value: &Value) {
@@ -90,6 +90,8 @@ pub(super) fn read(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, refe
     Ok(())
 }
 pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, answer: &Value) {
+    // Article bodies belong only to their transient view, including unsolicited replies.
+    if unsupported_page(answer) { return; }
     let key = format!("{plugin} native:{reference}");
     let mut document = answer.clone();
     let personal = document["personal"] == true;
@@ -360,6 +362,9 @@ impl crate::Chilpa {
     }
 
     pub(crate) fn native_page_view(&mut self, plugin: &str, reference: &str) -> String {
+        if crate::native_page_request::decode(reference).is_ok_and(|request| request.layout == "article") {
+            return json!({"music":true,"layout":"article","loading":false,"error":"Open this article in its reader."}).to_string();
+        }
         let key = format!("{plugin} native:{reference}");
         let shelf = self.catalog.shelf(&key).unwrap_or_default();
         let mut document = if shelf.document.is_object() { shelf.document.clone() } else { json!({"shelves":[]}) };
@@ -420,6 +425,16 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn article_documents_cannot_enter_the_persisted_shelf_store() {
+        let catalog = super::super::collection_window::ready_test_catalog();
+        let probe = super::super::collection_window::article_test_probe(&catalog);
+        let article = json!({"layout":"article","title":"Article","article":{"blocks":[{"type":"paragraph","text":"Body"}]}});
+        ingest_document(&catalog, "fixture", "article:1", &article);
+        assert!(catalog.stored_shelf("fixture native:article:1").is_none());
+        probe();
+    }
+
     #[test]
     fn cached_web_pages_are_unavailable_without_exposing_browser_state() {
         let mut app = crate::Chilpa::new();

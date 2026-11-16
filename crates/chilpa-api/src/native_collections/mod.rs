@@ -1,4 +1,5 @@
 //! One profile broker, one RPC, two pending requests, and a bounded disk window.
+mod article;
 mod projection;
 mod store;
 #[cfg(test)]
@@ -16,6 +17,8 @@ use std::{
     sync::{Arc, Condvar, Mutex},
 };
 
+pub use article::NativeArticleWindow;
+
 const CHUNK_BYTES: usize = 512 * 1024;
 const CACHE_BYTES: usize = 4 * 1024 * 1024;
 const CACHE_CHUNKS: usize = 8;
@@ -25,6 +28,8 @@ enum Command {
     Seek(usize, usize),
     Refresh(bool),
     Action(String),
+    Article(String),
+    Image(String, u64),
 }
 struct Job {
     session: u64,
@@ -44,8 +49,19 @@ struct State {
     shutdown: bool,
     startup_error: Option<String>,
     action: Option<Lease>,
+    article: Option<article::Session>,
     cleanup: bool,
 }
+impl State {
+    fn alive(&self, job: &Job) -> bool {
+        !self.shutdown && self.session == job.session && self.epoch == job.epoch
+            && match &job.command {
+                Command::Image(url, demand) => self.article.as_ref().is_some_and(|article| article.demands.get(url) == Some(demand)),
+                _ => true,
+            }
+    }
+}
+
 #[derive(Default)]
 struct Shared {
     state: Mutex<State>,
@@ -61,21 +77,17 @@ impl Shared {
     }
     fn alive(&self, job: &Job) -> bool {
         let state = self.lock();
-        !state.shutdown && state.session == job.session && state.epoch == job.epoch
+        state.alive(job)
     }
     fn publish(&self, job: &Job, value: Value) {
         let mut state = self.lock();
-        while state.mailbox.is_some()
-            && state.session == job.session
-            && state.epoch == job.epoch
-            && !state.shutdown
-        {
+        while state.mailbox.is_some() && state.alive(job) {
             state = self
                 .wake
                 .wait(state)
                 .unwrap_or_else(|error| error.into_inner());
         }
-        if state.session == job.session && state.epoch == job.epoch && !state.shutdown {
+        if state.alive(job) {
             state.mailbox = Some(value);
         }
     }
@@ -83,6 +95,7 @@ impl Shared {
 
 pub(crate) struct Broker {
     shared: Arc<Shared>,
+    source: Arc<dyn worker::PageSource>,
 }
 impl Broker {
     fn new(natives: Arc<Natives>, catalog: Arc<Catalog>, path: PathBuf) -> Arc<Self> {
@@ -95,13 +108,14 @@ impl Broker {
     ) -> Arc<Self> {
         let shared = Arc::new(Shared::default());
         let worker_shared = shared.clone();
+        let worker_source = source.clone();
         if let Err(error) = std::thread::Builder::new()
             .name("native-collections".into())
-            .spawn(move || worker::run(worker_shared, source, catalog, path))
+            .spawn(move || worker::run(worker_shared, worker_source, catalog, path))
         {
             shared.lock().startup_error = Some(error.to_string());
         }
-        Arc::new(Self { shared })
+        Arc::new(Self { shared, source })
     }
 }
 impl Drop for Broker {
@@ -112,6 +126,7 @@ impl Drop for Broker {
             state.epoch += 1;
             state.pending.clear();
             state.mailbox = None;
+            state.article = None;
             state.action.take()
         };
         drop(action);
@@ -145,6 +160,10 @@ impl crate::Chilpa {
 
 impl NativeCollectionWindow {
     pub fn open(&mut self, key: &str, request_id: u64) -> u64 {
+        self.start(key, request_id, false)
+    }
+
+    fn start(&mut self, key: &str, request_id: u64, article: bool) -> u64 {
         self.close(self.session);
         let mut state = self.broker.shared.lock();
         state.serial = state
@@ -156,6 +175,7 @@ impl NativeCollectionWindow {
         state.epoch += 1;
         state.pending.clear();
         state.mailbox = None;
+        state.article = None;
         let action = state.action.take();
         let invalid = if key.len() > 32768 {
             Some("The collection address exceeds its limit.".to_string())
@@ -163,15 +183,17 @@ impl NativeCollectionWindow {
             state.startup_error.clone()
         };
         if let Some(error) = invalid {
-            state.mailbox = Some(
-                json!({"sessionId":self.session,"requestId":request_id,"knownCount":0,"busy":false,"error":error}),
-            );
+            state.mailbox = Some(if article {
+                json!({"kind":"article","sessionId":self.session,"requestId":request_id,"generation":0,"busy":false,"error":error,"document":null})
+            } else {
+                json!({"sessionId":self.session,"requestId":request_id,"knownCount":0,"busy":false,"error":error})
+            });
         } else {
             let job = Job {
                 session: self.session,
                 epoch: state.epoch,
                 request: request_id,
-                command: Command::Open(key.to_string()),
+                command: if article { Command::Article(key.to_string()) } else { Command::Open(key.to_string()) },
             };
             state.pending.push_back(job);
         }
@@ -247,6 +269,7 @@ impl NativeCollectionWindow {
                 state.epoch += 1;
                 state.pending.clear();
                 state.mailbox = None;
+                state.article = None;
                 state.action.take()
             } else {
                 None

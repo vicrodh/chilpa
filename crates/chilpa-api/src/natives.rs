@@ -54,6 +54,8 @@ struct Known {
     /// Which start this is. A restart scheduled for one generation does
     /// nothing once an update, a stop or a network change replaced it.
     generation: u64,
+    /// Only successful settings submissions retire transient article sessions.
+    article_epoch: u64,
     /// The channel this start opened. A death seen on another channel, one
     /// already replaced, is not this start's to restart.
     client: std::sync::Weak<NativeClient>,
@@ -220,7 +222,9 @@ impl Natives {
     /// Calls a plugin, or says it is not running.
     pub(crate) fn call(self: &Arc<Self>, id: &str, method: &str, params: Value, timeout: Duration) -> Result<Value, String> {
         let client = self.client(id).ok_or_else(|| chilpa_i18n::t("the plugin is not running"))?;
-        client.call(method, params, timeout).map_err(|e| e.to_string())
+        let result = client.call(method, params, timeout);
+        self.article_settings_result(id, &client, method, result.is_ok());
+        result.map_err(|e| e.to_string())
     }
 
     /// A collection cursor is valid only for the process that produced it.
@@ -228,10 +232,25 @@ impl Natives {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map_or(0, |known| known.generation)
     }
 
+    pub(crate) fn article_stamp(&self, id: &str) -> (u64, u64) {
+        self.known.lock().unwrap_or_else(|error| error.into_inner()).get(id)
+            .map_or((0, 0), |known| (known.generation, known.article_epoch))
+    }
+
+    fn article_settings_result(&self, id: &str, client: &Arc<NativeClient>, method: &str, succeeded: bool) {
+        if method != "settings.submit" || !succeeded { return; }
+        let mut known = self.known.lock().unwrap_or_else(|error| error.into_inner());
+        if let Some(known) = known.get_mut(id).filter(|known| known.client.upgrade().is_some_and(|current| Arc::ptr_eq(&current, client))) {
+            known.article_epoch = known.article_epoch.checked_add(1).expect("article settings revisions exhausted");
+        }
+    }
+
     /// Calls a plugin and keeps its error whole, with what it added to it.
     pub(crate) fn call_raw(self: &Arc<Self>, id: &str, method: &str, params: Value, timeout: Duration) -> Result<Value, chilpa_plugin::native::NativeError> {
         let client = self.client(id).ok_or(chilpa_plugin::native::NativeError::Closed)?;
-        client.call(method, params, timeout)
+        let result = client.call(method, params, timeout);
+        self.article_settings_result(id, &client, method, result.is_ok());
+        result
     }
     /// A source that has lyrics for its own tracks.
     pub(crate) fn has_track_lyrics(&self, id: &str) -> bool {
@@ -322,7 +341,7 @@ impl Natives {
         let discover = known.get(&id).map(|k| k.discover.clone()).unwrap_or_default();
         known.insert(id, Known { manifest: manifest.clone(), folder: folder.to_path_buf(),
             capabilities: greeting.get("capabilities").cloned().unwrap_or(Value::Null),
-            discover, restarts, restarting: false, last_start: Instant::now(), generation: self.next_generation(),
+            discover, restarts, restarting: false, last_start: Instant::now(), generation: self.next_generation(), article_epoch: 0,
             client: Arc::downgrade(&client) });
         drop(known);
         self.reports.get_or_init(|| crate::native_reporting::Reports::start(Arc::downgrade(self)));
@@ -437,7 +456,7 @@ fn greeting(launched: &Launched, network: bool) -> Value {
         "protocol": PROTOCOL,
         "playback_events": 1,
         "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
-        "features": {"source_navigation": 1, "collection_pages": 1},
+        "features": {"source_navigation": 1, "collection_pages": 1, "article_pages": 1},
         "data_dir": launched.data,
         "cache_dir": launched.cache,
         "locale": chilpa_i18n::current_language(),
@@ -556,7 +575,7 @@ pub(crate) mod tests {
         let generation = natives.next_generation();
         natives.known.lock().unwrap().insert(manifest.id.clone(), Known {
             manifest, folder: PathBuf::new(), capabilities, discover: Vec::new(),
-            restarts: 0, restarting: false, last_start: Instant::now(), generation, client: std::sync::Weak::new(),
+            restarts: 0, restarting: false, last_start: Instant::now(), generation, article_epoch: 0, client: std::sync::Weak::new(),
         });
     }
 
@@ -674,7 +693,7 @@ pub(crate) mod tests {
         let natives = Arc::new(Natives::default());
         for audio in [false, true] {
             let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","delivers_audio":audio})).unwrap();
-            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1, client: std::sync::Weak::new() });
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1, article_epoch: 0, client: std::sync::Weak::new() });
             assert_eq!(natives.delivers_audio("test.source"), audio);
             let reply = crate::source_search::native_reply(&natives, "test.source", "Fixture", "Song", 1, "");
             assert_eq!(reply.delivers_audio, audio, "even a failed search retains its declared capability");
@@ -687,7 +706,7 @@ pub(crate) mod tests {
         let natives = Natives::default();
         let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source"})).unwrap();
         for (capabilities, edits, removes) in [(json!({}), false, false), (json!({"playlist_remove":true}), false, true), (json!({"playlist_edit":true}), true, false)] {
-            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1, client: std::sync::Weak::new() });
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1, article_epoch: 0, client: std::sync::Weak::new() });
             assert_eq!((natives.edits_playlists("test.source"), natives.removes_playlists("test.source")), (edits, removes));
         }
     }
@@ -729,7 +748,7 @@ pub(crate) mod tests {
         let generation = natives.next_generation();
         natives.live.write().unwrap().insert(manifest.id.clone(), client.clone());
         natives.known.lock().unwrap().insert(manifest.id.clone(), Known { manifest, folder: folder.to_path_buf(),
-            capabilities: Value::Null, discover: Vec::new(), restarts: 0, restarting: false, last_start: Instant::now(), generation,
+            capabilities: Value::Null, discover: Vec::new(), restarts: 0, restarting: false, last_start: Instant::now(), generation, article_epoch: 0,
             client: Arc::downgrade(client) });
     }
 
@@ -869,3 +888,7 @@ pub(crate) mod tests {
         drop((plugin_reads, plugin_writes));
     }
 }
+
+#[cfg(test)]
+#[path = "natives/article_tests.rs"]
+mod article_tests;

@@ -570,6 +570,7 @@ QtObject {
     readonly property int settingsRow: 54
     readonly property int settingsGroup: 44
     readonly property int settingsMaxWidth: 880
+    readonly property int articleWidth: 760
     readonly property int analysisInventoryWidth: 900
     readonly property int analysisInventoryHeight: 720
     // The percentage beside a settings slider.

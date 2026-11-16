@@ -142,6 +142,13 @@ GridView {
         if (!activePage || !pendingAction) return
         const action=prepared
         if (action.failed || action.error) { actionError=action.error || "";pendingAction=null;releaseAction();return }
+        if (action.kind === "article" && action.navigationKey) {
+            const purpose=pendingAction.purpose
+            pendingAction=null
+            if (purpose === "open") Navigation.goKey("source",action.navigationKey)
+            Qt.callLater(releaseAction)
+            return
+        }
         if (!action.lease) return
         const request=pendingAction
         if (action.kind === "track" && request.purpose !== "favorite" && (!tracks.ready || tracks.key !== action.key)) return

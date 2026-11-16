@@ -1,5 +1,5 @@
 use super::{
-    Command, Job, Shared, projection,
+    Command, Job, Shared, article, projection,
     store::{Page, Query, Store},
 };
 use crate::{
@@ -34,9 +34,23 @@ type Result<T> = std::result::Result<T, Failure>;
 pub(super) trait PageSource: Send + Sync {
     fn generation(&self, plugin: &str) -> u64;
     fn page(&self, plugin: &str, params: Value) -> Result<Value>;
+    fn article_stamp(&self, plugin: &str) -> (u64, u64) { (self.generation(plugin), 0) }
+    fn article_pages(&self, _plugin: &str) -> bool { false }
+    fn image(&self, _plugin: &str, _url: &str) -> Result<String> {
+        Err("The article image is unavailable.".into())
+    }
 }
 pub(super) struct NativeSource(pub Arc<Natives>);
 impl PageSource for NativeSource {
+    fn article_stamp(&self, plugin: &str) -> (u64, u64) { self.0.article_stamp(plugin) }
+    fn article_pages(&self, plugin: &str) -> bool {
+        self.0.has_pages(plugin) && self.0.capability(plugin, "article_pages") == 1
+    }
+    fn image(&self, plugin: &str, url: &str) -> Result<String> {
+        if !self.0.is_native(plugin) { return Err("The source is unavailable.".into()); }
+        crate::pictures::keep_approved(url, &self.0.domains(plugin))
+            .ok_or_else(|| Failure::Other("The article image is unavailable.".into()))
+    }
     fn generation(&self, plugin: &str) -> u64 {
         self.0.collection_generation(plugin)
     }
@@ -120,6 +134,13 @@ pub(super) fn run(
                 .pop_front()
                 .expect("queued collection request")
         };
+        if matches!(&job.command, Command::Article(_) | Command::Image(_, _)) {
+            if let Some(engine) = &mut engine { engine.query = None; }
+            article::run(&shared, &source, &catalog, &job);
+            shared.lock().working = false;
+            shared.wake.notify_all();
+            continue;
+        }
         if engine.is_none() {
             match Store::open(&path) {
                 Ok(store) => engine=Some(Engine { store,query:None,stale:false,boot:boot.clone(),source:source.clone(),catalog:catalog.clone(),shared:shared.clone() }),
@@ -223,6 +244,7 @@ impl Engine {
             Command::Refresh(manual) => self.refresh(*manual, job),
             Command::Seek(first, limit) => self.seek(*first, *limit, job),
             Command::Action(token) => self.action(token, job),
+            Command::Article(_) | Command::Image(_, _) => unreachable!("article jobs have no disk window"),
         }
     }
     fn open(&mut self, key: &str, job: &Job) -> Result<Value> {
@@ -445,6 +467,15 @@ impl Engine {
         let old = self.shared.lock().action.take();
         drop(old);
         let wire = self.load(&query, ordinal, job)?;
+        if wire["items"][local]["kind"] == "article" {
+            if !self.source.article_pages(&query.plugin) {
+                return Err("This source does not support articles.".into());
+            }
+            self.live(job)?;
+            let mut document = projection::document(&query, job);
+            document["action"] = article::navigation(&query.plugin, &wire["items"][local])?;
+            return Ok(document);
+        }
         let id = {
             let mut state = self.shared.lock();
             state.serial += 1;

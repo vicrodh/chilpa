@@ -206,6 +206,25 @@ pub(crate) fn ready_test_catalog() -> Arc<Catalog> {
     catalog
 }
 
+/// Articles must not mutate catalog ownership or request an integrated index.
+#[cfg(test)]
+pub(crate) fn article_test_probe(catalog: &Arc<Catalog>) -> impl FnOnce() {
+    let catalog = catalog.clone();
+    let inner = catalog.lock();
+    let cards = inner.store.cards.generation();
+    let tracks = inner.store.tracks.generation();
+    let shelves = inner.store.shelves.generation();
+    let captures = catalog.index_captures.load(std::sync::atomic::Ordering::Relaxed);
+    drop(inner);
+    move || {
+        let inner = catalog.lock();
+        assert!(inner.store.cards.matches_generation(&cards));
+        assert!(inner.store.tracks.matches_generation(&tracks));
+        assert!(inner.store.shelves.matches_generation(&shelves));
+        assert_eq!(catalog.index_captures.load(std::sync::atomic::Ordering::Relaxed), captures);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Epochs;

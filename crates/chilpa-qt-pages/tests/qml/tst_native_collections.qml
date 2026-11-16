@@ -75,6 +75,14 @@ TestCase {
         compare(menus.count,1)
         menus.target=null
     }
+    function test_an_article_opens_its_typed_route_without_a_music_lease() {
+        const page=createTemporaryObject(collectionFactory,test)
+        const window=findChild(page,"nativeCollectionModel")
+        window.resolved={"row:0":{kind:"article",navigationKey:"fixture native:typed-article"}}
+        page.openItem({rowToken:"row:0",kind:"article"})
+        tryCompare(Navigation,"went",["source","fixture native:typed-article"])
+        compare(page.pendingAction,null)
+    }
     function test_navigation_parent_expands_and_children_use_their_routes() {
         const tree=createTemporaryObject(treeFactory,test)
         const parent=findChild(tree,"sourceChild")

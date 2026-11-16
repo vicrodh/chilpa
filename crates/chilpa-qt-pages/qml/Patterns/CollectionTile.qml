@@ -30,7 +30,7 @@ Item {
         round: tile.entry.kind === "artist"
         available: tile.entry.available !== false
         purchaseMode: true
-        contextMenuEnabled: true
+        contextMenuEnabled: tile.entry.kind !== "article"
         canExpand: false
         containArt: tile.entry.art_fit === "contain"
         onClicked: tile.opened()

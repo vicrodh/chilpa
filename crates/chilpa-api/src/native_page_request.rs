@@ -73,7 +73,7 @@ fn validate(mut value: Value) -> Result<Request, String> {
     }
     let layout = match object.remove("layout") {
         None => String::new(),
-        Some(Value::String(layout)) if layout == "collection" => layout,
+        Some(Value::String(layout)) if matches!(layout.as_str(), "collection" | "article") => layout,
         _ => return Err("The page layout is invalid".into()),
     };
     Ok(Request {
@@ -233,6 +233,14 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn article_routes_keep_the_reference_opaque_and_preserve_the_layout_hint() {
+        let encoded = encode("article:opaque/identifier", json!({}), "article").unwrap();
+        let decoded = decode(&encoded).unwrap();
+        assert_eq!(decoded.layout, "article");
+        assert_eq!(decoded.params, json!({"ref":"article:opaque/identifier"}));
     }
 
     #[test]
