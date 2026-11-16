@@ -145,6 +145,9 @@ msgstr "В выбранной папке нет песен"
 msgid "A click on a record opens"
 msgstr "Щелчок по альбому открывает"
 
+msgid "A device assignment takes priority over its class, then the general default. Classify devices explicitly; Chilpa cannot identify headphones connected to a DAC."
+msgstr ""
+
 msgid "A device operation is still running."
 msgstr ""
 
@@ -310,6 +313,9 @@ msgstr "Действия"
 msgid "Active"
 msgstr "Активно"
 
+msgid "Active assignment"
+msgstr ""
+
 msgid "Active modules"
 msgstr "Активные модули"
 
@@ -439,8 +445,8 @@ msgstr "Адрес медиасервера или его описания"
 msgid "Add…"
 msgstr "Добавить…"
 
-msgid "Advanced"
-msgstr "Дополнительно"
+msgid "Adjust overall gain. Automatic headroom can reduce the requested gain to preserve EQ headroom."
+msgstr ""
 
 msgid "After"
 msgstr ""
@@ -534,6 +540,9 @@ msgstr "Вся музыка"
 
 msgid "All of these"
 msgstr "Все эти"
+
+msgid "All outputs"
+msgstr ""
 
 msgid "All qualities"
 msgstr "Все качества"
@@ -805,14 +814,23 @@ msgstr "Просит PipeWire или PulseAudio освободить карту,
 msgid "Assign a distinct target disc number to each joined disc."
 msgstr ""
 
+msgid "Assign current preset"
+msgstr ""
+
 msgid "Assign each disc using its group and source disc, or explicit files."
 msgstr ""
 
 msgid "Assign every selected file to one resulting disc."
 msgstr ""
 
+msgid "Assign to this device"
+msgstr ""
+
 msgid "Assumed fallback: {}"
 msgstr "Предполагаемый запасной вариант: {}"
+
+msgid "Attack"
+msgstr ""
 
 msgid "Audio"
 msgstr "Аудио"
@@ -846,6 +864,9 @@ msgstr "Задача аудиовыхода неожиданно останов�
 
 msgid "Audio path"
 msgstr "Аудиотракт"
+
+msgid "Audio processing"
+msgstr ""
 
 msgid "Audio stack"
 msgstr "Аудиостек"
@@ -889,6 +910,9 @@ msgstr "Авто следует цветам рабочего стола: све
 msgid "Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"
 msgstr "Авто выбирает лучший рендерер для вашей видеокарты. Меняйте только если приложение работает медленно или отображается неправильно (требуется перезапуск)"
 
+msgid "Auto save personal presets after adjustment. Factory presets keep a separate draft."
+msgstr ""
+
 msgid "Auto-detect your DACs and set up bit-perfect playback, step by step."
 msgstr "Автоопределение ваших DAC и пошаговая настройка воспроизведения bit-perfect."
 
@@ -903,6 +927,9 @@ msgstr ""
 
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Автоматические проверки приостановлены до продолжения или сброса этого сканирования. Уже добавленные файлы сохраняются."
+
+msgid "Automatic headroom"
+msgstr ""
 
 msgid "Automatic headroom lowers gain to leave room for EQ boosts."
 msgstr "Автоматический запас по уровню снижает усиление, чтобы оставить место для подъёма EQ."
@@ -967,6 +994,9 @@ msgstr "Фоновое изображение"
 msgid "Balance · −100 left / +100 right"
 msgstr "Баланс · −100 влево / +100 вправо"
 
+msgid "Band pass"
+msgstr ""
+
 msgid "Barcode"
 msgstr "Штрихкод"
 
@@ -978,6 +1008,9 @@ msgstr "На основе: {artist} · {genres}"
 
 msgid "Bass"
 msgstr "Низкие"
+
+msgid "Bass and treble work alongside your headphone correction. Zero dB is neutral; EQ filters stay intact."
+msgstr ""
 
 msgid "Before"
 msgstr ""
@@ -1017,6 +1050,9 @@ msgstr "Буклет"
 
 msgid "Border"
 msgstr "Граница"
+
+msgid "Both"
+msgstr ""
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "Выберите папку с музыкой или введите её полный путь."
@@ -1095,6 +1131,9 @@ msgstr "По источнику"
 
 msgid "By year"
 msgstr "По году"
+
+msgid "Bypass"
+msgstr ""
 
 msgid "Bypass · original samples"
 msgstr "Обход · исходные сэмплы"
@@ -1186,6 +1225,9 @@ msgstr "Каталожный номер"
 msgid "Categories"
 msgstr "Категории"
 
+msgid "Ceiling"
+msgstr ""
+
 msgid "Change cover"
 msgstr "Изменить обложку"
 
@@ -1214,6 +1256,9 @@ msgid "Changes"
 msgstr ""
 
 msgid "Changing the positions of an identified release requires a real release match."
+msgstr ""
+
+msgid "Channel"
 msgstr ""
 
 msgid "Channels"
@@ -1330,6 +1375,9 @@ msgstr "Проверка…"
 msgid "Chilpa"
 msgstr "Chilpa"
 
+msgid "Chilpa DSP"
+msgstr ""
+
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpa уже задаёт частоту, устройство вывода и эксклюзивный режим во время работы. Эти файлы меняют только поведение всей системы: скопируйте и запустите их сами, если они вам нужны. Сначала сделайте резервную копию."
 
@@ -1441,11 +1489,26 @@ msgstr "Выбрать"
 msgid "Choose DSP on or bypass."
 msgstr "Выберите: DSP включён или обход."
 
+msgid "Choose DSP presets."
+msgstr ""
+
 msgid "Choose Unknown, Clean or Explicit"
 msgstr "Выберите Неизвестно, Без откровенного содержания или Откровенное содержание"
 
+msgid "Choose a DSP band."
+msgstr ""
+
 msgid "Choose a DSP favorite."
 msgstr "Выберите избранный пресет DSP."
+
+msgid "Choose a DSP filter parameter."
+msgstr ""
+
+msgid "Choose a DSP filter position."
+msgstr ""
+
+msgid "Choose a DSP filter."
+msgstr ""
 
 msgid "Choose a DSP plugin."
 msgstr "Выберите плагин DSP."
@@ -1486,6 +1549,9 @@ msgstr ""
 msgid "Choose a playback control"
 msgstr "Выберите элемент управления воспроизведением"
 
+msgid "Choose a preset"
+msgstr ""
+
 msgid "Choose a preset."
 msgstr "Выберите пресет."
 
@@ -1504,6 +1570,9 @@ msgstr ""
 msgid "Choose a value"
 msgstr "Выберите значение"
 
+msgid "Choose a visible DSP preset."
+msgstr ""
+
 msgid "Choose albums with Use in disc plan. Only selected files participate."
 msgstr ""
 
@@ -1511,6 +1580,12 @@ msgid "Choose albums, disc assignments and a resulting album title."
 msgstr ""
 
 msgid "Choose an album and look it up. Choosing a match prepares a proposal without writing files."
+msgstr ""
+
+msgid "Choose an assignment scope."
+msgstr ""
+
+msgid "Choose an autosave policy."
 msgstr ""
 
 msgid "Choose an available writable storage."
@@ -1521,6 +1596,9 @@ msgstr ""
 
 msgid "Choose an image"
 msgstr "Выберите изображение"
+
+msgid "Choose an output class."
+msgstr ""
 
 msgid "Choose at least two different queues."
 msgstr "Выберите не менее двух разных очередей."
@@ -1565,6 +1643,9 @@ msgid "Choose image…"
 msgstr "Выбрать изображение…"
 
 msgid "Choose music for this storage"
+msgstr ""
+
+msgid "Choose personal presets to delete."
 msgstr ""
 
 msgid "Choose playlist"
@@ -1762,6 +1843,9 @@ msgstr "Свернуть боковую панель"
 msgid "Color"
 msgstr "Цвет"
 
+msgid "Color group"
+msgstr ""
+
 msgid "Colors"
 msgstr "Цвета"
 
@@ -1841,6 +1925,12 @@ msgid "Composition"
 msgstr ""
 
 msgid "Compositions"
+msgstr ""
+
+msgid "Compression reduction"
+msgstr ""
+
+msgid "Compressor and expander"
 msgstr ""
 
 msgid "Compressor ratio · 1–6"
@@ -1956,6 +2046,9 @@ msgstr "Копировать JSON пресета"
 
 msgid "Copy report"
 msgstr "Копировать отчёт"
+
+msgid "Copy selected JSON"
+msgstr ""
 
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "Копирует цвета текущей темы в редактор как отправную точку."
@@ -2164,11 +2257,20 @@ msgstr "DSP применяется к локальному выводу. Тра�
 msgid "DSP catalog is too large."
 msgstr "Каталог DSP слишком большой."
 
+msgid "DSP catalog page is too large."
+msgstr ""
+
 msgid "DSP changes the signal and breaks strict bit-perfect playback."
 msgstr "DSP изменяет сигнал и нарушает строгое воспроизведение bit-perfect."
 
 msgid "DSP control is unavailable."
 msgstr "Управление DSP недоступно."
+
+msgid "DSP enabled"
+msgstr ""
+
+msgid "DSP export selection is too large."
+msgstr ""
 
 msgid "DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."
 msgstr "Фильтрам DSP нужны значения 10–24000 Hz, −24–18 dB и Q 0.1–12."
@@ -2176,11 +2278,20 @@ msgstr "Фильтрам DSP нужны значения 10–24000 Hz, −24–
 msgid "DSP host is unavailable."
 msgstr "Хост DSP недоступен."
 
+msgid "DSP import is too large."
+msgstr ""
+
 msgid "DSP input is too large."
 msgstr "Входные данные DSP слишком велики."
 
+msgid "DSP preferences exceed the storage limit."
+msgstr ""
+
 msgid "DSP preset is unavailable."
 msgstr "Пресет DSP недоступен."
+
+msgid "DSP supports PCM up to 1536 kHz; higher rates bypass processing."
+msgstr ""
 
 msgid "DSP · Equalizer and presets"
 msgstr "DSP · Эквалайзер и пресеты"
@@ -2266,6 +2377,12 @@ msgstr "Удалить пресет?"
 msgid "Delete saved query"
 msgstr "Удалить сохранённый запрос"
 
+msgid "Delete selected"
+msgstr ""
+
+msgid "Delete selected presets?"
+msgstr ""
+
 msgid "Delete the saved query “{}”?"
 msgstr "Удалить сохранённый запрос «{}»?"
 
@@ -2319,6 +2436,9 @@ msgstr "Разработчикам"
 
 msgid "Device"
 msgstr "Устройство"
+
+msgid "Device class"
+msgstr ""
 
 msgid "Device profiles exceed 1 MiB."
 msgstr ""
@@ -2575,14 +2695,20 @@ msgstr "Нидерландский"
 msgid "Dynamic background"
 msgstr "Динамический фон"
 
+msgid "Dynamics"
+msgstr ""
+
 msgid "EPs"
 msgstr "EP"
 
 msgid "EPs & Singles"
 msgstr "Мини-альбомы и синглы"
 
-msgid "EQ response · 20 Hz–20 kHz · ±18 dB · before preamp"
-msgstr "Отклик EQ · 20 Hz–20 kHz · ±18 dB · до предусиления"
+msgid "EQ and tone · upper channel response · 20 Hz–20 kHz · before preamp"
+msgstr ""
+
+msgid "EQ enabled"
+msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "Каждый файл копируется, копия записывается и считывается обратно, и только после этого заменяет оригинал. Нужно столько свободного места, сколько занимает запись. Записанное нельзя отменить."
@@ -2704,9 +2830,6 @@ msgstr ""
 msgid "Episode notes"
 msgstr "Заметки к выпуску"
 
-msgid "Equalizer"
-msgstr "Эквалайзер"
-
 msgid "Equipment"
 msgstr "Оборудование"
 
@@ -2761,6 +2884,9 @@ msgstr "Выйти из иммерсивного режима"
 msgid "Expand"
 msgstr "Развернуть"
 
+msgid "Expander ratio"
+msgstr ""
+
 msgid "Experimental: theme may not match your system exactly."
 msgstr "Экспериментально: тема может не точно совпадать с вашей системой."
 
@@ -2779,6 +2905,9 @@ msgstr ""
 msgid "Export"
 msgstr "Экспорт"
 
+msgid "Export at most 64 presets at once."
+msgstr ""
+
 msgid "Export diagnostics"
 msgstr "Экспорт диагностики"
 
@@ -2787,6 +2916,9 @@ msgstr "Экспорт истории прослушивания"
 
 msgid "Export…"
 msgstr "Экспорт…"
+
+msgid "External JSON supports peak and shelf EQ bands. Pass-filter gain semantics are not transferable."
+msgstr ""
 
 msgid "Extra controls"
 msgstr "Дополнительные кнопки"
@@ -2914,6 +3046,9 @@ msgstr "Найти музыку или сохранённые подборки�
 msgid "Find playlists"
 msgstr "Найти плейлисты"
 
+msgid "Find profiles for this device"
+msgstr ""
+
 msgid "Find this music in your library and connected sources."
 msgstr ""
 
@@ -3025,8 +3160,8 @@ msgstr "Четыре звезды и больше; rating:0 — без звёз�
 msgid "French"
 msgstr "Французский"
 
-msgid "Frequency · Hz   /   Gain · dB   /   ±12 dB"
-msgstr "Частота · Hz   /   Усиление · dB   /   ±12 dB"
+msgid "Frequency"
+msgstr ""
 
 msgid "Fri"
 msgstr "Пт"
@@ -3099,6 +3234,12 @@ msgstr "Без пауз"
 
 msgid "Gapless playback"
 msgstr "Воспроизведение без пауз"
+
+msgid "Gate / expander threshold"
+msgstr ""
+
+msgid "Gate below threshold"
+msgstr ""
 
 msgid "Generate"
 msgstr "Создать"
@@ -3178,6 +3319,12 @@ msgstr "Гониометр"
 msgid "Graphic EQ"
 msgstr "Графический EQ"
 
+msgid "Graphic EQ gain needs −12–12 dB."
+msgstr ""
+
+msgid "Graphic EQ needs 5–32 bands and a valid frequency range."
+msgstr ""
+
 msgid "Graphic equalizer"
 msgstr "Графический эквалайзер"
 
@@ -3234,6 +3381,12 @@ msgstr "Аппаратное управление громкостью"
 
 msgid "Header image"
 msgstr "Изображение заголовка"
+
+msgid "Headphones"
+msgstr ""
+
+msgid "Headroom"
+msgstr ""
 
 msgid "Heard"
 msgstr "Прослушано"
@@ -3321,6 +3474,9 @@ msgstr "Высокое разрешение"
 
 msgid "High shelf"
 msgstr "Высокочастотная полка"
+
+msgid "Highest frequency"
+msgstr ""
 
 msgid "Historical result; the current device or configuration is not verified."
 msgstr "Исторический результат; текущее устройство или конфигурация не проверены."
@@ -3448,6 +3604,12 @@ msgstr "Иммерсивный режим"
 msgid "Import / export"
 msgstr "Импорт / экспорт"
 
+msgid "Import at most 64 presets at once."
+msgstr ""
+
+msgid "Import between 1 and 64 presets."
+msgstr ""
+
 msgid "Import cancelled"
 msgstr "Импорт отменён"
 
@@ -3456,6 +3618,9 @@ msgstr "Импорт завершён"
 
 msgid "Import playlist"
 msgstr "Импортировать плейлист"
+
+msgid "Import to library"
+msgstr ""
 
 msgid "Imported"
 msgstr "Импортировано"
@@ -3505,8 +3670,14 @@ msgstr "Информация"
 msgid "Information could not be retrieved. Try again shortly."
 msgstr "Не удалось получить информацию. Повторите попытку чуть позже."
 
+msgid "Inherit class / default"
+msgstr ""
+
 msgid "Init system (service commands)"
 msgstr "Система инициализации (команды служб)"
+
+msgid "Input"
+msgstr ""
 
 msgid "Input channels"
 msgstr "Входные каналы"
@@ -3619,8 +3790,26 @@ msgstr "Размер интерфейса"
 msgid "Interrupted"
 msgstr "Прервано"
 
+msgid "Invalid DSP catalog page."
+msgstr ""
+
+msgid "Invalid DSP catalog query."
+msgstr ""
+
 msgid "Invalid DSP catalog."
 msgstr "Недопустимый каталог DSP."
+
+msgid "Invalid DSP export selection."
+msgstr ""
+
+msgid "Invalid DSP filter frequency."
+msgstr ""
+
+msgid "Invalid DSP filter gain."
+msgstr ""
+
+msgid "Invalid DSP filter parameter."
+msgstr ""
 
 msgid "Invalid DSP gain, stereo, delay or dynamics settings."
 msgstr "Недопустимые настройки усиления, стерео, задержки или динамики DSP."
@@ -3633,6 +3822,9 @@ msgstr "Недопустимые параметры DSP."
 
 msgid "Invalid DSP preset JSON."
 msgstr "Недопустимый JSON пресета DSP."
+
+msgid "Invalid DSP preset bundle."
+msgstr ""
 
 msgid "Invalid DSP preset identity."
 msgstr "Недопустимый идентификатор пресета DSP."
@@ -3650,6 +3842,15 @@ msgid "Invalid discovery options."
 msgstr ""
 
 msgid "Invalid discovery selection."
+msgstr ""
+
+msgid "Invalid external EQ JSON."
+msgstr ""
+
+msgid "Invalid external EQ gain."
+msgstr ""
+
+msgid "Invalid graphic EQ layout."
 msgstr ""
 
 msgid "Invalid output identity."
@@ -3739,6 +3940,9 @@ msgstr "июн."
 msgid "June"
 msgstr "июня"
 
+msgid "Keep at most 64 DSP output assignments."
+msgstr ""
+
 msgid "Keep at most 64 personal presets."
 msgstr "Можно хранить не более 64 личных пресетов."
 
@@ -3786,6 +3990,9 @@ msgstr "Схема клавиш"
 
 msgid "Kind"
 msgstr "Тип"
+
+msgid "Knee"
+msgstr ""
 
 msgid "LABELS"
 msgstr "ЛЕЙБЛЫ"
@@ -3856,6 +4063,9 @@ msgstr "Оставьте одно поле пустым для открытой 
 msgid "Leave view"
 msgstr "Выйти из режима"
 
+msgid "Left"
+msgstr ""
+
 msgid "Left delay · 0–30 ms"
 msgstr "Задержка слева · 0–30 ms"
 
@@ -3913,11 +4123,20 @@ msgstr "Нравится"
 msgid "Like cursor track"
 msgstr "Нравится: трек под курсором"
 
+msgid "Limiter"
+msgstr ""
+
+msgid "Limiter reduction"
+msgstr ""
+
 msgid "Limits and cleanup"
 msgstr "Ограничения и очистка"
 
 msgid "Line Bed"
 msgstr "Line Bed"
+
+msgid "Linked peak compression keeps stereo balance. The sidechain high-pass changes detection only. The separate limiter controls sample peaks, including makeup gain; it is not a true-peak limiter."
+msgstr ""
 
 msgid "Linux audio diagnostics…"
 msgstr "Диагностика звука Linux…"
@@ -4006,6 +4225,9 @@ msgstr "Локально — без папки"
 msgid "Local — {}"
 msgstr "Локально — {}"
 
+msgid "Lock filter"
+msgstr ""
+
 msgid "Lock output device"
 msgstr "Заблокировать устройство вывода"
 
@@ -4069,8 +4291,8 @@ msgstr "Фильтр нижних частот"
 msgid "Low shelf"
 msgstr "Низкочастотная полка"
 
-msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
-msgstr "Снижает общий уровень, не меняя EQ. При нуле ослабления нет."
+msgid "Lowest frequency"
+msgstr ""
 
 msgid "Lyricist"
 msgstr "Автор текста"
@@ -4107,6 +4329,9 @@ msgstr "Сделать доступным офлайн"
 
 msgid "Make it yours"
 msgstr "Настройте под себя"
+
+msgid "Makeup gain"
+msgstr ""
 
 msgid "Manage"
 msgstr "Управление"
@@ -4194,9 +4419,6 @@ msgstr "Вид «Микро»"
 
 msgid "Middle click opens a new tab"
 msgstr "Щелчок средней кнопкой открывает новую вкладку"
-
-msgid "Mids"
-msgstr "Средние"
 
 msgid "Mini player"
 msgstr "Мини-плеер"
@@ -4966,6 +5188,9 @@ msgstr ""
 msgid "One-bit DSD"
 msgstr "Однобитный DSD"
 
+msgid "Only personal presets can be changed."
+msgstr ""
+
 msgid "Only personal presets can be deleted."
 msgstr "Удалять можно только личные пресеты."
 
@@ -5176,6 +5401,9 @@ msgstr "Устарело"
 msgid "Output"
 msgstr "Вывод"
 
+msgid "Output assignments"
+msgstr ""
+
 msgid "Output details…"
 msgstr "Данные выхода…"
 
@@ -5200,20 +5428,29 @@ msgstr "ПИК"
 msgid "Page {} of {}"
 msgstr ""
 
+msgid "Parametric EQ"
+msgstr ""
+
+msgid "Parametric filters"
+msgstr ""
+
 msgid "Parentheses group; NOT works like the minus"
 msgstr "Скобки группируют; NOT работает как минус"
 
 msgid "Password"
 msgstr "Пароль"
 
+msgid "Paste AutoEq text, Chilpa JSON or a preset bundle. Poweramp parametric JSON transfers tone, peak and shelf bands. Unsupported settings reject the whole import."
+msgstr ""
+
+msgid "Paste DSP presets."
+msgstr ""
+
 msgid "Paste EQ filter settings here"
 msgstr "Вставьте сюда настройки фильтров EQ"
 
 msgid "Paste a link from one of your sources or from another service"
 msgstr "Вставьте ссылку из одного из ваших источников или из другого сервиса"
-
-msgid "Paste a parametric EQ profile or a Chilpa preset JSON. Active unsupported filters reject the whole import."
-msgstr "Вставьте профиль параметрического EQ или JSON пресета Chilpa. Если среди активных фильтров есть неподдерживаемые, отклоняется весь импорт."
 
 msgid "Paste a parametric EQ profile."
 msgstr "Вставьте профиль параметрического EQ."
@@ -5245,6 +5482,9 @@ msgstr "На паузе"
 msgid "Peak"
 msgstr "Пик"
 
+msgid "Peak hold · reset to measure a new passage"
+msgstr ""
+
 msgid "Pending"
 msgstr "Ожидает"
 
@@ -5274,6 +5514,12 @@ msgstr "Требуется разрешение"
 
 msgid "Permission review required"
 msgstr "Требуется проверка разрешений"
+
+msgid "Personal"
+msgstr ""
+
+msgid "Personal presets"
+msgstr ""
 
 msgid "Physical format combinations"
 msgstr "Сочетания физических форматов"
@@ -5476,6 +5722,9 @@ msgstr "Плагины"
 msgid "Podcasts"
 msgstr ""
 
+msgid "Points show individual filter gains. Drag to adjust frequency and gain; scroll over a point to adjust Q. Locked filters stay fixed."
+msgstr ""
+
 msgid "Popular Tracks"
 msgstr "Популярные треки"
 
@@ -5488,11 +5737,11 @@ msgstr "Позиция"
 msgid "Position in Streaming"
 msgstr "Положение в разделе «Стриминг»"
 
+msgid "Pre-gain"
+msgstr ""
+
 msgid "Preamp"
 msgstr "Предусилитель"
-
-msgid "Precise filters"
-msgstr "Точные фильтры"
 
 msgid "Predicted unchanged PCM; DoP decoding and audible output are untested"
 msgstr "Прогнозируется неизменённый PCM; декодирование DoP и слышимый звук не проверены"
@@ -5520,6 +5769,12 @@ msgstr "Подготовка результатов…"
 
 msgid "Preparing the updated AppImage…"
 msgstr "Подготовка обновлённого AppImage…"
+
+msgid "Preset name"
+msgstr ""
+
+msgid "Presets"
+msgstr ""
 
 msgid "Press keys…"
 msgstr "Нажмите клавиши…"
@@ -5622,6 +5877,9 @@ msgstr "Покупки"
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Поместите папку плагина в каталог плагинов Chilpa и снова откройте приложение."
+
+msgid "Q"
+msgstr ""
 
 msgid "Qt version"
 msgstr "Версия Qt"
@@ -5740,6 +5998,9 @@ msgstr "Оценки"
 msgid "Ratings are not synced with it."
 msgstr "Оценки не синхронизируются с этим сервером."
 
+msgid "Ratio"
+msgstr ""
+
 msgid "Re-download"
 msgstr "Скачать снова"
 
@@ -5834,6 +6095,12 @@ msgid "Ready to review"
 msgstr "Готово к проверке"
 
 msgid "Ready to sync"
+msgstr ""
+
+msgid "Rebuild bands"
+msgstr ""
+
+msgid "Rebuilding the graphic layout starts flat and keeps the previous EQ available for restoration. Tone and stereo settings stay in place."
 msgstr ""
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
@@ -5954,6 +6221,9 @@ msgid "Remove"
 msgstr "Удалить"
 
 msgid "Remove a chosen genre image before adding another."
+msgstr ""
+
+msgid "Remove assignment"
 msgstr ""
 
 msgid "Remove condition"
@@ -6088,6 +6358,9 @@ msgstr "Заменить текущую очередь"
 msgid "Replace genres"
 msgstr ""
 
+msgid "Replace personal preset"
+msgstr ""
+
 msgid "Replace queue {}"
 msgstr "Заменить очередь: {}"
 
@@ -6135,6 +6408,9 @@ msgstr "Сбросить EQ"
 
 msgid "Reset counter"
 msgstr "Сбросить счётчик"
+
+msgid "Reset meters"
+msgstr ""
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Разрядность снижена с {} до {} бит"
@@ -6232,6 +6508,9 @@ msgstr "Подробный"
 msgid "Rich rows"
 msgstr "Подробные строки"
 
+msgid "Right"
+msgstr ""
+
 msgid "Right delay · 0–30 ms"
 msgstr "Задержка справа · 0–30 ms"
 
@@ -6289,6 +6568,9 @@ msgstr "Сб"
 msgid "Save"
 msgstr "Сохранить"
 
+msgid "Save a copy of the current sound, or rename and replace a personal preset. Factory corrections remain available."
+msgstr ""
+
 msgid "Save as an image"
 msgstr "Сохранить как изображение"
 
@@ -6301,8 +6583,8 @@ msgstr "Сохранить как…"
 msgid "Save changes"
 msgstr "Сохранить изменения"
 
-msgid "Save preset"
-msgstr "Сохранить пресет"
+msgid "Save copy"
+msgstr ""
 
 msgid "Save profile"
 msgstr ""
@@ -6475,6 +6757,9 @@ msgstr "Поиск в MusicBrainz исполнителей {genre}…"
 msgid "Searching for devices…"
 msgstr "Поиск устройств…"
 
+msgid "Searching presets…"
+msgstr ""
+
 msgid "Searching this network…"
 msgstr "Ищем в этой сети…"
 
@@ -6541,6 +6826,9 @@ msgstr "Выбрать все"
 msgid "Select an artist to see their albums"
 msgstr "Выберите исполнителя, чтобы увидеть его альбомы"
 
+msgid "Select at most 64 presets."
+msgstr ""
+
 msgid "Select files for the disc plan."
 msgstr ""
 
@@ -6557,6 +6845,9 @@ msgid "Select folders"
 msgstr "Выбрать папки"
 
 msgid "Select one album or prepare a consistent album proposal before looking up this group."
+msgstr ""
+
+msgid "Select preset"
 msgstr ""
 
 msgid "Select the required release identity fields together."
@@ -6793,6 +7084,9 @@ msgstr ""
 msgid "Sidecar"
 msgstr "Вспомогательный файл"
 
+msgid "Sidechain high-pass"
+msgstr ""
+
 msgid "Sign in from Account to see your purchases."
 msgstr "Войдите в разделе «Учётная запись», чтобы увидеть свои покупки."
 
@@ -6931,6 +7225,9 @@ msgstr "Источники определяют, что есть в библио
 msgid "Spanish"
 msgstr "Испанский"
 
+msgid "Speakers"
+msgstr ""
+
 msgid "Spectral Ribbon"
 msgstr "Spectral Ribbon"
 
@@ -6994,8 +7291,8 @@ msgstr "Статистика, созданная Chilpa"
 msgid "Status"
 msgstr "Статус"
 
-msgid "Stereo and dynamics"
-msgstr "Стерео и динамика"
+msgid "Stereo and crossfeed"
+msgstr ""
 
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "Стереонастройки действуют на двухканальный PCM. EQ и связанная компрессия действуют на все каналы."
@@ -7438,6 +7735,9 @@ msgstr "Библиотека оставалась занята другой за
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
 
+msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
+msgstr ""
+
 msgid "The line being sung stays in view."
 msgstr "Текущая строка остаётся в поле зрения."
 
@@ -7559,6 +7859,12 @@ msgid "The plugin did not answer within 15 seconds. Its account status is unknow
 msgstr "Плагин не ответил за 15 секунд. Состояние его учётной записи неизвестно."
 
 msgid "The plugin interface could not be opened."
+msgstr ""
+
+msgid "The previous EQ is no longer available."
+msgstr ""
+
+msgid "The previous EQ parameters are invalid."
 msgstr ""
 
 msgid "The previous beets lookup is still stopping."
@@ -7861,6 +8167,9 @@ msgstr "Этот компьютер"
 msgid "This deletion request is no longer active."
 msgstr ""
 
+msgid "This device"
+msgstr ""
+
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "У этого прямого вывода нет аппаратной регулировки громкости. Используйте DAC или усилитель."
 
@@ -7998,6 +8307,9 @@ msgstr "Плейлист будет безвозвратно удалён в и�
 
 msgid "This permanently deletes the selected personal audio preset and its saved settings."
 msgstr "Выбранный личный аудиопресет и его сохранённые настройки будут удалены безвозвратно."
+
+msgid "This permanently deletes the selected personal presets and clears their assignments."
+msgstr ""
 
 msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
 msgstr "Трек будет безвозвратно удалён из файловой системы сервера. Отменить это в Chilpa невозможно."
@@ -8140,6 +8452,9 @@ msgstr "Этот год"
 msgid "This year vs Last year"
 msgstr "Этот год и прошлый"
 
+msgid "Threshold"
+msgstr ""
+
 msgid "Thu"
 msgstr "Чт"
 
@@ -8184,6 +8499,12 @@ msgstr "Переключить боковую панель"
 
 msgid "Token"
 msgstr "Токен"
+
+msgid "Tone"
+msgstr ""
+
+msgid "Tone enabled"
+msgstr ""
 
 msgid "Too many device storage locations were reported."
 msgstr ""
@@ -8410,6 +8731,12 @@ msgstr "Год неизвестен"
 msgid "Unlimited"
 msgstr "Без ограничений"
 
+msgid "Unlock filter"
+msgstr ""
+
+msgid "Unlock the filter before editing it."
+msgstr ""
+
 msgid "Unmatched"
 msgstr "Без совпадений"
 
@@ -8434,14 +8761,23 @@ msgstr "Плейлисты, снятые с выбора, удаляются п�
 msgid "Unsupported"
 msgstr "Не поддерживается"
 
+msgid "Unsupported DSP preset bundle."
+msgstr ""
+
 msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
 msgstr "Неподдерживаемая директива EQ. Вставьте параметрические фильтры без маршрутизации каналов и других команд."
 
 msgid "Unsupported EQ filter syntax or frequency unit."
 msgstr "Неподдерживаемый синтаксис фильтра EQ или единица частоты."
 
-msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP or NO."
-msgstr "Неподдерживаемый активный фильтр EQ. Используйте PK, LS, HS, LP, HP или NO."
+msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP, BP or NO."
+msgstr ""
+
+msgid "Unsupported external EQ channel."
+msgstr ""
+
+msgid "Unsupported external tone routing or type."
+msgstr ""
 
 msgid "Unsupported or empty DSP preset catalog."
 msgstr "Каталог пресетов DSP не поддерживается или пуст."
@@ -8521,17 +8857,23 @@ msgstr "Прописные"
 msgid "Usage"
 msgstr "Использование"
 
+msgid "Use Import to library for a preset bundle."
+msgstr ""
+
 msgid "Use MusicBrainz"
 msgstr "Использовать MusicBrainz"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "Используйте название от 1 до 80 символов без переносов строк."
 
+msgid "Use a parametric export with two tone bands and at most 64 EQ bands."
+msgstr ""
+
 msgid "Use a token"
 msgstr "Использовать токен"
 
-msgid "Use at most 10 DSP filters."
-msgstr "Используйте не более 10 фильтров DSP."
+msgid "Use at most 64 DSP filters."
+msgstr ""
 
 msgid "Use current colors"
 msgstr "Использовать текущие цвета"
@@ -9429,6 +9771,9 @@ msgstr "plughw: преобразует то, что отвергается"
 
 msgid "present"
 msgstr "по настоящее время"
+
+msgid "presets"
+msgstr ""
 
 msgid "process PCM audio with equalization and stereo controls"
 msgstr "обрабатывать звук PCM с помощью эквализации и стереонастроек"

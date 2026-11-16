@@ -1044,6 +1044,11 @@ dont
 uv
 # SQLite virtual-machine instruction counts (StatementStatus::VmStep).
 vm
+# Rust allocator methods and DSP sidechain and startup terminology.
+dealloc
+realloc
+hpf
+warmup
 hardlink
 hardlinked
 nlink

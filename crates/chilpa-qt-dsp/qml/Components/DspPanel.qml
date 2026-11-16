@@ -9,186 +9,189 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Modal {
     id: panel
     objectName: "dspPanel"
-    preferredWidth: Math.min(Metrics.dspPanelWidth, parent ? parent.width - Metrics.modalInsets : Metrics.dspPanelWidth)
+    preferredWidth: Metrics.dspPanelWidth
+    preferredHeight: Metrics.dspPanelHeight
+    heightRatio: Metrics.dspPanelHeightRatio
     readonly property var state: JSON.parse(Dsp.snapshot || "{}")
     readonly property var selection: state.selection || ({})
     readonly property string presetData: JSON.stringify(state.preset || {})
     property var draft: ({})
     property string group: "all"
-    property int tab: 0
-    readonly property var tabs: [I18n.tr("Graphic EQ", I18n.rev), I18n.tr("Advanced", I18n.rev), I18n.tr("Import / export", I18n.rev)]
-    readonly property var allPresets: state.presets || []
+    property string query: ""
+    property string section: "graphic"
+    property string importName: ""
+    property string importText: ""
+    property bool watching: false
+    property bool closing: false
+    readonly property bool wide: width >= Metrics.dspSidebarThreshold
+    readonly property var sections: [
+        {key: "graphic", label: I18n.tr("Graphic EQ", I18n.rev), glyph: Icons.adjustmentsHorizontal},
+        {key: "tone", label: I18n.tr("Tone", I18n.rev), glyph: Icons.volume},
+        {key: "parametric", label: I18n.tr("Parametric EQ", I18n.rev), glyph: Icons.waveSine},
+        {key: "headroom", label: I18n.tr("Headroom", I18n.rev), glyph: Icons.volume2},
+        {key: "stereo", label: I18n.tr("Stereo and crossfeed", I18n.rev), glyph: Icons.deviceSpeaker},
+        {key: "dynamics", label: I18n.tr("Dynamics", I18n.rev), glyph: Icons.chartBar},
+        {key: "presets", label: I18n.tr("Presets", I18n.rev), glyph: Icons.books},
+        {key: "manage", label: I18n.tr("Personal presets", I18n.rev), glyph: Icons.user},
+        {key: "assignments", label: I18n.tr("Output assignments", I18n.rev), glyph: Icons.deviceDesktop},
+        {key: "import", label: I18n.tr("Import / export", I18n.rev), glyph: Icons.arrowsSort}
+    ]
+    readonly property string sectionTitle: sections.find(entry => entry.key === section)?.label || ""
+    readonly property string presetsData: JSON.stringify(state.presets || [])
+    readonly property var allPresets: JSON.parse(presetsData)
     readonly property var favorites: state.favorites || []
     readonly property string selectedKey: (selection.plugin || "") + "/" + (selection.preset || "")
-    readonly property var groups: ["all", "favorites"].concat([...new Set(allPresets.map(e => e.preset.category))])
-    onGroupsChanged: if (!groups.includes(group)) group = "all"
-    readonly property var shown: allPresets.filter(e => {
-        const key = e.plugin + "/" + e.preset.id
-        const matches = group === "all" || (group === "favorites" ? favorites.includes(key) : e.preset.category === group)
-        const text = (e.preset.name + " " + e.preset.category + " " + e.preset.description).toLowerCase()
-        return matches && text.includes(search.text.toLowerCase())
-    }).sort((a, b) => Number(favorites.includes(b.plugin + "/" + b.preset.id)) - Number(favorites.includes(a.plugin + "/" + a.preset.id)))
+    readonly property var browser: state.browser || ({})
+    readonly property var shown: browser.presets || []
+    DspEditQueue { id: edits; onCommand: (action, data) => panel.send(action, data) }
+    Clipboard { id: clipboard }
+    function requestSearch(offset) { send("search", {query: query, group: group, offset: offset}) }
+    function copy(ids) { const text = Dsp.exportPresets(JSON.stringify(ids)); if (text) clipboard.write(text) }
+    onGroupChanged: if (section === "presets" && visible) requestSearch(0)
+    onSectionChanged: { edits?.flush(); if (section === "presets" && visible) requestSearch(0) }
+    function finish() {
+        if (closing || !watching) return
+        closing = true
+        edits.flush()
+        send("close", {})
+    }
+    onAboutToHide: finish()
+    function watch(wanted) {
+        if (watching === wanted) return
+        watching = wanted
+        Dsp.watchView(wanted)
+    }
+    onAboutToShow: { closing = false; watch(true) }
+    Connections { target: panel; function onClosed() { panel.watch(false) } }
+    Component.onDestruction: { finish(); watch(false) }
 
     function send(action, data) { Dsp.command(action, JSON.stringify(data || {})) }
-    function edit(value) { send("edit", value) }
+    function edit(value) { edits.commit("edit", value) }
+    function choose(entry) { edits.cancel(); send("choose", {plugin: entry.plugin, preset: entry.preset.id}) }
     onPresetDataChanged: draft = JSON.parse(presetData)
-    onOpened: { Dsp.refresh(); draft = JSON.parse(presetData) }
-    onClosed: tab = 0
+    onOpened: {
+        draft = JSON.parse(presetData)
+        section = state.graphic ? "graphic" : "parametric"
+    }
 
     Column {
-        width: panel.availableWidth - Metrics.modalInsets
-        spacing: Metrics.gap10
+        id: layout
+        width: parent.width
+        height: parent.height
+        spacing: Metrics.gap16
+        DspHeader {
+            id: header
+            width: parent.width
+            processingEnabled: !!panel.selection.enabled
+            available: Dsp.available
+            onEnabledChangedByUser: on => { edits.cancel(); panel.send("enable", {enabled: on}) }
+            onDismissed: panel.close()
+        }
+        Rectangle { width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
         Row {
+            id: workspace
             width: parent.width
-            spacing: Metrics.gap10
-            Text {
-                width: parent.width - enabledSwitch.width - closeButton.width - parent.spacing * 2 // derived: title beside two controls
-                text: I18n.tr("Equalizer", I18n.rev)
-                font.pointSize: Type.section
-                font.weight: Type.semibold
-                color: Theme.color.textPrimary
+            height: Math.max(0, layout.height - header.height - footer.height - Metrics.hairline * 2 - layout.spacing * 4) // derived: remaining space between fixed header and footer
+            spacing: panel.wide ? Metrics.gap24 : 0
+            DspNavigation {
+                visible: panel.wide
+                width: visible ? Metrics.dspSidebarWidth : 0
+                height: parent.height
+                sections: panel.sections
+                section: panel.section
+                onSelected: section => panel.section = section
             }
-            Toggle {
-                id: enabledSwitch
-                objectName: "dspEnabled"
-                checked: !!panel.selection.enabled
-                enabled: Dsp.available
-                Accessible.name: I18n.tr("Enable audio processing; turn off for bypass", I18n.rev)
-                onToggled: on => panel.send("enable", { enabled: on })
-            }
-            IconButton { id: closeButton; glyph: Icons.x; tip: I18n.tr("Close", I18n.rev); onClicked: panel.close(); activeFocusOnTab: true; Accessible.name: tip; Accessible.role: Accessible.Button; Keys.onReturnPressed: clicked(); Keys.onSpacePressed: clicked() }
-        }
-        Text {
-            objectName: "dspDisclaimer"
-            width: parent.width
-            text: I18n.tr("DSP changes the signal and breaks strict bit-perfect playback.", I18n.rev)
-            wrapMode: Text.WordWrap
-            font.pointSize: Type.body
-            color: Theme.color.textSecondary
-        }
-        Text {
-            width: parent.width
-            text: panel.state.blocked || ((Dsp.active ? I18n.tr("DSP active", I18n.rev) : panel.selection.enabled ? I18n.tr("Ready for local PCM playback", I18n.rev) : I18n.tr("Bypass · original samples", I18n.rev)) + (panel.draft.name ? " · " + panel.draft.name : ""))
-            wrapMode: Text.WordWrap
-            font.pointSize: Type.small
-            color: Theme.color.textTertiary
-        }
-        Row {
-            width: parent.width
-            spacing: Metrics.gap8
-            SelectField {
-                width: parent.width / 2 - parent.spacing // derived: two search controls
-                options: panel.groups.map(g => g === "all" ? I18n.tr("All groups", I18n.rev) : g === "favorites" ? I18n.tr("Favorites", I18n.rev) : g)
-                values: panel.groups
-                value: panel.group
-                onPicked: value => panel.group = value
-            }
-            SearchField {
-                id: search
-                objectName: "dspSearch"
-                width: parent.width / 2 // derived: two search controls
-                placeholder: I18n.tr("Find a preset or device", I18n.rev)
-            }
-        }
-        Row {
-            width: parent.width
-            spacing: Metrics.gap8
-            SelectField {
-                objectName: "dspPresetPicker"
-                width: parent.width - favoriteButton.width - parent.spacing
-                menuWidthLimit: Metrics.dspPanelWidth - Metrics.modalInsets
-                options: panel.shown.map(e => e.preset.name)
-                details: panel.shown.map(e => e.preset.category)
-                values: panel.shown.map(e => e.plugin + "/" + e.preset.id)
-                value: panel.selectedKey
-                onPicked: value => {
-                    const entry = panel.shown.find(e => e.plugin + "/" + e.preset.id === value)
-                    if (entry) panel.send("choose", { plugin: entry.plugin, preset: entry.preset.id })
+            Column {
+                id: page
+                width: workspace.width - (panel.wide ? Metrics.dspSidebarWidth + workspace.spacing : 0)
+                height: workspace.height
+                spacing: Metrics.gap16
+                SelectField {
+                    id: compactNavigation
+                    objectName: "dspCompactNavigation"
+                    visible: !panel.wide
+                    width: parent.width
+                    options: panel.sections.map(entry => entry.label)
+                    values: panel.sections.map(entry => entry.key)
+                    value: panel.section
+                    onPicked: value => panel.section = value
+                }
+                DspPresetBar {
+                    id: presets
+                    width: parent.width
+                    presets: panel.allPresets
+                    selectedName: panel.draft.name || ""
+                    selectedCategory: panel.draft.category || ""
+                    favorites: panel.favorites
+                    selectedKey: panel.selectedKey
+                    edited: !!panel.selection.edited
+                    onChosen: entry => panel.choose(entry)
+                    onFavoriteRequested: panel.send("favorite", {key: panel.selectedKey})
+                }
+                Text {
+                    id: title
+                    width: parent.width
+                    text: panel.sectionTitle
+                    elide: Text.ElideRight
+                    font.pointSize: Type.section
+                    font.weight: Type.semibold
+                    color: Theme.color.textPrimary
+                }
+                Loader {
+                    id: content
+                    objectName: "dspPageLoader"
+                    width: parent.width
+                    height: Math.max(0, page.height - presets.height - title.height - (compactNavigation.visible ? compactNavigation.height + page.spacing : 0) - page.spacing * 2) // derived: only the active section scrolls
+                    active: panel.visible
+                    sourceComponent: panel.section === "presets" ? presetPage : editorPage
                 }
             }
-            IconButton {
-                id: favoriteButton
-                objectName: "dspFavorite"
-                glyph: Icons.star
-                tip: I18n.tr("Favorite preset", I18n.rev)
-                checked: panel.favorites.includes(panel.selectedKey)
-                enabled: !!panel.selection.preset && !panel.selection.edited
-                activeFocusOnTab: enabled
-                Accessible.name: tip
-                Accessible.role: Accessible.Button
-                Keys.onReturnPressed: clicked()
-                Keys.onSpacePressed: clicked()
-                onClicked: panel.send("favorite", { key: panel.selectedKey })
-            }
         }
-        Text {
-            width: parent.width
-            text: panel.shown.length === 0 ? I18n.tr("No presets match this search.", I18n.rev) : panel.draft.description || ""
-            wrapMode: Text.WordWrap
-            font.pointSize: Type.small
-            color: Theme.color.textSecondary
-        }
-        Text {
-            width: parent.width
-            visible: !!panel.draft.source
-            text: panel.draft.source || ""
-            elide: Text.ElideRight
-            font.pointSize: Type.small
-            color: Theme.color.textTertiary
-        }
-        SegmentedControl {
-            objectName: "dspTabs"
-            visible: panel.width >= Metrics.dspCompactWidth
-            current: panel.tab
-            options: panel.tabs.map(text => ({text: text}))
-            onActivated: index => panel.tab = index
-        }
-        SelectField {
-            visible: panel.width < Metrics.dspCompactWidth
-            width: parent.width
-            options: panel.tabs
-            values: ["0", "1", "2"]
-            value: String(panel.tab)
-            onPicked: value => panel.tab = Number(value)
-        }
-        DspEditor {
-            width: parent.width
-            state: panel.state
-            draft: panel.draft
-            tab: panel.tab
-            onCommand: (action, data) => panel.send(action, data)
-            onEdited: value => panel.edit(value)
-            onTabRequested: tab => panel.tab = tab
-        }
-        Column {
+        Rectangle { width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
+        DspFooter {
             id: footer
             width: parent.width
-            spacing: Metrics.gap6
-            Text {
-                width: parent.width
-                visible: !!panel.state.error
-                text: panel.state.error || ""
-                wrapMode: Text.WordWrap
-                color: Theme.color.textSecondary
-                font.pointSize: Type.small
-            }
-            Row {
-                width: parent.width
-                spacing: Metrics.gap8
-                TextField { id: saveName; width: parent.width - saveButton.width - deleteButton.width - parent.spacing * 2; placeholder: I18n.tr("Name a personal preset", I18n.rev); Accessible.name: placeholder } // derived: room for two buttons
-                PillButton { id: saveButton; text: I18n.tr("Save preset", I18n.rev); enabled: saveName.text.trim() !== ""; onClicked: panel.send("save", { name: saveName.text }) }
-                IconButton { id: deleteButton; glyph: Icons.trash; tip: I18n.tr("Delete preset", I18n.rev); enabled: (panel.selection.preset || "").startsWith("user-"); onClicked: { deletion.presetKey = panel.selectedKey; deletion.open() } activeFocusOnTab: enabled; Accessible.name: tip; Accessible.role: Accessible.Button; Keys.onReturnPressed: clicked(); Keys.onSpacePressed: clicked() }
-            }
+            state: panel.state
+            selection: panel.selection
+            active: Dsp.active
+            presetName: panel.draft.name || ""
+
         }
     }
-    ConfirmationDialog {
-        id: deletion
-        property string presetKey: ""
-        title: I18n.tr("Delete preset?", I18n.rev)
-        message: I18n.tr("This permanently deletes the selected personal audio preset and its saved settings.", I18n.rev)
-        confirmText: I18n.tr("Delete preset", I18n.rev)
-        destructive: true
-        targetValid: presetKey === panel.selectedKey
-        onConfirmed: panel.send("delete", {})
+    Component {
+        id: presetPage
+        DspPresets {
+            catalog: panel.browser
+            group: panel.group
+            query: panel.query
+            selectedKey: panel.selectedKey
+            selectedDescription: panel.draft.description || ""
+            onGroupPicked: value => panel.group = value
+            onQueryEdited: value => panel.query = value
+            onSearchRequested: offset => panel.requestSearch(offset)
+            onChosen: entry => panel.choose(entry)
+            onChecked: (id, selected) => panel.send("select", {id: id, selected: selected})
+            onCopyRequested: ids => panel.copy(ids)
+            onRemoveRequested: ids => panel.send("delete_many", {ids: ids})
+        }
+    }
+    Component {
+        id: editorPage
+        DspEditor {
+            state: panel.state
+            draft: panel.draft
+            section: panel.section
+            importName: panel.importName
+            importText: panel.importText
+            maximumCurveHeight: Math.min(Metrics.dspCurveHeight, content.height * Metrics.dspCurveHeightShare)
+            onImportNameEdited: value => panel.importName = value
+            onImportTextEdited: value => panel.importText = value
+            onCommand: (action, data) => edits.commit(action, data)
+            onPreviewCommand: (action, data) => edits.preview(action, data)
+            onPreviewed: value => edits.preview("preview", value)
+            onEdited: value => panel.edit(value)
+            onSectionRequested: section => panel.section = section
+            onFindRequested: query => { panel.query = query; panel.group = "Headphones"; panel.section = "presets"; panel.requestSearch(0) }
+        }
     }
 }

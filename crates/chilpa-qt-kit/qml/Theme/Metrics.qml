@@ -177,14 +177,33 @@ QtObject {
     readonly property int albumVersionMenuWidth: 560
     readonly property int castMenuWidth: 270
     // The optional processing editor.
-    readonly property int dspPanelWidth: 760
-    readonly property int dspPanelHeight: 800
+    readonly property int dspPanelWidth: 1200
+    readonly property int dspPanelHeight: 840
+    readonly property real dspPanelHeightRatio: 0.92
+    readonly property int dspSidebarWidth: 224
+    readonly property int dspSidebarThreshold: 880
+    readonly property int dspNavigationHeight: 44
+    readonly property int dspPresetRowHeight: 76
+    readonly property int dspFilterRowHeight: 48
+    readonly property int dspFilterMinWidth: 760
+    readonly property int dspBandIndexWidth: 32
+    readonly property int dspAdvancedFilterRowHeight: 112
+    readonly property int dspSectionGap: 32
+    readonly property int dspKnobSize: 112
+    readonly property int dspKnobIndicator: 20
+    readonly property int dspCurveHitRadius: 16
+    readonly property int dspChannelWidth: 110
+    readonly property int dspPreviewInterval: 50
+    readonly property int dspSearchInterval: 200
+    readonly property real dspCurveAspectRatio: 0.32
+    readonly property real dspCurveHeightShare: 0.42
     readonly property int dspCompactWidth: 520
     readonly property int dspSliderHeight: 180
     readonly property int dspSliderWidth: 36
+    readonly property int dspGraphicBandMinWidth: 48
     readonly property int dspSliderHandle: 16
-    readonly property int dspCurveHeight: 120
-    readonly property int dspBandShapeWidth: 128
+    readonly property int dspCurveHeight: 220
+    readonly property int dspBandShapeWidth: 176
     readonly property int dspBandValueWidth: 86
     readonly property int dspImportHeight: 180
     readonly property int menuWidth: 236

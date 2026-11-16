@@ -6,9 +6,14 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 Column {
     id: editor
+    property bool initialized: false
+    Component.onCompleted: initialized = true
     property real preamp: 0
     property real headroom: 0
     property real clipped: 0
+    property bool automatic: true
+    signal automaticChangedByUser(bool enabled)
+    signal previewed(real gain)
     signal committed(real gain)
     signal resetMeter()
     spacing: Metrics.gap6
@@ -32,21 +37,22 @@ Column {
         objectName: "dspPreamp"
         width: parent.width
         from: -60
-        to: 0
+        to: 24
         stepSize: 0.5
-        value: editor.preamp
+        Binding { restoreMode: Binding.RestoreNone; target: preampSlider; property: "value"; value: editor.preamp; when: editor.initialized && !preampSlider.pressed }
         wheelEnabled: activeFocus
         property bool changedWhilePressed: false
+        property real gestureValue: 0
         Accessible.name: I18n.tr("Preamp", I18n.rev)
-        Accessible.description: I18n.tr("Lower the overall level without changing the EQ. Zero adds no attenuation.", I18n.rev)
+        Accessible.description: I18n.tr("Adjust overall gain. Automatic headroom can reduce the requested gain to preserve EQ headroom.", I18n.rev)
         onMoved: {
-            if (pressed) changedWhilePressed = true
+            if (pressed) { changedWhilePressed = true; gestureValue = value; editor.previewed(value) }
             else editor.committed(value)
         }
         onPressedChanged: {
             if (!pressed && changedWhilePressed) {
                 changedWhilePressed = false
-                editor.committed(value)
+                editor.committed(gestureValue)
             }
         }
         background: Rectangle {
@@ -68,6 +74,12 @@ Column {
             border.width: preampSlider.activeFocus ? Metrics.focusRing : 0
             border.color: Theme.color.accent
         }
+    }
+    Row {
+        width: parent.width
+        spacing: Metrics.gap12
+        Toggle { id: automaticToggle; checked: editor.automatic; onToggled: on => editor.automaticChangedByUser(on) }
+        Text { width: parent.width - automaticToggle.width - parent.spacing; text: I18n.tr("Automatic headroom", I18n.rev); wrapMode: Text.WordWrap; color: Theme.color.textPrimary; font.pointSize: Type.body }
     }
     Text {
         width: parent.width

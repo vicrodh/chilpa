@@ -10,7 +10,8 @@ Popup {
     default property alias body: inset.data
     property real preferredWidth: Metrics.confirmWidth
     property real preferredHeight: implicitHeight
-    readonly property real maximumHeight: parent ? parent.height * Metrics.modalMaxHeightRatio : preferredHeight
+    property real heightRatio: Metrics.modalMaxHeightRatio
+    readonly property real maximumHeight: parent ? parent.height * heightRatio : preferredHeight
 
     width: Math.max(0, Math.min(preferredWidth, parent ? Math.max(0, parent.width - Metrics.modalInsets) : preferredWidth))
     height: Math.max(0, Math.min(preferredHeight, maximumHeight))

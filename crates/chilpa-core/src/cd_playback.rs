@@ -514,7 +514,7 @@ mod tests {
         let mut disc = Tone(Disc { fail_at: None });
         let tracks: Vec<Track> = read_toc(&mut disc).unwrap().audio_tracks().copied().collect();
         let controls = Controls::new();
-        controls.dsp.set(Some(chilpa_audio::dsp::Preset { preamp_db: -6.0, filters: vec![chilpa_audio::dsp::Filter { shape: chilpa_audio::dsp::Shape::Peak, frequency: 1000.0, gain_db: -2.0, q: 1.0 }], ..Default::default() })).unwrap();
+        controls.dsp.set(Some(chilpa_audio::dsp::Preset { preamp_db: -6.0, filters: vec![chilpa_audio::dsp::Filter { shape: chilpa_audio::dsp::Shape::Peak, frequency: 1000.0, gain_db: -2.0, q: 1.0, ..Default::default() }], ..Default::default() })).unwrap();
         let mut sink = Recorder { opened: None, bytes: Vec::new() };
         play_disc(&mut disc, &tracks, &caps(), &controls, |format| {
             sink.opened = Some(format); Ok(&mut sink)

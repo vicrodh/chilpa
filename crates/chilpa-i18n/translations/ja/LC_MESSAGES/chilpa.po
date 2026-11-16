@@ -145,6 +145,9 @@ msgstr "選んだフォルダーに曲がありません"
 msgid "A click on a record opens"
 msgstr "アルバムをクリックしたときに開くもの"
 
+msgid "A device assignment takes priority over its class, then the general default. Classify devices explicitly; Chilpa cannot identify headphones connected to a DAC."
+msgstr ""
+
 msgid "A device operation is still running."
 msgstr ""
 
@@ -310,6 +313,9 @@ msgstr "操作"
 msgid "Active"
 msgstr "有効"
 
+msgid "Active assignment"
+msgstr ""
+
 msgid "Active modules"
 msgstr "有効なモジュール"
 
@@ -437,8 +443,8 @@ msgstr "メディアサーバーまたはその説明のアドレス"
 msgid "Add…"
 msgstr "追加…"
 
-msgid "Advanced"
-msgstr "詳細"
+msgid "Adjust overall gain. Automatic headroom can reduce the requested gain to preserve EQ headroom."
+msgstr ""
 
 msgid "After"
 msgstr ""
@@ -532,6 +538,9 @@ msgstr "すべての音楽"
 
 msgid "All of these"
 msgstr "すべてに一致"
+
+msgid "All outputs"
+msgstr ""
 
 msgid "All qualities"
 msgstr "すべての音質"
@@ -803,14 +812,23 @@ msgstr "Chilpaが再生している間、PipeWireまたはPulseAudioにカード
 msgid "Assign a distinct target disc number to each joined disc."
 msgstr ""
 
+msgid "Assign current preset"
+msgstr ""
+
 msgid "Assign each disc using its group and source disc, or explicit files."
 msgstr ""
 
 msgid "Assign every selected file to one resulting disc."
 msgstr ""
 
+msgid "Assign to this device"
+msgstr ""
+
 msgid "Assumed fallback: {}"
 msgstr "仮定した代替値：{}"
+
+msgid "Attack"
+msgstr ""
 
 msgid "Audio"
 msgstr "オーディオ"
@@ -844,6 +862,9 @@ msgstr "音声出力の処理が予期せず停止しました。"
 
 msgid "Audio path"
 msgstr "オーディオ経路"
+
+msgid "Audio processing"
+msgstr ""
 
 msgid "Audio stack"
 msgstr "オーディオスタック"
@@ -887,6 +908,9 @@ msgstr "「自動」はデスクトップの色に従います。暗いパネル
 msgid "Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"
 msgstr "「自動」はグラフィックハードウェアに最適なレンダラーを選択します。動作が遅い、または表示が乱れる場合のみ変更してください（再起動が必要）"
 
+msgid "Auto save personal presets after adjustment. Factory presets keep a separate draft."
+msgstr ""
+
 msgid "Auto-detect your DACs and set up bit-perfect playback, step by step."
 msgstr "DACを自動検出し、ビットパーフェクト再生をステップごとに設定します。"
 
@@ -901,6 +925,9 @@ msgstr ""
 
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "このスキャンを続行または破棄するまで、自動確認は一時停止されます。破棄しても追加済みのファイルは保持されます。"
+
+msgid "Automatic headroom"
+msgstr ""
 
 msgid "Automatic headroom lowers gain to leave room for EQ boosts."
 msgstr "自動ヘッドルームは、EQでブーストする余裕を確保するためにゲインを下げます。"
@@ -965,6 +992,9 @@ msgstr "背景画像"
 msgid "Balance · −100 left / +100 right"
 msgstr "バランス · −100（左）/ +100（右）"
 
+msgid "Band pass"
+msgstr ""
+
 msgid "Barcode"
 msgstr "バーコード"
 
@@ -976,6 +1006,9 @@ msgstr "{artist} · {genres}に基づく"
 
 msgid "Bass"
 msgstr "低音"
+
+msgid "Bass and treble work alongside your headphone correction. Zero dB is neutral; EQ filters stay intact."
+msgstr ""
 
 msgid "Before"
 msgstr ""
@@ -1015,6 +1048,9 @@ msgstr "ブックレット"
 
 msgid "Border"
 msgstr "境界線"
+
+msgid "Both"
+msgstr ""
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "音楽フォルダーを参照するか、フルパスを入力してください。"
@@ -1091,6 +1127,9 @@ msgstr "ソース別"
 
 msgid "By year"
 msgstr "年別"
+
+msgid "Bypass"
+msgstr ""
 
 msgid "Bypass · original samples"
 msgstr "バイパス · 元のサンプル"
@@ -1182,6 +1221,9 @@ msgstr "カタログ番号"
 msgid "Categories"
 msgstr "カテゴリ"
 
+msgid "Ceiling"
+msgstr ""
+
 msgid "Change cover"
 msgstr "カバーを変更"
 
@@ -1210,6 +1252,9 @@ msgid "Changes"
 msgstr ""
 
 msgid "Changing the positions of an identified release requires a real release match."
+msgstr ""
+
+msgid "Channel"
 msgstr ""
 
 msgid "Channels"
@@ -1326,6 +1371,9 @@ msgstr "確認中…"
 msgid "Chilpa"
 msgstr "Chilpa"
 
+msgid "Chilpa DSP"
+msgstr ""
+
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpaはレート、シンク、排他モードを実行時にすでに固定しています。これらのファイルが変更するのはシステム全体の動作のみです。必要な場合は、ご自身でコピーして実行してください。事前にバックアップしてください。"
 
@@ -1437,11 +1485,26 @@ msgstr "選択"
 msgid "Choose DSP on or bypass."
 msgstr "DSPのオンまたはバイパスを選択してください。"
 
+msgid "Choose DSP presets."
+msgstr ""
+
 msgid "Choose Unknown, Clean or Explicit"
 msgstr "不明、露骨な表現なし、露骨な表現ありから選択してください"
 
+msgid "Choose a DSP band."
+msgstr ""
+
 msgid "Choose a DSP favorite."
 msgstr "DSPのお気に入りを選択してください。"
+
+msgid "Choose a DSP filter parameter."
+msgstr ""
+
+msgid "Choose a DSP filter position."
+msgstr ""
+
+msgid "Choose a DSP filter."
+msgstr ""
 
 msgid "Choose a DSP plugin."
 msgstr "DSPプラグインを選択してください。"
@@ -1482,6 +1545,9 @@ msgstr ""
 msgid "Choose a playback control"
 msgstr "再生コントロールを選択"
 
+msgid "Choose a preset"
+msgstr ""
+
 msgid "Choose a preset."
 msgstr "プリセットを選択してください。"
 
@@ -1500,6 +1566,9 @@ msgstr ""
 msgid "Choose a value"
 msgstr "値を選択"
 
+msgid "Choose a visible DSP preset."
+msgstr ""
+
 msgid "Choose albums with Use in disc plan. Only selected files participate."
 msgstr ""
 
@@ -1507,6 +1576,12 @@ msgid "Choose albums, disc assignments and a resulting album title."
 msgstr ""
 
 msgid "Choose an album and look it up. Choosing a match prepares a proposal without writing files."
+msgstr ""
+
+msgid "Choose an assignment scope."
+msgstr ""
+
+msgid "Choose an autosave policy."
 msgstr ""
 
 msgid "Choose an available writable storage."
@@ -1517,6 +1592,9 @@ msgstr ""
 
 msgid "Choose an image"
 msgstr "画像を選択"
+
+msgid "Choose an output class."
+msgstr ""
 
 msgid "Choose at least two different queues."
 msgstr "異なるキューを2つ以上選択してください。"
@@ -1561,6 +1639,9 @@ msgid "Choose image…"
 msgstr "画像を選択…"
 
 msgid "Choose music for this storage"
+msgstr ""
+
+msgid "Choose personal presets to delete."
 msgstr ""
 
 msgid "Choose playlist"
@@ -1758,6 +1839,9 @@ msgstr "サイドバーを折りたたむ"
 msgid "Color"
 msgstr "カラー"
 
+msgid "Color group"
+msgstr ""
+
 msgid "Colors"
 msgstr "色"
 
@@ -1837,6 +1921,12 @@ msgid "Composition"
 msgstr ""
 
 msgid "Compositions"
+msgstr ""
+
+msgid "Compression reduction"
+msgstr ""
+
+msgid "Compressor and expander"
 msgstr ""
 
 msgid "Compressor ratio · 1–6"
@@ -1952,6 +2042,9 @@ msgstr "プリセットのJSONをコピー"
 
 msgid "Copy report"
 msgstr "レポートをコピー"
+
+msgid "Copy selected JSON"
+msgstr ""
 
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "現在適用中のテーマの色を出発点としてエディターにコピーします。"
@@ -2160,11 +2253,20 @@ msgstr "DSPはローカル出力に適用されます。キャストでは元の
 msgid "DSP catalog is too large."
 msgstr "DSPカタログが大きすぎます。"
 
+msgid "DSP catalog page is too large."
+msgstr ""
+
 msgid "DSP changes the signal and breaks strict bit-perfect playback."
 msgstr "DSPは信号を変更するため、厳密なビットパーフェクト再生ではなくなります。"
 
 msgid "DSP control is unavailable."
 msgstr "DSPコントロールは利用できません。"
+
+msgid "DSP enabled"
+msgstr ""
+
+msgid "DSP export selection is too large."
+msgstr ""
 
 msgid "DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."
 msgstr "DSPフィルターには、10–24000 Hz、−24–18 dB、Q 0.1–12が必要です。"
@@ -2172,11 +2274,20 @@ msgstr "DSPフィルターには、10–24000 Hz、−24–18 dB、Q 0.1–12が
 msgid "DSP host is unavailable."
 msgstr "DSPホストは利用できません。"
 
+msgid "DSP import is too large."
+msgstr ""
+
 msgid "DSP input is too large."
 msgstr "DSPの入力が大きすぎます。"
 
+msgid "DSP preferences exceed the storage limit."
+msgstr ""
+
 msgid "DSP preset is unavailable."
 msgstr "DSPプリセットは利用できません。"
+
+msgid "DSP supports PCM up to 1536 kHz; higher rates bypass processing."
+msgstr ""
 
 msgid "DSP · Equalizer and presets"
 msgstr "DSP · イコライザーとプリセット"
@@ -2262,6 +2373,12 @@ msgstr "プリセットを削除しますか？"
 msgid "Delete saved query"
 msgstr "保存したクエリを削除"
 
+msgid "Delete selected"
+msgstr ""
+
+msgid "Delete selected presets?"
+msgstr ""
+
 msgid "Delete the saved query “{}”?"
 msgstr "保存したクエリ「{}」を削除しますか？"
 
@@ -2315,6 +2432,9 @@ msgstr "開発者向け"
 
 msgid "Device"
 msgstr "デバイス"
+
+msgid "Device class"
+msgstr ""
 
 msgid "Device profiles exceed 1 MiB."
 msgstr ""
@@ -2571,14 +2691,20 @@ msgstr "オランダ語"
 msgid "Dynamic background"
 msgstr "ダイナミック背景"
 
+msgid "Dynamics"
+msgstr ""
+
 msgid "EPs"
 msgstr "EP"
 
 msgid "EPs & Singles"
 msgstr "EPとシングル"
 
-msgid "EQ response · 20 Hz–20 kHz · ±18 dB · before preamp"
-msgstr "EQ応答 · 20 Hz–20 kHz · ±18 dB · プリアンプ前"
+msgid "EQ and tone · upper channel response · 20 Hz–20 kHz · before preamp"
+msgstr ""
+
+msgid "EQ enabled"
+msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "各ファイルをコピーし、そのコピーに書き込んで読み戻したうえで、元のファイルを置き換えます。アルバムと同じ大きさの空き容量が必要です。書き込んだ内容は元に戻せません。"
@@ -2700,9 +2826,6 @@ msgstr ""
 msgid "Episode notes"
 msgstr "エピソードのノート"
 
-msgid "Equalizer"
-msgstr "イコライザー"
-
 msgid "Equipment"
 msgstr "機器"
 
@@ -2757,6 +2880,9 @@ msgstr "没入表示を終了"
 msgid "Expand"
 msgstr "展開"
 
+msgid "Expander ratio"
+msgstr ""
+
 msgid "Experimental: theme may not match your system exactly."
 msgstr "実験的: テーマがシステムと完全に一致しない場合があります。"
 
@@ -2775,6 +2901,9 @@ msgstr ""
 msgid "Export"
 msgstr "エクスポート"
 
+msgid "Export at most 64 presets at once."
+msgstr ""
+
 msgid "Export diagnostics"
 msgstr "診断情報をエクスポート"
 
@@ -2783,6 +2912,9 @@ msgstr "再生履歴をエクスポート"
 
 msgid "Export…"
 msgstr "エクスポート…"
+
+msgid "External JSON supports peak and shelf EQ bands. Pass-filter gain semantics are not transferable."
+msgstr ""
 
 msgid "Extra controls"
 msgstr "追加コントロール"
@@ -2910,6 +3042,9 @@ msgstr "音楽や保存済みの選択を検索…"
 msgid "Find playlists"
 msgstr "プレイリストを探す"
 
+msgid "Find profiles for this device"
+msgstr ""
+
 msgid "Find this music in your library and connected sources."
 msgstr ""
 
@@ -3021,8 +3156,8 @@ msgstr "星4つ以上。rating:0 は星なし"
 msgid "French"
 msgstr "フランス語"
 
-msgid "Frequency · Hz   /   Gain · dB   /   ±12 dB"
-msgstr "周波数 · Hz   /   ゲイン · dB   /   ±12 dB"
+msgid "Frequency"
+msgstr ""
 
 msgid "Fri"
 msgstr "金"
@@ -3095,6 +3230,12 @@ msgstr "ギャップレス"
 
 msgid "Gapless playback"
 msgstr "ギャップレス再生"
+
+msgid "Gate / expander threshold"
+msgstr ""
+
+msgid "Gate below threshold"
+msgstr ""
 
 msgid "Generate"
 msgstr "生成"
@@ -3174,6 +3315,12 @@ msgstr "ゴニオメーター"
 msgid "Graphic EQ"
 msgstr "グラフィックEQ"
 
+msgid "Graphic EQ gain needs −12–12 dB."
+msgstr ""
+
+msgid "Graphic EQ needs 5–32 bands and a valid frequency range."
+msgstr ""
+
 msgid "Graphic equalizer"
 msgstr "グラフィックイコライザー"
 
@@ -3230,6 +3377,12 @@ msgstr "ハードウェア音量コントロール"
 
 msgid "Header image"
 msgstr "ヘッダー画像"
+
+msgid "Headphones"
+msgstr ""
+
+msgid "Headroom"
+msgstr ""
 
 msgid "Heard"
 msgstr "再生済み"
@@ -3317,6 +3470,9 @@ msgstr "ハイレゾ音質"
 
 msgid "High shelf"
 msgstr "ハイシェルフ"
+
+msgid "Highest frequency"
+msgstr ""
 
 msgid "Historical result; the current device or configuration is not verified."
 msgstr "過去の結果です。現在の機器または設定は検証されていません。"
@@ -3442,6 +3598,12 @@ msgstr "没入表示"
 msgid "Import / export"
 msgstr "インポート / エクスポート"
 
+msgid "Import at most 64 presets at once."
+msgstr ""
+
+msgid "Import between 1 and 64 presets."
+msgstr ""
+
 msgid "Import cancelled"
 msgstr "インポートをキャンセルしました"
 
@@ -3450,6 +3612,9 @@ msgstr "インポート完了"
 
 msgid "Import playlist"
 msgstr "プレイリストをインポート"
+
+msgid "Import to library"
+msgstr ""
 
 msgid "Imported"
 msgstr "インポート済み"
@@ -3499,8 +3664,14 @@ msgstr "情報"
 msgid "Information could not be retrieved. Try again shortly."
 msgstr "情報を取得できませんでした。しばらくしてから再試行してください。"
 
+msgid "Inherit class / default"
+msgstr ""
+
 msgid "Init system (service commands)"
 msgstr "Initシステム（サービスコマンド）"
+
+msgid "Input"
+msgstr ""
 
 msgid "Input channels"
 msgstr "入力チャンネル"
@@ -3613,8 +3784,26 @@ msgstr "インターフェースのサイズ"
 msgid "Interrupted"
 msgstr "中断"
 
+msgid "Invalid DSP catalog page."
+msgstr ""
+
+msgid "Invalid DSP catalog query."
+msgstr ""
+
 msgid "Invalid DSP catalog."
 msgstr "DSPカタログが無効です。"
+
+msgid "Invalid DSP export selection."
+msgstr ""
+
+msgid "Invalid DSP filter frequency."
+msgstr ""
+
+msgid "Invalid DSP filter gain."
+msgstr ""
+
+msgid "Invalid DSP filter parameter."
+msgstr ""
 
 msgid "Invalid DSP gain, stereo, delay or dynamics settings."
 msgstr "DSPのゲイン、ステレオ、ディレイ、ダイナミクスの設定が無効です。"
@@ -3627,6 +3816,9 @@ msgstr "DSPのパラメーターが無効です。"
 
 msgid "Invalid DSP preset JSON."
 msgstr "DSPプリセットのJSONが無効です。"
+
+msgid "Invalid DSP preset bundle."
+msgstr ""
 
 msgid "Invalid DSP preset identity."
 msgstr "DSPプリセットの識別情報が無効です。"
@@ -3644,6 +3836,15 @@ msgid "Invalid discovery options."
 msgstr ""
 
 msgid "Invalid discovery selection."
+msgstr ""
+
+msgid "Invalid external EQ JSON."
+msgstr ""
+
+msgid "Invalid external EQ gain."
+msgstr ""
+
+msgid "Invalid graphic EQ layout."
 msgstr ""
 
 msgid "Invalid output identity."
@@ -3729,6 +3930,9 @@ msgstr "6月"
 msgid "June"
 msgstr "6月"
 
+msgid "Keep at most 64 DSP output assignments."
+msgstr ""
+
 msgid "Keep at most 64 personal presets."
 msgstr "個人用プリセットは最大64個まで保持できます。"
 
@@ -3776,6 +3980,9 @@ msgstr "キーマップ"
 
 msgid "Kind"
 msgstr "種類"
+
+msgid "Knee"
+msgstr ""
 
 msgid "LABELS"
 msgstr "レーベル"
@@ -3846,6 +4053,9 @@ msgstr "片方を空にすると上限・下限なし。両端を含みます。
 msgid "Leave view"
 msgstr "ビューを閉じる"
 
+msgid "Left"
+msgstr ""
+
 msgid "Left delay · 0–30 ms"
 msgstr "左ディレイ · 0–30 ms"
 
@@ -3903,11 +4113,20 @@ msgstr "お気に入りに追加"
 msgid "Like cursor track"
 msgstr "カーソル位置のトラックをお気に入りに追加"
 
+msgid "Limiter"
+msgstr ""
+
+msgid "Limiter reduction"
+msgstr ""
+
 msgid "Limits and cleanup"
 msgstr "上限とクリーンアップ"
 
 msgid "Line Bed"
 msgstr "Line Bed"
+
+msgid "Linked peak compression keeps stereo balance. The sidechain high-pass changes detection only. The separate limiter controls sample peaks, including makeup gain; it is not a true-peak limiter."
+msgstr ""
 
 msgid "Linux audio diagnostics…"
 msgstr "Linuxの音声診断…"
@@ -3996,6 +4215,9 @@ msgstr "ローカル — フォルダーなし"
 msgid "Local — {}"
 msgstr "ローカル — {}"
 
+msgid "Lock filter"
+msgstr ""
+
 msgid "Lock output device"
 msgstr "出力デバイスをロック"
 
@@ -4059,8 +4281,8 @@ msgstr "ローパス"
 msgid "Low shelf"
 msgstr "ローシェルフ"
 
-msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
-msgstr "EQを変えずに全体のレベルを下げます。0にすると減衰しません。"
+msgid "Lowest frequency"
+msgstr ""
 
 msgid "Lyricist"
 msgstr "作詞"
@@ -4097,6 +4319,9 @@ msgstr "オフラインで再生できるようにする"
 
 msgid "Make it yours"
 msgstr "自分好みに"
+
+msgid "Makeup gain"
+msgstr ""
 
 msgid "Manage"
 msgstr "管理"
@@ -4184,9 +4409,6 @@ msgstr "マイクロ表示"
 
 msgid "Middle click opens a new tab"
 msgstr "中クリックで新しいタブを開く"
-
-msgid "Mids"
-msgstr "中音域"
 
 msgid "Mini player"
 msgstr "ミニプレーヤー"
@@ -4956,6 +5178,9 @@ msgstr ""
 msgid "One-bit DSD"
 msgstr "1ビットDSD"
 
+msgid "Only personal presets can be changed."
+msgstr ""
+
 msgid "Only personal presets can be deleted."
 msgstr "削除できるのは個人用プリセットのみです。"
 
@@ -5166,6 +5391,9 @@ msgstr "情報が古い"
 msgid "Output"
 msgstr "出力"
 
+msgid "Output assignments"
+msgstr ""
+
 msgid "Output details…"
 msgstr "出力の詳細…"
 
@@ -5190,20 +5418,29 @@ msgstr "ピーク"
 msgid "Page {} of {}"
 msgstr ""
 
+msgid "Parametric EQ"
+msgstr ""
+
+msgid "Parametric filters"
+msgstr ""
+
 msgid "Parentheses group; NOT works like the minus"
 msgstr "括弧でまとめます。NOT はマイナスと同じです"
 
 msgid "Password"
 msgstr "パスワード"
 
+msgid "Paste AutoEq text, Chilpa JSON or a preset bundle. Poweramp parametric JSON transfers tone, peak and shelf bands. Unsupported settings reject the whole import."
+msgstr ""
+
+msgid "Paste DSP presets."
+msgstr ""
+
 msgid "Paste EQ filter settings here"
 msgstr "EQフィルター設定をここに貼り付け"
 
 msgid "Paste a link from one of your sources or from another service"
 msgstr "お使いのソースまたはほかのサービスのリンクを貼り付けてください"
-
-msgid "Paste a parametric EQ profile or a Chilpa preset JSON. Active unsupported filters reject the whole import."
-msgstr "パラメトリックEQプロファイルまたはChilpaプリセットのJSONを貼り付けてください。有効で未対応のフィルターがあると、インポート全体が拒否されます。"
 
 msgid "Paste a parametric EQ profile."
 msgstr "パラメトリックEQプロファイルを貼り付けてください。"
@@ -5235,6 +5472,9 @@ msgstr "一時停止中"
 msgid "Peak"
 msgstr "ピーク"
 
+msgid "Peak hold · reset to measure a new passage"
+msgstr ""
+
 msgid "Pending"
 msgstr "未処理"
 
@@ -5264,6 +5504,12 @@ msgstr "権限が必要"
 
 msgid "Permission review required"
 msgstr "権限の確認が必要です"
+
+msgid "Personal"
+msgstr ""
+
+msgid "Personal presets"
+msgstr ""
 
 msgid "Physical format combinations"
 msgstr "物理フォーマットの組み合わせ"
@@ -5466,6 +5712,9 @@ msgstr "プラグイン"
 msgid "Podcasts"
 msgstr ""
 
+msgid "Points show individual filter gains. Drag to adjust frequency and gain; scroll over a point to adjust Q. Locked filters stay fixed."
+msgstr ""
+
 msgid "Popular Tracks"
 msgstr "人気のトラック"
 
@@ -5478,11 +5727,11 @@ msgstr "位置"
 msgid "Position in Streaming"
 msgstr "ストリーミングでの位置"
 
+msgid "Pre-gain"
+msgstr ""
+
 msgid "Preamp"
 msgstr "プリアンプ"
-
-msgid "Precise filters"
-msgstr "精密フィルター"
 
 msgid "Predicted unchanged PCM; DoP decoding and audible output are untested"
 msgstr "PCMが変更されないと予測されます。DoPのデコードと可聴出力は未テストです"
@@ -5510,6 +5759,12 @@ msgstr "結果を準備しています…"
 
 msgid "Preparing the updated AppImage…"
 msgstr "更新したAppImageを準備しています…"
+
+msgid "Preset name"
+msgstr ""
+
+msgid "Presets"
+msgstr ""
 
 msgid "Press keys…"
 msgstr "キーを押してください…"
@@ -5612,6 +5867,9 @@ msgstr "購入"
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "プラグインのフォルダーをChilpaのプラグインディレクトリに置き、アプリを開き直してください。"
+
+msgid "Q"
+msgstr ""
 
 msgid "Qt version"
 msgstr "Qtのバージョン"
@@ -5730,6 +5988,9 @@ msgstr "評価"
 msgid "Ratings are not synced with it."
 msgstr "評価はこのサーバーと同期されません。"
 
+msgid "Ratio"
+msgstr ""
+
 msgid "Re-download"
 msgstr "もう一度ダウンロード"
 
@@ -5824,6 +6085,12 @@ msgid "Ready to review"
 msgstr "確認の準備完了"
 
 msgid "Ready to sync"
+msgstr ""
+
+msgid "Rebuild bands"
+msgstr ""
+
+msgid "Rebuilding the graphic layout starts flat and keeps the previous EQ available for restoration. Tone and stereo settings stay in place."
 msgstr ""
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
@@ -5944,6 +6211,9 @@ msgid "Remove"
 msgstr "削除"
 
 msgid "Remove a chosen genre image before adding another."
+msgstr ""
+
+msgid "Remove assignment"
 msgstr ""
 
 msgid "Remove condition"
@@ -6076,6 +6346,9 @@ msgstr "現在のキューを置き換え"
 msgid "Replace genres"
 msgstr ""
 
+msgid "Replace personal preset"
+msgstr ""
+
 msgid "Replace queue {}"
 msgstr "キュー「{}」を置き換え"
 
@@ -6123,6 +6396,9 @@ msgstr "EQをリセット"
 
 msgid "Reset counter"
 msgstr "カウンターをリセット"
+
+msgid "Reset meters"
+msgstr ""
 
 msgid "Resolution reduced from {} to {} bits"
 msgstr "解像度を{}ビットから{}ビットに縮小"
@@ -6220,6 +6496,9 @@ msgstr "リッチ"
 msgid "Rich rows"
 msgstr "リッチな行"
 
+msgid "Right"
+msgstr ""
+
 msgid "Right delay · 0–30 ms"
 msgstr "右ディレイ · 0–30 ms"
 
@@ -6277,6 +6556,9 @@ msgstr "土"
 msgid "Save"
 msgstr "保存"
 
+msgid "Save a copy of the current sound, or rename and replace a personal preset. Factory corrections remain available."
+msgstr ""
+
 msgid "Save as an image"
 msgstr "画像として保存"
 
@@ -6289,8 +6571,8 @@ msgstr "名前を付けて保存…"
 msgid "Save changes"
 msgstr "変更を保存"
 
-msgid "Save preset"
-msgstr "プリセットを保存"
+msgid "Save copy"
+msgstr ""
 
 msgid "Save profile"
 msgstr ""
@@ -6463,6 +6745,9 @@ msgstr "MusicBrainzで{genre}のアーティストを検索しています…"
 msgid "Searching for devices…"
 msgstr "デバイスを検索しています…"
 
+msgid "Searching presets…"
+msgstr ""
+
 msgid "Searching this network…"
 msgstr "このネットワークを検索しています…"
 
@@ -6527,6 +6812,9 @@ msgstr "すべて選択"
 msgid "Select an artist to see their albums"
 msgstr "アーティストを選択してアルバムを表示します"
 
+msgid "Select at most 64 presets."
+msgstr ""
+
 msgid "Select files for the disc plan."
 msgstr ""
 
@@ -6543,6 +6831,9 @@ msgid "Select folders"
 msgstr "フォルダーを選択"
 
 msgid "Select one album or prepare a consistent album proposal before looking up this group."
+msgstr ""
+
+msgid "Select preset"
 msgstr ""
 
 msgid "Select the required release identity fields together."
@@ -6779,6 +7070,9 @@ msgstr ""
 msgid "Sidecar"
 msgstr "サイドカー"
 
+msgid "Sidechain high-pass"
+msgstr ""
+
 msgid "Sign in from Account to see your purchases."
 msgstr "購入を確認するには、アカウントからログインしてください。"
 
@@ -6915,6 +7209,9 @@ msgstr "ライブラリに何が入るかはソースで決まります。絞り
 msgid "Spanish"
 msgstr "スペイン語"
 
+msgid "Speakers"
+msgstr ""
+
 msgid "Spectral Ribbon"
 msgstr "Spectral Ribbon"
 
@@ -6978,8 +7275,8 @@ msgstr "Chilpaが生成した統計"
 msgid "Status"
 msgstr "ステータス"
 
-msgid "Stereo and dynamics"
-msgstr "ステレオとダイナミクス"
+msgid "Stereo and crossfeed"
+msgstr ""
 
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "ステレオ設定は2チャンネルのPCMに適用されます。EQとリンクしたコンプレッションはすべてのチャンネルに適用されます。"
@@ -7418,6 +7715,9 @@ msgstr "ライブラリが別の処理で使用中のままでした。これ以
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
 
+msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
+msgstr ""
+
 msgid "The line being sung stays in view."
 msgstr "歌っている行が常に表示されます。"
 
@@ -7539,6 +7839,12 @@ msgid "The plugin did not answer within 15 seconds. Its account status is unknow
 msgstr "プラグインが15秒以内に応答しませんでした。アカウントの状態は不明です。"
 
 msgid "The plugin interface could not be opened."
+msgstr ""
+
+msgid "The previous EQ is no longer available."
+msgstr ""
+
+msgid "The previous EQ parameters are invalid."
 msgstr ""
 
 msgid "The previous beets lookup is still stopping."
@@ -7839,6 +8145,9 @@ msgstr "このコンピューター"
 msgid "This deletion request is no longer active."
 msgstr ""
 
+msgid "This device"
+msgstr ""
+
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "この直接出力にはハードウェア音量コントロールがありません。DACまたはアンプを使ってください。"
 
@@ -7976,6 +8285,9 @@ msgstr "配信元でプレイリストを完全に削除します。"
 
 msgid "This permanently deletes the selected personal audio preset and its saved settings."
 msgstr "選択した個人用オーディオプリセットと保存済みの設定を完全に削除します。"
+
+msgid "This permanently deletes the selected personal presets and clears their assignments."
+msgstr ""
 
 msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
 msgstr "サーバーのファイルシステムから曲を完全に削除します。Chilpaから元に戻すことはできません。"
@@ -8118,6 +8430,9 @@ msgstr "今年"
 msgid "This year vs Last year"
 msgstr "今年 vs 昨年"
 
+msgid "Threshold"
+msgstr ""
+
 msgid "Thu"
 msgstr "木"
 
@@ -8162,6 +8477,12 @@ msgstr "サイドバーの表示切り替え"
 
 msgid "Token"
 msgstr "トークン"
+
+msgid "Tone"
+msgstr ""
+
+msgid "Tone enabled"
+msgstr ""
 
 msgid "Too many device storage locations were reported."
 msgstr ""
@@ -8388,6 +8709,12 @@ msgstr "年不明"
 msgid "Unlimited"
 msgstr "無制限"
 
+msgid "Unlock filter"
+msgstr ""
+
+msgid "Unlock the filter before editing it."
+msgstr ""
+
 msgid "Unmatched"
 msgstr "未一致"
 
@@ -8412,14 +8739,23 @@ msgstr "選択を解除したプレイリストは承認後に削除されます
 msgid "Unsupported"
 msgstr "非対応"
 
+msgid "Unsupported DSP preset bundle."
+msgstr ""
+
 msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
 msgstr "サポートされていないEQディレクティブです。チャンネルのルーティングやその他のコマンドを含めずに、パラメトリックフィルターを貼り付けてください。"
 
 msgid "Unsupported EQ filter syntax or frequency unit."
 msgstr "サポートされていないEQフィルターの構文または周波数の単位です。"
 
-msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP or NO."
-msgstr "サポートされていない有効なEQフィルターです。PK、LS、HS、LP、HP、NOのいずれかを使ってください。"
+msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP, BP or NO."
+msgstr ""
+
+msgid "Unsupported external EQ channel."
+msgstr ""
+
+msgid "Unsupported external tone routing or type."
+msgstr ""
 
 msgid "Unsupported or empty DSP preset catalog."
 msgstr "サポートされていない、または空のDSPプリセットカタログです。"
@@ -8499,17 +8835,23 @@ msgstr "大文字"
 msgid "Usage"
 msgstr "使用量"
 
+msgid "Use Import to library for a preset bundle."
+msgstr ""
+
 msgid "Use MusicBrainz"
 msgstr "MusicBrainzを使用"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "名前は改行なしで1〜80文字にしてください。"
 
+msgid "Use a parametric export with two tone bands and at most 64 EQ bands."
+msgstr ""
+
 msgid "Use a token"
 msgstr "トークンを使う"
 
-msgid "Use at most 10 DSP filters."
-msgstr "DSPフィルターは最大10個までです。"
+msgid "Use at most 64 DSP filters."
+msgstr ""
 
 msgid "Use current colors"
 msgstr "現在の色を使用"
@@ -9403,6 +9745,9 @@ msgstr "plughw: 拒否されるものを変換"
 
 msgid "present"
 msgstr "現在"
+
+msgid "presets"
+msgstr ""
 
 msgid "process PCM audio with equalization and stereo controls"
 msgstr "イコライゼーションとステレオ設定でPCMオーディオを処理する"

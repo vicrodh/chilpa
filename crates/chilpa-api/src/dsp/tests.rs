@@ -1,7 +1,7 @@
 use super::*;
 
 fn state() -> Dsp {
-    Dsp { providers: vec![Provider { id: "test.dsp".into(), name: "Test".into(),
+    Dsp { providers: vec![Provider { id: "test.dsp".into(), name: "Test".into(), paged: false,
         catalog: Catalog { protocol: 1, presets: vec![Preset::default()], localizations: Default::default() } }], ..Default::default() }
 }
 #[test]
@@ -52,7 +52,7 @@ fn graphic_backups_reject_invalid_parameters_and_old_settings_still_load() {
     let mut selected = previous;
     selected.begin_graphic(Preset::default());
     assert!(selected.graphic_origin.as_ref().unwrap().valid());
-    let mut invalid = Preset::default(); invalid.preamp_db = 20.0;
+    let mut invalid = Preset::default(); invalid.preamp_db = 25.0;
     selected.edited = Some(invalid);
     selected.graphic_origin = None;
     selected.begin_graphic(Preset::default());
@@ -70,7 +70,7 @@ fn invalid_catalogs_and_duplicate_ids_are_rejected_as_a_whole() {
 #[test]
 fn a_preset_of_precise_filters_shows_its_level_on_each_graphic_band() {
     use chilpa_core::dsp::{Filter, Shape};
-    let desktop = Preset { filters: vec![Filter { shape: Shape::HighPass, frequency: 45.0, gain_db: 0.0, q: 0.707 }], ..Preset::default() };
+    let desktop = Preset { filters: vec![Filter { shape: Shape::HighPass, frequency: 45.0, gain_db: 0.0, q: 0.707, ..Default::default() }], ..Preset::default() };
     let levels = graphic::levels(&desktop, 48_000);
     assert_eq!(levels.len(), 10, "one level per band");
     assert!(levels[0] < -3.0, "a high-pass at 45 Hz reads low on the 31 Hz band: {}", levels[0]);
