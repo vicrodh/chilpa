@@ -152,7 +152,10 @@ impl Catalog {
         for (plugin, enabled) in states {
             if !enabled { inner.domains.remove(&plugin); }
             if enabled && inner.residency.unavailable_archives.remove(&plugin) { inner.residency.changed(); }
-            if inner.residency.sources.insert(plugin, enabled) != Some(enabled) { inner.residency.changed(); }
+            if inner.residency.sources.insert(plugin.clone(), enabled) != Some(enabled) {
+                inner.residency.changed();
+                inner.collection_epochs.invalidate(&plugin, false);
+            }
         }
         let cancelled: HashSet<_> = inner.queue.queued.iter().filter(|job| blocked(&inner, job)).cloned().collect();
         inner.queue.urgent.retain(|job| !cancelled.contains(job));
@@ -262,7 +265,9 @@ impl Catalog {
         inner.queue.covers.retain(|image| images.contains(image));
         inner.queue.covers_queued.retain(|image| images.contains(image));
         inner.dirty = true;
+        let retired = inner.retire_integrated_index();
         drop(inner);
+        drop(retired);
         self.changed();
         Ok(())
     }

@@ -12,6 +12,8 @@ import "../Theme"
 Item {
     id: head
     property int conditions: 0
+    // A column's header narrows the library too: "Clear all" clears it.
+    property bool searching: false
     property string mode: "all"
     // The tracks the query leaves, as the list says it: "23,216 songs · 1625 h".
     property string summary: ""
@@ -165,7 +167,7 @@ Item {
                     anchors.centerIn: parent
                     text: I18n.tr("Clear all", I18n.rev)
                     font.pointSize: Type.row
-                    color: head.conditions > 0 ? Theme.color.textSecondary : Theme.color.textTertiary
+                    color: head.conditions > 0 || head.searching ? Theme.color.textSecondary : Theme.color.textTertiary
                 }
                 MouseArea {
                     id: clearArea

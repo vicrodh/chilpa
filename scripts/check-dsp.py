@@ -8,6 +8,7 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import stat
+import sys
 import subprocess
 import tempfile
 import time
@@ -63,6 +64,7 @@ def main():
     parser.add_argument("binary", type=Path)
     parser.add_argument("package", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--flatpak", metavar="APP_ID", help="run the matching host inside an installed Flatpak sandbox")
     args = parser.parse_args()
     binary = args.binary.resolve(strict=True)
     package = args.package.resolve(strict=True)
@@ -80,6 +82,7 @@ def main():
         "started_at": datetime.now(timezone.utc).isoformat(),
         "binary": str(binary), "sha256": binary_hash, "package": str(package),
         "plugin": identity, "version": manifest["version"],
+        "backend": args.flatpak or "native", "captures_reduced_motion": True,
         "files": {name: digest(data) for name, data in sorted(files.items())},
         "runs": [], "passed": False,
     }
@@ -105,21 +108,43 @@ def main():
         environment = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"),
             XDG_CACHE_HOME=str(profile / "cache"), XDG_DATA_HOME=str(profile / "data"),
             XDG_RUNTIME_DIR=str(profile / "runtime"), QT_QPA_PLATFORM="offscreen",
-            CHILPA_RENDERER="software")
+            CHILPA_RENDERER="software", QT_QUICK_BACKEND="software")
         for key in ("CHILPA_GALLERY", "CHILPA_QML_RESOURCES", "QML_IMPORT_PATH", "QML2_IMPORT_PATH"):
             environment.pop(key, None)
         for mode in ("exercise", "restore"):
             smoke = profile / f"dsp-{mode}.qml"
             smoke.write_text(fixture.replace('"PLUGIN_ID"', json.dumps(identity))
-                .replace('"SMOKE_MODE"', json.dumps(mode)))
+                .replace('"SMOKE_MODE"', json.dumps(mode))
+                .replace('"CAPTURE_DIR"', json.dumps(str(output))))
             environment["CHILPA_QML_SMOKE"] = str(smoke)
+            launcher = [str(binary)]
+            launch_environment = environment
+            if args.flatpak:
+                keys = ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME", "XDG_RUNTIME_DIR",
+                        "QT_QPA_PLATFORM", "QT_QUICK_BACKEND", "CHILPA_RENDERER", "CHILPA_QML_SMOKE")
+                launcher = ["flatpak", "run", "--filesystem=" + str(binary.parent) + ":ro",
+                            "--filesystem=" + str(output), "--filesystem=" + str(profile),
+                            "--command=env", args.flatpak]
+                # Flatpak rewrites XDG variables after processing --env. Apply the
+                # profile inside the sandbox, before starting the actual host.
+                launcher += [key + "=" + environment[key] for key in keys]
+                launcher.append(str(binary))
+                # The launcher must find the installed user runtime; only its child
+                # receives the disposable profile through explicit --env options.
+                launch_environment = dict(environment)
+                for key in ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME", "XDG_RUNTIME_DIR"):
+                    if key in os.environ:
+                        launch_environment[key] = os.environ[key]
+                    else:
+                        launch_environment.pop(key, None)
             started = time.monotonic()
             log = output / f"dsp-{mode}.log"
             # Session services may keep inherited descriptors after Qt exits.
             with log.open("w") as stream:
                 try:
-                    result = subprocess.run(["timeout", "--kill-after=2s", "45s", "dbus-run-session", "--",
-                        str(binary)], cwd=profile, env=environment, text=True, stdout=stream,
+                    command = (["timeout", "--kill-after=2s", "45s", "dbus-run-session", "--", *launcher]
+                               if sys.platform.startswith("linux") else launcher)
+                    result = subprocess.run(command, cwd=profile, env=launch_environment, text=True, stdout=stream,
                         stderr=subprocess.STDOUT, timeout=50)
                     code = result.returncode
                 except subprocess.TimeoutExpired:
@@ -143,7 +168,7 @@ def main():
                 return 1
         report["passed"] = True
         (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
-    print("SMOKE DSP completed: native module, packaged catalog, editor actions, bypass, restart persistence")
+    print("SMOKE DSP completed: packaged catalog, editor actions, bypass, restart persistence")
     return 0
 
 

@@ -276,8 +276,8 @@ fn next(catalog: &Catalog, saved: &mut Instant) -> (Job, Arc<Mutex<Plugins>>) {
     }
 }
 
-const NATIVE_JOBS: usize = 4;
-const NATIVE_PER_PLUGIN: usize = 2;
+pub(super) const NATIVE_JOBS: usize = 4;
+pub(super) const NATIVE_PER_PLUGIN: usize = 2;
 
 fn job_plugin(inner: &Inner, job: &Job) -> Option<String> {
     match job {
@@ -509,11 +509,7 @@ pub(super) fn covers(catalog: &Arc<Catalog>) {
 
 // I persist changed card paths; a track-only receipt is transient artwork state.
 fn receive_cover(inner: &mut Inner, image: String, path: &str) -> bool {
-    let mut changed = false;
-    for card in inner.store.cards.values_mut_where(|card| card.image == image && card.art != path) {
-        card.art = path.to_string();
-        changed = true;
-    }
+    let changed = inner.store.cards.cache_art_for_image(&image, path);
     inner.dirty |= changed;
     inner.art_received.insert(image) || changed
 }
@@ -1008,3 +1004,7 @@ mod append_failure_tests {
         assert!(!catalog.lock().running.contains(&job));
     }
 }
+
+#[cfg(test)]
+#[path = "fetch/cover_receipt_tests.rs"]
+mod cover_receipt_tests;

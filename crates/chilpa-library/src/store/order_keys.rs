@@ -171,8 +171,8 @@ impl Library {
         let mut removed_ms = 0;
         let (mut ids, mut kept) = (Vec::with_capacity(snapshot.ids.len()), Vec::with_capacity(keys.len()));
         for (id, key) in snapshot.ids.into_iter().zip(keys) {
-            match catalog.tracks.get(&id) {
-                Some((album, duration)) if !chosen.contains(album) => removed_ms += duration,
+            match catalog.track(id) {
+                Some((album, duration)) if !chosen.contains(&album) => removed_ms += duration,
                 _ => { ids.push(id); kept.push(key); }
             }
         }

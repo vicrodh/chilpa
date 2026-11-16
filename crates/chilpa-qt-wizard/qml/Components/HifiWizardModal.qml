@@ -35,8 +35,8 @@ Modal {
     readonly property bool primaryEnabled: step === 0 ? welcomeConfirmed
                                          : step === 2 ? (doc.anyDacSelected === true || doc.manualValid === true)
                                          : step === 3 ? (backupDone && configDone && restartDone) : true
-    width: Math.min((parent ? parent.width : WizardFrame.widest) - WizardFrame.gutter, WizardFrame.widest)
-    height: Math.min(Math.max(WizardFrame.shortest, body.implicitHeight + WizardFrame.chrome), (parent ? parent.height : WizardFrame.shortest) * WizardFrame.tallestShare)
+    preferredWidth: Math.min((parent ? parent.width : WizardFrame.widest) - WizardFrame.gutter, WizardFrame.widest)
+    preferredHeight: body.implicitHeight + WizardFrame.chrome
 
     readonly property int openSeq: doc.openSeq || 0
     onOpenSeqChanged: {
@@ -55,7 +55,7 @@ Modal {
 
     Item {
         width: modal.width - Metrics.modalInsets
-        height: modal.height - Metrics.modalInsets
+        height: modal.preferredHeight - Metrics.modalInsets
 
         Item {
             id: header

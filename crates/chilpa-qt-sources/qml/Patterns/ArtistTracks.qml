@@ -1,24 +1,52 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 // A block of tracks on an artist's page: Popular Tracks, or Appears On
 // when the source lists it as tracks. Five rows first (or as many as the
-// section asks: ten for what the listener keeps) and "Load more" opens the rest, in the window, with nothing fetched; "View less" folds
-// them back. Popular Tracks has Play and a menu of placements for all of
+// section asks: ten for what the listener keeps). Load more reveals thirty
+// cached rows at a time, then requests a page only on an explicit click.
+// Popular Tracks has Play and a menu of placements for all of
 // them; Appears On has neither (QBZ).
 Column {
     id: block
     property var section: ({})
     property Flickable viewport: null
     property bool actions: true
-    property bool expanded: false
+    property int shownRows: first
+    readonly property bool expanded: shownRows > first
+    property bool initialized: false
+    readonly property string memoryKey: (section.model || "source") + ":" + (section.model_key || section.key || "")
+    function restore() {
+        const saved = Visit.recall("artist.trackRows", {})
+        shownRows = Math.max(first, Math.min(10000, saved[memoryKey] || first))
+    }
+    function remember() {
+        // At most 128 section counts per window, released with Visit.
+        const saved = Visit.recall("artist.trackRows", {})
+        const keys = Object.keys(saved).filter(key => key !== memoryKey).slice(-127)
+        const next = {}
+        for (const key of keys) next[key] = saved[key]
+        next[memoryKey] = shownRows
+        Visit.keep("artist.trackRows", next)
+    }
+    onMemoryKeyChanged: if (initialized) restore()
+    onShownRowsChanged: if (initialized) remember()
+    Component.onCompleted: { restore(); initialized = true }
+    function loadMore() {
+        if (shownRows < all.count) shownRows = Math.min(all.count, shownRows + 30)
+        else if (section.more) {
+            shownRows = Math.min(10000, Math.max(shownRows, all.count) + 30)
+            Sources.command("section_more", section.key || "", "")
+        } else shownRows = first
+    }
     readonly property string modelKind: section.model || "source"
     readonly property int first: section.preview || Metrics.previewRows
-    readonly property int preview: expanded ? 0 : first
+    readonly property int preview: shownRows
     readonly property bool shown: tracks.count > 0
     readonly property bool ready: tracks.ready && all.ready
     spacing: Metrics.gap12
@@ -57,11 +85,13 @@ Column {
         }
     }
     TrackList { width: parent.width; height: implicitHeight; fitContent: true; viewport: block.viewport; model: tracks; header: false; showArtist: true; showAlbum: block.section.role !== "appears" }
-    // All of them, or five again: the toggle is the page's, nothing is asked for.
+    Text { width: parent.width; visible: !!block.section.error; text: block.section.error || ""; textFormat: Text.PlainText; wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.statusNegative }
     PillButton {
-        objectName: "tracksMore"; visible: block.expanded || all.count > block.first; kind: "ghost"
-        text: block.expanded ? I18n.tr("View less", I18n.rev) : I18n.tr("Load more", I18n.rev)
-        onClicked: block.expanded = !block.expanded
+        objectName: "tracksMore"; visible: block.expanded || all.count > block.first || !!block.section.more; kind: "ghost"
+        enabled: block.section.loading !== true
+        text: block.section.loading === true ? I18n.tr("Loading…", I18n.rev)
+            : block.shownRows < all.count || block.section.more ? I18n.tr("Load more", I18n.rev) : I18n.tr("View less", I18n.rev)
+        onClicked: block.loadMore()
     }
     PlaylistPicker { id: picker; parent: block }
 }

@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 pub use generator::{theme_from_palette, theme_from_scheme};
 pub use system::{
     detect_desktop_environment, get_system_accent_color, get_system_color_scheme,
-    get_system_wallpaper, DesktopEnvironment,
+    get_system_wallpaper, scheme_from, DesktopEnvironment,
 };
 
 use crate::colors::ThemeColors;
@@ -40,12 +40,19 @@ pub enum AutoSource {
 /// back to wallpaper extraction when the desktop exposes no readable color
 /// scheme, and only errors when both fail.
 ///
-/// `wallpaper` finds the desktop's wallpaper. The facade hands in the
-/// resolver its wallpaper background already uses, which knows more
-/// desktops and platforms, falling back to [`system::get_system_wallpaper`].
-pub fn generate(source: &AutoSource, wallpaper: impl FnOnce() -> Result<String, String>) -> Result<ThemeColors, String> {
+/// `scheme` reads the desktop's full colour scheme: the facade hands in
+/// [`system::get_system_color_scheme`], or, inside a sandbox, what the
+/// Settings portal says. `wallpaper` finds the desktop's wallpaper. The
+/// facade hands in the resolver its wallpaper background already uses,
+/// which knows more desktops and platforms, falling back to
+/// [`system::get_system_wallpaper`].
+pub fn generate(
+    source: &AutoSource,
+    scheme: impl FnOnce() -> Result<SystemColorScheme, String>,
+    wallpaper: impl FnOnce() -> Result<String, String>,
+) -> Result<ThemeColors, String> {
     match source {
-        AutoSource::System => match system::get_system_color_scheme() {
+        AutoSource::System => match scheme() {
             Ok(scheme) => Ok(generator::theme_from_scheme(&scheme)),
             Err(scheme_err) => {
                 // Cascade: full color scheme -> wallpaper -> error.

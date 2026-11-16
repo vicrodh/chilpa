@@ -4,12 +4,27 @@ use crate::natives::Natives;
 use serde_json::{json, Value};
 use std::{sync::Arc, time::Duration};
 
+fn unsupported_page(value: &Value) -> bool {
+    value["layout"] == "web" || value.get("web").is_some() || value["layout"] == "article" || value.get("article").is_some()
+}
+
 fn ingest(catalog: &Catalog, plugin: &str, key: &str, value: &Value) {
     let stamp = now();
     let mut inner = catalog.lock();
+    let mut normalized = std::borrow::Cow::Borrowed(value);
+    if let Some(stored) = inner.store.shelves.get(key).filter(|stored| super::collection_page::collection(value) && value["updating"] == true && !value["revision"].is_null() && stored.document["revision"] == value["revision"]) {
+        let favorites: std::collections::HashMap<_,_> = stored.document["items"].as_array().into_iter().flatten()
+            .filter_map(|item| Some((item["ref"].as_str()?,item["favorite"].as_bool()?))).collect();
+        if value["items"].as_array().into_iter().flatten().any(|item| item["ref"].as_str().and_then(|key|favorites.get(key)).is_some_and(|favorite|item["favorite"].as_bool()!=Some(*favorite))) {
+            for item in normalized.to_mut()["items"].as_array_mut().into_iter().flatten() {
+                if let Some(favorite) = item["ref"].as_str().and_then(|key|favorites.get(key)) { item["favorite"] = (*favorite).into(); }
+            }
+        }
+    }
+    let value = normalized.as_ref();
     // I keep an identical page's metadata and rows, including richer cards
     // fetched elsewhere, and advance only its freshness and completion state.
-    let unchanged = inner.store.shelves.get(key).is_some_and(|shelf| shelf.document == *value
+    let unchanged = inner.store.shelves.get(key).is_some_and(|shelf| super::collection_page::same_document(&shelf.document, value)
         && shelf.cards.iter().all(|id| inner.store.cards.contains_key(id))
         && shelf.tracks.iter().all(|id| inner.store.tracks.contains_key(id)));
     if unchanged {
@@ -20,10 +35,11 @@ fn ingest(catalog: &Catalog, plugin: &str, key: &str, value: &Value) {
         return;
     }
     let mut shelf = Shelf { title:value["title"].as_str().unwrap_or_default().into(), document:value.clone(), read_at:stamp, epoch:1, ..Default::default() };
-    for item in value["items"].as_array().into_iter().flatten() {
+    if super::collection_page::collection(value) { super::collection_page::ingest(&mut inner.store, plugin, &mut shelf, stamp); }
+    else { for item in value["items"].as_array().into_iter().flatten() {
         if item["kind"] == "track" { shelf.tracks.extend(inner.store.take_item_track(plugin, item, None, stamp)); }
         else { shelf.cards.extend(inner.store.take_item(plugin, item, stamp)); }
-    }
+    } }
     inner.shelf_errors.remove(key);
     inner.store.shelves.insert(key.into(), shelf);
     inner.dirty = true;
@@ -50,8 +66,22 @@ pub(super) fn read(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, refe
     let _one = reading.lock().unwrap_or_else(|e| e.into_inner());
     let current = catalog.stored_shelf(&format!("{plugin} native:{reference}"));
     if current.as_ref().is_some_and(|s| s.epoch > 0 && s.read_at > 0 && now().saturating_sub(s.read_at) < 30) { return Ok(()); }
-    let refresh = current.is_some_and(|s| s.read_at == 0);
-    let answer = natives.call(plugin, "page.get", json!({"ref":parent,"refresh":refresh}), Duration::from_secs(90))?;
+    let refresh = current.as_ref().is_some_and(|s| s.read_at == 0);
+    let mut request = crate::native_page_request::decode(parent)?;
+    request.params["refresh"] = refresh.into();
+    let answer = match natives.call_raw(plugin, "page.get", request.params, Duration::from_secs(90)) {
+        Ok(answer) => answer,
+        Err(chilpa_plugin::native::NativeError::Rpc { data: Some(data), message, .. }) if data["stale_cursor"] == true => {
+            let restart = data["restart_ref"].as_str().unwrap_or_default();
+            let key = crate::native_page_request::route(plugin, restart, json!({}), "collection");
+            json!({"layout":"collection","title":current.as_ref().map(|s|s.title.as_str()).unwrap_or_default(),"items":[],"error":message,"stale_cursor":true,"restart_key":key})
+        }
+        Err(error) => return Err(error.to_string()),
+    };
+    if unsupported_page(&answer) {
+        return Err(chilpa_i18n::t("this part of the source is not there now"));
+    }
+    super::collection_page::validate(&answer)?;
     if !natives.is_native(plugin) { return Err("The plugin was disabled.".into()); }
     ingest_document(catalog, plugin, parent, &answer);
     if catalog.stored_shelf(&format!("{plugin} native:{reference}")).is_none_or(|s| s.epoch == 0 || now().saturating_sub(s.read_at) >= 30) {
@@ -60,6 +90,8 @@ pub(super) fn read(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, refe
     Ok(())
 }
 pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, answer: &Value) {
+    // Article bodies belong only to their transient view, including unsolicited replies.
+    if unsupported_page(answer) { return; }
     let key = format!("{plugin} native:{reference}");
     let mut document = answer.clone();
     let personal = document["personal"] == true;
@@ -330,16 +362,37 @@ impl crate::Chilpa {
     }
 
     pub(crate) fn native_page_view(&mut self, plugin: &str, reference: &str) -> String {
+        if crate::native_page_request::decode(reference).is_ok_and(|request| request.layout == "article") {
+            return json!({"music":true,"layout":"article","loading":false,"error":"Open this article in its reader."}).to_string();
+        }
         let key = format!("{plugin} native:{reference}");
         let shelf = self.catalog.shelf(&key).unwrap_or_default();
         let mut document = if shelf.document.is_object() { shelf.document.clone() } else { json!({"shelves":[]}) };
+        if unsupported_page(&document) {
+            return json!({"music":true,"plugin":plugin,"title":shelf.title,"shelves":[],
+                "loading":false,"error":chilpa_i18n::t("this part of the source is not there now")}).to_string();
+        }
         document["music"] = json!(true);
         document["native_page"] = json!(true);
         document["plugin"] = json!(plugin);
         document["reference"] = json!(reference);
         document["title"] = json!(shelf.title);
-        document["loading"] = json!(self.catalog.loading(&key));
-        document["error"] = json!(self.catalog.shelf_error(&key).unwrap_or_default());
+        let request = crate::native_page_request::decode(reference).ok();
+        if document["layout"].is_null() { if let Some(request) = request.as_ref().filter(|request|!request.layout.is_empty()) { document["layout"] = request.layout.clone().into(); } }
+        let managed = super::collection_page::collection(&document);
+        let loading = self.catalog.loading(&key);
+        if managed {
+            document["request_pending"] = loading.into();
+            document["loading"] = json!(document["loading"] == true || (loading && shelf.document["items"].as_array().is_none_or(Vec::is_empty)));
+            document["updating"] = json!(document["updating"] == true || loading);
+            let error = self.catalog.shelf_error(&key).unwrap_or_default();
+            if !error.is_empty() || document["error"].is_null() { document["error"] = error.into(); }
+            if let Some(next) = document["next"].as_str() { document["next_key"] = crate::native_page_request::route(plugin, next, json!({}), "collection").into(); }
+            if let Some(base) = document["query_ref"].as_str() { document["base_key"] = crate::native_page_request::route(plugin, base, json!({}), "collection").into(); }
+        } else {
+            document["loading"] = json!(loading);
+            document["error"] = json!(self.catalog.shelf_error(&key).unwrap_or_default());
+        }
         document["cards"] = json!(shelf.cards.len());
         document["tracks"] = json!(shelf.tracks.len());
         if document["shelves"].is_array() {
@@ -372,6 +425,31 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn article_documents_cannot_enter_the_persisted_shelf_store() {
+        let catalog = super::super::collection_window::ready_test_catalog();
+        let probe = super::super::collection_window::article_test_probe(&catalog);
+        let article = json!({"layout":"article","title":"Article","article":{"blocks":[{"type":"paragraph","text":"Body"}]}});
+        ingest_document(&catalog, "fixture", "article:1", &article);
+        assert!(catalog.stored_shelf("fixture native:article:1").is_none());
+        probe();
+    }
+
+    #[test]
+    fn cached_web_pages_are_unavailable_without_exposing_browser_state() {
+        let mut app = crate::Chilpa::new();
+        app.catalog.lock().loaded = true;
+        for document in [json!({"layout":"web"}), json!({"web":{"url":"https://example.test/journal"}})] {
+            app.catalog.lock().store.shelves.insert("fixture native:journal:home".into(), Shelf {
+                title:"Journal".into(), document, epoch:1, read_at:now(), ..Default::default()
+            });
+            let page: Value = serde_json::from_str(&app.native_page_view("fixture", "journal:home")).unwrap();
+            assert_eq!(page["loading"], false);
+            assert!(!page["error"].as_str().unwrap().is_empty());
+            assert!(page.get("web").is_none() && page.get("layout").is_none());
+        }
+    }
+
     #[test]
     fn a_saved_header_keeps_membership_and_favorite_separate(){
         let app=crate::Chilpa::new();
@@ -604,6 +682,23 @@ mod tests {
         catalog.lock().running.remove(&job);
         let rows = page_shelves(&catalog,"fixture","artist:7",&mut header,&changed["shelves"],false);
         assert_eq!(rows[0]["loading"], false, "completed pagination releases its loading state");
+    }
+
+    #[test]
+    fn acknowledged_favorites_survive_an_older_snapshot_until_publication() {
+        let catalog = Catalog::new();
+        let key = "fixture native:saved:all";
+        let mut document = json!({"layout":"collection","revision":"1","updating":false,"items":[{"kind":"album","ref":"album:1","title":"Record","favorite":true}]});
+        ingest(&catalog,"fixture",key,&document);
+        catalog.mark_native_favorite("fixture","album:1",false);
+        assert_eq!(catalog.stored_shelf(key).unwrap().read_at,1);
+        document["updating"] = true.into();
+        ingest(&catalog,"fixture",key,&document);
+        assert_eq!(catalog.stored_shelf(key).unwrap().document["items"][0]["favorite"],false);
+        document["revision"] = "2".into();
+        document["updating"] = false.into();
+        ingest(&catalog,"fixture",key,&document);
+        assert_eq!(catalog.stored_shelf(key).unwrap().document["items"][0]["favorite"],true);
     }
 
     #[test]

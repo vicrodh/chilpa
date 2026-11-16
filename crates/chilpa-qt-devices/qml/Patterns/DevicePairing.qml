@@ -11,6 +11,8 @@ Flickable {
     property bool mounted: false
     property bool busy: false
     property string chosenFolder: ""
+    // Set while a sandbox hides memory cards: how to reach one anyway.
+    property string removableNotice: ""
     signal createAsked(string name, string folder)
     signal dismissed()
     contentWidth: width
@@ -49,6 +51,15 @@ Flickable {
             width: parent.width
             spacing: Metrics.gap4
             Text { text: I18n.tr("Folder on the memory card", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
+            Text {
+                objectName: "deviceRemovableNotice"
+                width: parent.width
+                visible: form.removableNotice !== ""
+                text: form.removableNotice
+                wrapMode: Text.WordWrap
+                font.pointSize: Type.small
+                color: Theme.color.textSecondary
+            }
             PillButton { objectName: "deviceChooseFolder"; text: I18n.tr("Choose a folder…", I18n.rev); enabled: !form.busy; onClicked: picker.open() }
             Text {
                 width: parent.width

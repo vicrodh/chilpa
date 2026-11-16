@@ -20,7 +20,7 @@ pub(crate) fn field(name: &str) -> Option<Field> {
         "composer" => Field::Composer, "artist" => Field::Artist, "album" => Field::Album,
         "title" => Field::Title, "words" => Field::Text, "rating" => Field::Rating,
         "added" => Field::Added, "plays" => Field::Plays, "type" => Field::Type,
-        "quality" => Field::Quality, _ => return None,
+        "quality" => Field::Quality, "bits" => Field::Bits, "rate" => Field::Rate, _ => return None,
     })
 }
 
@@ -90,7 +90,7 @@ fn row(node: &Node, id: String, nested: bool) -> Option<Value> {
             let (min, max) = rating(values)?;
             out["kind"] = json!("rating"); out["min"] = json!(min); out["max"] = json!(max);
         }
-        (Field::Year | Field::Plays, Values::Range(from, to)) if !negated => {
+        (Field::Year | Field::Plays | Field::Bits | Field::Rate, Values::Range(from, to)) if !negated => {
             if from.zip(*to).is_some_and(|(a,b)| a > b) { return None; }
             out["kind"] = json!("range"); out["from"] = json!(from); out["to"] = json!(to);
         }
@@ -101,9 +101,9 @@ fn row(node: &Node, id: String, nested: bool) -> Option<Value> {
             out["kind"] = json!("added"); out["n"] = json!(n); out["unit"] = json!(unit);
         }
         (_, Values::Missing) if !negated => { out["kind"] = json!("none"); }
-        (Field::Genre | Field::ExactGenre | Field::Artist | Field::Composer | Field::Label | Field::Year | Field::Album | Field::Rating | Field::Plays | Field::Type | Field::Quality, Values::Any(values)) => {
+        (Field::Genre | Field::ExactGenre | Field::Artist | Field::Composer | Field::Label | Field::Year | Field::Album | Field::Rating | Field::Plays | Field::Type | Field::Quality | Field::Bits | Field::Rate, Values::Any(values)) => {
             out["kind"] = json!("list"); out["negated"] = json!(negated);
-            out["values"] = if *f == Field::Plays { json!(values.iter().map(|s| s.parse::<i64>()).collect::<Result<Vec<_>,_>>().ok()?) } else { json!(values) };
+            out["values"] = if matches!(*f, Field::Plays | Field::Bits | Field::Rate) { json!(values.iter().map(|s| s.parse::<i64>()).collect::<Result<Vec<_>,_>>().ok()?) } else { json!(values) };
         }
         _ => return None,
     }
@@ -126,7 +126,7 @@ pub fn refine(text: &str) -> Value {
     let (any, nodes) = parts(parsed.clone().ok().flatten());
     let rows: Option<Vec<_>> = nodes.iter().enumerate().map(|(i,n)| row(n, i.to_string(), false)).collect();
     if let (Ok(_), Some(rows)) = (&parsed, rows) {
-        json!({"mode":if any {"any"} else {"all"},"rows":rows,"complex":null})
+        json!({"mode":if any {"any"} else {"all"},"rows":crate::rating_switch::rows(rows, crate::rating_switch::on()),"complex":null})
     } else {
         let message = parsed.as_ref().err().cloned().unwrap_or_else(||
             chilpa_i18n::t(chilpa_i18n::mark("I keep this filter applied; edit its text to change it.")));

@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Components"
 
 // Removing a server, built as the app's other confirmations are
@@ -29,17 +30,18 @@ Modal {
     readonly property string phase: removal.state === "failed" ? "failed" : sent || removal.state === "removing" ? "removing" : "confirm"
     readonly property string name: facts.name || removal.name || ""
 
-    width: Metrics.confirmWidth
+    preferredWidth: Metrics.confirmWidth
     closePolicy: phase === "removing" ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
-    onAboutToShow: sent = false
+    onAboutToShow: { sent = false; confirmation.reset() }
     onClosed: if (!preview) Servers.cancel()
     // Closed after the change is taken in: closing says so to the facade,
     // which changes the state being read.
     onRemovalChanged: if (sent && removal.state === "done") Qt.callLater(close)
-    onPhaseChanged: if (phase === "failed") sent = false
+    onPhaseChanged: if (phase === "failed") { sent = false; confirmation.reset() }
 
     function remove() {
+        if (!confirmation.advance()) return
         sent = true
         if (preview) return
         Servers.remove(serverId)
@@ -52,11 +54,9 @@ Modal {
     readonly property string said: {
         const f = facts
         const parts = [I18n.trArgs("{} and {} leave your library.", [counted(I18n.trN("{} track", "{} tracks", f.tracks || 0, I18n.rev), f.tracks), counted(I18n.trN("{} album", "{} albums", f.albums || 0, I18n.rev), f.albums)], I18n.rev)]
-        const kept = []
-        if ((f.ratings || 0) > 0) kept.push(counted(I18n.trN("{} rating", "{} ratings", f.ratings || 0, I18n.rev), f.ratings))
-        if ((f.plays || 0) > 0) kept.push(counted(I18n.trN("{} play", "{} plays", f.plays || 0, I18n.rev), f.plays))
-        if (kept.length === 2) parts.push(I18n.trArgs("Your {} and {} of them are removed too.", kept, I18n.rev))
-        if (kept.length === 1) parts.push(I18n.trArgs("Your {} of them are removed too.", kept, I18n.rev))
+        // Stars go with the server too, unsaid: adding a server reads its own again.
+        if ((f.plays || 0) > 0)
+            parts.push(I18n.trArgs("Your {} of them are removed too.", [counted(I18n.trN("{} play", "{} plays", f.plays || 0, I18n.rev), f.plays)], I18n.rev))
         if ((f.playlists || 0) > 0)
             parts.push(I18n.trArgs("Its {} leave too.", [counted(I18n.trN("{} playlist", "{} playlists", f.playlists || 0, I18n.rev), f.playlists)], I18n.rev))
         if ((f.entries || 0) > 0)
@@ -179,19 +179,31 @@ Modal {
             }
         }
 
-        Row {
+        DestructiveSteps {
+            id: confirmation
+            width: parent.width
             visible: dialog.phase !== "removing"
-            anchors.right: parent.right
+        }
+        Flow {
+            id: actions
+            visible: dialog.phase !== "removing"
+            width: parent.width
             spacing: Metrics.gap8
             PillButton {
                 objectName: "serverRemoveCancel"
+                maximumWidth: actions.width
+                wrapText: true
                 text: dialog.phase === "failed" ? I18n.tr("Close", I18n.rev) : I18n.tr("Cancel", I18n.rev)
                 onClicked: dialog.close()
             }
             PillButton {
                 objectName: "serverRemoveConfirm"
+                maximumWidth: actions.width
+                wrapText: true
                 kind: "secondary"
-                text: dialog.phase === "failed" ? I18n.tr("Try again", I18n.rev) : I18n.tr("Remove", I18n.rev)
+                enabled: confirmation.ready
+                text: confirmation.step === 1 ? I18n.tr("Continue", I18n.rev)
+                    : dialog.phase === "failed" ? I18n.tr("Try again", I18n.rev) : I18n.tr("Remove", I18n.rev)
                 onClicked: dialog.remove()
             }
         }

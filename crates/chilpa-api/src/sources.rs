@@ -21,6 +21,7 @@ mod parents;
 mod view;
 mod extras;
 mod song_cover;
+mod sounding;
 #[cfg(test)]
 mod progress_tests;
 
@@ -64,7 +65,11 @@ pub struct Panel {
 /// An entry under a plugin's. `route` is the source screen's key when the
 /// catalog draws it; empty, the plugin's tree opens at `id`.
 #[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
-pub struct PanelChild { pub id: String, pub title: String, pub icon: String, pub route: String }
+pub struct PanelChild {
+    pub id: String, pub title: String, pub icon: String, pub route: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<PanelChild>,
+}
 
 /// A step of the way from the root to where the window stands.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -85,13 +90,13 @@ const NEAR_THE_END: f64 = 30.0;
 
 /// Something of a source that is sounding, with the card it was listed with.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-struct Sounding {
-    url: String,
+pub(crate) struct Sounding {
+    pub(crate) url: String,
     source: String,
-    entry: Entry,
+    pub(crate) entry: Entry,
     /// The station's own picture, once it is on disk. A song's cover goes
     /// over it and this comes back when the next song has none.
-    picture: String,
+    pub(crate) picture: String,
 }
 
 /// What a thread asking a plugin brings back.
@@ -107,8 +112,9 @@ enum Answer {
     Listing { generation: u64, cursor: Option<String>, result: Result<SourceDocument, String> },
     Stream { source: String, name: String, entry: Entry, result: Result<Stream, String> },
     /// A picture for what sounds from `url`, on disk. `song` is the title
-    /// it is the cover of, or empty when it is the station's own.
-    Picture { url: String, song: String, path: String },
+    /// it is the cover of, or empty when it is the station's own. `play` is
+    /// the play it was asked for, when one was in front of the window.
+    Picture { play: Option<u64>, url: String, song: String, path: String },
 }
 
 /// Where the window stands in a source, and what it sees there.
@@ -335,11 +341,12 @@ impl Chilpa {
                     let children = if let Some(children) = self.sources.media_kinds.get(&id).and_then(|medium| navigation::media_children(medium)) { children } else if let Some(layout) = layout {
                         // Discover is the source's own page; the rest are its sections.
                         layout.ordered().into_iter().filter(|(_, section)| section.under.is_empty()).map(|(key, section)| PanelChild { id: format!("view:{key}"), title: section.title.clone(), icon: section.icon.clone(),
-                            route: if key == "discover" { id.clone() } else { format!("{id} section:{key}") } }).collect()
+                            route: if key == "discover" { id.clone() } else { format!("{id} section:{key}") }, children: Vec::new() }).collect()
                     } else if music {
                         let root = self.catalog.shelf(&format!("{id} root")).unwrap_or_default();
-                        root.folders.iter().take(64).map(|f| PanelChild { id: f.id.clone(), title: f.title.clone(), icon: String::new(), route: format!("{id} at:{}", f.id) }).collect()
-                    } else { self.sources.roots.get(&id).into_iter().flatten().map(|entry| PanelChild { id: entry.id.clone(), title: entry.title.clone(), icon: String::new(), route: String::new() }).collect() };
+                        root.folders.iter().take(64).map(|f| PanelChild { id: f.id.clone(), title: f.title.clone(), icon: String::new(), route: format!("{id} at:{}", f.id), children: Vec::new() }).collect()
+                    } else { self.sources.roots.get(&id).into_iter().flatten().map(|entry| PanelChild { id: entry.id.clone(), title: entry.title.clone(), icon: String::new(), route: String::new(), children: Vec::new() }).collect() };
+                    let children = self.natives.navigation(&id, children);
                     let artists = music && self.natives.has_pages(&id);
                     Panel { icon_tint: crate::plugin_icons::tint(&Self::plugins_dir(), &id), id, name, icon, icon_image, music, artists, children }
                 }).collect();
@@ -1065,8 +1072,12 @@ impl Chilpa {
         }
         self.sources.kept_at = Some(Instant::now());
         let (at, total) = (self.now.seconds, self.now.total_seconds);
-        if total <= 0.0 && at <= 0.0 {
-            // It has not started: there is no place yet.
+        if at <= 0.0 {
+            // Nothing of it has sounded: there is no place to keep. A track
+            // waiting at its start already knows its length from the
+            // catalog, and writing "0, not heard" for it would wipe the
+            // place or the Heard mark it was left with, as for the last
+            // episode of a queue that ran out, restored on the next run.
             return;
         }
         let done = total > 0.0 && at >= total - NEAR_THE_END.min(total * 0.05);
@@ -1239,62 +1250,9 @@ impl Chilpa {
                         Err(e) => self.now.error = format!("{name}: {e}"),
                     }
                 }
-                Answer::Picture { url, song, path } => self.take_picture(url, song, path),
+                Answer::Picture { play, url, song, path } => self.take_picture(play, url, song, path),
             }
         }
-    }
-
-    /// Starts an entry from the address it sounds from, and goes for its
-    /// picture meanwhile.
-    fn sound(&mut self, url: String, source: String, entry: Entry) {
-        let picture = entry.image_url.clone();
-        self.sources.sounding = Some(Sounding { url: url.clone(), source, entry, picture: String::new() });
-        self.write_sounding();
-        let (device, bit_perfect) = self.chosen_output();
-        self.play_url(&url, &device, bit_perfect);
-        if let Some(address) = picture {
-            let tx = self.sources.tx.clone();
-            crate::pictures::keep_later(address, move |path| {
-                let _ = tx.send(Answer::Picture { url, song: String::new(), path });
-            });
-        }
-    }
-
-    /// Puts a picture that arrived on what is playing, if it is still that.
-    fn take_picture(&mut self, url: String, song: String, path: String) {
-        let Some(sounding) = self.sources.sounding.as_mut().filter(|s| s.url == url) else { return };
-        let stations = song.is_empty();
-        if stations {
-            sounding.picture = path.clone();
-        }
-        // A song's cover that arrives after the song is over is not shown.
-        let current = song.is_empty() && self.now.artwork_path.is_empty() || song == self.now.title;
-        if self.now.path == url && current {
-            self.now.artwork_path = path;
-        }
-        if stations {
-            self.write_sounding();
-        }
-    }
-
-    /// Where the last thing that sounded from a source is written down, so
-    /// the next run can still say what the queue's address is.
-    fn sounding_file() -> std::path::PathBuf {
-        chilpa_dirs::data().join("sounding.json")
-    }
-
-    fn write_sounding(&self) {
-        if let Some(text) = self.sources.sounding.as_ref().and_then(|s| serde_json::to_string(s).ok()) {
-            let _ = std::fs::write(Self::sounding_file(), text);
-        }
-    }
-
-    /// Reads back what the last run left sounding, once.
-    fn look_back(&mut self) {
-        if std::mem::replace(&mut self.sources.looked_back, true) || self.sources.sounding.is_some() {
-            return;
-        }
-        self.sources.sounding = std::fs::read_to_string(Self::sounding_file()).ok().and_then(|text| serde_json::from_str(&text).ok());
     }
 
     /// A station said what is on. Its own picture comes back, and the
@@ -1317,11 +1275,11 @@ impl Chilpa {
         if artist.is_empty() || song.is_empty() {
             return;
         }
-        let song = song_cover::Song { url: sounding.url.clone(), title, artist, name: song };
+        let song = song_cover::Song { play: self.plays.current().map(|play| play.id), url: sounding.url.clone(), title, artist, name: song };
         if self.sources.song_covers.is_none() {
             let (find, tx) = (self.sources.song_cover_find, self.sources.tx.clone());
             self.sources.song_covers = song_cover::start(find, move |song, path| {
-                let _ = tx.send(Answer::Picture { url: song.url.clone(), song: song.title.clone(), path });
+                let _ = tx.send(Answer::Picture { play: song.play, url: song.url.clone(), song: song.title.clone(), path });
             });
         }
         if let Some(covers) = &self.sources.song_covers {
@@ -1475,10 +1433,15 @@ impl Chilpa {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn installed_openers(&self) -> std::sync::Arc<crate::source_opener::Openers> {
+        self.sources.openers.as_ref().unwrap().clone()
+    }
+
     /// Sets the one opener the player holds: plugins here, servers there.
     pub(crate) fn install_openers(&mut self) {
         self.catalog.attach(self.plugins.clone(), self.natives.clone());
-        let openers = std::sync::Arc::new(crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone(), self.catalog.clone()));
+        let openers = std::sync::Arc::new(crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone(), self.catalog.clone(), self.unavailable.reports()));
         self.sources.openers = Some(openers.clone());
         chilpa_core::remote::install(openers);
     }

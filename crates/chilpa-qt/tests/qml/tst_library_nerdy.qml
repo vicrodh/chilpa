@@ -12,6 +12,51 @@ TestCase {
     Component { id: factory; LibraryScreen {} }
     Loader { id: page; anchors.fill: parent; active: false; sourceComponent: factory }
     function cleanup() { page.active = false; SettingsModel.libraryView = "grid"; AlbumActions.technicalOf = {} }
+    function test_column_choices_persist_per_view_and_include_technical_values() {
+        const oldNerdy = SettingsModel.kept("ui.library.nerdyColumns")
+        const oldList = SettingsModel.kept("ui.library.listColumns")
+        try {
+            SettingsModel.keep("ui.library.nerdyColumns", "")
+            SettingsModel.libraryView = "nerdy"
+            page.active = true
+            tryVerify(() => page.item !== null)
+            let gear = findChild(page.item,"listColumnsButton")
+            verify(gear.visible)
+            mouseClick(gear)
+            let chooser = findChild(gear,"albumColumns")
+            tryCompare(chooser,"opened",true)
+            waitForRendering(chooser.contentItem)
+            verify(findChild(chooser.contentItem,"column-rate") !== null)
+            verify(findChild(chooser.contentItem,"column-bits") !== null)
+            mouseClick(findChild(chooser.contentItem,"column-codec"))
+            tryVerify(() => page.item.nerdyColumns.indexOf("codec") < 0)
+            compare(SettingsModel.kept("ui.library.listColumns"),oldList)
+            chooser.close()
+            page.active = false
+            wait(0)
+            page.active = true
+            tryVerify(() => page.item !== null)
+            verify(page.item.nerdyColumns.indexOf("codec") < 0)
+            SettingsModel.libraryView = "tracks"
+            tryCompare(page.item,"nerdy",false)
+            gear = findChild(page.item,"listColumnsButton")
+            tryCompare(gear,"shown",page.item.listColumns)
+            mouseClick(gear)
+            chooser = findChild(gear,"albumColumns")
+            tryCompare(chooser,"opened",true)
+            waitForRendering(chooser.contentItem)
+            compare(chooser.options.length,0)
+            tryCompare(findChild(chooser.contentItem,"column-rate"),"checked",false)
+            mouseClick(findChild(chooser.contentItem,"column-rate"))
+            tryVerify(() => page.item.listColumns.indexOf("rate") >= 0)
+            verify(page.item.nerdyColumns.indexOf("codec") < 0)
+            chooser.close()
+        } finally {
+            page.active = false
+            SettingsModel.keep("ui.library.nerdyColumns",oldNerdy)
+            SettingsModel.keep("ui.library.listColumns",oldList)
+        }
+    }
     function test_horizontal_bar_stays_above_the_floating_player_band() {
         const previousSpace = Metrics.playerSpace
         try {

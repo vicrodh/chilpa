@@ -8,8 +8,19 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 // and `ratingStr` in the handoff's source). A row is the facade's JSON:
 // {field, kind, negated, values, from, to, min, max, n, unit} or a group.
 QtObject {
-    // The fields in the order the panel offers them.
-    readonly property var order: ["genre", "year", "artist", "composer", "label", "rating", "added", "album", "title", "plays", "type", "quality"]
+    // The fields in the order the panel offers them; no rating while
+    // ratings are off.
+    readonly property var order: ["genre", "year", "artist", "composer", "label", "rating", "added", "album", "title", "plays", "type", "quality", "bits", "rate"]
+        .filter(name => name !== "rating" || Prefs.ratings)
+
+    // The columns as the bridge keeps their header texts, and those whose
+    // text narrows the library: a rating's narrows its own column only
+    // (`chilpa-library` `browse::clause`).
+    readonly property var headerColumns: ["year", "genre", "label", "composer", "rating", "artist", "album", "bits", "rate"]
+    function columnSearches(queries) {
+        return headerColumns.map((column, at) => ({ column: column, text: String((queries || [])[at] || "").trim() }))
+            .filter(search => search.text !== "" && search.column !== "rating")
+    }
 
     function field(name) {
         switch (name) {
@@ -25,6 +36,8 @@ QtObject {
         case "plays": return I18n.tr("Plays", I18n.rev)
         case "type": return I18n.tr("Type", I18n.rev)
         case "quality": return I18n.tr("Quality", I18n.rev)
+        case "bits": return I18n.tr("Bit depth", I18n.rev)
+        case "rate": return I18n.tr("Sample rate", I18n.rev)
         default: return I18n.tr("Words", I18n.rev)
         }
     }
@@ -42,6 +55,8 @@ QtObject {
         case "plays": return Icons.playerPlay
         case "type": return Icons.disc
         case "quality": return Icons.waveSine
+        case "bits": return Icons.waveSine
+        case "rate": return Icons.waveSine
         default: return Icons.letterCase
         }
     }
@@ -85,10 +100,13 @@ QtObject {
         default: return I18n.trCount("{} year", "{} years", n, I18n.rev)
         }
     }
+    // Hertz as kilohertz, the way a sample rate is spoken: 44100 is 44.1.
+    function kilohertz(hertz) { return String(hertz / 1000) + " kHz" }
+    function bound(row, n) { return row.field === "rate" ? kilohertz(n) : String(n) }
     function range(row) {
         if (row.from && row.to)
-            return row.from === row.to ? String(row.from) : row.from + " – " + row.to
-        return row.from ? "≥ " + row.from : "≤ " + row.to
+            return row.from === row.to ? bound(row, row.from) : bound(row, row.from) + " – " + bound(row, row.to)
+        return row.from ? "≥ " + bound(row, row.from) : "≤ " + bound(row, row.to)
     }
     function stars(row) {
         if (row.min === 0 && row.max === 0) return I18n.tr("unrated", I18n.rev)

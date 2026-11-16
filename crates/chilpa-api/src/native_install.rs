@@ -130,7 +130,7 @@ mod tests {
     fn entry(id: &str) -> CatalogEntry {
         CatalogEntry { id: id.into(), name: "One".into(), version: "0.2.0".into(), description: String::new(), category: String::new(),
             author: String::new(), repository: String::new(), package: "https://example.org/one.zip".into(),
-            digest: Digest { algorithm: "sha256".into(), value: String::new() }, adapter: "native".into(), problem: String::new() }
+            digest: Digest { algorithm: "sha256".into(), value: String::new() }, adapter: "native".into(), problem: String::new(), platform_build: true }
     }
 
     fn manifest(id: &str, version: &str) -> String {

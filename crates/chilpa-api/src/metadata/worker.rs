@@ -7,6 +7,7 @@
 use super::artwork::{self, Candidate, Waiting};
 use super::draft::{HomeState, Read};
 use super::save::{self, Plan, Written};
+use super::server::{self, Outcome, Reach, ServerPlan, ServerState};
 use chilpa_library::sidecar::load;
 use chilpa_library::scan::ContainedTrack;
 use chilpa_library::EditTrack;
@@ -21,24 +22,29 @@ use std::time::Duration;
 pub(crate) enum Job {
     /// `hosted` has the homes on a server among the tracks, read from the
     /// library by whoever asked: the worker does not touch the library.
-    Open { session: u64, tracks: Vec<EditTrack>, hosted: Vec<HomeState> },
+    /// `reach` is how to ask the record's server, when it is on one.
+    Open { session: u64, tracks: Vec<EditTrack>, hosted: Vec<HomeState>, reach: Option<Reach> },
     Search { session: u64, turn: u64, provider: Provider, title: String, artist: String, catalog_number: String },
     Load { session: u64, turn: u64, provider: Provider, id: String },
+    Beets { session: u64, turn: u64, task: super::beets::Task },
     ArtworkSearch { session: u64, turn: u64, provider: Provider, title: String, artist: String, catalog_number: String },
     ArtworkFetch { session: u64, turn: u64, provider: Provider, url: String },
     ArtworkFile { session: u64, turn: u64, path: PathBuf },
     Save { session: u64, plan: Plan },
+    SaveServer { session: u64, plan: ServerPlan, reach: Reach },
 }
 
 pub(crate) enum Done {
-    Opened { session: u64, tracks: Vec<EditTrack>, reads: Vec<Read>, homes: Vec<HomeState>, layers: Layers },
+    Opened { session: u64, tracks: Vec<EditTrack>, reads: Vec<Read>, homes: Vec<HomeState>, layers: Layers, server: Option<ServerState> },
     Found { session: u64, turn: u64, account_epoch:u64, hits: Result<Vec<Hit>, Failure> },
     Loaded { session: u64, turn: u64, account_epoch:u64, release: Result<Release, Failure> },
+    Beets { session: u64, turn: u64, slot: Arc<super::beets::Slot> },
     Candidates { session: u64, turn: u64, account_epoch:u64, candidates: Result<Vec<Candidate>, Failure> },
     Cover { session: u64, turn: u64, cover: Result<Waiting, String> },
     Progress { session: u64, done: usize, total: usize },
     Saved { session: u64, written: Written },
     SaveFailed { session: u64, reason: String, written: Written },
+    ServerSaved { session: u64, outcome: Outcome },
 }
 
 impl Done {
@@ -47,11 +53,13 @@ impl Done {
             Done::Opened { session, .. }
             | Done::Found { session, .. }
             | Done::Loaded { session, .. }
+            | Done::Beets { session, .. }
             | Done::Candidates { session, .. }
             | Done::Cover { session, .. }
             | Done::Progress { session, .. }
             | Done::Saved { session, .. }
-            | Done::SaveFailed { session, .. } => *session,
+            | Done::SaveFailed { session, .. }
+            | Done::ServerSaved { session, .. } => *session,
         }
     }
 }
@@ -143,16 +151,20 @@ fn held(track: &EditTrack, inside: Option<&[ContainedTrack]>, xml: Option<&chilp
     Some(snapshot)
 }
 
-fn open(session: u64, tracks: Vec<EditTrack>, hosted: Vec<HomeState>) -> Done {
+fn open(session: u64, tracks: Vec<EditTrack>, hosted: Vec<HomeState>, reach: Option<Reach>) -> Done {
+    // What the record's server says of its tracks stands in for what their
+    // files would say.
+    let (mut from_server, server) = server::read(reach.as_ref(), &tracks);
     let mut reads = Vec::with_capacity(tracks.len());
     let mut homes: Vec<HomeState> = Vec::new();
     let mut files: Vec<PathBuf> = Vec::new();
     let mut containers: HashMap<String, (Option<Vec<ContainedTrack>>, Option<chilpa_core::sacd_xml::XmlMetadata>)> = HashMap::new();
-    for track in &tracks {
+    for (at, track) in tracks.iter().enumerate() {
         let read = match &track.container {
             // Nothing of a track on a server is on this machine: what the
-            // library keeps of it stands in for what a file would say.
-            _ if track.hosted.is_some() => Read::default(),
+            // server says of it stands in for what a file would say, and
+            // what the library keeps when the server could not be asked.
+            _ if track.hosted.is_some() => from_server[at].take().unwrap_or_default(),
             Some(container) => {
                 let (inside, xml) = containers.entry(container.clone()).or_insert_with(|| {
                     let inside = chilpa_core::sacd_tracks::disc_images().tracks(Path::new(container));
@@ -196,13 +208,13 @@ fn open(session: u64, tracks: Vec<EditTrack>, hosted: Vec<HomeState>) -> Done {
             homes.push(state);
         }
     }
-    Done::Opened { session, tracks, reads, homes, layers: inspect(&files) }
+    Done::Opened { session, tracks, reads, homes, layers: inspect(&files), server }
 }
 
 fn run(job: Job, http: &dyn Http, credential: &discogs::CredentialProvider,account_epoch:u64, finished: &Sender<Done>) {
     let discogs_session = discogs::Session::new(http,credential.as_ref(),chilpa_core::network::current().proxy && !chilpa_core::network::current().offline);
     let done = match job {
-        Job::Open { session, tracks, hosted } => open(session, tracks, hosted),
+        Job::Open { session, tracks, hosted, reach } => open(session, tracks, hosted, reach),
         Job::Search { session, turn, provider, title, artist, catalog_number } => {
             let hits = match provider {
                 Provider::MusicBrainz => musicbrainz::search(&Net::musicbrainz(http), &title, &artist, &catalog_number),
@@ -217,12 +229,14 @@ fn run(job: Job, http: &dyn Http, credential: &discogs::CredentialProvider,accou
             };
             Done::Loaded { session, turn, account_epoch, release }
         }
+        Job::Beets { session, turn, task } => Done::Beets { session, turn, slot:task.run() },
         Job::ArtworkSearch { session, turn, provider, title, artist, catalog_number } => {
             Done::Candidates { session, turn, account_epoch, candidates: artwork::find(http, session, turn, provider, &title, &artist, &catalog_number,credential) }
         }
         Job::ArtworkFetch { session, turn, provider, url } => Done::Cover { session, turn, cover: artwork::fetch(http, session, provider, &url) },
         Job::ArtworkFile { session, turn, path } => Done::Cover { session, turn, cover: artwork::from_file(session, &path) },
         Job::Save { session, plan } => save::run(session, plan, finished),
+        Job::SaveServer { session, plan, reach } => server::run(session, plan, reach),
     };
     let _ = finished.send(done);
 }

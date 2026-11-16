@@ -231,7 +231,7 @@ impl chilpa_core::playback_events::Observer for Reports {
 struct Opener(String, std::path::PathBuf, Arc<Reports>);
 impl chilpa_core::remote::RemoteOpener for Opener {
     fn locate(&self, _: &chilpa_models::RemoteEntry) -> std::result::Result<chilpa_core::remote::Located, String> {
-        Ok(chilpa_core::remote::Located { normalization: None, playback: Some(self.2.clone()), request: chilpa_core::RangedRequest { url: self.0.clone(), headers: vec![("Authorization".into(), "Bearer fixture-only".into())] }, extension: Some("wav".into()), server: "Fixture".into() })
+        Ok(chilpa_core::remote::Located { normalization: None, playback: Some(self.2.clone()), media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url: self.0.clone(), headers: vec![("Authorization".into(), "Bearer fixture-only".into())] }), extension: Some("wav".into()), server: "Fixture".into() })
     }
     fn describe(&self, _: &chilpa_models::RemoteEntry) -> chilpa_core::remote::Described {
         chilpa_core::remote::Described { tags: chilpa_tags::Tags { title: Some("Remote fixture".into()), artists: vec!["Fixture artist".into()], album: Some("Fixture album".into()), ..Default::default() }, artwork: Some(self.1.clone()), duration: Duration::from_secs(30) }

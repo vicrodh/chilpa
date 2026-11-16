@@ -39,7 +39,8 @@ Column {
     spacing: Metrics.gap12
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
     readonly property var loadState: active && trackSection && modelKind === "source" && modelKey ? JSON.parse(Sources.page(modelKey, trackRevision) || "{}") : section
-    readonly property bool ready: trackSection ? tracks.ready && (shown || loadState.loading !== true) : cards.ready
+    readonly property bool gridReady: !wrap || oneRow || cards.albums === 0 || grid.implicitHeight >= CardLayout.gridHeight(cards.albums, grid.width, grid.list)
+    readonly property bool ready: trackSection ? tracks.ready && (shown || loadState.loading !== true) : cards.ready && gridReady
     // A page of the rail: the cards that fit across, as QBZ's rails step.
     readonly property int viewportColumns: CardLayout.columns(rail.width)
     readonly property real viewportCardWidth: CardLayout.cardWidth

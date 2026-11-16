@@ -3,6 +3,9 @@
 use crate::{Album, Chilpa};
 use chilpa_i18n as i18n;
 
+mod writes;
+pub(crate) use writes::{Change, Writes};
+
 /// How a month is named in a record's release date.
 const MONTH_NAMES: [&str; 12] = [
     i18n::mark("January"), i18n::mark("February"), i18n::mark("March"), i18n::mark("April"),
@@ -173,16 +176,14 @@ impl Chilpa {
     }
 
     pub fn group_artist_versions(&mut self) -> bool {
+        if let Some(on) = self.grouping.latest(|c| if let Change::ArtistVersions(on) = c { Some(on) } else { None }) { return on; }
         self.library().is_none_or(|lib| lib.group_artist_versions())
     }
 
+    /// Kept away from the window (`writes`); true when asked.
     pub fn set_group_artist_versions(&mut self, on: bool) -> bool {
         self.invalidate_artist_collections();
-        match self.library().map(|lib| lib.set_group_artist_versions(on)) {
-            Some(Ok(())) => true,
-            Some(Err(error)) => { self.now.error = error.to_string(); false }
-            None => false,
-        }
+        self.keep_grouping(Change::ArtistVersions(on))
     }
 
     /// I apply the artist page's preference without changing other grids.
@@ -192,37 +193,31 @@ impl Chilpa {
     }
 
     pub fn group_album_versions(&mut self) -> bool {
+        if let Some(on) = self.grouping.latest(|c| if let Change::Versions(on) = c { Some(on) } else { None }) { return on; }
         self.library().is_none_or(|lib| lib.group_album_versions())
     }
 
+    /// Kept away from the window (`writes`); true when asked.
     pub fn set_group_album_versions(&mut self, on: bool) -> bool {
-        match self.library().map(|lib| lib.set_group_album_versions(on)) {
-            Some(Ok(())) => true,
-            Some(Err(error)) => { self.now.error = error.to_string(); false }
-            None => false,
-        }
+        self.keep_grouping(Change::Versions(on))
     }
 
     /// Whether a library record is kept apart from the other editions of its
     /// name: `Some(true)` apart, `Some(false)` grouped with another, `None`
     /// when it has none to be grouped with or versions are not grouped.
     pub fn album_apart(&mut self, album: i64) -> Option<bool> {
-        let lib = self.library().filter(|_| album > 0)?;
-        if !lib.group_album_versions() { return None; }
-        lib.album_apart(album).ok().flatten()
+        if !self.group_album_versions() || album <= 0 { return None; }
+        if let Some(apart) = self.grouping.latest(|c| match c { Change::Apart(id, apart) if id == album => Some(apart), _ => None }) {
+            return Some(apart);
+        }
+        self.library()?.album_apart(album).ok().flatten()
     }
 
     /// Keeps a library record apart from the other editions of its name, or
-    /// groups it with them again. True when something changed.
+    /// groups it with them again, away from the window (`writes`). True
+    /// when asked.
     pub fn set_album_apart(&mut self, album: i64, apart: bool) -> bool {
-        if album <= 0 {
-            return false;
-        }
-        match self.library().map(|lib| lib.set_album_apart(album, apart)) {
-            Some(Ok(changed)) => changed,
-            Some(Err(error)) => { self.now.error = error.to_string(); false }
-            None => false,
-        }
+        album > 0 && self.keep_grouping(Change::Apart(album, apart))
     }
 
     pub fn selected_album_version(&mut self, id: i64) -> i64 {
@@ -298,7 +293,6 @@ pub(crate) fn version_labels(versions: Vec<chilpa_library::store::versions::Albu
 pub(crate) fn heading(detail: &crate::AlbumDetail, length: &str, released: Option<String>, kind: String, info: String) -> AlbumHeading {
     let songs = i18n::tf("{} song", "{} songs", detail.album.track_count as i64, &[&detail.album.track_count.to_string()]);
     let mut meta = Vec::new();
-    if !detail.genre.is_empty() { meta.push(detail.genre.clone()); }
     if !detail.label.is_empty() { meta.push(detail.label.clone()); }
     meta.extend([songs.clone(), length.to_owned()]);
     let quality = detail.quality.long();

@@ -7,7 +7,7 @@ impl Biquad {
     pub(super) fn new(f: &Filter, rate: u32) -> Self {
         // A band above Nyquist cannot be represented. I leave it out rather
         // than move a treble boost into the audible range of a low-rate file.
-        if f.frequency >= f64::from(rate) * 0.49 { return Self::identity(); }
+        if !f.enabled || f.frequency >= f64::from(rate) * 0.49 { return Self::identity(); }
         let w = 2.0 * std::f64::consts::PI * f.frequency / f64::from(rate);
         let (s, c) = w.sin_cos();
         let alpha = s / (2.0 * f.q);
@@ -18,6 +18,7 @@ impl Biquad {
             Shape::LowPass => ([(1.0-c)/2.0, 1.0-c, (1.0-c)/2.0], [1.0+alpha, -2.0*c, 1.0-alpha]),
             Shape::HighPass => ([(1.0+c)/2.0, -1.0-c, (1.0+c)/2.0], [1.0+alpha, -2.0*c, 1.0-alpha]),
             Shape::Notch => ([1.0, -2.0*c, 1.0], [1.0+alpha, -2.0*c, 1.0-alpha]),
+            Shape::BandPass => ([alpha, 0.0, -alpha], [1.0+alpha, -2.0*c, 1.0-alpha]),
             Shape::LowShelf => ([a*((a+1.0)-(a-1.0)*c+root), 2.0*a*((a-1.0)-(a+1.0)*c), a*((a+1.0)-(a-1.0)*c-root)],
                 [(a+1.0)+(a-1.0)*c+root, -2.0*((a-1.0)+(a+1.0)*c), (a+1.0)+(a-1.0)*c-root]),
             Shape::HighShelf => ([a*((a+1.0)+(a-1.0)*c+root), -2.0*a*((a-1.0)+(a+1.0)*c), a*((a+1.0)+(a-1.0)*c-root)],
@@ -25,7 +26,7 @@ impl Biquad {
         };
         Self { b: b.map(|v| v/d[0]), a: [d[1]/d[0], d[2]/d[0]], z: [0.0; 2] }
     }
-    fn identity() -> Self { Self { b: [1.0, 0.0, 0.0], a: [0.0; 2], z: [0.0; 2] } }
+    pub(super) fn identity() -> Self { Self { b: [1.0, 0.0, 0.0], a: [0.0; 2], z: [0.0; 2] } }
     pub(super) fn magnitude_db(&self, frequency: f64, rate: u32) -> f64 {
         let w = 2.0 * std::f64::consts::PI * frequency / f64::from(rate);
         let (s, c) = w.sin_cos();
@@ -33,6 +34,9 @@ impl Biquad {
         let numerator = (self.b[0]+self.b[1]*c+self.b[2]*c2).powi(2) + (self.b[1]*s+self.b[2]*s2).powi(2);
         let denominator = (1.0+self.a[0]*c+self.a[1]*c2).powi(2) + (self.a[0]*s+self.a[1]*s2).powi(2);
         10.0 * (numerator.max(1e-30)/denominator.max(1e-30)).log10()
+    }
+    pub(super) fn inherit(&mut self, old: &Self) {
+        if self.b == old.b && self.a == old.a { self.z = old.z; }
     }
     pub(super) fn tick(&mut self, x: f64) -> f64 {
         let y = self.b[0]*x + self.z[0];

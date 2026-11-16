@@ -11,11 +11,31 @@ TestCase {
     QtObject {
         id: backend
         property var calls: []
+        property bool unchanged: false
         property var state: ({catalog: [{id: "entry", name: "Guest", light: "yellow", repository_id: "repo"}], installed: [], repositories: [], busy: false})
-        function pluginsJson() { return JSON.stringify(state) }
+        function pluginsJson() { return unchanged ? "" : JSON.stringify(state) }
         function pluginCommand(action, input) { calls = calls.concat([[action, JSON.parse(input)]]) }
     }
     PluginManager { id: manager; width: 600; height: 600; page: backend }
+    function test_an_unchanged_snapshot_keeps_the_open_settings_and_models() {
+        const plugin={id:"stable",name:"Stable",native:true,settings:true,enabled:true}
+        backend.state={installed:[plugin],catalog:[],busy:false}
+        manager.read();manager.settings(plugin)
+        tryCompare(manager.detailsView,"opened",true)
+        const view=manager.view, installed=manager.installedRows, catalog=manager.catalogRows
+        backend.unchanged=true
+        try {
+            for(let index=0;index<20;index++) manager.read()
+            verify(manager.view===view)
+            verify(manager.installedRows===installed)
+            verify(manager.catalogRows===catalog)
+            compare(manager.selected,plugin.id)
+            verify(manager.detailsView.opened)
+        } finally {
+            backend.unchanged=false
+            manager.detailsView.close()
+        }
+    }
     function test_missing_genres_switch_defaults_off_and_uses_the_integration_command() {
         let plugin = {id: "fixture", name: "Source", native: true, enabled: true, integration_available: true, library_kinds: ["albums"]}
         backend.state = {installed: [plugin], busy: false}
@@ -151,8 +171,14 @@ TestCase {
         remove.clicked()
         const confirmation = findChild(manager.detailsView, "confirmPluginRemoval")
         verify(confirmation.opened)
-        confirmation.confirmed()
-        confirmation.close()
+        const calls = backend.calls.length
+        const accept = findChild(confirmation,"confirmationAccept")
+        accept.clicked()
+        compare(backend.calls.length,calls)
+        verify(!accept.enabled)
+        findChild(confirmation,"destructiveAcknowledgement").toggle()
+        verify(accept.enabled)
+        accept.clicked()
         compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest", lyrics: false}])
         compare(manager.selected, "")
     }
@@ -166,8 +192,14 @@ TestCase {
         verify(option.visible, "the lyrics question is asked")
         verify(!option.checked, "keeping the lyrics is the default")
         option.toggle()
-        confirmation.confirmed()
-        confirmation.close()
+        const calls = backend.calls.length
+        const accept = findChild(confirmation,"confirmationAccept")
+        accept.clicked()
+        compare(backend.calls.length,calls)
+        verify(!accept.enabled)
+        findChild(confirmation,"destructiveAcknowledgement").toggle()
+        verify(accept.enabled)
+        accept.clicked()
         compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest", lyrics: true}])
     }
     function test_permissions_require_explicit_acceptance() {
@@ -194,11 +226,16 @@ TestCase {
         button.clicked()
         compare(manager.selected, "native")
         compare(backend.calls[0], ["settings", {id: "native"}])
-        backend.state = {busy: false, installed: [plugin], settings_id: "native", form: {revision: 7, values: {}, form: {fields: [], actions: []}}}
+        backend.state = {busy: false, installed: [plugin], settings_id: "native", form: {revision: 7, values: {}, form: {
+            fields: [{key:"app_id",label:"App ID",control:{type:"text"}}],
+            actions: [{key:"sign_in",label:"Sign in",fields:["app_id"]}]}}}
         manager.read()
         const form = findChild(manager.detailsView, "pluginSettingsForm")
         verify(form.visible && form.enabled)
-        form.submitted("sign_in", {app_id: "fixture"})
+        form.values = {app_id:"fixture"}
+        const submit = findChild(form,"pluginAction_sign_in")
+        verify(submit.visible && submit.enabled)
+        submit.clicked()
         compare(backend.calls[backend.calls.length - 1], ["submit", {id: "native", submission: {revision: 7, action: "sign_in", values: {app_id: "fixture"}}}])
         manager.detailsView.close()
     }
@@ -368,6 +405,69 @@ TestCase {
         findChild(dialog.contentItem, "installOlderVersion").clicked()
         compare(backend.calls[backend.calls.length - 1], ["install_native", {repository: "native", id: "app.example.one"}])
     }
+    // Where the compatibility worker cannot run, its section says why.
+    function test_the_compatible_section_says_why_its_plugins_cannot_run() {
+        const reason = "Compatible plugins need /app/bin/perl, which is not installed."
+        backend.state = {busy: false, repositories: [], installed: [], catalog: [], compatibility: {available: false, reason: reason}}
+        manager.section = "compatible"
+        manager.read()
+        const note = findChild(manager, "compatibilityUnavailable")
+        verify(note !== null)
+        tryVerify(() => note.visible)
+        compare(note.text, reason)
+        backend.state = {busy: false, repositories: [], installed: [], catalog: [], compatibility: {available: true, reason: ""}}
+        manager.read()
+        tryVerify(() => !note.visible)
+        manager.section = "native"
+    }
+
+    // Where process plugins cannot run, their offers stay listed with the
+    // reason and nothing sends install_native for them.
+    function test_process_plugins_that_cannot_run_here_are_shown_but_never_installed() {
+        const reason = "Process plugins cannot run in the Flatpak version of Chilpa yet."
+        backend.calls = []
+        backend.state = {busy: false, repositories: [], process_plugins: {available: false, reason: reason},
+            installed: [{id: "app.test.process", name: "Process", version: "1.0.0", state: "unavailable", enabled: false, light: "native", unavailable: reason}],
+            native_catalog: [
+                {id: "app.test.offer", name: "Offer", version: "1.0.0", description: "Fixture", repository_id: "native", unavailable: reason,
+                 older: [{id: "app.test.offer", name: "Offer", version: "0.9.0", repository_id: "native", unavailable: reason}]},
+                {id: "app.test.portable", name: "Portable", version: "1.0.0", description: "", repository_id: "native"}]}
+        manager.section = "native"
+        manager.read()
+        const tab = findChild(manager, "nativePluginsTab")
+        const note = findChild(tab, "processPluginsUnavailable")
+        verify(note.visible)
+        compare(note.text, reason)
+        const rows = []
+        const collect = (item) => { for (const child of item.children) { if (child.objectName === "nativeCatalogRow") rows.push(child); collect(child) } }
+        tryVerify(() => { rows.length = 0; collect(tab.contentItem); return rows.length === 2 })
+        const offer = rows.find(item => item.modelData.id === "app.test.offer")
+        const portable = rows.find(item => item.modelData.id === "app.test.portable")
+        verify(offer !== undefined, "an offer that cannot run here is listed, not hidden")
+        const action = findChild(offer, "nativeOfferAction")
+        verify(!action.enabled)
+        action.clicked()
+        findChild(offer, "olderVersionsButton").clicked()
+        const dialog = findChild(tab, "pluginOlderVersions")
+        tryCompare(dialog, "opened", true)
+        const older = findChild(dialog.contentItem, "installOlderVersion")
+        verify(!older.enabled)
+        older.clicked()
+        tryCompare(dialog, "opened", false)
+        compare(backend.calls.filter(call => call[0] === "install_native").length, 0)
+        findChild(portable, "nativeOfferAction").clicked()
+        compare(backend.calls[backend.calls.length - 1], ["install_native", {repository: "native", id: "app.test.portable"}], "a portable plugin still installs")
+        const installed = findChild(tab, "installedNativePlugins")
+        tryCompare(installed, "count", 1)
+        verify(findChild(installed.itemAt(0), "pluginUnavailable").visible)
+        const toggle = findChild(installed.itemAt(0), "pluginEnabledToggle")
+        verify(!toggle.enabled)
+        toggle.toggled(true)
+        verify(!backend.calls.some(call => call[0] === "review_permissions"), "its permissions are not put to the user")
+        backend.state = {busy: false, installed: [], native_catalog: [], process_plugins: {available: true, reason: ""}}
+        manager.read()
+        verify(!note.visible)
+    }
     function test_catalog_command_keeps_repository_identity() {
         manager.command("prepare", {repository: "repo", id: "entry"})
         compare(backend.calls[backend.calls.length - 1], ["prepare", {repository: "repo", id: "entry"}])
@@ -461,7 +561,7 @@ TestCase {
     }
 
     function test_toggle_retains_its_intrinsic_width_inside_a_full_width_form() {
-        backend.state = {busy: false, form: {revision: 3, values: {enabled: true}, form: {
+        backend.state = {busy: false, settings_id:"guest", form: {revision: 3, values: {enabled: true}, form: {
             fields: [{key: "enabled", label: "Enabled", control: {type: "toggle"}}], actions: []}}}
         manager.read()
         manager.settings({id: "guest", name: "Guest"})
@@ -475,7 +575,7 @@ TestCase {
     }
 
     function test_select_displays_the_option_label_and_submits_its_value() {
-        backend.state = {busy: false, form: {revision: 2, values: {choice: "0"}, form: {
+        backend.state = {busy: false, settings_id:"guest", form: {revision: 2, values: {choice: "0"}, form: {
             fields: [{key: "choice", label: "Choice", control: {type: "select", choices: [{label: "Yes", value: "1"}, {label: "No", value: "0"}]}}], actions: []}}}
         manager.read()
         manager.settings({id: "guest", name: "Guest"})

@@ -47,7 +47,9 @@ pub(crate) const APART: &str = "apart:";
 pub struct VersionCatalog {
     pub versions: HashMap<i64, AlbumVersion>,
     pub artists: HashMap<i64, Vec<(String, usize)>>,
-    pub(crate) tracks: HashMap<i64, (i64, u64)>,
+    // Sorted by track id, with exactly one slot per eligible track. The
+    // immutable catalog owns this allocation until its last reader drops it.
+    tracks: Box<[(i64, i64, u64)]>,
     groups: HashMap<String, Vec<i64>>,
     /// Every edition under the group its name gives, kept apart or not: a
     /// link asks for a record by name.
@@ -118,6 +120,12 @@ impl AlbumVersion {
 }
 
 impl VersionCatalog {
+    pub(crate) fn track(&self, id: i64) -> Option<(i64, u64)> {
+        let at = self.tracks.binary_search_by_key(&id, |track| track.0).ok()?;
+        let (_, album, duration) = self.tracks[at];
+        Some((album, duration))
+    }
+
     pub fn choices(&self, id: i64) -> Vec<AlbumVersion> {
         self.versions.get(&id).and_then(|v| self.groups.get(&v.group))
             .into_iter().flatten().filter_map(|id| self.versions.get(id).cloned()).collect()
@@ -185,8 +193,8 @@ impl Library {
         snapshot.album_ids = catalog.collapse(&snapshot.album_ids);
         let chosen: HashSet<i64> = snapshot.album_ids.iter().copied().collect();
         let mut removed_ms = 0;
-        snapshot.ids.retain(|id| match catalog.tracks.get(id) {
-            Some((album, duration)) if !chosen.contains(album) => { removed_ms += duration; false }
+        snapshot.ids.retain(|id| match catalog.track(*id) {
+            Some((album, duration)) if !chosen.contains(&album) => { removed_ms += duration; false }
             _ => true,
         });
         snapshot.totals.albums = chosen.len();
@@ -274,7 +282,8 @@ impl Library {
             return Ok(Arc::clone(&cache.catalog));
         }
         let mut catalog = VersionCatalog::default();
-        let apart: HashSet<i64> = self.db.prepare(&format!("SELECT album_id FROM album_preferences WHERE group_key LIKE '{APART}%'"))?
+        let mut tracks: Vec<(i64, i64, u64)> = Vec::new();
+        let apart: HashSet<i64> = self.db.prepare(&format!("SELECT album_id FROM album_preferences WHERE group_key LIKE '{APART}%' UNION SELECT id FROM albums WHERE version_key LIKE 'local:%'"))?
             .query_map([], |r| r.get(0))?.collect::<rusqlite::Result<_>>()?;
         let mut stmt = self.db.prepare("SELECT a.id, a.title, a.album_artist, a.folder,
             s.provider || ':' || s.instance, t.external_id, t.bit_depth, t.sample_rate_hz, t.id, t.duration_ms,
@@ -284,12 +293,10 @@ impl Library {
         let mut rows = stmt.query([])?;
         while let Some(row) = rows.next()? {
             let id = row.get(0)?;
-            catalog.tracks.insert(row.get(8)?, (id, row.get::<_, i64>(9)?.max(0) as u64));
-            let title: String = row.get(1)?;
+            tracks.push((row.get(8)?, id, row.get::<_, i64>(9)?.max(0) as u64));
             let path: String = row.get(5)?;
             let bits: Option<u8> = row.get(6)?;
             let rate: Option<u32> = row.get(7)?;
-            let location: String = row.get(3)?;
             // A server's track has an id, not a file name: its codec says
             // what the extension would have.
             let ext = Path::new(&path).extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
@@ -299,15 +306,22 @@ impl Library {
             let lossy = matches!(ext.as_str(), "mp3" | "ogg" | "oga" | "opus" | "aac" | "vorbis" | "wma") || (matches!(ext.as_str(), "m4a" | "mp4") && bits.is_none());
             let tier = if dsd { 4 } else if lossy { 1 } else if bits.is_some_and(|b| b >= 24) || rate.is_some_and(|r| r > 48_000) { 3 } else if bits.is_some() { 2 } else { 0 };
             let quality = (tier, if lossy || dsd { 0 } else { bits.unwrap_or(0) }, rate.unwrap_or(0));
-            let edition = format!("{title} {location}").to_lowercase();
-            let enhanced = ["remaster", "deluxe", "expanded", "anniversary", "reissue"].iter().any(|word| edition.contains(word));
-            let v = catalog.versions.entry(id).or_insert_with(|| AlbumVersion {
-                id, group: album_group(&title, &row.get::<_, String>(2).unwrap_or_default()),
-                rank: (quality.0, quality.1, quality.2, 0, enhanced),
-                title, artist: row.get(2).unwrap_or_default(), location, source: row.get(4).unwrap_or_default(),
-                source_label: row.get(10).unwrap_or_default(), source_icon: row.get(11).unwrap_or_default(), local: row.get(12).unwrap_or(false),
-                path: path.clone(), bits, rate, codec: ext.clone(), tracks: 0, reachable: false, explicit: Some(false),
-            });
+            let v = match catalog.versions.entry(id) {
+                std::collections::hash_map::Entry::Occupied(entry) => entry.into_mut(),
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    let title: String = row.get(1)?;
+                    let location: String = row.get(3)?;
+                    let edition = format!("{title} {location}").to_lowercase();
+                    let enhanced = ["remaster", "deluxe", "expanded", "anniversary", "reissue"].iter().any(|word| edition.contains(word));
+                    entry.insert(AlbumVersion {
+                        id, group: album_group(&title, &row.get::<_, String>(2).unwrap_or_default()),
+                        rank: (quality.0, quality.1, quality.2, 0, enhanced),
+                        title, artist: row.get(2).unwrap_or_default(), location, source: row.get(4).unwrap_or_default(),
+                        source_label: row.get(10).unwrap_or_default(), source_icon: row.get(11).unwrap_or_default(), local: row.get(12).unwrap_or(false),
+                        path: path.clone(), bits, rate, codec: ext.clone(), tracks: 0, reachable: false, explicit: Some(false),
+                    })
+                }
+            };
             let advisory: Option<bool> = row.get(16)?;
             v.explicit = match (v.explicit, advisory) {
                 (Some(true), _) | (_, Some(true)) => Some(true),
@@ -322,6 +336,8 @@ impl Library {
             }
             v.rank.3 = v.tracks;
         }
+        tracks.sort_unstable_by_key(|track| track.0);
+        catalog.tracks = tracks.into_boxed_slice();
         for version in catalog.versions.values_mut() {
             catalog.named.entry(version.group.clone()).or_default().push(version.id);
             if apart.contains(&version.id) { version.group = format!("{APART}{}", version.id); }

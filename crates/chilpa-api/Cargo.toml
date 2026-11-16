@@ -30,34 +30,35 @@ chilpa-appkit.workspace = true
 # Approvals are kept as JSON, readable by hand on purpose.
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
+# The bounded native-collection cache shares chilpa-library's SQLite build.
+rusqlite = "0.40"
 semver = "1"
 base64 = "0.22"
 # A cover is decoded once and kept at the size it is drawn (frontend
 # ADR-0014, rule 5). JPEG and PNG are what covers come as; nothing else is
 # built in.
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "bmp"] }
+turbojpeg = { version = "1.5.1", default-features = false, features = ["cmake"] }
 # A new server's instance id, which nobody can guess.
 rand = "0.10"
 tempfile = "3"
 sha1 = "0.10"
 sha2 = "0.10"
 url = "2"
-# What plays, as the listener's Discord status: the crate and version QBZ uses.
-discord-rich-presence = "1.1.0"
+# The one request with a binary body: the Discord presence's cover upload.
+# The same build of ureq chilpa-stream uses, so nothing new is compiled.
+ureq = { version = "3", default-features = false, features = ["rustls", "platform-verifier"] }
 roxmltree = "0.21"
 zip = { version = "8.6", default-features = false, features = ["deflate"] }
 tar = "0.4"
 flate2 = "1"
 
 [dev-dependencies]
+chilpa-audio.workspace = true
 # The test plugins are written in wasm text, so no separate toolchain is
 # needed.
 wat = "1"
-# For putting an ISRC on a scanned track, which is what lets the search
-# match what is local with what a source gives. It is the same rusqlite
-# chilpa-library already uses.
 chilpa-library.workspace = true
-rusqlite = "0.40"
 tiny_http = "0.12"
 native-tls = "0.2"
 
@@ -70,5 +71,7 @@ async-channel = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 [target.'cfg(target_os = "macos")'.dependencies]
+# The sign-in window's process group (src/web_sign_in.rs).
+libc = "0.2"
 chilpa-bwrap.workspace = true
 [target.'cfg(target_os = "android")'.dependencies]

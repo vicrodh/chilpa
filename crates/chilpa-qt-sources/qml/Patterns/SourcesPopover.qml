@@ -18,10 +18,14 @@ Popup {
     // screen has none; a toggle asks the screen to turn one on or off.
     property var panes: null
     signal paneToggled(string column)
+    signal panesReordered(var columns)
     // The Tracks screen's stars to keep, or null where a screen has none.
     property var ratings: null
     signal ratingsChosen(var ratings)
-    readonly property bool starred: ratings !== null && ratings.length > 0
+    readonly property bool starred: Prefs.ratings && ratings !== null && ratings.length > 0
+    // The Library's columns whose header holds text: Reset clears it too.
+    readonly property var searched: panes === null ? [] : ["year", "genre", "label", "composer", "rating", "artist", "album", "bits", "rate"]
+        .filter((column, at) => String((Library.queries || [])[at] || "").trim() !== "")
     readonly property real half: sourcesOnly ? popover.availableWidth : (popover.availableWidth - Metrics.gap16) / 2 // derived: two columns and the gap between
 
     // A click outside closes it and is nothing else: it is not also a click
@@ -36,14 +40,14 @@ Popup {
 
     background: Item {
         Hold {}
-        RectangularShadow {
+        Shadow {
             anchors.fill: panel
             radius: panel.radius
             offset.y: Metrics.shadowElevatedY
             blur: Metrics.shadowElevatedBlur
             color: Theme.color.shadowElevated
         }
-        RectangularShadow {
+        Shadow {
             anchors.fill: panel
             radius: panel.radius
             offset.y: Metrics.shadowKeyY
@@ -128,6 +132,7 @@ Popup {
                     width: parent.width
                     selected: popover.panes
                     onToggled: column => popover.paneToggled(column)
+                    onReordered: columns => popover.panesReordered(columns)
                 }
                 Text {
                     text: I18n.tr("Quality", I18n.rev)
@@ -186,7 +191,7 @@ Popup {
                 }
 
                 TrackStarsFilter {
-                    visible: popover.ratings !== null
+                    visible: popover.ratings !== null && Prefs.ratings
                     width: parent.width
                     ratings: popover.ratings || []
                     onChosen: (next) => popover.ratingsChosen(next)
@@ -201,9 +206,13 @@ Popup {
             PillButton {
                 objectName: "ratingsReset"
                 visible: !popover.sourcesOnly
-                enabled: Library.extraFiltered || popover.starred
+                enabled: Library.extraFiltered || popover.starred || popover.searched.length > 0
                 text: I18n.tr("Reset", I18n.rev)
-                onClicked: { Library.resetExtra(); if (popover.starred) popover.ratingsChosen([]) }
+                onClicked: {
+                    Library.resetExtra()
+                    for (const column of popover.searched) Library.searchColumn(column, "")
+                    if (popover.starred) popover.ratingsChosen([])
+                }
             }
             PillButton {
                 kind: "primary"

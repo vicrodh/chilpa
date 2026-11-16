@@ -44,4 +44,22 @@ TestCase {
         compare(findChild(flyout.contentItem, "translateRow").checked, true, "what Settings turned on shows on")
         flyout.close()
     }
+
+    function test_pronunciation_is_opt_in_and_mirrors_the_settings_preference() {
+        fake.preferences = ({})
+        flyout.open()
+        tryCompare(flyout, "opened", true)
+        const row = findChild(flyout.contentItem, "pronunciationRow")
+        verify(row !== null)
+        compare(row.checked, false, "no generation or display until enabled")
+        row.toggled(true)
+        compare(fake.kept("integrations.lyrics.romanize"), "true")
+        compare(row.checked, true)
+        flyout.close()
+        fake.preferences = ({ "integrations.lyrics.romanize": "false" })
+        flyout.open()
+        tryCompare(flyout, "opened", true)
+        compare(row.checked, false, "a change in Settings reaches the mirror")
+        flyout.close()
+    }
 }

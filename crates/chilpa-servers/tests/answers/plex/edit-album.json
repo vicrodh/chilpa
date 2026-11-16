@@ -1,0 +1,41 @@
+{
+ "MediaContainer": {
+  "size": 1,
+  "librarySectionID": 12,
+  "librarySectionTitle": "Chilpa Lab",
+  "Metadata": [
+   {
+    "ratingKey": "98777",
+    "key": "/library/metadata/98777/children",
+    "parentRatingKey": "98667",
+    "guid": "plex://album/5d07c1c1403c6402908715b3",
+    "parentGuid": "plex://artist/5d07bbfc403c6402904a5ef4",
+    "studio": "Epic",
+    "type": "album",
+    "title": "Back in Black",
+    "parentTitle": "AC/DC",
+    "summary": "A record's review.",
+    "index": 1,
+    "year": 1980,
+    "thumb": "/library/metadata/98777/thumb/1790641408",
+    "originallyAvailableAt": "1980-07-25",
+    "addedAt": 1790641405,
+    "updatedAt": 1790641408,
+    "Genre": [
+     {
+      "id": 277158,
+      "tag": "Pop/Rock"
+     }
+    ],
+    "Guid": [
+     {
+      "id": "mbid://83ff6988-2f79-40b9-82d5-437f2a5da5f3"
+     }
+    ],
+    "librarySectionID": 12,
+    "librarySectionTitle": "Chilpa Lab",
+    "librarySectionKey": "/library/sections/12"
+   }
+  ]
+ }
+}

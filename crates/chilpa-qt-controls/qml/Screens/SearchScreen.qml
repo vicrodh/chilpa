@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
@@ -91,6 +92,7 @@ Flickable {
             required property var modelData
             artist: ({title: modelData.title, sources: [{local: page.mine(modelData), chilpa: page.mine(modelData), plugin: page.mine(modelData) ? "" : modelData.sourceName,
                 icon: modelData.sourceIcon || "", name: page.owner(modelData)}]})
+            activeImages: page.visible && Viewport.topIn(person, page.contentItem) + person.height > page.contentY && Viewport.topIn(person, page.contentItem) < page.contentY + page.height
             art: page.artUrl(modelData.art)
             onActivated: page.open(modelData.at)
             onSourceActivated: page.open(modelData.at)

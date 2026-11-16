@@ -5,3 +5,7 @@ I supplied the drawings, and their licenses allow this use.
 
 The marks of the servers and services drawn here belong to their owners, and
 are used only to tell which one a source is.
+
+The compositions, composers and genres-tree drawings were supplied for the
+Chilpa sidebar on 2026-11-13. Original SVG notices are retained in
+tools/icons/sources.

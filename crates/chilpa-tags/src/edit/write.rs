@@ -75,6 +75,8 @@ pub struct FileChanges {
     pub label: Change<String>,
     pub track_number: Change<u32>,
     pub disc_number: Change<u32>,
+    pub track_total: Change<u32>,
+    pub disc_total: Change<u32>,
     pub disc_subtitle: Change<String>,
     pub work: Change<String>,
     pub composers: Change<Vec<String>>,
@@ -136,6 +138,8 @@ impl FileChanges {
             label: Change::Keep,
             track_number: Change::Keep,
             disc_number: Change::Keep,
+            track_total: Change::Keep,
+            disc_total: Change::Keep,
             disc_subtitle: Change::Keep,
             work: Change::Keep,
             composers: Change::Keep,
@@ -159,6 +163,8 @@ impl FileChanges {
             && self.explicit.is_keep()
             && self.track_number.is_keep()
             && self.disc_number.is_keep()
+            && self.track_total.is_keep()
+            && self.disc_total.is_keep()
             && self.cover.is_keep()
             && TEXTS.iter().all(|(name, _)| self.text(name).is_keep())
             && LISTS.iter().all(|(name, _)| self.list(name).is_keep())
@@ -214,6 +220,7 @@ pub struct Staged {
     /// The copy, the file it replaces -- a link's target, not the link --
     /// and the path it was asked for by, in the order they came.
     pairs: Vec<(PathBuf, PathBuf, PathBuf)>,
+    _leases: Vec<super::WriteLease>,
 }
 
 impl Staged {
@@ -255,11 +262,20 @@ impl Drop for Staged {
 ///
 /// Built from the name as the system has it, not as text: two names that
 /// are not valid UTF-8 would otherwise come out as the same copy.
-fn copy_path(original: &Path) -> PathBuf {
-    let mut name = std::ffi::OsString::from(".");
-    name.push(original.file_name().unwrap_or_default());
-    name.push(".chilpa-tmp");
-    original.with_file_name(name)
+fn copy_path(original: &Path) -> std::io::Result<PathBuf> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    loop {
+        let mut name = std::ffi::OsString::from(".");
+        name.push(original.file_name().unwrap_or_default());
+        name.push(format!(".{}-{}.chilpa-tmp", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+        let path = original.with_file_name(name);
+        match std::fs::OpenOptions::new().write(true).create_new(true).open(&path) {
+            Ok(_) => return Ok(path),
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => return Err(error),
+        }
+    }
 }
 
 /// A copy is named for what it is and not for what it holds, so its kind is
@@ -411,6 +427,15 @@ fn apply(tag: &mut Tag, changes: &FileChanges, strict: bool) -> Result<(), &'sta
         Change::Set(n) => tag.set_disk(n),
         Change::Clear => tag.remove_disk(),
     }
+    for (name,key,change) in [("track_total",ItemKey::TrackTotal,&changes.track_total),("disc_total",ItemKey::DiscTotal,&changes.disc_total)] {
+        if strict && !change.is_keep() && key.map_key(tag.tag_type()).is_none() { return Err(name); }
+    }
+    match changes.track_total {
+        Change::Keep => {}, Change::Set(number) => tag.set_track_total(number), Change::Clear => tag.remove_track_total(),
+    }
+    match changes.disc_total {
+        Change::Keep => {}, Change::Set(number) => tag.set_disk_total(number), Change::Clear => tag.remove_disk_total(),
+    }
     match &changes.cover {
         Change::Keep => {}
         Change::Set(cover) => put_cover(tag, cover),
@@ -506,6 +531,8 @@ fn verify(said: &Snapshot, first_picture: Option<&[u8]>, changes: &FileChanges) 
     if !text(&changes.date, said.date.as_deref()) {
         return Err("date");
     }
+    if !number(changes.track_total.clone(),said.track_total) { return Err("track_total"); }
+    if !number(changes.disc_total.clone(),said.disc_total) { return Err("disc_total"); }
     if !number(changes.track_number.clone(), said.track_number) {
         return Err("track_number");
     }
@@ -528,7 +555,6 @@ fn one(changes: &FileChanges, copy: &Path, options: Options) -> Result<(), Write
     let path = &changes.path;
     let failed = |reason: String| WriteError::Write { path: path.clone(), reason };
 
-    let _ = std::fs::remove_file(copy);
     std::fs::copy(path, copy).map_err(|error| WriteError::Copy { path: path.clone(), error })?;
 
     let audio = {
@@ -587,10 +613,18 @@ fn one(changes: &FileChanges, copy: &Path, options: Options) -> Result<(), Write
     drop(file);
     if let Some(comments) = native_comments {
         use lofty::tag::{MergeTag, SplitTag};
+        // These comments were captured before the generic write. Lofty's merge
+        // consumes EncoderSoftware as the vendor, so retain both native forms.
+        let vendor = comments.vendor().to_string();
+        let encoders: Vec<_> = comments.items().filter(|(key, _)| key.eq_ignore_ascii_case("ENCODER"))
+            .map(|(key, value)| (key.to_string(), value.to_string())).collect();
         let mut fresh = read_copy(copy).map_err(&failed)?;
         let tag = fresh.remove(primary).unwrap_or_else(|| Tag::new(primary));
         drop(fresh);
         let mut comments = comments.split_tag().0.merge_tag(tag);
+        comments.set_vendor(vendor);
+        drop(comments.remove("ENCODER"));
+        for (key, value) in encoders { comments.push(key, value); }
         if !changes.explicit.is_keep() { drop(comments.remove("ITUNESADVISORY")); }
         if let Change::Set(value) = changes.explicit {
             comments.insert("ITUNESADVISORY".into(), if value { "1" } else { "2" }.into());
@@ -662,9 +696,11 @@ pub fn stage(
     }
 
     let total = files.len();
-    let mut staged = Staged { pairs: Vec::with_capacity(total) };
+    let leases = targets.iter().map(|target| super::WriteLease::acquire(target)
+        .map_err(|error| WriteError::Write { path:target.clone(),reason:error.to_string() })).collect::<Result<Vec<_>,_>>()?;
+    let mut staged = Staged { pairs: Vec::with_capacity(total),_leases:leases };
     for (done, (changes, target)) in files.iter().zip(targets).enumerate() {
-        let copy = copy_path(&target);
+        let copy = copy_path(&target).map_err(|error| WriteError::Copy { path:changes.path.clone(),error })?;
         // `staged` owns the copy from here: an error below drops it, and
         // dropping it removes every copy it holds.
         staged.pairs.push((copy.clone(), target, changes.path.clone()));
@@ -685,6 +721,9 @@ pub fn placed(path: &Path) -> Result<Vec<&'static str>, WriteError> {
         if key.map_key(kind).is_some() {
             out.push(name);
         }
+    }
+    for (name,key) in [("track_total",ItemKey::TrackTotal),("disc_total",ItemKey::DiscTotal)] {
+        if key.map_key(kind).is_some() { out.push(name); }
     }
     if ItemKey::FlagCompilation.map_key(kind).is_some() {
         out.push("compilation");

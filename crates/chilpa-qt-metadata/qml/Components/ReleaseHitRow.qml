@@ -13,32 +13,57 @@ ListRowSurface {
 
     property var hit: ({})
     property bool chosen: false
+    property bool showScore: false
 
     signal choose()
 
     readonly property string detail: [hit.date, hit.country, hit.label, hit.catalog_number, hit.format,
-        hit.tracks > 0 ? I18n.trCount("{} track", "{} tracks", hit.tracks, I18n.rev) : ""]
+        hit.tracks > 0 ? I18n.trCount("{} track", "{} tracks", hit.tracks, I18n.rev) : "",
+        showScore ? I18n.trArgs("Match score: {}",[String(hit.score || 0)],I18n.rev) : ""]
         .filter(part => part !== undefined && part !== "").join(" · ")
 
     implicitHeight: Metrics.metadataHit
     selected: chosen
     hovered: pointer.hovered
+    activeFocusOnTab:true
+    Accessible.role:Accessible.Button
+    Accessible.name:(hit.title || "") + " · " + (hit.artist || "")
+    Accessible.description:detail
+    Keys.onReturnPressed:choose()
+    Keys.onEnterPressed:choose()
+    Keys.onSpacePressed:choose()
+    FocusRing { visible:root.activeFocus }
 
     HoverHandler { id: pointer }
     HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: root.choose() }
 
+    Text {
+        id: score
+        objectName:"metadataReleaseHitScore"
+        anchors.right:parent.right; anchors.rightMargin:Metrics.gap8
+        anchors.verticalCenter:parent.verticalCenter
+        visible:root.showScore
+        text:String(root.hit.score || 0) + " / 100"
+        textFormat:Text.PlainText
+        font.pointSize:Type.meta; font.weight:Type.semibold
+        color:Theme.color.textPrimary
+        Accessible.name:I18n.trArgs("Match score: {}",[String(root.hit.score || 0)],I18n.rev)
+    }
+
     Column {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.leftMargin: Metrics.gap8
-        anchors.rightMargin: Metrics.gap8
+        anchors.rightMargin: score.visible ? score.width + Metrics.gap8 * 2 : Metrics.gap8 // derived: score and padding on both sides
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap2
 
         Text {
+            objectName:"metadataReleaseHitTitle"
             width: parent.width
             text: root.hit.artist ? root.hit.title + " — " + root.hit.artist : (root.hit.title || "")
+            textFormat:Text.PlainText
             elide: Text.ElideRight
             font.pointSize: Type.row
             font.weight: Type.medium
@@ -47,6 +72,7 @@ ListRowSurface {
         Text {
             width: parent.width
             text: root.detail
+            textFormat:Text.PlainText
             elide: Text.ElideRight
             font.pointSize: Type.small
             color: Theme.color.textSecondary

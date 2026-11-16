@@ -539,6 +539,13 @@ fn get_gnome_color_scheme() -> Result<SystemColorScheme, String> {
         })
         .unwrap_or(true);
 
+    Ok(scheme_from(is_dark, accent))
+}
+
+/// A full colour scheme from no more than dark or light and an accent, the
+/// rest Adwaita's defaults: what GNOME says, and what the Settings portal
+/// says to a sandboxed program.
+pub fn scheme_from(is_dark: bool, accent: Option<PaletteColor>) -> SystemColorScheme {
     let (bg, bg_alt, view_bg, btn_bg, fg, fg_inactive) = if is_dark {
         (
             PaletteColor::new(36, 36, 36),
@@ -559,7 +566,7 @@ fn get_gnome_color_scheme() -> Result<SystemColorScheme, String> {
         )
     };
 
-    Ok(SystemColorScheme {
+    SystemColorScheme {
         window_bg: Some(bg),
         window_bg_alt: Some(bg_alt),
         view_bg: Some(view_bg),
@@ -582,7 +589,7 @@ fn get_gnome_color_scheme() -> Result<SystemColorScheme, String> {
         wm_active_bg: None,
         wm_active_fg: None,
         wm_inactive_bg: None,
-    })
+    }
 }
 
 fn is_image_path(path: &str) -> bool {
@@ -641,6 +648,17 @@ mod tests {
         assert_eq!(color.r, 66);
         assert_eq!(color.g, 133);
         assert_eq!(color.b, 245);
+    }
+
+    #[test]
+    fn a_scheme_from_dark_or_light_keeps_its_accent() {
+        let accent = PaletteColor::new(53, 132, 228);
+        let light = scheme_from(false, Some(accent));
+        assert_eq!((light.accent, light.selection_bg), (Some(accent), Some(accent)));
+        assert!(light.window_bg.unwrap().luminance() > 0.5);
+        let dark = scheme_from(true, None);
+        assert!(dark.window_bg.unwrap().luminance() < 0.5);
+        assert_eq!(dark.accent, None);
     }
 
     #[test]

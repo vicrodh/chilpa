@@ -4,12 +4,14 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/discovery/qml/Components"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Primitives" as Driving
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as Lists
 import "qrc:/qt/qml/app/chilpa/about/qml/Components" as AboutUi
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/pages/qml/Components"
 
 // The floating left panel (design/02 2): search, the main destinations and
 // the playlists. Collapsed, a column of icons.
@@ -27,15 +29,8 @@ Rectangle {
     readonly property var panels: sourceView.panels || []
     readonly property var downloadPlugins: (sourceView.download_plugins || []).filter(plugin => plugin.access === "sidebar")
     readonly property bool devicesVisible: Prefs.rev >= 0 && SettingsModel.kept("navigation.devices") !== "false"
-    readonly property var localPages: [
-        { screen: "home", glyph: Icons.home, text: I18n.tr("Home", I18n.rev) },
-        { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
-        { screen: "artists", glyph: SourceGlyphs.musicArtist, family: SourceGlyphs.font, text: I18n.tr("Artists", I18n.rev) },
-        { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
-        { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
-        { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) },
-        { screen: "openMedia", glyph: Icons.folderOpen, text: I18n.tr("Open media", I18n.rev) }
-    ].concat(devicesVisible ? [{ screen: "deviceSync", glyph: Icons.deviceMobile, text: I18n.tr("Devices", I18n.rev) }] : [])
+    LibraryDestinations { id: destinations; devices: devicesVisible }
+    readonly property var localPages: destinations.entries
 
     Component.onCompleted: refreshSources()
     Timer { interval: Motion.poll; repeat: true; running: side.sourceView.starting === true; onTriggered: side.refreshSources() }
@@ -162,24 +157,17 @@ Rectangle {
                             }
                             onMiddleClicked: group.modelData.key ? clicked() : SettingsModel.middleClickTabs ? Navigation.open(group.modelData.screen, 0) : Navigation.go(group.modelData.screen, 0)
                         }
-                        Repeater {
-                            model: group.modelData.children || []
-                            NavItem {
-                                required property var modelData
-                                objectName: "sourceChild"
-                                visible: !side.collapsed && side.expandedSources[group.modelData.key] === true
-                                x: Metrics.navItemPadding
-                                width: parent.width - x
-                                text: modelData.title
-                                glyph: Icons[modelData.icon] || Icons.folder
-                                active: modelData.route ? Navigation.routeKey === modelData.route && (modelData.route !== group.modelData.key || Navigation.screen === "source")
-                                    : side.sourceView.navigation_id === modelData.id
-                                onClicked: {
-                                    if (modelData.route) { Navigation.goKey("source", modelData.route); return }
-                                    side.openSource("child", group.modelData.key, modelData.id)
-                                }
-                                onMiddleClicked: clicked()
-                            }
+                        Loader {
+                            width: parent.width
+                            active: side.expandedSources[group.modelData.key] === true || item !== null
+                            visible: !side.collapsed && side.expandedSources[group.modelData.key] === true
+                            sourceComponent: Component { SourceNavigationTree {
+                                width: parent.width
+                                controller: side
+                                pluginId: group.modelData.key || ""
+                                entries: group.modelData.children || []
+                                onEntryClicked: entry => side.openSource("child", group.modelData.key, entry.id)
+                            } }
                         }
                     }
                 }

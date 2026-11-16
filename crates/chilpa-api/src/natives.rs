@@ -34,6 +34,11 @@ pub(crate) struct Natives {
     live: RwLock<HashMap<String, Arc<NativeClient>>>,
     /// What each was started from, to start it again.
     known: Mutex<HashMap<String, Known>>,
+    /// The last generation given to a start.
+    generations: std::sync::atomic::AtomicU64,
+    /// The backend that starts the processes, chosen on first use.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    launcher: std::sync::OnceLock<Arc<dyn chilpa_bwrap::NativeLauncher>>,
 }
 
 struct Known {
@@ -46,21 +51,50 @@ struct Known {
     restarts: usize,
     restarting: bool,
     last_start: Instant,
+    /// Which start this is. A restart scheduled for one generation does
+    /// nothing once an update, a stop or a network change replaced it.
+    generation: u64,
+    /// Only successful settings submissions retire transient article sessions.
+    article_epoch: u64,
+    /// The channel this start opened. A death seen on another channel, one
+    /// already replaced, is not this start's to restart.
+    client: std::sync::Weak<NativeClient>,
 }
 
 impl Natives {
     /// I replace the processes so existing sockets cannot outlive offline mode.
     pub(crate) fn network_changed(self: &Arc<Self>, catalog: Arc<crate::source_catalog::Catalog>) {
-        let me = self.clone();
-        let _ = std::thread::Builder::new().name("chilpa-native-network".into()).spawn(move || {
-            let _guard = me.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
-            let clients: Vec<_> = me.live.write().unwrap_or_else(|e| e.into_inner()).drain().map(|(_, client)| client).collect();
-            for client in clients { client.stop(); }
-            let plugins: Vec<_> = me.known.lock().unwrap_or_else(|e| e.into_inner()).values()
-                .map(|known| (known.manifest.clone(), known.folder.clone())).collect();
-            for (manifest, folder) in plugins { let _ = me.start_locked(&manifest, &folder); }
-            catalog.changed();
-        });
+        self.network_changed_with(catalog, |job| std::thread::Builder::new().name("chilpa-native-network".into()).spawn(job).map(drop))
+    }
+
+    /// `spawn` hands the work to a thread of its own. Without one the work
+    /// runs here, on the caller's: no socket outlives offline mode because a
+    /// thread could not be made.
+    fn network_changed_with(self: &Arc<Self>, catalog: Arc<crate::source_catalog::Catalog>,
+        spawn: impl FnOnce(Box<dyn FnOnce() + Send>) -> std::io::Result<()>) {
+        let (me, theirs) = (self.clone(), catalog.clone());
+        if let Err(error) = spawn(Box::new(move || me.replace_processes(&theirs))) {
+            eprintln!("native: no thread to replace the processes on ({error}); they are replaced on this one");
+            self.replace_processes(&catalog);
+        }
+    }
+
+    fn replace_processes(self: &Arc<Self>, catalog: &crate::source_catalog::Catalog) {
+        let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
+        let clients: Vec<_> = self.live.write().unwrap_or_else(|e| e.into_inner()).drain().map(|(_, client)| client).collect();
+        for client in clients { client.stop(); }
+        let plugins: Vec<_> = {
+            let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+            // A restart scheduled before this one is for a process that is gone.
+            for k in known.values_mut() { k.generation = self.next_generation(); k.restarting = false; }
+            known.values().map(|known| (known.manifest.clone(), known.folder.clone())).collect()
+        };
+        for (manifest, folder) in plugins { let _ = self.start_locked(&manifest, &folder); }
+        catalog.changed();
+    }
+
+    fn next_generation(&self) -> u64 {
+        self.generations.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1
     }
 
     pub(crate) fn history_changed(&self, plugin: &str) { self.personal_changed.lock().unwrap_or_else(|e| e.into_inner()).insert(plugin.into()); }
@@ -85,7 +119,7 @@ impl Natives {
         if client.alive() {
             return Some(client);
         }
-        self.restart(id);
+        let _ = self.restart(id, &client);
         None
     }
 
@@ -125,6 +159,10 @@ impl Natives {
     pub(crate) fn has_favorites(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["favorites"] == true)
     }
+    /// What the plugin said of one capability in its answer to `initialize`.
+    pub(crate) fn capability(&self, id: &str, name: &str) -> Value {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|p| p.capabilities[name].clone()).unwrap_or(Value::Null)
+    }
     pub(crate) fn has_pages(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["pages"] == true)
     }
@@ -140,6 +178,10 @@ impl Natives {
     pub(crate) fn edits_folders(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p|
             p.capabilities["folder_edit"].as_bool().unwrap_or(p.capabilities["playlist_edit"] == true))
+    }
+    /// The plugins whose answer to `initialize` names that capability.
+    pub(crate) fn with_capability(&self, name: &str) -> Vec<String> {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).iter().filter(|(_, k)| !k.capabilities[name].is_null()).map(|(id, _)| id.clone()).collect()
     }
     pub(crate) fn ids(&self) -> Vec<String> {
         self.live.read().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
@@ -180,13 +222,35 @@ impl Natives {
     /// Calls a plugin, or says it is not running.
     pub(crate) fn call(self: &Arc<Self>, id: &str, method: &str, params: Value, timeout: Duration) -> Result<Value, String> {
         let client = self.client(id).ok_or_else(|| chilpa_i18n::t("the plugin is not running"))?;
-        client.call(method, params, timeout).map_err(|e| e.to_string())
+        let result = client.call(method, params, timeout);
+        self.article_settings_result(id, &client, method, result.is_ok());
+        result.map_err(|e| e.to_string())
+    }
+
+    /// A collection cursor is valid only for the process that produced it.
+    pub(crate) fn collection_generation(&self, id: &str) -> u64 {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map_or(0, |known| known.generation)
+    }
+
+    pub(crate) fn article_stamp(&self, id: &str) -> (u64, u64) {
+        self.known.lock().unwrap_or_else(|error| error.into_inner()).get(id)
+            .map_or((0, 0), |known| (known.generation, known.article_epoch))
+    }
+
+    fn article_settings_result(&self, id: &str, client: &Arc<NativeClient>, method: &str, succeeded: bool) {
+        if method != "settings.submit" || !succeeded { return; }
+        let mut known = self.known.lock().unwrap_or_else(|error| error.into_inner());
+        if let Some(known) = known.get_mut(id).filter(|known| known.client.upgrade().is_some_and(|current| Arc::ptr_eq(&current, client))) {
+            known.article_epoch = known.article_epoch.checked_add(1).expect("article settings revisions exhausted");
+        }
     }
 
     /// Calls a plugin and keeps its error whole, with what it added to it.
     pub(crate) fn call_raw(self: &Arc<Self>, id: &str, method: &str, params: Value, timeout: Duration) -> Result<Value, chilpa_plugin::native::NativeError> {
         let client = self.client(id).ok_or(chilpa_plugin::native::NativeError::Closed)?;
-        client.call(method, params, timeout)
+        let result = client.call(method, params, timeout);
+        self.article_settings_result(id, &client, method, result.is_ok());
+        result
     }
     /// A source that has lyrics for its own tracks.
     pub(crate) fn has_track_lyrics(&self, id: &str) -> bool {
@@ -233,6 +297,12 @@ impl Natives {
         Some(Layout { sections })
     }
 
+    pub(crate) fn navigation(&self, id: &str, fallback: Vec<crate::sources::PanelChild>) -> Vec<crate::sources::PanelChild> {
+        let known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(known) = known.get(id) else { return fallback };
+        crate::native_navigation::apply(id, &known.capabilities["source_navigation"], fallback)
+    }
+
     pub(crate) fn stop(&self, id: &str) {
         let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
         self.broker.revoke(id);
@@ -249,39 +319,44 @@ impl Natives {
         self.start_locked(manifest, folder)
     }
     fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
-        let (client, data, cache) = launch(manifest, folder, Arc::downgrade(self))?;
-        let greeting = client.call("initialize", json!({
-            "protocol": PROTOCOL,
-            "playback_events": 1,
-            "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
-            "data_dir": data,
-            "cache_dir": cache,
-            "locale": chilpa_i18n::current_language(),
-            "network": {"enabled": !chilpa_core::network::current().offline},
-        }), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
+        // Said before any folder is made or any process spawned: first for
+        // every process plugin, then for this one's program.
+        self.availability().map_err(PluginError::RuntimeUnavailable)?;
+        self.preflight(folder).map_err(PluginError::RuntimeUnavailable)?;
+        let network = process_network(chilpa_core::network::current().offline, manifest);
+        let launched = launch(self, manifest, folder, network)?;
+        let client = launched.client.clone();
+        let greeting = client.call("initialize", greeting(&launched, network), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
         if greeting.get("protocol").and_then(Value::as_u64) != Some(PROTOCOL as u64) {
             client.stop();
             return Err(PluginError::Crashed(format!("it speaks another protocol than {PROTOCOL}")));
         }
         let id = manifest.id.clone();
+        // The channel is live before its generation is published: until then
+        // the start before it is what a restart is scheduled for, and the
+        // new generation makes that restart drop.
+        self.live.write().unwrap_or_else(|e| e.into_inner()).insert(id.clone(), client.clone());
         let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
         let restarts = known.get(&id).map(|k| k.restarts).unwrap_or(0);
         let discover = known.get(&id).map(|k| k.discover.clone()).unwrap_or_default();
-        known.insert(id.clone(), Known { manifest: manifest.clone(), folder: folder.to_path_buf(),
+        known.insert(id, Known { manifest: manifest.clone(), folder: folder.to_path_buf(),
             capabilities: greeting.get("capabilities").cloned().unwrap_or(Value::Null),
-            discover, restarts, restarting: false, last_start: Instant::now() });
+            discover, restarts, restarting: false, last_start: Instant::now(), generation: self.next_generation(), article_epoch: 0,
+            client: Arc::downgrade(&client) });
         drop(known);
-        self.live.write().unwrap_or_else(|e| e.into_inner()).insert(id, client.clone());
         self.reports.get_or_init(|| crate::native_reporting::Reports::start(Arc::downgrade(self)));
         Ok(client)
     }
 
-    fn restart(self: &Arc<Self>, id: &str) {
-        let (manifest, folder, wait) = {
+    /// Restarts the plugin whose channel `observed` was found ended. The
+    /// restart belongs to the start that opened that channel: one already
+    /// replaced by a newer start schedules nothing.
+    fn restart(self: &Arc<Self>, id: &str, observed: &Arc<NativeClient>) -> Option<std::thread::JoinHandle<()>> {
+        let (generation, wait) = {
             let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
-            let Some(k) = known.get_mut(id) else { return };
-            if k.restarting {
-                return;
+            let k = known.get_mut(id)?;
+            if k.restarting || !std::sync::Weak::ptr_eq(&k.client, &Arc::downgrade(observed)) {
+                return None;
             }
             // A plugin that ran a good while before ending starts over.
             if k.last_start.elapsed() > Duration::from_secs(300) {
@@ -290,14 +365,15 @@ impl Natives {
             k.restarting = true;
             let wait = RESTART_WAITS[k.restarts.min(RESTART_WAITS.len() - 1)];
             k.restarts += 1;
-            (k.manifest.clone(), k.folder.clone(), wait)
+            (k.generation, wait)
         };
         let me = self.clone();
-        let id = id.to_string();
-        let _ = std::thread::Builder::new().name("chilpa-native-restart".into()).spawn(move || {
+        let named = id.to_string();
+        let spawned = std::thread::Builder::new().name("chilpa-native-restart".into()).spawn(move || {
             std::thread::sleep(Duration::from_secs(wait));
+            let id = named;
             let _guard = me.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
-            if !me.known.lock().unwrap_or_else(|e| e.into_inner()).contains_key(&id) { return; }
+            let Some((manifest, folder)) = me.still_due(&id, generation) else { return };
             me.broker.revoke(&id);
             let previous = me.live.read().unwrap_or_else(|e| e.into_inner()).get(&id).cloned();
             // A closed protocol pipe can leave its worker alive. I reap it
@@ -305,10 +381,45 @@ impl Natives {
             if let Some(client) = previous { client.stop(); }
             let started = me.start_locked(&manifest, &folder);
             eprintln!("native: plugin={id} restarted ok={}", started.is_ok());
-            if let Some(k) = me.known.lock().unwrap_or_else(|e| e.into_inner()).get_mut(&id) {
-                k.restarting = false;
-            }
+            me.restarted(&id, generation);
         });
+        match spawned {
+            Ok(handle) => Some(handle),
+            Err(error) => {
+                eprintln!("native: no thread to restart plugin={id} on ({error}); it is tried again on its next call");
+                self.restarted(id, generation);
+                None
+            }
+        }
+    }
+
+    /// What to start again, if the plugin is still the start the restart was
+    /// scheduled for, its manifest on disk is still that one and it is still
+    /// approved. Called under the lifecycle lock.
+    fn still_due(&self, id: &str, generation: u64) -> Option<(Manifest, PathBuf)> {
+        let (manifest, folder) = {
+            let known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+            // Replaced since: what replaced it schedules its own restarts.
+            let k = known.get(id).filter(|k| k.generation == generation)?;
+            (k.manifest.clone(), k.folder.clone())
+        };
+        let current = std::fs::read_to_string(folder.join("manifest.json")).ok()
+            .and_then(|text| Manifest::parse_for_runtime(&text, Runtime::Process).ok());
+        let root = folder.parent().unwrap_or(&folder);
+        let due = current.is_some_and(|current| current == manifest && crate::approvals::Approvals::load(root).covers(&current));
+        if !due {
+            eprintln!("native: plugin={id} changed or is no longer approved since it ended; it is not started again");
+            self.restarted(id, generation);
+            return None;
+        }
+        Some((manifest, folder))
+    }
+
+    /// The restart scheduled for `generation` is over, whatever came of it.
+    fn restarted(&self, id: &str, generation: u64) {
+        if let Some(k) = self.known.lock().unwrap_or_else(|e| e.into_inner()).get_mut(id) {
+            if k.generation == generation { k.restarting = false; }
+        }
     }
 }
 
@@ -327,10 +438,42 @@ pub(crate) fn install(
     })
 }
 
-type Launched = (Arc<NativeClient>, PathBuf, PathBuf);
+/// A started plugin and its folders as it sees them.
+#[cfg_attr(not(any(target_os = "linux", target_os = "macos")), allow(dead_code))]
+struct Launched {
+    client: Arc<NativeClient>,
+    data: PathBuf,
+    cache: PathBuf,
+    /// Its approved export folder; none when there is none to hand over.
+    export: Option<PathBuf>,
+}
+
+/// What `initialize` tells a plugin. `export_dir` is there only when an
+/// export folder was approved and handed over, and names it as the plugin
+/// reaches it.
+fn greeting(launched: &Launched, network: bool) -> Value {
+    let mut params = json!({
+        "protocol": PROTOCOL,
+        "playback_events": 1,
+        "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
+        "features": {"source_navigation": 1, "collection_pages": 1, "article_pages": 1},
+        "data_dir": launched.data,
+        "cache_dir": launched.cache,
+        "locale": chilpa_i18n::current_language(),
+        "network": {"enabled": network},
+    });
+    if let Some(export) = &launched.export { params["export_dir"] = json!(export); }
+    params
+}
+
+/// Whether a process is given the network: all of it, or none. Its domains
+/// are not enforced one by one, so naming none is what keeps it offline.
+fn process_network(offline: bool, manifest: &Manifest) -> bool {
+    !offline && !manifest.allowed_domains().is_empty()
+}
 
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>) -> Result<Launched, PluginError> {
+fn launch(natives: &Arc<Natives>, manifest: &Manifest, folder: &Path, network: bool) -> Result<Launched, PluginError> {
     let id = manifest.id.clone();
     let paths = chilpa_bwrap::NativePaths {
         folder: folder.to_path_buf(),
@@ -339,24 +482,89 @@ fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>)
         export: if manifest.has(&chilpa_plugin::Capability::FolderWrite) {
             crate::plugin_center::export::read(folder.parent().unwrap_or(folder), &id)
         } else { None },
+        private: crate::plugin_center::export::private(),
     };
     let name = id.clone();
-    let client = chilpa_bwrap::launch_native(&paths, &id, MEMORY, !chilpa_core::network::current().offline && !manifest.allowed_domains().is_empty(), move |method, params| {
+    let weak = Arc::downgrade(natives);
+    let notice = Box::new(move |method: &str, params: &Value| {
         if method == "host.request" {
-            if let Some(natives) = natives.upgrade() { crate::plugin_broker::dispatch(&natives, &name, params.clone()); }
+            if let Some(natives) = weak.upgrade() { crate::plugin_broker::dispatch(&natives, &name, params.clone()); }
         } else if method == "log" {
             eprintln!("plugin[{name}]: {}", params.get("message").and_then(Value::as_str).unwrap_or(""));
         }
-    })
-    .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))?;
-    let (data, cache) = paths.guest_directories().map_err(|_| PluginError::Crashed("the plugin's private folders are unavailable".into()))?;
-    Ok((client, data, cache))
+    });
+    let launched = natives.launcher().launch(&paths, &id, MEMORY, network, notice).map_err(|_| {
+        eprintln!("warning: plugin-launch: plugin={id:?} network={network} sandbox=failed");
+        PluginError::Crashed("the plugin's sandbox could not start".into())
+    })?;
+    eprintln!("plugin-launch: plugin={id:?} network={network}");
+    let (data, cache) = launched.guest_directories;
+    Ok(Launched { client: launched.client, data, cache, export: launched.export })
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+impl Natives {
+    fn launcher(&self) -> &Arc<dyn chilpa_bwrap::NativeLauncher> {
+        self.launcher.get_or_init(chilpa_bwrap::launcher)
+    }
+
+    /// Whether process plugins can start here. The reason is for the user,
+    /// in their language, and is found without starting anything.
+    pub(crate) fn availability(&self) -> Result<(), String> {
+        self.launcher().availability().map_err(|reason| match reason {
+            chilpa_bwrap::Unavailable::Portal => chilpa_i18n::t("Process plugins need the Flatpak portal, which is not available."),
+            chilpa_bwrap::Unavailable::MissingProgram(program) => chilpa_i18n::t_args(
+                "Process plugins need {}, which is not installed.", &[&program.display().to_string()]),
+            chilpa_bwrap::Unavailable::Privileged => chilpa_i18n::t("Process plugins do not run while Chilpa runs as root."),
+        })
+    }
+
+    /// Why this plugin's program cannot run here, in the user's language,
+    /// read from its file without starting it.
+    fn preflight(&self, folder: &Path) -> Result<(), String> {
+        self.launcher().preflight(folder).map_err(|reason| {
+            eprintln!("native: {} cannot load here: {reason:?}", folder.display());
+            incompatible(reason)
+        })
+    }
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn incompatible(reason: chilpa_bwrap::Incompatible) -> String {
+    use chilpa_bwrap::Incompatible;
+    match reason {
+        Incompatible::Format => chilpa_i18n::t("This plugin's program is not built for this system."),
+        Incompatible::Interpreter(program) => chilpa_i18n::t_args(
+            "This plugin needs the program {}, which this system does not have.", &[&program.display().to_string()]),
+        Incompatible::Library(library) => chilpa_i18n::t_args(
+            "This plugin needs the library {}, which this system does not have.", &[&library]),
+        Incompatible::Version { library, needed, newest: Some(newest) } => chilpa_i18n::t_args(
+            "This plugin needs {} from {}, and this system has {} at most.", &[&needed, &library, &newest]),
+        Incompatible::Version { library, needed, newest: None } => chilpa_i18n::t_args(
+            "This plugin needs {} from {}, which this system does not have.", &[&needed, &library]),
+    }
 }
 
 /// Platforms without process isolation list a reason and never start a worker.
 #[cfg(not(any(target_os = "linux", target_os = "macos")))]
-fn launch(_: &Manifest, _: &Path, _: std::sync::Weak<Natives>) -> Result<Launched, PluginError> {
-    Err(PluginError::NotAllowed("native plugins need a sandbox this system does not have yet".into()))
+fn unsupported() -> String {
+    chilpa_i18n::t("Process plugins cannot run on this system yet.")
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+impl Natives {
+    pub(crate) fn availability(&self) -> Result<(), String> {
+        Err(unsupported())
+    }
+
+    fn preflight(&self, _: &Path) -> Result<(), String> {
+        Err(unsupported())
+    }
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+fn launch(_: &Arc<Natives>, _: &Manifest, _: &Path, _: bool) -> Result<Launched, PluginError> {
+    Err(PluginError::RuntimeUnavailable(unsupported()))
 }
 
 #[cfg(test)]
@@ -364,10 +572,91 @@ pub(crate) mod tests {
     use super::*;
 
     pub(crate) fn remember_source(natives: &Natives, manifest: Manifest, capabilities: Value) {
+        let generation = natives.next_generation();
         natives.known.lock().unwrap().insert(manifest.id.clone(), Known {
             manifest, folder: PathBuf::new(), capabilities, discover: Vec::new(),
-            restarts: 0, restarting: false, last_start: Instant::now(),
+            restarts: 0, restarting: false, last_start: Instant::now(), generation, article_epoch: 0, client: std::sync::Weak::new(),
         });
+    }
+
+    /// A backend that never has a sandbox, and fails the test if asked to start one.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    struct NoSandbox;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for NoSandbox {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Err(chilpa_bwrap::Unavailable::Portal) }
+        fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
+            panic!("an unavailable backend is never asked to start a plugin")
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub(crate) fn with_launcher(natives: &Natives, launcher: Arc<dyn chilpa_bwrap::NativeLauncher>) {
+        let _ = natives.launcher.set(launcher);
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub(crate) fn without_sandbox(natives: &Natives) {
+        with_launcher(natives, Arc::new(NoSandbox));
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_process_plugin_that_cannot_start_here_is_listed_with_the_reason() {
+        let natives = Arc::new(Natives::default());
+        without_sandbox(&natives);
+        let reason = chilpa_i18n::t("Process plugins need the Flatpak portal, which is not available.");
+        assert_eq!(natives.availability(), Err(reason.clone()));
+        let folder = tempfile::tempdir().unwrap();
+        let manifest = r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"}"#;
+        let mut registry = Registry::new();
+        assert!(!install(&mut registry, manifest, folder.path(), &natives, |_| true));
+        assert_eq!(registry.state("test.source"), chilpa_plugin::State::Unavailable { reason });
+        assert!(registry.quarantined().is_empty());
+        assert!(!natives.is_native("test.source"), "nothing was started");
+    }
+
+    /// A backend with a sandbox, whose runtime lacks a library the plugin links.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    struct MissingLibrary;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for MissingLibrary {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Ok(()) }
+        fn preflight(&self, _: &Path) -> Result<(), chilpa_bwrap::Incompatible> {
+            Err(chilpa_bwrap::Incompatible::Library("libmissing.so.1".into()))
+        }
+        fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
+            panic!("a program that cannot load here is never started")
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_plugin_whose_program_cannot_load_here_is_marked_with_its_own_reason() {
+        let natives = Arc::new(Natives::default());
+        with_launcher(&natives, Arc::new(MissingLibrary));
+        assert_eq!(natives.availability(), Ok(()), "other process plugins still can run");
+        let folder = tempfile::tempdir().unwrap();
+        let manifest = r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"}"#;
+        let mut registry = Registry::new();
+        assert!(!install(&mut registry, manifest, folder.path(), &natives, |_| true));
+        let reason = chilpa_i18n::t_args("This plugin needs the library {}, which this system does not have.", &[&"libmissing.so.1"]);
+        assert_eq!(registry.state("test.source"), chilpa_plugin::State::Unavailable { reason });
+        assert!(registry.quarantined().is_empty());
+        assert!(!natives.is_native("test.source"));
+    }
+
+    #[test]
+    fn initialize_reports_the_network_the_process_was_given() {
+        let manifest = |capabilities: Value| -> Manifest { serde_json::from_value(json!({"id":"test.source","name":"Fixture",
+            "version":"1.0.0","api_version":1,"kind":"source","runtime":"process","capabilities":capabilities})).unwrap() };
+        let named = manifest(json!([{"type":"network","domains":["api.example.org"]}]));
+        let unnamed = manifest(json!([]));
+        assert!(process_network(false, &named));
+        assert!(!process_network(true, &named), "offline mode takes it away");
+        assert!(!process_network(false, &unnamed), "online, but a process that names no domain has no network");
     }
 
     #[test]
@@ -404,7 +693,7 @@ pub(crate) mod tests {
         let natives = Arc::new(Natives::default());
         for audio in [false, true] {
             let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","delivers_audio":audio})).unwrap();
-            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now() });
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest, folder:PathBuf::new(), capabilities:json!({}), discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1, article_epoch: 0, client: std::sync::Weak::new() });
             assert_eq!(natives.delivers_audio("test.source"), audio);
             let reply = crate::source_search::native_reply(&natives, "test.source", "Fixture", "Song", 1, "");
             assert_eq!(reply.delivers_audio, audio, "even a failed search retains its declared capability");
@@ -417,8 +706,189 @@ pub(crate) mod tests {
         let natives = Natives::default();
         let manifest: Manifest = serde_json::from_value(json!({"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source"})).unwrap();
         for (capabilities, edits, removes) in [(json!({}), false, false), (json!({"playlist_remove":true}), false, true), (json!({"playlist_edit":true}), true, false)] {
-            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now() });
+            natives.known.lock().unwrap().insert("test.source".into(), Known { manifest: manifest.clone(), folder:PathBuf::new(), capabilities, discover:Vec::new(), restarts:0, restarting:false, last_start:Instant::now(), generation: 1, article_epoch: 0, client: std::sync::Weak::new() });
             assert_eq!((natives.edits_playlists("test.source"), natives.removes_playlists("test.source")), (edits, removes));
         }
     }
+    /// A backend with a sandbox that counts the plugins it is asked to start, and starts none.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[derive(Default)]
+    struct Counting(std::sync::atomic::AtomicUsize);
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for Counting {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Ok(()) }
+        fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Err(chilpa_plugin::bridge::BridgeError::Denied)
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn counting(natives: &Natives) -> Arc<Counting> {
+        let launches = Arc::new(Counting::default());
+        with_launcher(natives, launches.clone());
+        launches
+    }
+
+    const PROCESS: &str = r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process","capabilities":[{"type":"network","domains":["api.example.org"]}]}"#;
+
+    /// A plugin folder under a plugins root, its manifest approved or not.
+    fn installed(root: &Path, manifest: &str, approved: bool) -> (PathBuf, Manifest) {
+        let folder = root.join("test.source");
+        std::fs::create_dir_all(&folder).unwrap();
+        std::fs::write(folder.join("manifest.json"), manifest).unwrap();
+        let parsed = Manifest::parse_for_runtime(manifest, Runtime::Process).unwrap();
+        if approved { crate::approvals::Approvals::load(root).approve(&parsed).unwrap(); }
+        (folder, parsed)
+    }
+
+    /// What a start of `client` leaves known of a plugin, and live.
+    pub(crate) fn started(natives: &Natives, manifest: Manifest, folder: &Path, client: &Arc<NativeClient>) {
+        let generation = natives.next_generation();
+        natives.live.write().unwrap().insert(manifest.id.clone(), client.clone());
+        natives.known.lock().unwrap().insert(manifest.id.clone(), Known { manifest, folder: folder.to_path_buf(),
+            capabilities: Value::Null, discover: Vec::new(), restarts: 0, restarting: false, last_start: Instant::now(), generation, article_epoch: 0,
+            client: Arc::downgrade(client) });
+    }
+
+    /// A channel to no process, and the far ends of its pipes.
+    pub(crate) fn channel() -> (Arc<NativeClient>, (std::io::PipeReader, std::io::PipeWriter)) {
+        let (plugin_reads, input) = std::io::pipe().unwrap();
+        let (output, plugin_writes) = std::io::pipe().unwrap();
+        (NativeClient::start(input, output, || {}, |_, _| {}), (plugin_reads, plugin_writes))
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_death_seen_on_a_client_already_replaced_restarts_nothing() {
+        let natives = Arc::new(Natives::default());
+        let launches = counting(&natives);
+        let root = tempfile::tempdir().unwrap();
+        let (folder, manifest) = installed(root.path(), PROCESS, true);
+        let ((old, _old_ends), (new, _new_ends)) = (channel(), channel());
+        // A caller read `old` from the live map; before it asked for a
+        // restart, an update put `new` in its place.
+        started(&natives, manifest, &folder, &new);
+        assert!(natives.restart("test.source", &old).is_none(), "the death seen was the replaced client's");
+        natives.restart("test.source", &new).expect("the current client's death is restarted").join().unwrap();
+        assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_restart_due_from_before_an_update_does_not_bring_the_old_one_back() {
+        let natives = Arc::new(Natives::default());
+        let launches = counting(&natives);
+        let root = tempfile::tempdir().unwrap();
+        let (folder, before) = installed(root.path(), PROCESS, true);
+        let ((first, _first_ends), (second, _second_ends)) = (channel(), channel());
+        started(&natives, before, &folder, &first);
+        let pending = natives.restart("test.source", &first).unwrap();
+        // Within the wait, the update stops it and starts the new version,
+        // which asks for no network.
+        let updated = PROCESS.replace("1.0.0", "1.1.0").replace(r#"{"type":"network","domains":["api.example.org"]}"#, "");
+        let (folder, after) = installed(root.path(), &updated, true);
+        started(&natives, after, &folder, &second);
+        pending.join().unwrap();
+        assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 0, "the old manifest was not started again");
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_restart_starts_only_what_is_still_approved() {
+        let natives = Arc::new(Natives::default());
+        let launches = counting(&natives);
+        let root = tempfile::tempdir().unwrap();
+        let (folder, manifest) = installed(root.path(), PROCESS, true);
+        let (client, _ends) = channel();
+        started(&natives, manifest.clone(), &folder, &client);
+        natives.restart("test.source", &client).unwrap().join().unwrap();
+        assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1, "an approved plugin is started again");
+        std::fs::remove_file(root.path().join("approvals.json")).unwrap();
+        started(&natives, manifest, &folder, &client);
+        natives.restart("test.source", &client).unwrap().join().unwrap();
+        assert_eq!(launches.0.load(std::sync::atomic::Ordering::SeqCst), 1, "one no longer approved is not");
+    }
+
+    /// A backend whose plugin answers `initialize` and keeps what it was
+    /// told, and that shows any export folder at `/guest/export`.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[derive(Default)]
+    struct Greeted {
+        handed: Mutex<Vec<Option<PathBuf>>>,
+        told: Arc<Mutex<Vec<Value>>>,
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for Greeted {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> { Ok(()) }
+        fn launch(&self, paths: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, chilpa_plugin::bridge::BridgeError> {
+            use std::io::{BufRead, Write};
+            self.handed.lock().unwrap().push(paths.export.clone());
+            let (plugin_reads, input) = std::io::pipe().unwrap();
+            let (output, mut plugin_writes) = std::io::pipe().unwrap();
+            let told = self.told.clone();
+            std::thread::spawn(move || {
+                for line in std::io::BufReader::new(plugin_reads).lines().map_while(Result::ok) {
+                    let message: Value = serde_json::from_str(&line).unwrap();
+                    told.lock().unwrap().push(message["params"].clone());
+                    let reply = json!({"jsonrpc": "2.0", "id": message["id"], "result": {"protocol": PROTOCOL}});
+                    if writeln!(plugin_writes, "{reply}").is_err() { break; }
+                }
+            });
+            let client = NativeClient::start(input, output, || {}, |_, _| {});
+            Ok(chilpa_bwrap::LaunchedNative { client, guest_directories: ("/guest/data".into(), "/guest/cache".into()),
+                export: paths.export.as_ref().map(|_| PathBuf::from("/guest/export")), process: Arc::new(Gone) })
+        }
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    struct Gone;
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeProcess for Gone {
+        fn alive(&self) -> bool { false }
+        fn terminate(&self) {}
+        fn wait(&self) {}
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn initialize_names_the_export_folder_where_the_plugin_reaches_it_and_only_once_approved() {
+        let natives = Arc::new(Natives::default());
+        let launcher = Arc::new(Greeted::default());
+        with_launcher(&natives, launcher.clone());
+        let root = tempfile::tempdir().unwrap();
+        let writes = PROCESS.replace(r#"{"type":"network","domains":["api.example.org"]}"#, r#"{"type":"folder_write"}"#);
+        let (folder, manifest) = installed(root.path(), &writes, true);
+        natives.start(&manifest, &folder).unwrap().stop();
+        let chosen = root.path().join("music");
+        std::fs::create_dir(&chosen).unwrap();
+        crate::plugin_center::export::set(root.path(), "test.source", &chosen).unwrap();
+        natives.start(&manifest, &folder).unwrap().stop();
+        assert_eq!(*launcher.handed.lock().unwrap(), vec![None, Some(chosen.canonicalize().unwrap())],
+            "the backend is handed the approved folder");
+        let told = launcher.told.lock().unwrap().clone();
+        assert_eq!(told[0].get("export_dir"), None, "no export_dir before a folder is approved");
+        assert_eq!(told[1]["export_dir"], json!("/guest/export"), "the path the backend says the plugin reaches it at");
+        assert_eq!(told[1]["data_dir"], json!("/guest/data"));
+    }
+
+    #[test]
+    fn a_network_change_without_a_thread_to_run_on_still_ends_every_process() {
+        let natives = Arc::new(Natives::default());
+        let ended = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let (plugin_reads, input) = std::io::pipe().unwrap();
+        let (output, plugin_writes) = std::io::pipe().unwrap();
+        let flag = ended.clone();
+        let client = NativeClient::start(input, output, move || flag.store(true, std::sync::atomic::Ordering::SeqCst), |_, _| {});
+        natives.live.write().unwrap().insert("test.source".into(), client);
+        natives.network_changed_with(crate::source_catalog::Catalog::new(), |_| Err(std::io::Error::other("no thread left")));
+        assert!(ended.load(std::sync::atomic::Ordering::SeqCst), "its process was ended on the caller's thread");
+        assert!(!natives.is_native("test.source"));
+        drop((plugin_reads, plugin_writes));
+    }
 }
+
+#[cfg(test)]
+#[path = "natives/article_tests.rs"]
+mod article_tests;

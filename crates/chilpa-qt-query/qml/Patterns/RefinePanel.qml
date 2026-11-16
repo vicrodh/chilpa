@@ -22,8 +22,6 @@ Rectangle {
     property string summary: ""
     property string loading: ""
     property bool narrow: false
-    // German labels need the wider column (124 instead of 104).
-    property bool longLabels: I18n.language === "de"
     property bool consoleShown: false
     // The field whose values are open, or nothing.
     property string picking: ""
@@ -37,10 +35,26 @@ Rectangle {
 
     readonly property var reading: {
         I18n.rev
+        Prefs.ratings
         return JSON.parse(QueryChips.refine(panel.query) || "{\"mode\":\"all\",\"rows\":[]}")
     }
     readonly property var rows: reading.rows || []
     readonly property int conditions: rows.reduce((n, row) => n + (row.group ? row.rows.length : 1), 0)
+    // The fields the rows name, groups' included, once each.
+    readonly property var shownFields: {
+        const out = []
+        const add = (row) => {
+            if (row.group) row.rows.forEach(add)
+            else if (out.indexOf(row.field) < 0) out.push(row.field)
+        }
+        rows.forEach(add)
+        return out
+    }
+    LabelColumn {
+        id: labels
+        fields: panel.shownFields
+        rowsWide: list.width
+    }
     // A row's identity across edits: the facade's ids are places, and a
     // place changes when a row before it goes.
     function keyOf(row) {
@@ -74,6 +88,7 @@ Rectangle {
         id: head
         width: parent.width
         conditions: panel.conditions
+        searching: RefineText.columnSearches(Library.queries).length > 0
         mode: panel.reading.mode || "all"
         summary: panel.summary
         loading: panel.loading
@@ -82,7 +97,11 @@ Rectangle {
         canDetach: !panel.narrow && !panel.detached
         onModeChosen: (mode) => panel.edit({ op: "mode", mode: mode })
         onUndoAsked: Library.applyQuery(QueryChips.undo())
-        onClearAsked: { panel.target = ""; Library.applyQuery("") }
+        onClearAsked: {
+            panel.target = ""
+            for (const search of RefineText.columnSearches(Library.queries)) Library.searchColumn(search.column, "")
+            Library.applyQuery("")
+        }
         onConsoleToggled: panel.consoleShown = !panel.consoleShown
         onDetachAsked: panel.detachAsked()
         canSave: panel.query.trim() !== ""
@@ -146,7 +165,7 @@ Rectangle {
                 ConditionRow {
                     row: slot.entry
                     narrow: panel.narrow
-                    longLabels: panel.longLabels
+                    labelWide: labels.wide
                     picking: panel.picking === slot.entry.field
                     onRemoved: panel.edit({ op: "remove", id: slot.entry.id })
                     onOperatorChosen: (key) => panel.edit({ op: "operator", id: slot.entry.id, to: key })
@@ -160,7 +179,7 @@ Rectangle {
                     group: slot.entry
                     target: panel.target === slot.entry.id
                     narrow: panel.narrow
-                    longLabels: panel.longLabels
+                    labelWide: labels.wide
                     picking: panel.picking
                     onModeChosen: (mode) => slot.entry.id === "new" ? null : panel.edit({ op: "mode", mode: mode, target: slot.entry.id })
                     onTargetToggled: panel.target = panel.target === slot.entry.id ? "" : slot.entry.id

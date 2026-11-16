@@ -6,10 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
-// About Chilpa, laid out as QBZ's AboutModal: the logo, the name and the
-// version over a rule, and under it, scrolling, what Chilpa is, where to
-// read more, which build this is and whom it thanks. Escape, the close
-// button or a click outside closes it.
+// Project information and credits. Closing releases the scrollable body.
 Modal {
     id: about
     readonly property var doc: {
@@ -19,8 +16,8 @@ Modal {
             return ({})
         }
     }
-    width: Math.min((parent ? parent.width : Frame.widest) - Frame.gutter, Frame.widest)
-    height: Math.min((parent ? parent.height : Frame.tallest) - Frame.gutter, Frame.tallest)
+    preferredWidth: Math.min((parent ? parent.width : Frame.widest) - Frame.gutter, Frame.widest)
+    preferredHeight: Frame.head + Metrics.gap16 * 2 + Metrics.hairline + flick.contentHeight + Metrics.modalInsets // derived: two vertical gaps around the divider
 
     Item {
         width: about.width - Metrics.modalInsets
@@ -87,13 +84,15 @@ Modal {
             width: parent.width
             clip: true
             contentWidth: width
-            contentHeight: body.height
+            contentHeight: bodyLoader.item ? bodyLoader.item.height : 0
             boundsBehavior: Flickable.StopAtBounds
             ScrollBar.vertical: ViewportScrollBar {}
-            AboutBody {
-                id: body
+            Loader {
+                id: bodyLoader
+                objectName: "aboutBodyLoader"
                 width: flick.width
-                doc: about.doc
+                active: about.visible
+                sourceComponent: AboutBody { width: bodyLoader.width; doc: about.doc }
             }
         }
     }

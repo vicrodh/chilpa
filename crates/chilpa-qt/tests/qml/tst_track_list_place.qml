@@ -31,6 +31,32 @@ TestCase {
         fill(80)
         view.contentY = view.originY
     }
+    function test_sheet_density_changes_the_existing_rows() {
+        list.sheet = true
+        list.optionalColumns = ["art", "favorite"]
+        list.rich = false
+        const compact = view.itemAtIndex(0)
+        verify(compact !== null)
+        compare(compact.height, Metrics.rowCompact)
+        verify(list.columns.artistW > 0 && list.columns.albumW > 0)
+        compare(list.columns.art, 0)
+        list.rich = true
+        compare(view.itemAtIndex(0), compact, "density updates the same delegate")
+        compare(compact.height, Metrics.rowRich)
+        verify(list.columns.art > 0 && list.columns.artistW > 0)
+        compare(compact.artistLabel.objectName, "trackPerformingArtists")
+        compare(compact.end.actionAt(1, 1), 1)
+        Ratings.pendingTracks = {"1":true}; Ratings.rev++
+        compare(Pulse.held, 1)
+        list.optionalColumns = []
+        compare(Pulse.held, 0, "a hidden favorite releases its visual clock")
+        Ratings.pendingTracks = ({}); Ratings.rev++
+        compare(compact.end.actionAt(1, 1), 2, "hiding the favorite keeps the menu clickable")
+        list.rich = false
+        compare(compact.height, Metrics.rowCompact)
+        list.sheet = false
+    }
+
     // What a reset does to the view: the rows are read again from the top.
     function readAgain(count) {
         list.keepPlace()
@@ -46,6 +72,22 @@ TestCase {
         verify(at > 0)
         readAgain(80)
         compare(view.contentY - view.originY, at, "the same row at the top, as far into it")
+    }
+    function test_explicit_jumps_keep_the_model_binding_and_clear_saved_place() {
+        list.keepPlace()
+        verify(list.place !== null)
+        list.jumpTo(50)
+        view.forceLayout()
+        compare(list.place, null)
+        compare(view.indexAt(2, view.contentY + 2), 50)
+        compare(view.reuseItems, true)
+        compare(view.model, tracks)
+        list.keepPlace()
+        list.positionAt(10, ListView.Beginning)
+        compare(list.place, null)
+        compare(view.indexAt(2, view.contentY + 2), 10)
+        fill(81)
+        compare(view.count, 81, "jumping keeps the live model binding")
     }
     function test_pending_favorites_stop_outside_the_viewport_and_recover_on_the_same_row() {
         view.positionViewAtIndex(30, ListView.Center)

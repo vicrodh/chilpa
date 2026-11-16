@@ -2,28 +2,45 @@
 mod biquad;
 mod engine;
 mod wire;
+mod settings;
+mod dynamics;
+mod control;
+mod response;
+mod equality;
 pub mod volume;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod extended_tests;
 
-pub use engine::{Control, Processor};
+pub use engine::Processor;
+pub use control::Control;
+pub use settings::{Channel, Dynamics, GraphicLayout, Limiter, Tone};
 use serde::{Deserialize, Serialize};
 
 pub const PROTOCOL: u32 = 1;
-pub const MAX_FILTERS: usize = 10;
+pub const MAX_FILTERS: usize = 64;
 pub const MAX_PRESETS: usize = 128;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum Shape { Peak, LowShelf, HighShelf, LowPass, HighPass, Notch }
+pub enum Shape { Peak, LowShelf, HighShelf, LowPass, HighPass, Notch, BandPass }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[serde(default, deny_unknown_fields)]
 pub struct Filter {
     pub shape: Shape,
     pub frequency: f64,
     pub gain_db: f64,
     pub q: f64,
+    pub enabled: bool,
+    pub channel: Channel,
+    pub locked: bool,
+    pub color: u8,
+}
+impl Default for Filter {
+    fn default() -> Self { Self { shape: Shape::Peak, frequency: 1000.0, gain_db: 0.0,
+        q: std::f64::consts::FRAC_1_SQRT_2, enabled: true, channel: Channel::All, locked: false, color: 0 } }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -37,6 +54,12 @@ pub struct Preset {
     pub source_url: String,
     pub preamp_db: f64,
     pub filters: Vec<Filter>,
+    pub graphic_layout: Option<GraphicLayout>,
+    pub eq_enabled: bool,
+    pub auto_headroom: bool,
+    pub tone: Tone,
+    pub dynamics: Dynamics,
+    pub limiter: Limiter,
     pub crossfeed: f64,
     pub width: f64,
     pub balance: f64,
@@ -52,6 +75,7 @@ impl Default for Preset {
     fn default() -> Self {
         Self { id: "custom".into(), name: "Custom".into(), category: "Personal".into(),
             description: String::new(), source: String::new(), source_url: String::new(), preamp_db: 0.0, filters: Vec::new(), crossfeed: 0.0,
+            graphic_layout: None, eq_enabled: true, auto_headroom: true, tone: Tone::default(), dynamics: Dynamics::default(), limiter: Limiter::default(),
             width: 1.0, balance: 0.0, delay_left_ms: 0.0, delay_right_ms: 0.0,
             invert_left: false, invert_right: false, compressor_threshold_db: -20.0, compressor_ratio: 1.0 }
     }
@@ -66,61 +90,32 @@ impl Preset {
             || self.source.len() > 256 || self.source_url.len() > 2048 || (!self.source_url.is_empty() && !self.source_url.starts_with("https://")) {
             return Err(chilpa_i18n::t("Invalid DSP preset identity."));
         }
-        if self.filters.len() > MAX_FILTERS { return Err(chilpa_i18n::t("Use at most 10 DSP filters.")); }
+        if self.filters.len() > MAX_FILTERS { return Err(chilpa_i18n::t("Use at most 64 DSP filters.")); }
         for f in &self.filters {
-            if !bounded(f.frequency, 10.0, 24_000.0) || !bounded(f.gain_db, -24.0, 18.0) || !bounded(f.q, 0.1, 12.0) {
+            if !bounded(f.frequency, 10.0, 24_000.0) || !bounded(f.gain_db, -24.0, 18.0) || !bounded(f.q, 0.1, 12.0) || f.color > 15 {
                 return Err(chilpa_i18n::t("DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."));
             }
         }
-        if !bounded(self.preamp_db, -60.0, 0.0) || !bounded(self.crossfeed, 0.0, 0.5)
+        if !bounded(self.preamp_db, -60.0, 24.0) || !bounded(self.crossfeed, 0.0, 0.5)
             || !bounded(self.width, 0.0, 1.0) || !bounded(self.balance, -1.0, 1.0)
             || !bounded(self.delay_left_ms, 0.0, 30.0) || !bounded(self.delay_right_ms, 0.0, 30.0)
-            || !bounded(self.compressor_threshold_db, -60.0, 0.0) || !bounded(self.compressor_ratio, 1.0, 6.0) {
+            || !bounded(self.compressor_threshold_db, -90.0, 0.0) || !bounded(self.compressor_ratio, 1.0, 10.0)
+            || !self.tone.validate() || !self.dynamics.validate() || !self.limiter.validate()
+            || self.graphic_layout.as_ref().is_some_and(|layout| !layout.validate()) {
             return Err(chilpa_i18n::t("Invalid DSP gain, stereo, delay or dynamics settings."));
         }
         Ok(())
     }
 
     pub fn is_identity(&self) -> bool {
-        self.preamp_db == 0.0 && self.filters.iter().all(|f| matches!(f.shape, Shape::Peak | Shape::LowShelf | Shape::HighShelf) && f.gain_db == 0.0)
+        self.preamp_db == 0.0 && (!self.eq_enabled || self.filters.iter().all(|f| !f.enabled || matches!(f.shape, Shape::Peak | Shape::LowShelf | Shape::HighShelf) && f.gain_db == 0.0))
             && self.crossfeed == 0.0 && self.width == 1.0 && self.balance == 0.0
             && self.delay_left_ms == 0.0 && self.delay_right_ms == 0.0
-            && !self.invert_left && !self.invert_right && self.compressor_ratio == 1.0
+            && !self.invert_left && !self.invert_right && !self.dynamics.active(self.compressor_ratio)
+            && self.tone.is_identity() && !self.limiter.enabled
     }
 
-    /// The EQ's combined response reserves headroom without summing boosts
-    /// at unrelated frequencies. A final sample guard catches transients.
-    pub fn effective_preamp_db(&self) -> f64 {
-        self.preamp_for_rate(48_000)
-    }
 
-    pub fn preamp_for_rate(&self, rate: u32) -> f64 {
-        if self.is_identity() { return 0.0; }
-        let rate = rate.max(1000);
-        let filters: Vec<_> = self.filters.iter().map(|f| biquad::Biquad::new(f, rate)).collect();
-        let top = f64::from(rate) * 0.49;
-        let response = |hz| filters.iter().map(|f| f.magnitude_db(hz, rate)).sum::<f64>();
-        let grid = (0..=2048).map(|i| 1.0 * top.powf(i as f64 / 2048.0));
-        let centers = self.filters.iter().map(|f| f.frequency.min(top));
-        let boost = grid.chain(centers).map(response).fold(0.0, f64::max);
-        self.preamp_db.min(-1.0 - boost)
-    }
-
-    /// Display-only EQ response, before the automatic preamp and stereo tools.
-    pub fn curve(&self, rate: u32) -> Vec<f64> {
-        let grid: Vec<f64> = (0..=128).map(|i| 20.0 * 1000_f64.powf(i as f64/128.0)).collect();
-        self.response_db(&grid, rate)
-    }
-
-    /// The same display-only response at the given frequencies; 0 dB from
-    /// just below Nyquist up.
-    pub fn response_db(&self, frequencies: &[f64], rate: u32) -> Vec<f64> {
-        let filters: Vec<_> = self.filters.iter().map(|f| biquad::Biquad::new(f, rate.max(1000))).collect();
-        frequencies.iter().map(|&hz| {
-            if hz >= f64::from(rate)*0.49 { return 0.0; }
-            filters.iter().map(|f| f.magnitude_db(hz, rate)).sum::<f64>()
-        }).collect()
-    }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

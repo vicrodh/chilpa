@@ -18,12 +18,15 @@ use chilpa_qt_stats as _;
 use chilpa_qt_link as _;
 use chilpa_qt_query as _;
 use chilpa_qt_devices as _;
+use chilpa_qt_offline as _;
 use chilpa_qt_playlists as _;
 use chilpa_qt_wizard as _;
 use chilpa_qt_controls as _;
 use chilpa_qt_gallery as _;
 use chilpa_qt_lyrics as _;
 use chilpa_qt_sources as _;
+use chilpa_qt_pages as _;
+use chilpa_qt_discovery as _;
 mod bridge;
 mod browse;
 mod registry;
@@ -36,29 +39,6 @@ unsafe extern "C" {
     fn chilpa_install_covers(engine: *mut std::ffi::c_void);
     /// Registers the shell modules and sets the window icon. See `modules.cpp`.
     fn chilpa_install_shell();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn chilpa_network_allowed(address: *const std::ffi::c_char) -> bool {
-    unsafe { std::ffi::CStr::from_ptr(address) }.to_str().is_ok_and(chilpa_api::network_allowed)
-}
-
-/// Makes a derivative off the UI thread. The C strings are valid and `out`
-/// has room for `capacity` bytes.
-#[no_mangle]
-pub unsafe extern "C" fn chilpa_cover(path: *const std::ffi::c_char, size: u32, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
-    let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
-    unsafe { format::write_path(chilpa_api::cover_derivative(std::path::Path::new(path), size), out, capacity) }
-}
-#[no_mangle]
-pub unsafe extern "C" fn chilpa_contained_cover(path: *const std::ffi::c_char, size: u32, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
-    let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
-    unsafe { format::write_path(chilpa_api::contained_cover(std::path::Path::new(path), size), out, capacity) }
-}
-#[no_mangle]
-pub unsafe extern "C" fn chilpa_atmosphere(path: *const std::ffi::c_char, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
-    let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
-    unsafe { format::write_path(chilpa_api::header_atmosphere(std::path::Path::new(path)), out, capacity) }
 }
 
 /// The desktop entry the window is named after, where there is one.

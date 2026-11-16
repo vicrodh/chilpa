@@ -20,6 +20,8 @@ TitledFlow {
     SearchResultCard { row: ({kind: 3, title: "Record", detail: "Album · Artist", art: ""}) }
     SearchRail { width: Metrics.confirmWidth; title: "Albums"; rows: [{at: 0, kind: 3, title: "Record", detail: "Album · Artist", art: ""}]; card: Component { SearchResultCard { required property var modelData; row: modelData } } }
     QueueAbout { width: Metrics.listenArt; height: Metrics.listenArt }
+    StartupSplash { width: Metrics.confirmWidth; height: Metrics.panesHeight }
+    StartupTask { width: Metrics.confirmWidth; text: "Reading the library…" }
     ListenNow { width: Metrics.listenArt; height: Metrics.listenArt * 2 } // derived: the art and room for a tab under it
     SearchTabs { width: Metrics.confirmWidth; tabs: [{id: "all", text: "All"}, {id: "songs", text: "Tracks"}]; tab: "songs"; selectable: true; selecting: true }
     SearchSongs { width: Metrics.confirmWidth; rows: previewChosen.rows; chosen: previewChosen }
@@ -32,9 +34,17 @@ TitledFlow {
     ShortcutColumns { width: Metrics.settingsMaxWidth; keys: ({ col1: [{ label: "Playback", rows: [{ id: "playback.toggle", label: "Play / Pause", shortcut: "Space", modified: false }] }] }) }
     LoopRow { width: Metrics.playbackOptionsWidth }
     LoopButton {}
+    ModelActionConfirmation {}
     QueueFooter { width: Metrics.rightPanel }
     QueueEnds { summary: "12 songs 1 hr 5 min"; remaining: 65 * 60000 } // derived: an hour and five minutes
     ShortcutsSheet {}
+    TrackInfoModal {}
+    Item { width: Metrics.confirmWidth; height: Metrics.button32; TrackInfoLink {} }
+    TrackInfoModal { subject: "/music/Record/01 Song.flac"; subjectTitle: "Song" }
+    TrackInfoRequests { listenForRequests: false }
+    TrackInfoSections { width: Metrics.trackInfoWidth; height: Metrics.trackInfoHeight }
+    InfoSection { width: Metrics.trackInfoWidth; title: "Technical data"; cells: [{label: "Format", value: "FLAC"}, {label: "Bit depth", value: "24"}, {label: "Sample rate", value: "96 kHz"}] }
+    InfoSection { width: Metrics.trackInfoWidth; title: "Media info"; code: true; cells: [{label: "File", value: "/music/Record/01 Song.flac", note: "Not found on disk"}] }
     CommandHelp { width: Metrics.settingsMaxWidth; room: Metrics.settingsMaxWidth; lines: [{usage:":help",description:"Command help"}] }
     ShortcutsEditor {}
     SleepTimer {}

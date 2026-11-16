@@ -111,7 +111,7 @@ fn source_tracks_without_records_share_the_filter_and_do_not_create_album_cards(
     lib.connection().execute("INSERT INTO tracks(id,source_id,external_id,title,artist,release_year,added_at)
         VALUES(1,?1,'/loose.flac','Local','Solo',1997,1)", [source]).unwrap();
     let reader = Reader::of(lib);
-    let index = std::rc::Rc::new(SourceIndex::new(vec![
+    let index = std::sync::Arc::new(SourceIndex::new(vec![
         SourceItem { track: -2, album: 0, title: "Remote".into(), artists: vec!["Solo".into()], album_artist: "Solo".into(),
             year: Some(1997), plugin: "guest".into(), saved_track: true, tracks: 1, playable: true, ..Default::default() },
         SourceItem { track: -3, album: -4, title: "On record".into(), album_title: "Record".into(), plugin: "guest".into(),

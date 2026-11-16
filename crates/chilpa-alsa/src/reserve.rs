@@ -14,6 +14,11 @@
 //! took is parked for the opening to pick up rather than handed back in
 //! between, so the server does not reopen the card only to be asked for it
 //! again a moment later; if nothing picks it up, it goes back by itself.
+//!
+//! A bus that does not let Chilpa own the name at all, as a sandbox's bus
+//! proxy does without the permission, leaves nobody to ask: the card is
+//! opened as it is, as without a session bus, and that is said once. An
+//! owner that will not let go is still a refusal.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -30,6 +35,15 @@ mod bus;
 use bus::ReservationBus;
 
 static ASKING: AtomicBool = AtomicBool::new(false);
+
+/// Whether the bus's refusal to let Chilpa own a reservation was said.
+static DENIAL_SAID: AtomicBool = AtomicBool::new(false);
+
+/// Whether the bus itself refused the name, by its policy or a sandbox's
+/// bus proxy, rather than an owner holding it.
+fn denied(error: &dbus::Error) -> bool {
+    error.name() == Some("org.freedesktop.DBus.Error.AccessDenied")
+}
 
 /// What a measurement took and nobody opened yet, by card, with the turn it
 /// was parked on: a timer only takes back the one it was started for.
@@ -115,10 +129,11 @@ impl Reservation {
             );
             return Ok(None);
         };
-        Self::on_bus(card, bus).map(Some)
+        Self::on_bus(card, bus)
     }
 
-    fn on_bus(card: u32, connection: Connection) -> Result<Self, String> {
+    /// None when the bus does not let Chilpa own the name.
+    fn on_bus(card: u32, connection: Connection) -> Result<Option<Self>, String> {
         let started = std::time::Instant::now();
         let name = format!("org.freedesktop.ReserveDevice1.Audio{card}");
         let refused = || chilpa_i18n::t_args("the sound server would not let go of card {}", &[&card.to_string()]);
@@ -137,6 +152,18 @@ impl Reservation {
         let request_started = std::time::Instant::now();
         let first = match bus.request_name(name.as_str()) {
             Ok(reply) => reply,
+            Err(error) if denied(&error) => {
+                chilpa_audio::diagnostics::trace(
+                    "reserve",
+                    "name_request_denied",
+                    format_args!("after={:?} card={card} error={error}", request_started.elapsed()),
+                );
+                if !DENIAL_SAID.swap(true, Ordering::Relaxed) {
+                    eprintln!("alsa: the session bus does not let Chilpa reserve a sound card ({}); each card is opened without asking the sound server for it",
+                        error.message().unwrap_or("access denied"));
+                }
+                return Ok(None);
+            }
             Err(error) => {
                 chilpa_audio::diagnostics::trace(
                     "reserve",
@@ -215,7 +242,7 @@ impl Reservation {
         let owner_name = bus.connection.unique_name().to_string();
         let stop = Arc::new(AtomicBool::new(false));
         let server = Server { worker: Some(serve(bus, &stop)), stop };
-        Ok(Self { name, #[cfg(test)] owner_name, _server: server })
+        Ok(Some(Self { name, #[cfg(test)] owner_name, _server: server }))
     }
 
     /// Keeps it for the opening that follows a measurement. If none comes,

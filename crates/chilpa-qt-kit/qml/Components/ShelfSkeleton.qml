@@ -10,12 +10,13 @@ Item {
     property bool oneRow: true
     property int count: Metrics.shelfLimit
     property real fixedCardWidth: 0
+    property real headerHeight: Metrics.rowHeader
     property real trackRowHeight: Metrics.rowRich
     readonly property int columns: CardLayout.columns(width)
     readonly property real cardWidth: fixedCardWidth || CardLayout.cardWidth
     readonly property int shownCards: oneRow ? Math.min(count, columns) : count
     readonly property int rows: Math.max(1, Math.ceil(shownCards / columns))
-    implicitHeight: tracks ? Metrics.rowHeader + count * trackRowHeight
+    implicitHeight: tracks ? headerHeight + count * trackRowHeight
         : rows * (cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight + Metrics.gridGap) - Metrics.gridGap + Metrics.cardRing * 2
 
     Repeater {
@@ -24,7 +25,7 @@ Item {
             required property int index
             readonly property real art: skeleton.tracks ? skeleton.trackRowHeight === Metrics.rowRich ? Metrics.artRow : 0 : skeleton.cardWidth
             x: skeleton.tracks ? 0 : Metrics.cardRing + (index % skeleton.columns) * (skeleton.cardWidth + Metrics.gridGap)
-            y: skeleton.tracks ? Metrics.rowHeader + index * skeleton.trackRowHeight
+            y: skeleton.tracks ? skeleton.headerHeight + index * skeleton.trackRowHeight
                 : Metrics.cardRing + Math.floor(index / skeleton.columns) * (skeleton.cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight + Metrics.gridGap)
             width: skeleton.tracks ? skeleton.width : skeleton.cardWidth
             height: skeleton.tracks ? skeleton.trackRowHeight : skeleton.cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight

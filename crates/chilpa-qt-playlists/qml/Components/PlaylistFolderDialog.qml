@@ -35,7 +35,7 @@ Modal {
         }
         return rows
     }
-    width: Math.max(Metrics.modalInsets, Math.min(Metrics.playlistFolderDialog, parent.width - Metrics.modalInset))
+    preferredWidth: Math.max(Metrics.modalInsets, Math.min(Metrics.playlistFolderDialog, parent.width - Metrics.modalInset))
     closePolicy: pending ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
     function show(id,name,color) {
         catalog = JSON.parse(Playlists.catalogJson(""))

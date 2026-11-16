@@ -43,6 +43,8 @@ pub struct TrackRow {
     pub duration_ms: u64,
     pub plays: usize,
     pub quality: Quality,
+    /// Stored depth, including values the quality badge omits.
+    pub bit_depth: Option<u8>,
     /// Its record's cover, empty if there is none.
     pub artwork_path: String,
     /// It can be played now. A row that cannot is dimmed, does not play,
@@ -107,6 +109,7 @@ pub struct GroupHeader {
 pub(crate) fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
     TrackRow {
         quality: Quality::of_track(&t.external_id, t.codec.as_deref(), t.bit_depth, t.sample_rate_hz),
+        bit_depth: t.bit_depth,
         available: t.available,
         ai_generated: None,
         explicit: t.explicit,
@@ -145,6 +148,8 @@ pub struct Facets {
     pub ratings: Vec<FacetEntry>,
     pub artists: Vec<FacetEntry>,
     pub albums: Vec<FacetEntry>,
+    pub bits: Vec<FacetEntry>,
+    pub rates: Vec<FacetEntry>,
 }
 
 /// A rating column's entry named for the window: its stars, or none.
@@ -329,7 +334,7 @@ pub(crate) fn file_row(path: &str) -> TrackRow {
     // Not in the library: a file opened from a folder plays if it is there;
     // a server's track the library no longer holds does not.
     let available = !chilpa_models::RemoteEntry::is_remote(path) && std::path::Path::new(path).exists();
-    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new(), disc_subtitle: String::new(), work: String::new(), composer_target: String::new(), groups: None, ai_generated: None, explicit: None, credits: None }
+    TrackRow { bit_depth: None, title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new(), disc_subtitle: String::new(), work: String::new(), composer_target: String::new(), groups: None, ai_generated: None, explicit: None, credits: None }
 }
 
 /// A record as its page shows it.
@@ -355,9 +360,6 @@ pub struct Reader {
     pub(crate) lib: chilpa_library::Library,
     pub(crate) catalog: Option<std::sync::Arc<crate::source_catalog::Catalog>>,
     refresh_cache: std::cell::RefCell<RefreshCache>,
-    /// What the listener integrated from the sources, while the catalog and
-    /// the choice of what to integrate stay as they were.
-    pub(crate) sources: std::cell::RefCell<Option<(crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)>>,
 }
 
 /// The library's editions, whether editions are one card, and the copies
@@ -404,7 +406,7 @@ impl<T> PageCache<T> {
 impl Reader {
     #[cfg(test)]
     pub(crate) fn of(lib: chilpa_library::Library) -> Self {
-        Self { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() }
+        Self { lib, catalog: None, refresh_cache: Default::default() }
     }
 
     /// Forgets the answers kept for repeated filters, so a measurement reads.
@@ -414,7 +416,7 @@ impl Reader {
     }
 
     pub(crate) fn open(path: &std::path::Path) -> Result<Self, String> {
-        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() })
+        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None, refresh_cache: Default::default() })
             .map_err(|e| format!("could not open library reader at {}: {e}", path.display()))
     }
 
@@ -649,7 +651,9 @@ impl Reader {
 
     /// The same, with the integrated sources given.
     pub(crate) fn refresh_using(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool,
-        (stamp, index): (crate::library_sources::Stamp, std::rc::Rc<crate::library_sources::SourceIndex>)) -> Option<(Facets, Snapshot)> {
+        (stamp, index): (crate::library_sources::Stamp, std::sync::Arc<crate::library_sources::SourceIndex>)) -> Option<(Facets, Snapshot)> {
+        let unrated = crate::rating_switch::applied(filter, crate::rating_switch::on());
+        let filter = unrated.as_ref();
         // A genre typed close to one there is reads as that one too, and
         // words that are a name the library has read as that name.
         let widened;
@@ -740,7 +744,7 @@ impl Reader {
         let mut left = crate::library_query::facet_filter(f, "artist");
         let album_filter = crate::library_query::facet_filter(f, "album");
         left.choose(5, &[]);
-        left.queries[5..].fill(String::new());
+        left.queries[5..7].fill(String::new());
         let left_albums = read!(self.lib.facet_albums(&left));
         let left_ids: Vec<i64> = left_albums.iter().filter_map(|a| a.key.parse().ok()).collect();
         let mut albums = if f.artist.is_none() && f.artists.is_empty() && f.queries[5].trim().is_empty() && left.query == album_filter.query {
@@ -777,6 +781,8 @@ impl Reader {
         let years = read!(self.lib.facet_years_matching(&crate::library_query::facet_filter(f, "year")));
         Some(Facets {
             sources, years,
+            bits: read!(self.lib.facet_technical(&crate::library_query::facet_filter(f, "bits"), "bits")),
+            rates: read!(self.lib.facet_technical(&crate::library_query::facet_filter(f, "rate"), "rate")),
             genres: read!(self.lib.facet_genres(&crate::library_query::facet_filter(f, "genre"))), labels: read!(self.lib.facet_labels(&crate::library_query::facet_filter(f, "label"))),
             composers: read!(self.lib.facet_composers(&crate::library_query::facet_filter(f, "composer"))),
             ratings: read!(self.lib.facet_ratings(&crate::library_query::facet_filter(f, "rating"))).into_iter().map(named_stars).collect(), artists, albums,
@@ -872,7 +878,7 @@ impl Chilpa {
                     row.disc = track.disc;
                     row.number = track.number;
                     if art.is_empty() { self.catalog.want_art_of(&row.path); } else { row.artwork_path = art; }
-                    if let Some(format) = track.format { row.quality = format.quality(); }
+                    if let Some(format) = track.format { row.bit_depth = format.bits; row.quality = format.quality(); }
                 } else {
                     // The library's row for a source's track (cached when a
                     // list was imported or synced) has a record of its own
@@ -1051,12 +1057,9 @@ impl Chilpa {
     /// A badge reads stored metadata; drawing a card never resolves audio.
     pub fn album_card_quality(&mut self, id: i64) -> crate::Quality {
         if id < 0 {
-            let Some(card) = self.catalog.card(id) else { return crate::Quality::default() };
-            let known = self.catalog.tracks_by_ids(card.tracks.as_deref().unwrap_or_default()).into_iter().filter_map(|(t,_)| t.format).filter(|f| f.rate.is_some()).map(|f| f.quality()).max_by_key(|q| (q.tier.rank(),q.bits,q.rate_hz));
-            return known.or_else(|| card.format.map(|f| f.quality())).unwrap_or_default();
+            return self.catalog.card_quality(id);
         }
-        self.album_track_rows(id).into_iter().map(|r| r.quality)
-            .max_by_key(|q| (q.tier.rank(), q.bits, q.rate_hz)).unwrap_or_default()
+        self.library().and_then(|lib| lib.album_quality(id).ok()).unwrap_or_default()
     }
 
     /// The output that is remembered, or the first one there is. The boolean
@@ -1167,7 +1170,7 @@ mod tests {
                     rusqlite::params![source, format!("/{release}/{number}.flac"), artist, credit, id, bits]).unwrap();
             }
         }
-        let reader = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() };
+        let reader = Reader { lib, catalog: None, refresh_cache: Default::default() };
         for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B"] {
             let mut filter = Filter::default();
             filter.queries[5] = artist.into();
@@ -1196,7 +1199,7 @@ mod tests {
                 VALUES (?1,?2,?3,'Song',1,?4,?5,1)", rusqlite::params![id,source,format!("/{id}.flac"),3 - (id - 1) / 500,id]).unwrap();
         }
         lib.connection().execute_batch("COMMIT").unwrap();
-        let reader = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() };
+        let reader = Reader { lib, catalog: None, refresh_cache: Default::default() };
         let mut ids: Vec<i64> = (1..=1205).rev().collect();
         ids.insert(2, 9999); ids.push(1); ids.push(1205);
         let paths = reader.paths(&ids);
@@ -1242,7 +1245,7 @@ mod tests {
                 [source],
             )
             .unwrap();
-        let found = Reader { lib, catalog: None, refresh_cache: Default::default(), sources: Default::default() }.folder_matches("rock");
+        let found = Reader { lib, catalog: None, refresh_cache: Default::default() }.folder_matches("rock");
         let paths: Vec<_> = found.folders.iter().map(|folder| folder.path.as_str()).collect();
         assert_eq!(paths, ["/music/Rock", "/music/Rock/Album"]);
     }

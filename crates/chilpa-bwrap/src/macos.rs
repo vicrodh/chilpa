@@ -1,10 +1,20 @@
 //! Seatbelt confines each worker to its own package, state and cache.
-use crate::NativePaths;
+use crate::process::{log_errors, ChildProcess, LaunchedNative, NativeLauncher, NativeProcess, Notice, CACHE_DIR_VARIABLE, DATA_DIR_VARIABLE};
+use crate::{NativePaths, Unavailable};
 use chilpa_plugin::{bridge::BridgeError, native::NativeClient};
-use std::{ffi::OsString, path::{Path, PathBuf}, process::{Child, Command, Stdio}, sync::{Arc, Mutex}};
+use std::{ffi::OsString, path::{Path, PathBuf}, process::{Command, Stdio}, sync::Arc};
 use std::os::unix::process::CommandExt;
 
 const POLICY: &str = include_str!("macos.sb");
+/// What a worker with a network adds: outbound connections, name lookups, and
+/// the per-user trust daemon. The system's certificate verifier, which a
+/// plugin's HTTPS client may use instead of a bundled root list, evaluates a
+/// server's chain in `trustd`; without it every handshake fails with
+/// errSecInternalComponent (-26276).
+const NETWORK: &str = "\n(allow network-outbound)\n(allow mach-lookup (global-name \"com.apple.mDNSResponder\") \
+    (global-name \"com.apple.system.opendirectoryd.libinfo\") (global-name \"com.apple.trustd.agent\"))\n";
+/// The sandbox program, part of the system.
+const SANDBOX: &str = "/usr/bin/sandbox-exec";
 
 fn directory(path: &Path) -> Result<PathBuf, BridgeError> {
     let metadata = std::fs::symlink_metadata(path).map_err(|_| BridgeError::Disconnected)?;
@@ -20,7 +30,32 @@ fn parameter(command: &mut Command, name: &str, path: &Path) {
     command.arg("-D").arg(argument);
 }
 
+/// The export folder the policy grants, at its canonical path. Resolved
+/// again at each launch, so checked again: a folder above it may have become
+/// a link into Chilpa's own since it was approved.
+fn granted_export(paths: &NativePaths) -> Result<Option<PathBuf>, BridgeError> {
+    let Some(export) = &paths.export else { return Ok(None) };
+    let export = directory(export)?;
+    if paths.is_private(&export) { return Err(BridgeError::Denied); }
+    Ok(Some(export))
+}
+
+/// The sandboxed command and the canonical folders its policy grants,
+/// resolved once: the folders the plugin is told are these same paths, so a
+/// link swapped in between cannot make the two differ.
+struct Prepared {
+    command: Command,
+    data: PathBuf,
+    cache: PathBuf,
+    export: Option<PathBuf>,
+}
+
+#[cfg(test)]
 fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
+    prepare(paths, network).map(|prepared| prepared.command)
+}
+
+fn prepare(paths: &NativePaths, network: bool) -> Result<Prepared, BridgeError> {
     if unsafe { libc::geteuid() } == 0 { return Err(BridgeError::Denied); }
     let folder = directory(&paths.folder)?;
     let program = folder.join("plugin").canonicalize().map_err(|_| BridgeError::Disconnected)?;
@@ -31,21 +66,22 @@ fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
     let temporary = cache.join("tmp");
     std::fs::create_dir_all(&temporary).map_err(|_| BridgeError::Disconnected)?;
     let mut policy = POLICY.to_string();
-    let mut command = Command::new("/usr/bin/sandbox-exec");
+    let mut command = Command::new(SANDBOX);
     for (name, path) in [("PLUGIN", &folder), ("PROGRAM", &program), ("DATA", &data), ("CACHE", &cache)] {
         parameter(&mut command, name, path);
     }
-    if let Some(export) = &paths.export {
-        parameter(&mut command, "EXPORT", &directory(export)?);
+    let export = granted_export(paths)?;
+    if let Some(export) = &export {
+        parameter(&mut command, "EXPORT", export);
         policy.push_str("\n(allow file-read* file-write* (subpath (param \"EXPORT\")))\n");
     }
     if network {
-        policy.push_str("\n(allow network-outbound)\n(allow mach-lookup (global-name \"com.apple.mDNSResponder\") (global-name \"com.apple.system.opendirectoryd.libinfo\"))\n");
+        policy.push_str(NETWORK);
     }
     command.env_clear().env("PATH", "/usr/bin:/bin").env("HOME", &data)
         .env("CFFIXED_USER_HOME", &data).env("CFPREFERENCES_AVOID_DAEMON", "1")
         .env("TMPDIR", &temporary).env("XDG_CACHE_HOME", &cache)
-        .env("CHILPA_PLUGIN_DATA_DIR", &data).env("CHILPA_PLUGIN_CACHE_DIR", &cache)
+        .env(DATA_DIR_VARIABLE, &data).env(CACHE_DIR_VARIABLE, &cache)
         .current_dir(&data).arg("-p").arg(policy).arg(program)
         .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
     // The shared dyld cache reserves far more address space than resident memory.
@@ -60,16 +96,7 @@ fn command(paths: &NativePaths, network: bool) -> Result<Command, BridgeError> {
             Ok(())
         });
     }
-    Ok(command)
-}
-
-fn end(child: &mut Child) {
-    if child.try_wait().ok().flatten().is_none() {
-        // I own this process group; the sandbox also denies worker forks.
-        unsafe { libc::kill(-(child.id() as libc::pid_t), libc::SIGKILL); }
-        let _ = child.kill();
-    }
-    let _ = child.wait();
+    Ok(Prepared { command, data, cache, export })
 }
 
 fn footprint(pid: u32) -> Option<u64> {
@@ -80,41 +107,46 @@ fn footprint(pid: u32) -> Option<u64> {
     Some(usage.ri_resident_size.max(usage.ri_phys_footprint))
 }
 
+/// Seatbelt from the system, with the plugin's folders at their own paths.
 /// I never fall back to launching outside the sandbox when confinement fails.
-pub fn launch_native(
-    paths: &NativePaths,
-    name: &str,
-    memory_bytes: usize,
-    network: bool,
-    notice: impl Fn(&str, &serde_json::Value) + Send + 'static,
-) -> Result<Arc<NativeClient>, BridgeError> {
-    if memory_bytes < 64 * 1024 * 1024 { return Err(BridgeError::Denied); }
-    let mut child = command(paths, network)?.spawn().map_err(|_| BridgeError::Disconnected)?;
-    let input = child.stdin.take().ok_or(BridgeError::Disconnected)?;
-    let output = child.stdout.take().ok_or(BridgeError::Disconnected)?;
-    if let Some(errors) = child.stderr.take() {
-        let name = name.to_string();
-        let _ = std::thread::Builder::new().name("chilpa-native-err".into()).spawn(move || {
-            use std::io::{BufRead, BufReader, Read};
-            let mut errors = BufReader::new(errors);
-            loop {
-                let mut line = Vec::new();
-                if errors.by_ref().take(8192).read_until(b'\n', &mut line).unwrap_or(0) == 0 { break; }
-                eprintln!("plugin[{name}]: {}", String::from_utf8_lossy(&line).trim_end());
+pub struct Seatbelt;
+
+impl NativeLauncher for Seatbelt {
+    fn availability(&self) -> Result<(), Unavailable> {
+        if unsafe { libc::geteuid() } == 0 { return Err(Unavailable::Privileged); }
+        if !Path::new(SANDBOX).is_file() { return Err(Unavailable::MissingProgram(SANDBOX.into())); }
+        Ok(())
+    }
+
+    fn launch(&self, paths: &NativePaths, name: &str, memory_bytes: usize, network: bool, notice: Notice)
+        -> Result<LaunchedNative, BridgeError> {
+        if memory_bytes < 64 * 1024 * 1024 { return Err(BridgeError::Denied); }
+        // The plugin is told the same canonical folders the policy grants.
+        let Prepared { command: mut sandboxed, data, cache, export } = prepare(paths, network)?;
+        let guest_directories = (data, cache);
+        let mut child = sandboxed.spawn().map_err(|_| BridgeError::Disconnected)?;
+        let input = child.stdin.take().ok_or(BridgeError::Disconnected)?;
+        let output = child.stdout.take().ok_or(BridgeError::Disconnected)?;
+        if let Some(errors) = child.stderr.take() { log_errors(name, errors); }
+        // The process leads its own group (`setpgid` above), and the sandbox
+        // also denies it forks.
+        let process = Arc::new(ChildProcess::new(child, true));
+        let weak = Arc::downgrade(&process);
+        let monitor = std::thread::Builder::new().name("chilpa-native-budget".into()).spawn(move || loop {
+            std::thread::sleep(std::time::Duration::from_millis(125));
+            let Some(process) = weak.upgrade() else { break };
+            if !process.alive() { break; }
+            if footprint(process.id()).is_none_or(|bytes| bytes > memory_bytes as u64) {
+                process.terminate();
+                process.wait();
+                break;
             }
         });
+        if monitor.is_err() { process.terminate(); process.wait(); return Err(BridgeError::Disconnected); }
+        let ended = process.clone();
+        let client = NativeClient::start(input, output, move || { ended.terminate(); ended.wait(); }, notice);
+        Ok(LaunchedNative { client, guest_directories, export, process })
     }
-    let child = Arc::new(Mutex::new(child));
-    let weak = Arc::downgrade(&child);
-    let monitor = std::thread::Builder::new().name("chilpa-native-budget".into()).spawn(move || loop {
-        std::thread::sleep(std::time::Duration::from_millis(125));
-        let Some(child) = weak.upgrade() else { break };
-        let mut child = child.lock().unwrap_or_else(|e| e.into_inner());
-        if child.try_wait().ok().flatten().is_some() { break; }
-        if footprint(child.id()).is_none_or(|bytes| bytes > memory_bytes as u64) { end(&mut child); break; }
-    });
-    if monitor.is_err() { end(&mut child.lock().unwrap_or_else(|e| e.into_inner())); return Err(BridgeError::Disconnected); }
-    Ok(NativeClient::start(input, output, move || end(&mut child.lock().unwrap_or_else(|e| e.into_inner())), notice))
 }
 
 #[cfg(test)]

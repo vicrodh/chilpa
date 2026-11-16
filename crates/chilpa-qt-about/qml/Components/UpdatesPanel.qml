@@ -9,6 +9,8 @@ Column {
     id: panel
     readonly property var state: JSON.parse(Updates.snapshot || "{}")
     readonly property bool offered: ["available", "downloading", "installing", "cancelling", "ready"].indexOf(state.phase) >= 0 && !!state.version
+    // A store keeps this copy up to date: Chilpa neither checks nor downloads.
+    readonly property bool storeManaged: state.can_check === false
     visible: state.supported === true
     spacing: Metrics.gap8
     Text { text: I18n.tr("Updates", I18n.rev); color: Theme.color.textPrimary; font.pointSize: Type.titleSmall }
@@ -18,7 +20,8 @@ Column {
         wrapMode: Text.WordWrap
         font.pointSize: Type.body
         color: Theme.color.textSecondary
-        text: panel.state.offline === true && !panel.state.busy ? I18n.tr("Offline", I18n.rev) : panel.state.phase === "checking" ? I18n.tr("Checking for updates…", I18n.rev)
+        text: panel.storeManaged ? I18n.trArgs("{} keeps this copy of Chilpa up to date. Update it from your software center.", [panel.state.installation || ""], I18n.rev)
+            : panel.state.offline === true && !panel.state.busy ? I18n.tr("Offline", I18n.rev) : panel.state.phase === "checking" ? I18n.tr("Checking for updates…", I18n.rev)
             : panel.state.phase === "available" ? I18n.tr("A new version of Chilpa is available.", I18n.rev)
             : panel.state.phase === "downloading" ? I18n.tr("Downloading update…", I18n.rev)
             : panel.state.phase === "installing" ? I18n.tr("Preparing the updated AppImage…", I18n.rev)
@@ -49,11 +52,13 @@ Column {
         value: panel.state.progress || 0
     }
     Row {
+        visible: !panel.storeManaged
         spacing: Metrics.gap8
         Toggle { objectName: "automaticUpdates"; checked: panel.state.automatic === true; onToggled: on => Updates.setAutomatic(on) }
         Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Check for updates automatically", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     }
     Row {
+        visible: !panel.storeManaged
         spacing: Metrics.gap8
         PillButton { objectName: "checkUpdates"; text: I18n.tr("Check for updates", I18n.rev); enabled: !panel.state.offline && !panel.state.busy && panel.state.phase !== "ready"; onClicked: Updates.check(false) }
         PillButton { objectName: "downloadUpdate"; enabled: !panel.state.offline; text: I18n.tr("Update", I18n.rev); kind: "primary"; visible: panel.state.phase === "available" && panel.state.can_install === true; onClicked: Updates.download() }

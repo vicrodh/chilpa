@@ -9,6 +9,8 @@ pub mod inspect;
 pub(crate) mod advisory;
 pub mod read;
 pub mod write;
+mod lease;
+pub use lease::WriteLease;
 
 pub use inspect::{inspect, Layer, Layers, Refusal};
 pub use read::{snapshot, Snapshot};

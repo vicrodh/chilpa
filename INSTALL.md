@@ -68,6 +68,39 @@ curl -fsSL https://pkgs.chilpa.app/chilpa.asc | gpg --show-keys --fingerprint
 
 `chilpa.repo` turns on `repo_gpgcheck`, so dnf and zypper reject metadata that does not match the key. The RPM files themselves are not signed individually, so it keeps `gpgcheck=0`; their SHA-256 sums are in the release's `SHA256SUMS`.
 
+## Flatpak
+
+Chilpa's own Flatpak repository, `flatpak.chilpa.app`, brings every new stable release through `flatpak update`. The runtime, KDE 6.11, comes from Flathub:
+
+```sh
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user https://flatpak.chilpa.app/app.chilpa.Chilpa.flatpakref
+flatpak run app.chilpa.Chilpa
+```
+
+To add the repository first and install from it:
+
+```sh
+flatpak remote-add --user --if-not-exists chilpa https://flatpak.chilpa.app/chilpa.flatpakrepo
+flatpak install --user chilpa app.chilpa.Chilpa
+```
+
+Each release also carries a single-file bundle, `Chilpa-X.Y.Z-x86_64.flatpak`, with `SHA256SUMS-flatpak`. Once installed, it updates from the same repository:
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS-flatpak
+flatpak install --user Chilpa-X.Y.Z-x86_64.flatpak
+```
+
+The repository's commits and summary are signed with a key made only for it, which the `.flatpakrepo`, the `.flatpakref` and the bundle carry; `flatpak` refuses anything the key did not sign.
+
+**What the sandbox allows.** This build reaches the sound cards in `/dev/snd` for direct ALSA output, PipeWire's own socket, and the session bus name that reserves a card while Chilpa holds it. It reaches none of your folders: the library and a plugin's export folder are chosen in the file chooser. Two things work differently inside it:
+
+- PipeWire's exclusive mode cannot change the graph's rate, since a sandboxed program may read PipeWire's settings but not write them. Add the rates of your music to `default.clock.allowed-rates` in your PipeWire configuration.
+- A plugin's export folder chosen in the file chooser needs a kernel with Landlock (`CONFIG_SECURITY_LANDLOCK`), which keeps the plugin inside that folder. Without it Chilpa says so and does not hand the folder to the plugin. A folder you grant with `flatpak override --user --filesystem=PATH app.chilpa.Chilpa` works on any kernel.
+
+Your data lives under `~/.var/app/app.chilpa.Chilpa`, apart from a copy installed any other way.
+
 ## Arch Linux and Gentoo
 
 ```sh
@@ -140,6 +173,7 @@ Remove the application:
 | RPM | `sudo dnf remove chilpa` |
 | AppImage | delete the `.AppImage`, then the menu entry files listed under AppImage above |
 | Tarball | delete the extracted folder |
+| Flatpak | `flatpak uninstall --user app.chilpa.Chilpa`; its data is `~/.var/app/app.chilpa.Chilpa` |
 | macOS, by hand | delete `Chilpa.app` from Applications |
 
 Removing the application leaves your data on disk.

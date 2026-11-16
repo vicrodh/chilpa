@@ -51,6 +51,7 @@ Item {
         sourceInfo: ({icon: row.sourceIcon})
     }
     Text {
+        objectName: "playlistFolderTitle"
         anchors.left: folderIcon.right
         anchors.leftMargin: Metrics.navItemPadding
         anchors.right: count.left

@@ -535,8 +535,14 @@ impl Chilpa {
         if local.is_empty() {
             return !remote.is_empty();
         }
-        let track_ids = &local[..];
-        self.library().is_some_and(|lib| lib.set_track_favorites(track_ids, favorite).is_ok())
+        let before = self.hearts_before("track", &local);
+        let kept = self.library().is_some_and(|lib| lib.set_track_favorites(&local, favorite).is_ok());
+        if kept {
+            for (id, before) in local.iter().zip(before) {
+                self.heart_changed("track", *id, before, favorite);
+            }
+        }
+        kept
     }
 
     /// Moves a track of a list from one position to another.

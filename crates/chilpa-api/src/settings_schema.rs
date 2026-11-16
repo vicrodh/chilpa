@@ -40,6 +40,8 @@ pub enum Control {
     /// The theme's picker: the list with its light/dark filter, and under
     /// it the options of the auto and the custom themes.
     Theme,
+    /// A line of text, kept when Enter is pressed or the field is left.
+    Text,
 }
 
 impl Control {
@@ -58,6 +60,7 @@ impl Control {
             Control::Slider => "slider",
             Control::File => "file",
             Control::Theme => "theme",
+            Control::Text => "text",
         }
     }
 }
@@ -103,6 +106,7 @@ pub const SECTIONS: &[Section] = &[
                 settings: &[
                     setting("audio.backend", Chilpa::mark("Audio stack"), Chilpa::mark("Where the samples go: straight to the device, or through a sound server."), Control::Select),
                     setting("audio.device", Chilpa::mark("Output device"), Chilpa::mark("BP marks an output that takes the samples untouched."), Control::Device),
+                    setting(crate::outputs::device_lock::LOCK, Chilpa::mark("Lock output device"), Chilpa::mark("Every track plays on this output, whatever its source, even when the system default changes. If it is unplugged, Chilpa plays on the default and says so."), Control::Toggle),
                     setting("audio.dsdMode", Chilpa::mark("DSD playback"), Chilpa::mark("Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."), Control::Select),
                     setting("audio.exclusive", Chilpa::mark("Exclusive mode"), Chilpa::mark("The output plays only Chilpa. Other programs wait until it lets go."), Control::Toggle),
                     setting("audio.forceRate", Chilpa::mark("DAC passthrough"), Chilpa::mark("Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."), Control::Toggle),
@@ -135,6 +139,7 @@ pub const SECTIONS: &[Section] = &[
                     setting("playback.normalize", Chilpa::mark("Volume normalization"), Chilpa::mark("Level loudness across tracks. This breaks strict bit perfect."), Control::Toggle),
                     setting(crate::queue::normalization::TARGET, Chilpa::mark("Target loudness"), Chilpa::mark("The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."), Control::Select),
                     setting(crate::queue::normalization::PREVENT_CLIPPING, Chilpa::mark("Prevent clipping"), Chilpa::mark("Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."), Control::Toggle),
+                    setting(crate::queue::back_button::BACK, Chilpa::mark("Back button"), Chilpa::mark("What one press does. A second press right after goes to the previous track."), Control::Select),
                     setting("playback.keepQueue", Chilpa::mark("Keep the queue between sessions"), Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."), Control::Toggle),
                 ],
             },
@@ -253,8 +258,31 @@ pub const SECTIONS: &[Section] = &[
                 settings: &[setting(
                     "library.metaSrc",
                     Chilpa::mark("Look records up in"),
-                    Chilpa::mark("Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."),
+                    Chilpa::mark("The provider for Chilpa's lookup engine. Embedded tags only disables online lookup for both engines."),
                     Control::Select,
+                )],
+            },
+            Group {
+                title: Chilpa::mark("Metadata search engine"),
+                settings: &[
+                    setting(crate::beets_runtime::ENGINE, Chilpa::mark("Search engine"), Chilpa::mark("Choose the engine used by the metadata editor."), Control::Segmented),
+                    setting("metadata.beets.status", Chilpa::mark("beets availability"), "", Control::Status),
+                    action("metadata.beets.install", Chilpa::mark("Install beets"), Chilpa::mark("Download a private Python environment with beets. A successful installation becomes the default runtime."), Control::Progress, Chilpa::mark("Download and install")),
+                    action(crate::beets_runtime::PYTHON, Chilpa::mark("Custom Python executable"), Chilpa::mark("Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."), Control::File, Chilpa::mark("Choose executable…")),
+                    action("metadata.beets.check", Chilpa::mark("Check beets"), Chilpa::mark("Check the selected runtime and its beets version without looking up music."), Control::Button, Chilpa::mark("Check")),
+                ],
+            },
+            Group {
+                title: Chilpa::mark("Ratings"),
+                settings: &[setting(crate::rating_switch::ENABLED, Chilpa::mark("Star ratings"), Chilpa::mark("Rate tracks, albums and playlists with one to five stars. Off, stars leave every list, page and filter; the ratings already given are kept."), Control::Toggle)],
+            },
+            Group {
+                title: Chilpa::mark("Favorites"),
+                settings: &[setting(
+                    crate::servers::favorites::SYNC,
+                    Chilpa::mark("Sync favorites with sources"),
+                    Chilpa::mark("Hearts on the tracks and records of your servers go both ways. Turned off, they stay in Chilpa."),
+                    Control::Toggle,
                 )],
             },
             Group {
@@ -298,12 +326,19 @@ pub const SECTIONS: &[Section] = &[
         id: "sources",
         label: Chilpa::mark("Music servers"),
         icon: "lucide:cable",
-        groups: &[Group {
-            title: Chilpa::mark("Servers"),
-            // Expands to one row per server, and the row that adds one
-            // (ADR-017).
-            settings: &[setting("sources.servers", Chilpa::mark("Servers"), "", Control::Status)],
-        }],
+        groups: &[
+            Group {
+                title: Chilpa::mark("Servers"),
+                // Expands to one row per server, and the row that adds one
+                // (ADR-017).
+                settings: &[setting("sources.servers", Chilpa::mark("Servers"), "", Control::Status)],
+            },
+            // Shown on the Offline music page, which Music servers opens.
+            Group {
+                title: Chilpa::mark("Offline music"),
+                settings: &[setting(crate::servers::OFFLINE_LIMIT, Chilpa::mark("Storage limit"), Chilpa::mark("Downloads stop when offline music reaches this size, and nothing is deleted to make room. Each file can be up to 512 MiB. Unlimited lets offline music use all the free space on the disk, with no size limit per file."), Control::Select)],
+            },
+        ],
     },
     // A section of its own and not a group under Sources: a plugin is not
     // always a source, and approving one is the first thing done with it.
@@ -337,8 +372,18 @@ pub const SECTIONS: &[Section] = &[
                     setting("integrations.lastfm.enabled", Chilpa::mark("Send to Last.fm"), Chilpa::mark("The same rule as ListenBrainz: half of a track, or four minutes."), Control::Toggle),
                 ],
             },
+            // Fooyin's Discord page, in its order (`discordpage.cpp`).
             Group { title: "Discord", settings: &[
                 setting("integrations.discord.enabled", Chilpa::mark("Discord Rich Presence"), Chilpa::mark("Show what you're listening to as your Discord status. Opt-in — Discord must be running."), Control::Toggle),
+                setting("integrations.discord.showState", Chilpa::mark("Show play state"), Chilpa::mark("A small icon on the status says whether the track plays or is paused."), Control::Toggle),
+                setting("integrations.discord.clearOnPause", Chilpa::mark("Clear on pause"), Chilpa::mark("Clear the status while playback is paused."), Control::Toggle),
+                setting("integrations.discord.titleFormat", Chilpa::mark("Title"), Chilpa::mark("First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."), Control::Text),
+                setting("integrations.discord.artistFormat", Chilpa::mark("Artist"), Chilpa::mark("Second line of the status, written like the title."), Control::Text),
+                setting("integrations.discord.albumFormat", Chilpa::mark("Album"), Chilpa::mark("Shown when pointing at the cover, written like the title."), Control::Text),
+                setting("integrations.discord.artwork", Chilpa::mark("Show artwork"), Chilpa::mark("A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."), Control::Toggle),
+                setting("integrations.discord.upload", Chilpa::mark("Upload covers to Litterbox"), Chilpa::mark("Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."), Control::Toggle),
+                setting("integrations.discord.artworkSource", Chilpa::mark("Artwork source"), Chilpa::mark("What is tried first for a local album's cover."), Control::Select),
+                setting("integrations.discord.artworkRetention", Chilpa::mark("Keep uploads for"), Chilpa::mark("How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."), Control::Select),
             ] },
             Group { title: "Discogs", settings: &[
                 action("integrations.discogs.account", Chilpa::mark("Discogs account"), Chilpa::mark("Sign in on Discogs to search with your account."), Control::Button, Chilpa::mark("Connect")),
@@ -352,6 +397,7 @@ pub const SECTIONS: &[Section] = &[
                 setting("integrations.lyrics.enabled", Chilpa::mark("Enable lyrics"), Chilpa::mark("Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."), Control::Toggle),
                 setting("integrations.lyrics.service", Chilpa::mark("Chilpa lyrics API"), Chilpa::mark("Look up lyrics through Chilpa's lyrics service when the file and its source have none."), Control::Toggle),
                 setting("integrations.lyrics.translate", Chilpa::mark("Translate lyrics"), Chilpa::mark("Ask Chilpa's lyrics API to translate lyrics that carry no translation in your language. The lines of the track are sent to it. On by default; you can turn it off."), Control::Toggle),
+                setting("integrations.lyrics.romanize", Chilpa::mark("Pronunciation"), Chilpa::mark("Show pronunciation in Latin script. When it is missing, send the lyrics to Chilpa's lyrics API to generate it. Off by default."), Control::Toggle),
                 setting("integrations.lyrics.provider.lrclib", "LRCLIB", Chilpa::mark("Allow results from LRCLIB through Chilpa's lyrics API."), Control::Toggle),
                 setting("integrations.lyrics.provider.netease", "NetEase", Chilpa::mark("Allow results from NetEase."), Control::Toggle),
                 setting("integrations.lyrics.provider.qq", "QQ Music", Chilpa::mark("Allow results from QQ Music."), Control::Toggle),
@@ -452,11 +498,28 @@ mod tests {
     }
 
     #[test]
-    fn every_key_lives_in_its_own_section() {
+    fn settings_follow_their_namespace_with_metadata_tools_under_library() {
+        // Runtime preferences retain their metadata namespace in Library.
+        let metadata = [
+            (crate::beets_runtime::ENGINE, Control::Segmented),
+            ("metadata.beets.status", Control::Status),
+            ("metadata.beets.install", Control::Progress),
+            (crate::beets_runtime::PYTHON, Control::File),
+            ("metadata.beets.check", Control::Button),
+        ];
         for s in SECTIONS {
             for set in s.groups.iter().flat_map(|g| g.settings) {
-                assert!(set.key.starts_with(&format!("{}.", s.id)), "{} is not under {}", set.key, s.id);
+                if let Some((_, control)) = metadata.iter().find(|(key, _)| *key == set.key) {
+                    assert_eq!(s.id, "library", "{} must be configured in Library", set.key);
+                    assert_eq!(set.control, *control, "{} has the wrong setup control", set.key);
+                } else {
+                    assert!(set.key.starts_with(&format!("{}.", s.id)), "{} is not under {}", set.key, s.id);
+                }
             }
+        }
+        for (key, _) in metadata {
+            assert!(section("library").groups.iter().flat_map(|g| g.settings).any(|set| set.key == key),
+                "{key} is missing from Library");
         }
     }
 

@@ -119,7 +119,7 @@ mod tests {
         let digest = chilpa_plugin::catalog::Digest { algorithm: "sha256".into(), value: format!("{:x}", Sha256::digest(&bytes)) };
         let entry = CatalogEntry { id: "Guest".into(), name: "Guest".into(), version: "1".into(), description: String::new(),
             category: String::new(), author: String::new(), repository: String::new(), package: "https://example.org/package.zip".into(),
-            digest: digest.clone(), adapter: "perl".into(), problem: String::new() };
+            digest: digest.clone(), adapter: "perl".into(), problem: String::new(), platform_build: false };
         let inspection = PluginInspection { features: BTreeMap::from([("browse".into(), true), ("resolve".into(), true)]),
             settings_pages: vec!["settings.html".into()], limitations: vec![], diagnostics: BTreeMap::new() };
         let prepare = || StagedPackage::unpack(&temporary.path().join("staging"), &bytes, &digest).unwrap()

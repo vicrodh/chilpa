@@ -4,7 +4,9 @@ import "../Theme"
 
 // Exclusive options in a field (design/03 SegmentedControl). `options` is
 // a list of { glyph, tip } for icons, or of { text, count } for words; a
-// count above zero shows in a chip after its word, as QBZ's tab bar.
+// count above zero shows in a chip after its word, as QBZ's tab bar. An
+// option with `disabled: true` is shown faded and cannot be chosen; its
+// `tip` says why. `current` -1 is no option chosen.
 Rectangle {
     id: root
 
@@ -24,8 +26,10 @@ Rectangle {
         const step = event.key === Qt.Key_Left ? -1 : event.key === Qt.Key_Right ? 1 : 0
         if (!root.enabled || event.isAutoRepeat || step === 0)
             return
-        const next = Math.max(0, Math.min(root.options.length - 1, root.current + step))
-        if (next !== root.current)
+        let next = root.current + step
+        while (next >= 0 && next < root.options.length && root.options[next].disabled === true)
+            next += step
+        if (next >= 0 && next < root.options.length && next !== root.current)
             root.activated(next)
         event.accepted = true
     }
@@ -44,11 +48,14 @@ Rectangle {
                 required property int index
                 required property var modelData
                 readonly property bool active: index === root.current
+                readonly property bool off: modelData.disabled === true
                 readonly property int count: modelData.count || 0
+
+                opacity: off ? Metrics.disabledOpacity : 1
 
                 width: segment.modelData.text ? words.implicitWidth + Metrics.gap12 * 2 - (count > 0 ? Metrics.gap4 : 0) : Metrics.segmentWidth // derived: padding on both sides, narrower beside a count
                 height: Metrics.segmentHeight
-                RectangularShadow {
+                Shadow {
                     anchors.fill: segmentPanel
                     visible: segment.active
                     radius: segmentPanel.radius
@@ -113,7 +120,7 @@ Rectangle {
                     cursorShape: Qt.PointingHandCursor
                     anchors.fill: parent
                     hoverEnabled: true
-                    onClicked: root.activated(segment.index)
+                    onClicked: if (!segment.off) root.activated(segment.index)
                     onContainsMouseChanged: !segment.modelData.tip ? undefined
                         : containsMouse ? TipState.show(segment.modelData.tip, segment) : TipState.hide(segment)
                 }

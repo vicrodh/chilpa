@@ -1,6 +1,7 @@
 //! The words the protocols are translated into.
 
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use crate::net::Request;
@@ -54,6 +55,17 @@ impl Kind {
         }
     }
 
+    /// A controlled directory component for the server's music copies.
+    pub fn offline_folder_name(self, product: &str) -> &'static str {
+        match self {
+            Kind::Subsonic if product.starts_with("Navidrome") => "Navidrome",
+            Kind::Subsonic => "OpenSubsonic",
+            Kind::Jellyfin => "Jellyfin",
+            Kind::Plex => "Plex",
+            Kind::Dlna => "DLNA",
+        }
+    }
+
     /// Its glyph among the source icons (`tools/icons/sources.txt`), by what
     /// the server says it is: the protocol is shared, the product is not.
     pub fn icon(self, product: &str) -> &'static str {
@@ -85,6 +97,19 @@ impl Client {
     pub const PRODUCT: &'static str = "Chilpa";
 }
 
+/// The last attempt to discover the signed-in server's optional operations.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExtensionStatus {
+    #[default]
+    Unknown,
+    Known,
+    Unsupported,
+    Refused,
+    Forbidden,
+    Unavailable,
+}
+
 /// What the protocol needs to remember beyond the address, kept by the
 /// library as JSON (`servers.details`).
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -92,6 +117,9 @@ impl Client {
 pub struct Details {
     /// Subsonic: the OpenSubsonic extensions it announced.
     pub extensions: Vec<String>,
+    /// Announced versions, kept separately so old name-only records still load.
+    pub extension_versions: BTreeMap<String, Vec<u32>>,
+    pub extension_status: ExtensionStatus,
     /// Jellyfin: the user id the token belongs to.
     pub user_id: String,
     /// Plex: every address the server can be reached at, best first. The
@@ -183,6 +211,15 @@ pub struct Probe {
     /// Jellyfin: Quick Connect is on.
     pub quick_connect: bool,
     pub extensions: Vec<String>,
+    pub extension_versions: BTreeMap<String, Vec<u32>>,
+    pub extension_status: ExtensionStatus,
+}
+
+impl Details {
+    /// A name alone does not establish which version of an operation is safe.
+    pub fn supports_extension(&self, name: &str, version: u32) -> bool {
+        self.extension_versions.get(name).is_some_and(|versions| versions.contains(&version))
+    }
 }
 
 /// A track as a server describes it.
@@ -240,6 +277,10 @@ pub struct Page {
     /// Containers of a media server that could not be read and were left
     /// out, so the walk went on past them. Such a page is partial too.
     pub skipped: u64,
+    /// The listener's ratings of what the page listed, on the server's own
+    /// scale, for a kind that keeps them (`Kind::rating_scale`); 0 is
+    /// unrated. Empty for one that keeps none.
+    pub ratings: Vec<crate::rating::RatingRead>,
 }
 
 /// Where a track's bytes are read from.

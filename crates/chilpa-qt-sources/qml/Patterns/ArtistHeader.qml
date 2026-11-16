@@ -19,6 +19,7 @@ Item {
     id: header
     property var info: ({})
     property bool local: false
+    property bool activeImages: visible
     property bool networkEnabled: true
     property bool networkOpen: false
     // Showing what the listener keeps of the artist in its source.
@@ -50,17 +51,19 @@ Item {
     }
     implicitHeight: Math.max(portrait.height, body.height)
 
-    ArtTile {
+    ArtistPortrait {
         id: portrait
         objectName: "artistPortrait"
         width: Math.min(Metrics.artistPortrait, header.width / 3); height: width // derived: room for the text on narrow windows
         radius: width / 2 // derived: a circle
         // A picture the listener chose is shown whole, not cropped to the circle.
-        contain: chosen.toString() !== ""
+        contain: custom.toString() !== ""
         // The picture the listener chose for the artist wins over the one
         // the source or the records bring.
-        readonly property url chosen: Artwork.artist(header.info.title || "", Artwork.rev)
-        source: chosen.toString() !== "" ? chosen : header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || ""
+        readonly property url custom: Artwork.artist(header.info.title || "", Artwork.rev)
+        chosen: custom.toString() !== "" ? custom : header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : ""
+        name: header.info.title || ""; mbid: header.info.mbid || ""
+        activeImages: header.activeImages
     }
     // As QBZ's portrait: a click shows it whole, a right click its menu.
     HoverHandler { parent: portrait; cursorShape: portrait.ready ? Qt.PointingHandCursor : Qt.ArrowCursor }
@@ -71,7 +74,7 @@ Item {
         onTapped: (point) => {
             const at = portrait.mapToItem(header, point.position.x, point.position.y)
             portraitMenu.active = true
-            portraitMenu.item.custom = portrait.chosen.toString() !== ""
+            portraitMenu.item.custom = portrait.custom.toString() !== ""
             portraitMenu.item.showing = portrait.ready
             portraitMenu.item.address = /^https?:\/\//.test(header.info.image || "") ? header.info.image : ""
             portraitMenu.item.popupAt(at.x, at.y)
@@ -165,7 +168,7 @@ Item {
             }
             IconButton {
                 objectName: "networkAction"; visible: header.networkEnabled; round: true; size: Metrics.button32; glyph: SourceGlyphs.spiderWeb; iconFamily: SourceGlyphs.font; checked: header.networkOpen
-                tip: I18n.tr("Network", I18n.rev); onClicked: header.toggleNetwork()
+                tip: I18n.tr("About & connections", I18n.rev); onClicked: header.toggleNetwork()
             }
             // The scene and the artist's own links share the overflow menu.
             IconButton {
@@ -187,17 +190,13 @@ Item {
         sourceComponent: Component { Modal {
         id: dialog
         objectName: "artistBiography"
-        width: Math.min(Metrics.settingsMaxWidth, (header.Window.window?.width || header.width) - Metrics.modalInsets)
-        height: Math.min((header.Window.window?.height || header.height) - Metrics.modalInsets, Metrics.heroArt * 3) // derived: readable body with room for the title and close action
+        preferredWidth: Math.min(Metrics.settingsMaxWidth, (header.Window.window?.width || header.width) - Metrics.modalInsets)
+        preferredHeight: biographyContent.implicitHeight + Metrics.modalInsets
         Column {
-            anchors.fill: parent; spacing: Metrics.gap12
+            id: biographyContent
+            width: parent.width; spacing: Metrics.gap12
             Text { id: biographyTitle; width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
-            ScrollView {
-                width: parent.width; height: parent.height - biographyTitle.height - attribution.height - closeButton.height - parent.spacing * 3 // derived: the three gaps between four body items
-                clip: true; contentWidth: availableWidth
-                ScrollBar.vertical: ViewportScrollBar {}
-                Text { width: parent.width; text: TextLinks.render(header.bio, hoveredLink, color, Theme.color.accentHover); textFormat: Text.RichText; wrapMode: Text.WordWrap; color: Theme.color.textSecondary; font.pointSize: Type.body; onLinkActivated: (link) => header.follow(link) }
-            }
+            Text { width: parent.width; text: TextLinks.render(header.bio, hoveredLink, color, Theme.color.accentHover); textFormat: Text.RichText; wrapMode: Text.WordWrap; color: Theme.color.textSecondary; font.pointSize: Type.body; onLinkActivated: (link) => header.follow(link) }
             Text {
                 id: attribution; width: parent.width; textFormat: Text.PlainText; font.pointSize: Type.meta; color: Theme.color.textTertiary
                 text: [I18n.tr("Source: {}", I18n.rev).replace("{}", header.info.description_source || header.sourceInfo.name || ""), header.info.bio_updated ? I18n.tr("Updated {}", I18n.rev).replace("{}", header.info.bio_updated) : ""].filter(Boolean).join(" · ")

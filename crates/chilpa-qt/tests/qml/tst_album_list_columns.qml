@@ -37,6 +37,15 @@ TestCase {
         records.rev++
     }
 
+    function test_numeric_columns_show_known_and_mixed_quality_without_guessing_unknown_values() {
+        AlbumActions.technicalOf = {1:{bits:24,rate:96000}}
+        grid.listColumns = ["rate","bits"]
+        tryCompare(findChild(grid,"bitsCell"),"text","24")
+        compare(findChild(grid,"rateCell").text.replace(/[^0-9]/g,""),"96000")
+        AlbumActions.technicalOf = {1:{bits:null,rate:null,mixed_fields:["rate"]}}
+        tryCompare(findChild(grid,"rateCell"),"text","Mixed")
+        compare(findChild(grid,"bitsCell").text,"—")
+    }
     function test_the_cells_say_tracks_length_and_stars_and_genre_waits_to_be_asked() {
         tryCompare(findChild(grid, "tracksCell"), "text", "12")
         compare(findChild(grid, "durationCell").text, "01:02:05", "hh:mm:ss")

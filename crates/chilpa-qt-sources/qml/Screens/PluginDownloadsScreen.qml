@@ -6,6 +6,5 @@ Item {
     id: page
     required property string pluginId
     required property Component purchaseCard
-    SettingsPage { id: backend; section: "plugins" }
-    PluginManager { anchors.fill: parent; page: backend; initialDownloadsId: page.pluginId; purchaseCard: page.purchaseCard }
+    PluginManager { anchors.fill: parent; initialDownloadsId: page.pluginId; purchaseCard: page.purchaseCard }
 }

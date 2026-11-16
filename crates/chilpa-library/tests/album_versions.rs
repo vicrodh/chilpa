@@ -2,6 +2,78 @@ use chilpa_library::{AlbumSort, Filter, Library, TrackOrder};
 use chilpa_library::store::versions::album_group;
 use rusqlite::params;
 
+fn assert_selected_tracks(lib: &Library, filter: &Filter, expected: &[i64], duration: u64) {
+    for order in [TrackOrder::Album, TrackOrder::TitleDescending, TrackOrder::Duration, TrackOrder::Added] {
+        let (raw, keys) = lib.browse_rows(filter, order, true).unwrap();
+        let expected_ids: Vec<_> = raw.ids.iter().copied().filter(|id| expected.contains(id)).collect();
+        let expected_keys: Vec<_> = raw.ids.iter().zip(keys).filter(|(id, _)| expected.contains(id)).map(|(_, key)| key).collect();
+        let grouped = lib.grouped_snapshot(filter, order).unwrap();
+        let (keyed, kept) = lib.keyed_snapshot(filter, order).unwrap();
+        assert_eq!(grouped.ids, expected_ids);
+        assert_eq!(grouped.totals.duration_ms, duration);
+        assert_eq!(grouped.totals.tracks, expected.len());
+        assert_eq!(keyed, grouped);
+        assert_eq!(kept, expected_keys);
+    }
+}
+
+#[test]
+fn sparse_track_ids_preserve_grouped_order_duration_and_source_selection() {
+    let lib = Library::in_memory().unwrap();
+    let local = lib.source_id("local", "default").unwrap();
+    let remote = lib.source_id("server", "fixture").unwrap();
+    album(&lib, 10, "Record", "Artist");
+    album(&lib, 20, "Record (Deluxe Edition)", "Artist");
+    for (id, record, source, bits) in [(-17, 10, local, 16), (9_000_000_001, 10, local, 16),
+        (0, 20, remote, 24), (i64::MAX - 3, 20, remote, 24)] {
+        track(&lib, id, record, source, &format!("/fixture/{id}.flac"), bits, 44_100);
+    }
+    lib.connection().execute_batch("UPDATE tracks SET codec = 'flac', duration_ms = CASE album_id WHEN 10 THEN 101 ELSE 307 END;
+        INSERT INTO tracks(id, source_id, external_id, title, duration_ms, added_at) VALUES (7, 1, '/loose', 'Loose', 53, 1);
+        INSERT INTO tracks(id, source_id, external_id, title, album_id, present, duration_ms, added_at)
+        VALUES (-900, 1, '/missing', 'Missing', 10, 0, 999, 1);").unwrap();
+    assert_selected_tracks(&lib, &Filter::default(), &[0, i64::MAX - 3, 7], 667);
+    let excluded = Filter { excluded_sources: vec!["server:fixture".into()], ..Default::default() };
+    assert_selected_tracks(&lib, &excluded, &[-17, 9_000_000_001, 7], 255);
+    assert!(lib.select_album_version(20, 10).unwrap());
+    assert_selected_tracks(&lib, &Filter::default(), &[-17, 9_000_000_001, 7], 255);
+    lib.connection().execute("UPDATE tracks SET reachable = 0 WHERE album_id = 10", []).unwrap();
+    assert_selected_tracks(&lib, &Filter::default(), &[0, i64::MAX - 3, 7], 667);
+    assert!(lib.set_album_apart(10, true).unwrap());
+    assert_selected_tracks(&lib, &Filter::default(), &[-17, 9_000_000_001, 0, i64::MAX - 3, 7], 869);
+    assert_eq!(lib.connection().query_row("SELECT count(*) FROM tracks", [], |row| row.get::<_, i64>(0)).unwrap(), 6);
+}
+
+#[test]
+fn later_tracks_keep_lowest_quality_representative_and_combined_advisory() {
+    let lib = Library::in_memory().unwrap();
+    let source = lib.source_id("local", "default").unwrap();
+    album(&lib, 1, "Record [Remastered]", "Artist");
+    album(&lib, 2, "Record", "Artist");
+    track(&lib, 900, 1, source, "/fixture/lossy.m4a", 16, 44_100);
+    track(&lib, 80, 1, source, "/fixture/high.flac", 24, 96_000);
+    track(&lib, 400, 2, source, "/fixture/other.flac", 16, 44_100);
+    lib.connection().execute_batch("UPDATE tracks SET bit_depth = NULL, explicit = 1, reachable = 0 WHERE id = 900;
+        UPDATE tracks SET explicit = NULL WHERE id = 80;
+        UPDATE tracks SET explicit = 0 WHERE id = 400;").unwrap();
+    let first = lib.version_catalog().unwrap();
+    let version = &first.versions[&1];
+    assert_eq!((version.tier(), version.bits, version.rate), (1, None, Some(44_100)));
+    assert_eq!(version.path, "/fixture/lossy.m4a");
+    assert_eq!(version.codec, "m4a");
+    assert_eq!(version.tracks, 2);
+    assert!(version.reachable);
+    assert_eq!(version.explicit, Some(true));
+    assert_eq!(first.selected(1), 2);
+    lib.connection().execute("UPDATE tracks SET present = 0 WHERE id = 900", []).unwrap();
+    let second = lib.version_catalog().unwrap();
+    assert!(!std::sync::Arc::ptr_eq(&first, &second));
+    assert_eq!(second.versions[&1].path, "/fixture/high.flac");
+    assert_eq!(second.versions[&1].tier(), 3);
+    assert_eq!(second.versions[&1].explicit, None);
+    assert_eq!(second.selected(1), 1);
+}
+
 fn album(lib: &Library, id: i64, title: &str, artist: &str) {
     lib.connection().execute("INSERT INTO albums(id, title, album_artist, folder) VALUES (?1, ?2, ?3, ?4)", params![id, title, artist, id.to_string()]).unwrap();
 }

@@ -7,7 +7,10 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 TitledFlow {
+    MultilineField { width:Metrics.selectWidth; text:"First value\nSecond value" }
     CircleCheck { text: "Selected"; checked: true }
+    FolderChoice { width: Metrics.confirmWidth; title:"Offline folder"; defaultLabel:"Default destination" }
+    StatusArea { width: Metrics.confirmWidth; label:"Validation"; text:"Transient progress stays within this area." }
     KeyedModel { items: [{id:"preview", title:"Stable descriptor"}] }
     ViewportScrollBar { visible: false }
     Item {
@@ -15,6 +18,11 @@ TitledFlow {
         height: Metrics.playerHeight
         ElevatedShadow { target: raised; radius: raised.radius }
         Rectangle { id: raised; anchors.fill: parent; radius: Metrics.radiusPlayer; color: Theme.color.surfacePlayer }
+    }
+    Item {
+        width: Metrics.cardMinWidth; height: Metrics.playerHeight
+        Shadow { anchors.fill: ownedPanel; radius: ownedPanel.radius; blur: Metrics.shadowSubtleBlur; color: Theme.color.shadowSegment }
+        Rectangle { id: ownedPanel; anchors.fill: parent; radius: Metrics.radiusCard; color: Theme.color.surfaceRaised }
     }
     title: "Primitives"
     ExplicitBadge {}
@@ -60,7 +68,7 @@ TitledFlow {
 
     Modal {
         id: sampleModal
-        width: Metrics.playlistFolderDialog
+        preferredWidth: Metrics.playlistFolderDialog
         Column {
             spacing: Metrics.gap12
             Text { text: "Modal"; font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }

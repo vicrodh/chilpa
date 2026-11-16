@@ -72,7 +72,7 @@ mod tests {
         let server = library.add_server(&chilpa_library::NewServer {
             provider:"example-server".into(),instance:"fixture".into(),label:"Server".into(),icon:"server".into(),
             address:"https://example.org".into(),account:"fixture".into(),identity:"fixture".into(),product:String::new(),
-            libraries:"[]".into(),details:"{}".into(),
+            libraries:"[]".into(),details:"{}".into(),offline_folder:String::new(),
         }).unwrap();
         let server_list = library.sync_source_playlist(server, "playlist:1", "Server", "", None).unwrap();
         let mut api = Chilpa::new(); api.library = Some(library); api.plugins = Some(host.clone());
@@ -162,6 +162,7 @@ impl Chilpa {
     pub(crate) fn show_album_library(&mut self, id: &str, enabled: bool) {
         if !self.natives.library_kinds(id).iter().any(|kind| kind == "albums") { return; }
         if let Err(error) = save(&Self::plugins_dir(), id, "integrate_albums", enabled) { self.now.error = error; return; }
+        self.catalog.clear_integrated_index();
         self.copies.forget();
         if enabled { self.catalog.retry(&format!("{id} section:albums")); }
         self.mark_library_changed();
@@ -169,6 +170,7 @@ impl Chilpa {
     pub(crate) fn show_track_library(&mut self, id: &str, enabled: bool) {
         if !self.natives.library_kinds(id).iter().any(|kind| kind == "tracks") { return; }
         if let Err(error) = save(&Self::plugins_dir(), id, "integrate_tracks", enabled) { self.now.error = error; return; }
+        self.catalog.clear_integrated_index();
         self.copies.forget();
         if enabled { self.catalog.retry(&format!("{id} section:tracks")); }
         self.mark_library_changed();

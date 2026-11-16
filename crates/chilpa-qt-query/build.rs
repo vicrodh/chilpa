@@ -25,8 +25,8 @@ fn files(dir: &str, keep: &dyn Fn(&Path) -> bool) -> Vec<String> {
 fn main() {
     let qml = files("qml", &|p| p.extension().is_some_and(|e| e == "qml"));
     let bridges = files("src/bridge", &|p| p.extension().is_some_and(|e| e == "rs"));
-    // A layer's `qmldir` declares its singletons.
-    let resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
+    // Script helpers and each layer's singleton declarations travel with QML.
+    let resources = files("qml", &|p| p.extension().is_some_and(|e| e == "js") || p.file_name().is_some_and(|n| n == "qmldir"));
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=src/bridge");
     CxxQtBuilder::library(Interface::default())

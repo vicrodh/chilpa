@@ -11,6 +11,7 @@ layout(std140, binding = 0) uniform buf {
     float qt_Opacity;
     vec2 dims;
     vec4 corners;
+    vec2 sourceDims;
 };
 
 out gl_PerVertex { vec4 gl_Position; };

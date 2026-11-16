@@ -20,8 +20,9 @@ Column {
     readonly property var lookup: doc.lookup || ({})
     readonly property var hits: lookup.hits || []
     readonly property var release: lookup.release || null
+    readonly property bool beets: lookup.engine === "beets"
     readonly property int selectedDisc: lookup.selected_disc || 0
-    readonly property bool busy: lookup.searching === true || lookup.loading === true
+    readonly property bool busy: lookup.searching === true || lookup.loading === true || lookup.beets_busy === true
     property int chosen: -1
 
     spacing: Metrics.gap8
@@ -31,25 +32,40 @@ Column {
         function onOpenChanged() { root.chosen = -1 }
     }
 
-    Row {
+    Flow {
         width: parent.width
         spacing: Metrics.gap8
+        Text { height:lookupActionButton.height; verticalAlignment:Text.AlignVCenter; visible:root.beets; text:"beets · MusicBrainz"; font.pointSize:Type.meta; color:Theme.color.textSecondary; textFormat:Text.PlainText }
         SegmentedControl {
             id: provider
+            visible:!root.beets
+            enabled:!root.busy && root.doc.state === "ready"
             options: [{ text: "MusicBrainz" }, { text: "Discogs" }]
             current: root.lookup.provider === "discogs" ? 1 : 0
             onActivated: (index) => MetadataEditor.setProvider(index === 1 ? "discogs" : "musicbrainz")
         }
         PillButton {
+            id:lookupActionButton
+            objectName:"metadataLookupSearch"
             glyph: Icons.search
-            text: root.lookup.searching ? I18n.tr("Searching…", I18n.rev) : I18n.tr("Look up", I18n.rev)
-            enabled: !root.busy && root.doc.state === "ready"
+            text: root.lookup.probing ? I18n.tr("Checking beets…", I18n.rev) : root.lookup.searching ? I18n.tr("Searching…", I18n.rev) : I18n.tr("Look up", I18n.rev)
+            enabled: !root.busy && root.doc.state === "ready" && (!root.beets || (root.lookup.runtime || "") !== "")
             onClicked: {
                 root.chosen = -1
                 root.forceActiveFocus()
                 MetadataEditor.search()
             }
         }
+        PillButton {
+            objectName:"metadataLookupCancel"
+            text:I18n.tr("Cancel lookup",I18n.rev); kind:"ghost"; visible:root.lookup.searching === true || root.lookup.loading === true
+            onClicked:MetadataEditor.cancelLookup()
+        }
+    }
+    Column {
+        width:parent.width; visible:root.beets; spacing:Metrics.gap8
+        Text { width:parent.width; visible:(root.lookup.runtime || "") === ""; text:I18n.tr("Set up beets in Settings to look up metadata.",I18n.rev); wrapMode:Text.WordWrap; font.pointSize:Type.meta; color:Theme.color.textSecondary }
+        PillButton { objectName:"metadataBeetsSettings"; text:I18n.tr("beets settings",I18n.rev); kind:"ghost"; onClicked:Navigation.goKey("settings","library") }
     }
 
     ListView {
@@ -61,10 +77,12 @@ Column {
         ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
         model: root.hits.length
         delegate: ReleaseHitRow {
+            objectName:"metadataReleaseHit" + index
             required property int index
             width: ListView.view.width
             rowIndex: index
             hit: root.hits[index]
+            showScore:root.beets
             chosen: index === root.chosen
             onChoose: {
                 root.chosen = index
@@ -122,12 +140,19 @@ Column {
             font.pointSize: Type.meta
             color: root.lookup.matched > 0 ? Theme.color.textSecondary : Theme.color.statusWarning
         }
-        Row {
+        MetadataChanges {
+            id:changes
+            width:parent.width; changes:root.lookup.changes || []; busy:root.busy
+            onChoose:(key,selected) => MetadataEditor.chooseChange(key,selected)
+        }
+        Flow {
+            width:parent.width
             spacing: Metrics.gap8
             PillButton {
                 kind: "primary"
-                text: I18n.tr("Apply to the form", I18n.rev)
-                enabled: root.doc.state === "ready" && root.lookup.matched > 0
+                objectName:"metadataApplySelected"
+                text: I18n.tr("Apply selected fields", I18n.rev)
+                enabled: !root.busy && root.doc.state === "ready" && root.lookup.matched > 0 && changes.selectedCount > 0
                 onClicked: {
                     // The field being typed in lets go, and shows what the release gave.
                     root.forceActiveFocus()

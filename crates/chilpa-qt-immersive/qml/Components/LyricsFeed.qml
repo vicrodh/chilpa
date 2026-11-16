@@ -33,6 +33,8 @@ Item {
     property bool translating: false
     onFoundChanged: if (!found) translating = false
     LyricTranslation { id: offered; lyrics: feed.lyrics }
+    readonly property var romanization: pronunciation.lines
+    LyricTranslation { id: pronunciation; lyrics: feed.lyrics; kind: "romanization" }
     readonly property string currentText: current >= 0 && current < lines.length ? (lines[current].text || "") : ""
     readonly property bool uppercase: SettingsModel.kept("ui.lyrics.uppercase") === "true"
     readonly property string dimming: SettingsModel.kept("ui.lyrics.dimming") || "strong"

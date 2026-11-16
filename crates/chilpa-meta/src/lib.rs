@@ -6,9 +6,12 @@
 //! This crate has no network. It builds the addresses, reads the answers
 //! and knows how often each provider may be asked; the request itself is
 //! handed in by whoever calls. So every test here runs without going out,
-//! against answers that were saved from the real thing.
+//! against answers that were saved from the real thing. The optional beets
+//! adapter starts a caller-selected external engine; its process receives
+//! metadata only and its lifecycle belongs to the caller.
 
 pub mod artist;
+pub mod beets;
 pub mod cover_art;
 pub mod credits;
 pub mod contributions;
@@ -17,6 +20,7 @@ pub mod http;
 pub mod musicbrainz;
 pub mod music_link;
 pub mod proxy;
+pub mod portrait;
 pub mod release;
 pub mod scene;
 pub mod text;

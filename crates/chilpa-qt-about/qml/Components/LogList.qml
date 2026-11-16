@@ -10,9 +10,10 @@ Item {
     id: log
     property var rows: []
     property bool autoTail: false
-    readonly property int colTime: 80 // intrinsic: QBZ's time column
-    readonly property int colLevel: 48 // intrinsic: QBZ's level column
-    readonly property int colTarget: 140 // intrinsic: QBZ's target column
+    readonly property int colTime: Math.min(80,width * 0.18) // intrinsic: maximum time column width
+    readonly property int colLevel: Math.min(48,width * 0.12) // intrinsic: maximum level column width
+    readonly property int colTarget: Math.min(140,width * 0.2) // intrinsic: maximum target column width
+    implicitHeight: header.height + Metrics.gap14 + Math.max(Metrics.button32,list.contentHeight) + Metrics.hairline * 2 // derived: borders above and below the rows
 
     Row {
         id: header
@@ -40,6 +41,7 @@ Item {
         border.color: Theme.color.strokeHairline
         clip: true
         ListView {
+            id: list
             objectName: "developerLogList"
             anchors.fill: parent
             anchors.margins: Metrics.hairline

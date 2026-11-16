@@ -34,8 +34,13 @@ impl Catalog {
                     roots.playlists.insert(route.id, paths);
                 }
                 Screen::Source => {
-                    roots.shelves.insert(route.key.clone());
                     let (plugin, address) = super::split(&route.key);
+                    if !plugin.is_empty() && address.strip_prefix("native:")
+                        .and_then(|reference| crate::native_page_request::decode(reference).ok())
+                        .is_some_and(|request| request.layout == "article") {
+                        continue;
+                    }
+                    roots.shelves.insert(route.key.clone());
                     if plugin.is_empty() { continue; }
                     if let Some(reference) = address.strip_prefix("native:").filter(|reference| !reference.is_empty()) {
                         roots.identities.insert((plugin.to_owned(), reference.to_owned()));

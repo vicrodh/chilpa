@@ -196,6 +196,7 @@ pub(crate) fn image_rows(path: &std::path::Path) -> Vec<crate::TrackRow> {
             ai_generated: None,
             explicit: info.tags.explicit,
             credits: None,
+            bit_depth: info.bit_depth,
             quality: crate::Quality::of_file(&path.to_string_lossy(), info.bit_depth, info.sample_rate_hz),
         }
     }).collect()

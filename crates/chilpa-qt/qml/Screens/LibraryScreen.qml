@@ -9,6 +9,7 @@ import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/query/qml/Components"
 import "qrc:/qt/qml/app/chilpa/query/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/query/qml/Patterns/ColumnChoices.js" as ColumnChoices
 
 // Library (design/02 9, design/06): the filter columns in cascade and
 // the records they leave, as cards or as rows. A fixed layout with no scroll of
@@ -17,22 +18,8 @@ Item {
     id: page
 
     // The filter columns turned on in the sources popover, kept.
-    property var panes: initialPanes()
-    function initialPanes() {
-        const saved = SettingsModel.kept("ui.library.columns")
-        if (saved) { try { const columns = JSON.parse(saved); if (Array.isArray(columns)) return columns } catch (_) {} }
-        return (SettingsModel.kept("ui.library.panes") || "year,genre").split(",").filter(c => c !== "" && c !== "-").concat(["artist", "album"])
-    }
-    function togglePane(column) {
-        const on = page.panes.indexOf(column) < 0
-        page.panes = on ? page.panes.concat([column]) : page.panes.filter(c => c !== column)
-        SettingsModel.keep("ui.library.columns", JSON.stringify(page.panes))
-        // A column turned off does not narrow what it no longer shows.
-        if (!on) {
-            Library.searchColumn(column, "")
-            Library.clearColumn(column)
-        }
-    }
+    property var panes: ColumnChoices.initial(SettingsModel)
+    function togglePane(column) { page.panes = ColumnChoices.toggle(page.panes, column, SettingsModel, Library) }
     // The columns' height while their grip is dragged, or -1.
     property real dragged: -1
     // The columns' height when the grip was pressed.
@@ -48,6 +35,8 @@ Item {
     // The list's columns; genre stays off until asked for.
     property var listColumns: (SettingsModel.kept("ui.library.listColumns") || "year,tracks,duration,rating,source").split(",").filter(c => c !== "" && c !== "-")
 
+    property var nerdyColumns: (SettingsModel.kept("ui.library.nerdyColumns") || "tracks,format,codec,rate,bits,channels,bytes,duration_ms,year,source,artwork").split(",").filter(c => c !== "" && c !== "-")
+
     TrackListModel {
         id: tracks
         kind: "library"
@@ -62,86 +51,69 @@ Item {
         columns: result.columns
     }
 
-    Item {
+    ScreenHead {
         id: head
         x: Metrics.contentX
         y: Metrics.contentTop
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
-        height: Metrics.shelfHeader
+        title: I18n.tr("Library", I18n.rev)
+        count: Library.summary
+        countRight: true
 
-        Text {
+        IconButton {
+            id: sourceButton
             anchors.verticalCenter: parent.verticalCenter
-            text: I18n.tr("Library", I18n.rev)
-            font.pointSize: Type.title
-            font.weight: Type.bold
-            font.letterSpacing: Type.titleTracking
-            color: Theme.color.textPrimary
+            tip: I18n.tr("Sources and quality", I18n.rev)
+            glyph: Icons.adjustmentsHorizontal
+            round: true
+            checked: Library.extraFiltered || sources.opened
+            onClicked: sources.opened ? sources.close() : sources.open()
+
+            SourcesPopover {
+                id: sources; objectName: "librarySources"
+                x: sourceButton.width - width
+                y: sourceButton.height + Metrics.gap6
+                panes: page.panes
+                onPaneToggled: (column) => page.togglePane(column)
+                onPanesReordered: columns => { page.panes = ColumnChoices.reorder(page.panes, columns, SettingsModel) }
+            }
         }
-        Row {
-            anchors.right: parent.right
+        SortButton {
+            value: Library.order
+            options: [
+                { value: "artist", text: I18n.tr("Artist", I18n.rev) },
+                { value: "album", text: I18n.tr("Album", I18n.rev) },
+                { value: "year", text: I18n.tr("Year", I18n.rev) },
+                { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
+                { value: "title", text: I18n.tr("Title", I18n.rev) },
+                { value: "plays", text: I18n.tr("Most played", I18n.rev), descending: true },
+                { value: "duration", text: I18n.tr("Duration", I18n.rev) }
+            ]
+            onPicked: (value) => Library.order = value
+        }
+        SortButton {
+            objectName: "libraryGrouping"
+            visible: !Library.albumless
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Metrics.gap12
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: Library.summary
-                font.pointSize: Type.meta
-                color: Theme.color.textSecondary
-            }
-            IconButton {
-                id: sourceButton
-                anchors.verticalCenter: parent.verticalCenter
-                tip: I18n.tr("Sources and quality", I18n.rev)
-                glyph: Icons.adjustmentsHorizontal
-                round: true
-                checked: Library.extraFiltered || sources.opened
-                onClicked: sources.opened ? sources.close() : sources.open()
-
-                SourcesPopover {
-                    id: sources
-                    x: sourceButton.width - width
-                    y: sourceButton.height + Metrics.gap6
-                    panes: page.panes
-                    onPaneToggled: (column) => page.togglePane(column)
-                }
-            }
-            SortButton {
-                value: Library.order
-                options: [
-                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
-                    { value: "album", text: I18n.tr("Album", I18n.rev) },
-                    { value: "year", text: I18n.tr("Year", I18n.rev) },
-                    { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
-                    { value: "title", text: I18n.tr("Title", I18n.rev) },
-                    { value: "plays", text: I18n.tr("Most played", I18n.rev), descending: true },
-                    { value: "duration", text: I18n.tr("Duration", I18n.rev) }
-                ]
-                onPicked: (value) => Library.order = value
-            }
-            SortButton {
-                objectName: "libraryGrouping"
-                visible: !Library.albumless
-                anchors.verticalCenter: parent.verticalCenter
-                glyph: Icons.stack2
-                directed: false
-                value: page.group
-                options: [
-                    { value: "", text: I18n.tr("No grouping", I18n.rev) },
-                    { value: "letter", text: I18n.tr("By letter", I18n.rev) },
-                    { value: "artist", text: I18n.tr("By artist", I18n.rev) },
-                    { value: "year", text: I18n.tr("By year", I18n.rev) },
-                    { value: "decade", text: I18n.tr("By decade", I18n.rev) },
-                    { value: "genre", text: I18n.tr("By genre", I18n.rev) },
-                    { value: "label", text: I18n.tr("By label", I18n.rev) },
-                    { value: "composer", text: I18n.tr("By composer", I18n.rev) },
-                    { value: "quality", text: I18n.tr("By quality", I18n.rev) },
-                    { value: "source", text: I18n.tr("By source", I18n.rev) },
-                    { value: "added", text: I18n.tr("By date added", I18n.rev) },
-                    { value: "type", text: I18n.tr("By release type", I18n.rev) },
-                    { value: "plays", text: I18n.tr("By plays", I18n.rev) }
-                ]
-                onPicked: (value) => { page.group = value; SettingsModel.keep("ui.library.group", value) }
-            }
+            glyph: Icons.stack2
+            directed: false
+            value: page.group
+            options: [
+                { value: "", text: I18n.tr("No grouping", I18n.rev) },
+                { value: "letter", text: I18n.tr("By letter", I18n.rev) },
+                { value: "artist", text: I18n.tr("By artist", I18n.rev) },
+                { value: "year", text: I18n.tr("By year", I18n.rev) },
+                { value: "decade", text: I18n.tr("By decade", I18n.rev) },
+                { value: "genre", text: I18n.tr("By genre", I18n.rev) },
+                { value: "label", text: I18n.tr("By label", I18n.rev) },
+                { value: "composer", text: I18n.tr("By composer", I18n.rev) },
+                { value: "quality", text: I18n.tr("By quality", I18n.rev) },
+                { value: "source", text: I18n.tr("By source", I18n.rev) },
+                { value: "added", text: I18n.tr("By date added", I18n.rev) },
+                { value: "type", text: I18n.tr("By release type", I18n.rev) },
+                { value: "plays", text: I18n.tr("By plays", I18n.rev) }
+            ]
+            onPicked: (value) => { page.group = value; SettingsModel.keep("ui.library.group", value) }
         }
     }
 
@@ -216,8 +188,12 @@ Item {
         enabled: !Library.busy
         albumless: Library.albumless
         onAlbumlessToggled: Library.showAlbumless(!Library.albumless)
-        columns: page.listColumns
-        onColumnsChosen: (columns) => { page.listColumns = columns; SettingsModel.keep("ui.library.listColumns", columns.join(",") || "-") }
+        columns: page.nerdy ? page.nerdyColumns : page.listColumns
+        onColumnsChosen: (columns) => {
+            if (page.nerdy) page.nerdyColumns = columns
+            else page.listColumns = columns
+            SettingsModel.keep(page.nerdy ? "ui.library.nerdyColumns" : "ui.library.listColumns", columns.join(",") || "-")
+        }
     }
 
     // The records the columns leave, as cards or as rows.
@@ -235,6 +211,7 @@ Item {
         list: !page.grid
         technical: page.nerdy
         listColumns: page.listColumns
+        technicalColumns: page.nerdyColumns
         model: records
         onOpen: (albumId) => Navigation.go("album", albumId)
     }
@@ -244,7 +221,7 @@ Item {
         anchors.fill: result
         model: tracks
     }
-    ZeroResults { anchors.top: toolbar.bottom; x: head.x; active: !Library.albumless && records.albums === 0 && Library.queryText !== "" && !Library.busy }
+    ZeroResults { anchors.top: toolbar.bottom; x: head.x; active: !Library.albumless && records.albums === 0 && !Library.busy }
     ShelfSkeleton {
         anchors.fill: result
         visible: Library.busy && (Library.albumless ? !looseTracks.published : records.albums === 0)

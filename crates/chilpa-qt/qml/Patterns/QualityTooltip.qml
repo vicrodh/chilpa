@@ -22,14 +22,14 @@ Item {
     width: Metrics.qualityTooltipWidth
     height: lines.implicitHeight + Metrics.gap12 * 2 // derived: padding above and below
 
-    RectangularShadow {
+    Shadow {
         anchors.fill: panel
         radius: panel.radius
         offset.y: Metrics.shadowElevatedY
         blur: Metrics.shadowElevatedBlur
         color: Theme.color.shadowElevated
     }
-    RectangularShadow {
+    Shadow {
         anchors.fill: panel
         radius: panel.radius
         offset.y: Metrics.shadowKeyY
@@ -49,6 +49,8 @@ Item {
         anchors.fill: parent
         anchors.margins: Metrics.gap12
         spacing: Metrics.gap6
+        // The labels' column: the design's width, or the widest label as set.
+        readonly property real labelWidth: Array.from(children).reduce((wide, line) => Math.max(wide, line.labelWidth || 0), Metrics.qualityTooltipLabel)
 
         Item {
             width: parent.width
@@ -111,17 +113,19 @@ Item {
 
             Row {
                 required property var modelData
+                readonly property real labelWidth: label.implicitWidth
                 width: parent.width
                 spacing: Metrics.gap8
 
                 Text {
-                    width: Metrics.qualityTooltipLabel
+                    id: label
+                    width: lines.labelWidth
                     text: modelData.label
                     font.pointSize: Type.small
                     color: Theme.color.textTertiary
                 }
                 Text {
-                    width: parent.width - Metrics.qualityTooltipLabel - parent.spacing
+                    width: parent.width - lines.labelWidth - parent.spacing
                     text: modelData.value
                     elide: Text.ElideRight
                     font.pointSize: Type.small

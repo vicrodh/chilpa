@@ -1,6 +1,8 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -11,6 +13,7 @@ CascadingMenu {
     property TrackListModel model
     property string laterLabel
     property bool canRemove: false
+    property int offlinePlaylistId: 0
     property int groupRow: -1
     property string activeLabel
 
@@ -34,6 +37,8 @@ CascadingMenu {
             { separator: true },
             { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
         ] : [])
+        const offline = groupRow < 0 && offlinePlaylistId > 0 ? JSON.parse(Offline.menu("playlist", JSON.stringify([offlinePlaylistId]))) : []
+        if (offline.length > 0) entries = entries.concat([{separator:true}], offline)
         x = left
         y = top
         open()
@@ -41,6 +46,10 @@ CascadingMenu {
 
     onActionChosen: entry => {
         const action = entry.act
+        if (action.startsWith("offline:")) {
+            Offline.call(action.split(":")[1], "playlist", JSON.stringify([offlinePlaylistId]))
+            return
+        }
         if (groupRow >= 0) {
             model.groupAction(groupRow, action, activeLabel)
             if (action.startsWith("buffer:")) { ListenList.refresh(); if (action === "buffer:new") Navigation.go("listenlist", 0) }

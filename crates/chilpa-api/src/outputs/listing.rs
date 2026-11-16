@@ -17,7 +17,7 @@
 //! somebody is looking at the list -- the audio settings while shown, the
 //! cast picker while open. With nothing looking there is no periodic work.
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
@@ -95,6 +95,9 @@ struct Shared {
     /// How many snapshots have been published, changed or not. Moved after
     /// the snapshot and its revision are in place.
     published: AtomicU64,
+    /// Whether a listing is being made right now. A snapshot that one
+    /// publishes may come from before whoever asks next.
+    listing: AtomicBool,
     wanted: Mutex<Wanted>,
     wake: Condvar,
 }
@@ -155,6 +158,7 @@ impl Listing {
             answered: Condvar::new(),
             revision: AtomicU64::new(0),
             published: AtomicU64::new(0),
+            listing: AtomicBool::new(false),
             wanted: Mutex::new(Wanted::default()),
             wake: Condvar::new(),
         });
@@ -267,9 +271,40 @@ impl Listing {
         }
     }
 
-    #[cfg(test)]
-    fn published(&self) -> u64 {
+    /// How many snapshots have been published so far, changed or not.
+    pub(crate) fn published(&self) -> u64 {
         self.shared.published.load(Ordering::Acquire)
+    }
+
+    /// What was found by a listing published after `seen` publications, or
+    /// what stands once `patience` runs out. Asked after `ask`, this is the
+    /// listing that request made. A publication is checked in short slices,
+    /// so one that lands between the check and the wait costs a slice, not
+    /// the whole patience.
+    pub(crate) fn answer_after(&self, seen: u64, patience: Duration) -> Arc<Found> {
+        let deadline = Instant::now() + patience;
+        let mut found = lock(&self.shared.found);
+        while self.published() <= seen {
+            let left = deadline.saturating_duration_since(Instant::now());
+            if left.is_zero() {
+                break;
+            }
+            let slice = left.min(Duration::from_millis(25));
+            found = self.shared.answered.wait_timeout(found, slice).unwrap_or_else(|e| e.into_inner()).0;
+        }
+        Arc::clone(&found)
+    }
+
+    /// A listing made entirely after this call, or `None` if it has not
+    /// landed within `patience`. One already under way when this is asked
+    /// may have read the stacks before whatever changed, so it is waited
+    /// past: what comes back says what is there now.
+    pub(crate) fn fresh(&self, patience: Duration) -> Option<Arc<Found>> {
+        let under_way = self.shared.listing.load(Ordering::Acquire);
+        let wanted = self.published() + 1 + u64::from(under_way);
+        self.ask();
+        let found = self.answer_after(wanted - 1, patience);
+        (self.published() >= wanted).then_some(found)
     }
 
     #[cfg(test)]
@@ -299,6 +334,7 @@ struct Leaving<'a>(&'a Shared);
 
 impl Drop for Leaving<'_> {
     fn drop(&mut self) {
+        self.0.listing.store(false, Ordering::Release);
         let mut wanted = lock(&self.0.wanted);
         wanted.alive = false;
         if std::thread::panicking() {
@@ -310,7 +346,9 @@ impl Drop for Leaving<'_> {
 fn run(shared: &Shared, list: &Survey, every: Duration) {
     let _leaving = Leaving(shared);
     while !lock(&shared.wanted).stop {
+        shared.listing.store(true, Ordering::Release);
         shared.publish(Arc::new(list()));
+        shared.listing.store(false, Ordering::Release);
         let deadline = Instant::now() + every;
         let mut wanted = lock(&shared.wanted);
         while !wanted.stop && !wanted.asked {
@@ -566,5 +604,31 @@ pub(crate) mod tests {
         assert!(wait_until(|| listing.published() == 2, Duration::from_secs(2)));
         std::thread::sleep(SHORT * 10);
         assert_eq!(listing.published(), 2);
+    }
+
+    #[test]
+    fn a_fresh_listing_is_never_the_one_already_under_way() {
+        // A listing that read the stacks before a DAC came back would say it
+        // is gone, and a locked play would leave it for the default.
+        let (gate, reads) = (Arc::new(Gate::default()), Arc::new(AtomicUsize::new(0)));
+        let there = Arc::new(Mutex::new("old"));
+        let (at_gate, read, counted) = (Arc::clone(&gate), Arc::clone(&there), Arc::clone(&reads));
+        let listing = Listing::with(Arc::new(move || {
+            let seen = *read.lock().unwrap();
+            counted.fetch_add(1, Ordering::SeqCst);
+            at_gate.wait();
+            answered(vec![output(seen, "x")])
+        }));
+        // The first listing has read the stacks and has not published.
+        assert!(wait_until(|| reads.load(Ordering::SeqCst) == 1, Duration::from_secs(5)));
+        *there.lock().unwrap() = "new";
+        std::thread::scope(|scope| {
+            let asking = scope.spawn(|| listing.fresh(Duration::from_secs(5)));
+            assert!(wait_until(|| lock(&listing.shared.wanted).asked, Duration::from_secs(5)), "nothing asked");
+            gate.open();
+            let found = asking.join().unwrap().expect("a listing made after the ask");
+            assert_eq!(found.outputs.iter().map(|o| o.id.as_str()).collect::<Vec<_>>(), ["new"]);
+        });
+        assert_eq!(listing.published(), 2, "the stale listing and the asked one");
     }
 }

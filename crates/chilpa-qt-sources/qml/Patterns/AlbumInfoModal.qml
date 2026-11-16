@@ -16,8 +16,9 @@ Modal {
     property string summary
     readonly property var info: visible ? JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}") : ({})
     property int activeTab: 0
-    width: Math.min(parent.width - Metrics.modalInsets, Metrics.settingsMaxWidth + Metrics.heroArt)
-    height: Math.min(parent.height - Metrics.modalInsets, Metrics.heroArt * 3) // derived: cover, credits and header share a bounded reading area
+    preferredWidth: Math.min(parent.width - Metrics.modalInsets, Metrics.settingsMaxWidth + Metrics.heroArt)
+    preferredHeight: Math.max(title.height, dismiss.height) + Metrics.gap16
+        + Math.max(metadata.contentHeight, tabs.height + Metrics.gap12 + reading.contentHeight) + Metrics.modalInsets
     onOpened: activeTab = 0
     onActiveTabChanged: reading.contentItem.contentY = 0
     onAlbumIdChanged: close()

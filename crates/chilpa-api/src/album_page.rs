@@ -8,6 +8,7 @@ pub struct AlbumPage {
     pub heading: crate::album_versions::AlbumHeading,
     pub versions: Vec<AlbumVersion>,
     pub artist_information: String,
+    pub genre_links: String,
     pub entries: Vec<TrackEntry>,
 }
 
@@ -33,7 +34,7 @@ impl Reader {
             let versions = crate::album_versions::version_labels(self.lib.version_catalog().ok()?.choices(id));
             let discs = if crate::discs::several(&rows) { self.lib.album_discs(id).ok()? } else { Vec::new() };
             let entries = entries(rows, discs, |name| self.lib.has_artist(name).unwrap_or(false));
-            Some(AlbumPage { detail, heading, versions, entries, artist_information })
+            Some(AlbumPage { detail, heading, versions, entries, artist_information, genre_links:self.album_genre_links(id).to_string() })
         }).map_err(|error| eprintln!("chilpa-queries: album page failed: {error}")).ok().flatten()
     }
 
@@ -61,7 +62,7 @@ impl Chilpa {
             info["track_credits"] = serde_json::json!(rows.iter().map(|row| serde_json::json!({"artist":row.artist})).collect::<Vec<_>>());
         }
         let artist_information = self.album_artist_document(&detail.album.artist, &info, &rows).to_string();
-        Some(AlbumPage { detail, heading, versions, artist_information, entries: entries(rows, Vec::new(), |_| false) })
+        Some(AlbumPage { detail, heading, versions, artist_information, genre_links:String::new(), entries: entries(rows, Vec::new(), |_| false) })
     }
 }
 

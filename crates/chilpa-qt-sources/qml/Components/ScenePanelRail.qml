@@ -31,6 +31,7 @@ Item {
     ListView {
         anchors.fill: parent; anchors.leftMargin: Metrics.scenePadLeft
         model: rail.entries; clip: true; cacheBuffer: Metrics.scenePanelRow * 6
+        bottomMargin: Metrics.contentBottom // the last entry scrolls clear of a floating player
         boundsBehavior: Flickable.StopAtBounds
         delegate: Item {
             id: entry

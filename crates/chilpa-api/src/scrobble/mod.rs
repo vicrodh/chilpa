@@ -189,48 +189,43 @@ impl crate::Chilpa {
         }
     }
 
-    /// The listen a track that just started would be, told to the services
-    /// as what is playing now. None when the tags do not name it.
-    pub(crate) fn announce(
-        &self,
-        tags: Option<&chilpa_tags::Tags>,
-        duration_ms: u64,
-        started_at: i64,
-    ) -> Option<Listen> {
-        let t = tags?;
-        let listen = Listen {
-            artist: t.artist_line(),
-            track: self.now.title.clone(),
-            release: self.now.album.clone(),
-            duration_ms,
-            track_number: t.track_number,
-            recording_mbid: t.musicbrainz_recording_id.clone().unwrap_or_default(),
-            isrc: t.isrc.clone().unwrap_or_default(),
-            listened_at: started_at,
-        };
-        if listen.artist.is_empty() || listen.track.is_empty() {
-            return None;
-        }
+    /// Tells the services the listen of the track that just started in
+    /// front of the window, as what is playing now.
+    pub(crate) fn announce(&self, listen: &Listen) {
         if let Some(s) = &self.scrobbler {
             s.both(|| Order::Playing(listen.clone()));
         }
-        Some(listen)
     }
+}
 
-    /// Sends the playing track's listen once enough of it has been heard:
-    /// now, filed under when it started, and not when it ends -- a crash or
-    /// a closed window after the mark would lose it otherwise.
-    pub(crate) fn scrobble_if_heard(&mut self) {
-        let Some(current) = self.in_progress.as_mut() else { return };
-        if current.scrobbled || current.sample_rate_hz == 0 {
-            return;
-        }
-        let played_ms = current.heard_ms();
-        if counts(played_ms, current.duration_ms) {
-            current.scrobbled = true;
-            if let (Some(s), Some(listen)) = (&self.scrobbler, &current.listen) {
-                s.both(|| Order::Listened(listen.clone()));
-            }
+/// The listen uses the face's sourced names and the captured identity for
+/// absent fields. Tags retain optional recording identifiers.
+pub(crate) fn listen_of(tags: Option<&chilpa_tags::Tags>, title: &str, artist: &str, release: &str, duration_ms: u64, started_at: i64) -> Option<Listen> {
+    let listen = Listen {
+        artist: artist.to_string(),
+        track: title.to_string(),
+        release: release.to_string(),
+        duration_ms,
+        track_number: tags.and_then(|tags| tags.track_number),
+        recording_mbid: tags.and_then(|tags| tags.musicbrainz_recording_id.clone()).unwrap_or_default(),
+        isrc: tags.and_then(|tags| tags.isrc.clone()).unwrap_or_default(),
+        listened_at: started_at,
+    };
+    (!listen.artist.is_empty() && !listen.track.is_empty()).then_some(listen)
+}
+
+/// Sends a track's listen once enough of it has been heard: now, filed
+/// under when it started, and not when it ends -- a crash or a closed
+/// window after the mark would lose it otherwise.
+pub(crate) fn if_heard(scrobbler: Option<&Scrobbler>, current: &mut crate::InProgress) {
+    if current.scrobbled || current.sample_rate_hz == 0 {
+        return;
+    }
+    let played_ms = current.heard_ms();
+    if counts(played_ms, current.duration_ms) {
+        current.scrobbled = true;
+        if let (Some(s), Some(listen)) = (scrobbler, &current.listen) {
+            s.both(|| Order::Listened(listen.clone()));
         }
     }
 }

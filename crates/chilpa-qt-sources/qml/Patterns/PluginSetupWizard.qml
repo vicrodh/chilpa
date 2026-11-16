@@ -5,6 +5,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 Column {
     id: wizard
     required property var document
+    property bool showDescription: true
     readonly property var steps: Array.isArray(document.steps) ? document.steps.slice(0, 8) : []
     spacing: Metrics.gap24
     visible: steps.length > 0
@@ -88,6 +89,7 @@ Column {
         Text {
             width: parent.width
             text: wizard.document.description || ""
+            visible: wizard.showDescription
             textFormat: Text.PlainText
             wrapMode: Text.WordWrap
             font.pointSize: Type.body

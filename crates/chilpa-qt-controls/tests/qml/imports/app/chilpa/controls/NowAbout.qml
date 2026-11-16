@@ -1,14 +1,21 @@
 pragma Singleton
 import QtQuick
 QtObject {
-    // What the facade answers for the track and the record that play.
+    // What the facade answers for the track and the record asked for: the
+    // answer kept for that path, else the default one.
     property var trackAnswer: ({})
     property var albumAnswer: ({})
+    property var trackAnswers: ({})
     property var calls: ({track: 0, album: 0})
     property var retried: ({})
     property bool allowRetry: true
-    function track(path, rev) { calls.track++; return JSON.stringify(trackAnswer) }
-    function album(path, rev) { calls.album++; return JSON.stringify(albumAnswer) }
+    property string askedPath: ""
+    property string pinnedSubject: ""
+    property var reads: []
+    function pinSubject(path) { pinnedSubject=path }
+    signal trackInfoRequested(string path, string title)
+    function track(path, rev) { calls.track++; askedPath = path; reads.push({path:path,pin:pinnedSubject});return JSON.stringify(trackAnswers[path] || trackAnswer) }
+    function album(path, rev) { calls.album++; askedPath = path; return JSON.stringify(albumAnswer) }
     property string refetchedPath: ""
     property bool allowRefetch: true
     function refetchAlbum(path) {

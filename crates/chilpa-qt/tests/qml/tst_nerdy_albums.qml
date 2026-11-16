@@ -22,6 +22,7 @@ TestCase {
         records.albums = 1000
     }
     function init() {
+        grid.technicalColumns = null
         grid.width = 1050
         grid.technical = true
         grid.scrollView.contentX = 0
@@ -29,10 +30,26 @@ TestCase {
         mouseMove(test, 1150, 600)
         tryVerify(() => grid.scrollView.itemAtIndex(0) !== null)
     }
+    function test_optional_technical_columns_share_the_header_and_rows_and_reduce_scroll_width() {
+        const wide = grid.scrollView.contentWidth
+        grid.technicalColumns = ["rate","bits"]
+        const header = grid.scrollView.headerItem
+        tryVerify(() => findChild(header,"technicalHeader_codec") === null)
+        tryVerify(() => findChild(header,"technicalHeader_rate") !== null)
+        tryVerify(() => findChild(grid.scrollView.itemAtIndex(0),"technicalCell_codec") === null)
+        const cell = findChild(grid.scrollView.itemAtIndex(0),"technicalCell_bits")
+        compare(cell.text,"24")
+        verify(grid.scrollView.contentWidth < wide)
+        grid.technicalColumns = []
+        tryVerify(() => findChild(header,"technicalHeader_rate") === null)
+        verify(findChild(header,"technicalHeader_album") !== null)
+        grid.technicalColumns = null
+        tryVerify(() => findChild(header,"technicalHeader_codec") !== null)
+    }
     function test_clicking_the_album_row_opens_its_album_in_both_list_modes() {
         function albumRow(item) {
             if (!item) return null
-            if (typeof item.technicalFacts !== "undefined" && item.albumId === 1) return item
+            if (typeof item.technicalFacts !== "undefined" && item.albumId === 3) return item
             for (const child of item.children || []) {
                 const found = albumRow(child)
                 if (found) return found
@@ -42,14 +59,16 @@ TestCase {
         AlbumActions.selectedCount = 0
         for (const technical of [true, false]) {
             grid.technical = technical
+            grid.scrollView.forceLayout()
+            waitForRendering(grid)
             let row = null
-            tryVerify(() => { row = albumRow(grid.scrollView.itemAtIndex(0)); return row !== null })
+            tryVerify(() => { row = albumRow(grid.scrollView.itemAtIndex(2)); return row !== null })
             compare(row.technical, technical)
             opened.clear()
-            row.clicked(0)
+            mouseClick(row, Math.min(500, row.width / 2), 4)
             tryCompare(opened, "count", 1)
-            compare(opened.signalArguments[0][0], 1)
-            compare(opened.signalArguments[0][1], "Record 0")
+            compare(opened.signalArguments[0][0], 3)
+            compare(opened.signalArguments[0][1], "Record 2")
         }
     }
     function test_switcher_keeps_the_requested_glasses_icon() {

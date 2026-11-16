@@ -15,8 +15,20 @@ IconButton {
     Accessible.role: Accessible.Button
     Keys.onReturnPressed: clicked()
     Keys.onSpacePressed: clicked()
-    checked: Dsp.active || panel.opened
-    onClicked: panel.opened ? panel.close() : panel.open()
-    DspPanel { id: panel }
+    checked: Dsp.active || !!dialog.item?.opened
+    onClicked: {
+        if (dialog.item) dialog.item.opened ? dialog.item.close() : dialog.item.open()
+        else dialog.active = true
+    }
+    Loader {
+        id: dialog
+        objectName: "dspDialogLoader"
+        active: false
+        source: Qt.resolvedUrl("DspPanel.qml")
+        onLoaded: {
+            item.closed.connect(() => dialog.active = false)
+            item.open()
+        }
+    }
     Timer { interval: Motion.refresh; repeat: true; running: true; triggeredOnStart: true; onTriggered: Dsp.refresh() }
 }

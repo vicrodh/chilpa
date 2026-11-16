@@ -95,22 +95,24 @@ TestCase {
             compare(head.height, head.mainHeight, "saving adds no second header row")
         }
     }
-    function test_catalog_growth_forms_and_scroll_stay_inside_fixed_modal() {
+    function test_catalog_growth_and_forms_resize_up_to_the_window_cap() {
         for (const size of [[960,600], [1920,1080]]) {
             room(size[0], size[1]); catalog(0)
             form.open(); tryCompare(form, "opened", true)
             const width = form.width, height = form.height
             compare(width, Math.min(size[0] - Refine.savedDialogAround, Math.max(Refine.savedDialogMinWide, size[0] * 0.6)))
-            compare(height, Math.min(size[1] - Refine.savedDialogAround, Math.max(Refine.savedDialogMinTall, size[1] * 0.6)))
+            verify(height <= size[1] * 0.8)
             geometry(); catalog(64)
             const list = geometry(), bar = findChild(form, "savedQueriesScrollBar")
             tryCompare(list, "count", 64)
-            compare(form.width, width); compare(form.height, height)
+            compare(form.width, width)
+            tryVerify(() => form.height > height && form.height <= size[1] * 0.8)
+            const fullHeight = form.height
             mouseMove(list, list.width / 2, list.height / 2)
             tryCompare(bar, "visible", true)
             verify(bar.contentItem.width > 0 && bar.contentItem.height > 0 && bar.contentItem.opacity > 0)
             list.positionViewAtEnd(); tryVerify(() => list.contentY > 0)
-            compare(form.height, height)
+            compare(form.height, fullHeight)
             list.positionViewAtBeginning()
             waitForRendering(form.contentItem)
             if (captureVisuals) grabImage(test.Window.window.contentItem).save("/mnt/build/tmp/blitzkriegfc/refine-visual/catalog-" + size[0] + ".png")
@@ -122,7 +124,7 @@ TestCase {
             name.text = "Keep this name"; form.submit()
             compare(name.text, "Keep this name")
             verify(findChild(form, "savedQueryError").visible)
-            geometry(); compare(form.height, height)
+            geometry(); verify(form.height <= size[1] * 0.8)
             form.mode = "save"; geometry()
             verify(name.visible && submit.visible && submit.enabled)
             waitForRendering(form.contentItem)

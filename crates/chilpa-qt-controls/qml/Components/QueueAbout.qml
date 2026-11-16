@@ -8,7 +8,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // What is known of what plays, under the queue's art: the track by default,
 // or the record it is on. Its source's word when it says much, MusicBrainz's
-// when it does not; who said it closes the list.
+// when it does not; who said it closes the list. Where its file or server
+// entry is belongs to the information modal, not to this column.
 Item {
     id: about
     // "track" or "album".

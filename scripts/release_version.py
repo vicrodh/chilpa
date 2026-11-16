@@ -20,6 +20,22 @@ def release_version(version):
     return {"version": version, "tag": "v" + version, "prerelease": "-" in version}
 
 
+def precedence(version):
+    """A sort key in SemVer order: numbers compare as numbers, and a
+    prerelease comes before its release."""
+    release_version(version)
+    core, _, pre = version.partition("-")
+    numbers = tuple(int(part) for part in core.split("."))
+    if not pre:
+        return (numbers, 1, ())
+    return (numbers, 0, tuple((0, int(part), "") if part.isdigit() else (1, 0, part) for part in pre.split(".")))
+
+
+def not_older(version, published):
+    """Whether `version` may replace `published`: the same or newer."""
+    return precedence(version) >= precedence(published)
+
+
 def release_notes(root, version):
     """The release page text: the tag details, then the changelog without its title."""
     release_version(version)
@@ -46,6 +62,8 @@ def main():
     parser.add_argument("--version")
     parser.add_argument("--github-env", type=Path)
     parser.add_argument("--github-output", type=Path)
+    parser.add_argument("--not-older-than", metavar="PUBLISHED",
+                        help="fail when the version is older than PUBLISHED, the one a channel serves")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     version = args.version or tomllib.loads((root / "Cargo.toml").read_text())["workspace"]["package"]["version"]
@@ -55,6 +73,13 @@ def main():
         parser.error(str(error))
     if os.environ.get("RELEASE_EVENT") == "push" and os.environ.get("RELEASE_REF") != "refs/tags/" + identity["tag"]:
         parser.error("The release tag and workspace version differ.")
+    if args.not_older_than:
+        try:
+            newer = not_older(version, args.not_older_than)
+        except ValueError:
+            parser.error(f"The published version {args.not_older_than!r} is not a version.")
+        if not newer:
+            parser.error(f"{version} is older than {args.not_older_than}, which is published; it does not replace it.")
     if args.github_env:
         epoch = subprocess.check_output(["git", "show", "-s", "--format=%ct", "HEAD"], cwd=root, text=True).strip()
         with args.github_env.open("a") as output:

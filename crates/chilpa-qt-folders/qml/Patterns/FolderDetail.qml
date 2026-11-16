@@ -83,7 +83,7 @@ Item {
         }
         Row {
             id: grouping
-            anchors.right: tools.left
+            anchors.right: edit.left
             anchors.rightMargin: Metrics.gap16
             anchors.verticalCenter: parent.verticalCenter
             spacing: Metrics.gap8
@@ -110,6 +110,12 @@ Item {
                 detail.grid = index === 0
                 SettingsModel.keep("ui.folders.detail", detail.grid ? "grid" : "list")
             }
+        }
+        IconButton {
+            id:edit
+            anchors.right:tools.left; anchors.rightMargin:Metrics.gap8; anchors.verticalCenter:parent.verticalCenter
+            tip:I18n.tr("Edit metadata",I18n.rev); glyph:Icons.pencil
+            onClicked:Navigation.goKey("folderMetadata",JSON.stringify([detail.folder.path]))
         }
     }
 

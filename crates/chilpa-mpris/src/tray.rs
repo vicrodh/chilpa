@@ -172,7 +172,7 @@ impl Drop for Handle {
 /// or no bus.
 pub fn spawn(variant: Variant, labels: Labels, said: Said, tell: impl Fn(MediaEvent) + Send + Sync + 'static) -> Option<Handle> {
     let item = Item { icons: pixmaps(variant), said, labels, tell: Arc::new(tell) };
-    let sandboxed = std::path::Path::new("/.flatpak-info").exists();
+    let sandboxed = chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak;
     item.disable_dbus_name(sandboxed).spawn().ok().map(|inner| Handle { inner })
 }
 

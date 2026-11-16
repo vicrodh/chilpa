@@ -62,9 +62,10 @@ impl Library {
             "UPDATE sources SET reachable = ?2 WHERE id = ?1 AND reachable <> ?2",
             params![source_id, i64::from(reachable)],
         )?;
+        let available=format!("(?2 OR (?3 AND {}))",super::offline::READY_COPY);
         let moved = tx.execute(
-            "UPDATE tracks SET reachable = ?2 WHERE source_id = ?1 AND reachable <> ?2",
-            params![source_id, i64::from(reachable)],
+            &format!("UPDATE tracks SET reachable={available} WHERE source_id=?1 AND reachable<>{available}"),
+            params![source_id, i64::from(reachable), i64::from(enabled)],
         )?;
         tx.finish()?;
         Ok(changed + moved > 0)
@@ -80,8 +81,10 @@ impl Library {
         )?;
         if changed > 0 {
             tx.execute("UPDATE tracks SET reachable = 0 WHERE source_id = ?1", params![source_id])?;
+            tx.execute("UPDATE servers SET session_revision = session_revision + 1, generation = generation + 1 WHERE source_id = ?1", [source_id])?;
         }
         tx.finish()?;
+        if changed>0 && enabled { self.set_source_reachable(source_id,false)?; }
         Ok(changed > 0)
     }
 

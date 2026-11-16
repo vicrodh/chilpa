@@ -6,6 +6,7 @@ use super::fields::{self, Field, ALBUM, TRACK};
 use super::{Editor, Mode};
 use chilpa_meta::{Hit, Release};
 use chilpa_tags::edit::{Id3Version, Layers, Refusal};
+pub use super::preview::ChangeView;
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct MetadataView {
@@ -42,6 +43,10 @@ pub struct FieldView {
     pub editable: bool,
     /// Why the value cannot be saved. Empty when it can.
     pub invalid: String,
+    /// What is under what a sidecar lays over it: what the file or the
+    /// server says. Empty when nothing is laid over it. Typed back, the
+    /// sidecar stops laying the field.
+    pub beneath: String,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
@@ -65,12 +70,25 @@ pub struct CoverView {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
+pub struct ServerView {
+    /// The server's name, as Settings shows it.
+    pub name: String,
+    /// A save can go to the server.
+    pub allowed: bool,
+    /// Why not. Empty when it can.
+    pub refused: String,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct SaveView {
-    /// "sidecar" | "files" | "xml"
+    /// "sidecar" | "files" | "xml" | "server", or "" for a record on a
+    /// server nothing is chosen for yet.
     pub mode: &'static str,
-    /// The record is on a server: its changes stay on this device, laid
-    /// over what the server says, and never go into a file or to it.
+    /// The record is on a server: its changes go to the server, or stay on
+    /// this device in a sidecar when the listener chooses that; never into
+    /// a file.
     pub hosted: bool,
+    pub server: ServerView,
     pub files_allowed: bool,
     /// Why not. Empty when allowed.
     pub files_refused: String,
@@ -99,6 +117,13 @@ pub struct LayersView {
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct LookupView {
+    pub engine: &'static str,
+    pub runtime: String,
+    pub engine_version: String,
+    pub recommendation: String,
+    pub probing: bool,
+    pub beets_busy: bool,
+    pub changes: Vec<ChangeView>,
     /// "musicbrainz" | "discogs"
     pub provider: &'static str,
     pub searching: bool,
@@ -130,7 +155,7 @@ pub struct ArtworkView {
     pub candidates: Vec<CandidateView>,
 }
 
-fn field_view(field: &Field, cell: &Cell, of_a_track: bool, editable: bool) -> FieldView {
+fn field_view(field: &Field, cell: &Cell, of_a_track: bool, editable: bool, beneath: &str) -> FieldView {
     FieldView {
         name: field.name,
         value: cell.now.clone(),
@@ -139,14 +164,31 @@ fn field_view(field: &Field, cell: &Cell, of_a_track: bool, editable: bool) -> F
         overridden: cell.overridden,
         editable,
         invalid: if cell.mixed { String::new() } else { fields::invalid(field, of_a_track, &cell.now) },
+        beneath: if cell.overridden { beneath.to_string() } else { String::new() },
     }
+}
+
+/// A field's view, saving to a server: a field the server does not keep
+/// cannot be changed there, and one already changed says so until it is
+/// put back or saved to the sidecar.
+fn server_field(mut view: FieldView, keeps: bool) -> FieldView {
+    if !keeps {
+        if view.dirty {
+            if view.invalid.is_empty() {
+                view.invalid = super::server::not_kept();
+            }
+        } else {
+            view.editable = false;
+        }
+    }
+    view
 }
 
 /// Why the files cannot be written to, with the first reason that applies.
 /// Empty when they can.
 pub(crate) fn files_refused(draft: &Draft, layers: &Layers) -> String {
     if draft.rows.iter().any(Row::hosted) {
-        return chilpa_i18n::t("a record on a server keeps its changes on this device");
+        return chilpa_i18n::t("a record on a server has no files here to write to");
     }
     if draft.rows.iter().any(|row| row.inside_a_disc()) {
         return chilpa_i18n::t("tracks inside a disc image keep their changes in a sidecar");
@@ -215,7 +257,19 @@ impl Editor {
         if let Some(draft) = &self.draft {
             view.dirty = self.waiting.is_some()
                 || (draft.touched && draft.album.iter().chain(draft.rows.iter().flat_map(|r| r.cells.iter())).any(Cell::dirty));
-            view.album = ALBUM.iter().zip(&draft.album).map(|(f, cell)| field_view(f, cell, false, true)).collect();
+            let to_server = self.mode == Mode::Server;
+            let state = self.server.clone().unwrap_or_default();
+            let first = draft.rows.first();
+            view.album = ALBUM
+                .iter()
+                .enumerate()
+                .zip(&draft.album)
+                .map(|((at, f), cell)| {
+                    let beneath = first.map_or("", |row| row.album_file[at].as_str());
+                    let view = field_view(f, cell, false, true, beneath);
+                    if to_server { server_field(view, state.keeps(false, f.name)) } else { view }
+                })
+                .collect();
             view.tracks = draft
                 .rows
                 .iter()
@@ -225,15 +279,30 @@ impl Editor {
                     inside_a_disc: row.inside_a_disc(),
                     fields: TRACK
                         .iter()
+                        .enumerate()
                         .zip(&row.cells)
-                        .map(|(f, cell)| field_view(f, cell, true, !(f.name == "track_number" && row.inside_a_disc())))
+                        .map(|((at, f), cell)| {
+                            let view = field_view(f, cell, true, !(f.name == "track_number" && row.inside_a_disc()), &row.file[at]);
+                            if to_server { server_field(view, state.keeps(true, f.name)) } else { view }
+                        })
                         .collect(),
                 })
                 .collect();
             let refused = files_refused(draft, &self.layers);
             view.save = SaveView {
-                mode: match self.mode { Mode::Files => "files", Mode::Xml => "xml", Mode::Sidecar => "sidecar" },
+                mode: self.mode.name(),
                 hosted: draft.rows.iter().any(Row::hosted),
+                server: ServerView {
+                    name: state.name.clone(),
+                    allowed: state.writable,
+                    refused: if state.writable || self.server.is_none() {
+                        String::new()
+                    } else if state.why.is_empty() {
+                        chilpa_i18n::t("Chilpa cannot change this server's metadata")
+                    } else {
+                        state.why.clone()
+                    },
+                },
                 files_allowed: refused.is_empty(),
                 files_refused: refused,
                 xml_allowed: xml_refused(draft).is_empty(),
@@ -243,7 +312,8 @@ impl Editor {
                 done: self.progress.0,
                 total: self.progress.1,
             };
-            view.lookup.matched = self.release.as_ref().map_or(0, |r| super::apply::pair_for(draft, r, self.selected_disc).iter().flatten().count());
+            view.lookup.matched = self.preview_matched;
+            view.lookup.changes = self.changes.iter().filter(|change| change.differs(draft)).map(|change| change.view(draft)).collect();
         }
         view.cover = match &self.waiting {
             Some(waiting) => CoverView {
@@ -257,6 +327,12 @@ impl Editor {
         };
         view.layers = layers_view(&self.layers);
         view.lookup.provider = self.provider.name();
+        view.lookup.engine = if self.beets.enabled { "beets" } else { "native" };
+        view.lookup.runtime = self.beets.runtime.clone();
+        view.lookup.engine_version = self.beets.version.clone();
+        view.lookup.recommendation = self.beets.recommendation.clone();
+        view.lookup.probing = self.beets.probing;
+        view.lookup.beets_busy = self.beets.busy();
         view.lookup.searching = self.searching;
         view.lookup.loading = self.loading;
         view.lookup.hits = self.hits.clone();

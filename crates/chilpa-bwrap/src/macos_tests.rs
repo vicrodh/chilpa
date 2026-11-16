@@ -9,7 +9,7 @@ fn paths(root: &Path, executable: &str) -> NativePaths {
     let signed = Command::new("/usr/bin/codesign").args(["--force", "--sign", "-"])
         .arg(folder.join("plugin")).output().unwrap();
     assert!(signed.status.success(), "{}", String::from_utf8_lossy(&signed.stderr));
-    NativePaths { folder, data: root.join("data"), cache: root.join("cache"), export: None }
+    NativePaths { folder, data: root.join("data"), cache: root.join("cache"), export: None, private: Vec::new() }
 }
 
 #[test]
@@ -128,6 +128,100 @@ fn offline_workers_cannot_connect_to_external_addresses() {
     server.join().unwrap();
     assert!(allowed.status.success(), "{:?}: {}", allowed.status, String::from_utf8_lossy(&allowed.stderr));
     assert_eq!(allowed.stdout, b"ok");
+}
+
+/// Where `trust_probe` finds its chain; set only when a test starts it inside
+/// the sandbox.
+const TRUST_FIXTURE: &str = "CHILPA_TEST_TRUST_FIXTURE";
+const REFUSED: &str = "the system's certificate verifier refused";
+
+/// A test anchor and a server certificate it signs, as DER files in `folder`.
+fn chain(folder: &Path) {
+    let openssl = |arguments: &[&str]| {
+        let made = Command::new("/usr/bin/openssl").args(arguments).current_dir(folder).output().unwrap();
+        assert!(made.status.success(), "{}", String::from_utf8_lossy(&made.stderr));
+    };
+    std::fs::write(folder.join("leaf.cnf"), "subjectAltName=DNS:plugin.test\nextendedKeyUsage=serverAuth\nbasicConstraints=CA:FALSE\n").unwrap();
+    openssl(&["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", "anchor.key", "-out", "anchor.pem", "-days", "30",
+        "-subj", "/CN=Chilpa Test Anchor", "-addext", "basicConstraints=critical,CA:TRUE", "-addext", "keyUsage=critical,keyCertSign"]);
+    openssl(&["x509", "-in", "anchor.pem", "-outform", "DER", "-out", "anchor.der"]);
+    openssl(&["req", "-newkey", "rsa:2048", "-nodes", "-keyout", "leaf.key", "-out", "leaf.csr", "-subj", "/CN=plugin.test"]);
+    openssl(&["x509", "-req", "-in", "leaf.csr", "-CA", "anchor.pem", "-CAkey", "anchor.key", "-CAcreateserial", "-days", "30",
+        "-extfile", "leaf.cnf", "-outform", "DER", "-out", "leaf.der"]);
+}
+
+/// Security.framework's trust evaluation, the call a platform certificate
+/// verifier makes for each HTTPS handshake. `Err` carries the system's code.
+fn evaluate(leaf: &[u8], anchor: &[u8], host: &str) -> Result<(), isize> {
+    use std::ffi::c_void;
+    type Object = *const c_void;
+    #[repr(C)]
+    struct ArrayCallBacks { version: isize, retain: Object, release: Object, describe: Object, equal: Object }
+    #[link(name = "CoreFoundation", kind = "framework")]
+    unsafe extern "C" {
+        static kCFTypeArrayCallBacks: ArrayCallBacks;
+        fn CFDataCreate(allocator: Object, bytes: *const u8, length: isize) -> Object;
+        fn CFStringCreateWithBytes(allocator: Object, bytes: *const u8, length: isize, encoding: u32, external: u8) -> Object;
+        fn CFArrayCreate(allocator: Object, values: *const Object, count: isize, callbacks: *const ArrayCallBacks) -> Object;
+        fn CFErrorGetCode(error: Object) -> isize;
+    }
+    #[link(name = "Security", kind = "framework")]
+    unsafe extern "C" {
+        fn SecCertificateCreateWithData(allocator: Object, data: Object) -> Object;
+        fn SecPolicyCreateSSL(server: u8, host: Object) -> Object;
+        fn SecTrustCreateWithCertificates(certificates: Object, policies: Object, trust: *mut Object) -> i32;
+        fn SecTrustSetAnchorCertificates(trust: Object, anchors: Object) -> i32;
+        fn SecTrustSetNetworkFetchAllowed(trust: Object, allowed: u8) -> i32;
+        fn SecTrustEvaluateWithError(trust: Object, error: *mut Object) -> bool;
+    }
+    const UTF8: u32 = 0x0800_0100;
+    // SAFETY: plain Core Foundation and Security calls on objects made here;
+    // they live until the test process ends.
+    unsafe {
+        let certificate = |bytes: &[u8]| SecCertificateCreateWithData(std::ptr::null(), CFDataCreate(std::ptr::null(), bytes.as_ptr(), bytes.len() as isize));
+        let array = |items: &[Object]| CFArrayCreate(std::ptr::null(), items.as_ptr(), items.len() as isize, &kCFTypeArrayCallBacks);
+        let (leaf, anchor) = (certificate(leaf), certificate(anchor));
+        assert!(!leaf.is_null() && !anchor.is_null(), "the fixture certificates do not parse");
+        let host = CFStringCreateWithBytes(std::ptr::null(), host.as_ptr(), host.len() as isize, UTF8, 0);
+        let mut trust = std::ptr::null();
+        assert_eq!(SecTrustCreateWithCertificates(array(&[leaf]), SecPolicyCreateSSL(1, host), &mut trust), 0);
+        assert_eq!(SecTrustSetAnchorCertificates(trust, array(&[anchor])), 0);
+        assert_eq!(SecTrustSetNetworkFetchAllowed(trust, 0), 0);
+        let mut error = std::ptr::null();
+        if SecTrustEvaluateWithError(trust, &mut error) { Ok(()) } else { Err(if error.is_null() { 0 } else { CFErrorGetCode(error) }) }
+    }
+}
+
+/// Started inside the sandbox by the test below; on its own it does nothing.
+#[test]
+#[ignore = "runs inside the sandbox, started by online_workers_can_verify_a_server_certificate"]
+fn trust_probe() {
+    let Some(folder) = std::env::var_os(TRUST_FIXTURE).map(PathBuf::from) else { return };
+    let read = |name: &str| std::fs::read(folder.join(name)).unwrap();
+    if let Err(code) = evaluate(&read("leaf.der"), &read("anchor.der"), "plugin.test") {
+        panic!("{REFUSED}: {code}");
+    }
+}
+
+#[test]
+fn online_workers_can_verify_a_server_certificate() {
+    let root = tempfile::tempdir().unwrap();
+    let probe = std::env::current_exe().unwrap();
+    let paths = paths(root.path(), probe.to_str().unwrap());
+    std::fs::create_dir_all(&paths.data).unwrap();
+    chain(&paths.data);
+    let fixture = paths.data.canonicalize().unwrap();
+    let run = |network| {
+        let ran = command(&paths, network).unwrap().args(["--exact", "macos::tests::trust_probe", "--ignored", "--test-threads=1"])
+            .env(TRUST_FIXTURE, &fixture).output().unwrap();
+        (ran.status.success(), format!("{}{}", String::from_utf8_lossy(&ran.stdout), String::from_utf8_lossy(&ran.stderr)))
+    };
+    // The sandbox is what refuses an offline worker, so the probe would also
+    // catch a policy that forgets the verifier for an online one.
+    let (trusted, said) = run(false);
+    assert!(!trusted && said.contains(REFUSED), "an offline worker reached the verifier: {said}");
+    let (trusted, said) = run(true);
+    assert!(trusted, "a plugin's HTTPS client cannot verify a server certificate: {said}");
 }
 
 #[test]

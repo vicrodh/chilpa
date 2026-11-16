@@ -25,6 +25,8 @@ TestCase {
         findChild(gallery,"audioGalleryPreview").clicked()
         const panel = findChild(gallery,"audioOutputPanel")
         tryCompare(panel,"opened",true)
+        verify(panel.width >= 740, "the panel is narrower than its content: " + panel.width)
+        compare(findChild(panel,"audioOutputScroll").width, panel.width - 40, "the details are cut at the panel edge")
         compare(AudioOutput.commands.length,0)
         verify(!findChild(panel,"audioOutputRefresh").running)
         panel.close()

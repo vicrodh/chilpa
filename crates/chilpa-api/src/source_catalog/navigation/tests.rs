@@ -259,3 +259,40 @@ fn restored_tabs_protect_the_disk_catalog_before_workers_or_views_start() {
     assert!(bypassed.catalog.lock().navigation.identities.is_empty());
     assert_eq!(bypassed.preference("ui.tabs"), saved_tabs, "the crash chain bypass leaves saved tabs intact");
 }
+
+#[test]
+fn typed_article_routes_do_not_become_music_roots_and_other_routes_keep_their_ownership() {
+    let catalog = Catalog::new();
+    let article = crate::native_page_request::route("guest", "opaque:one", serde_json::json!({}), "article");
+    let collection = crate::native_page_request::route("guest", "opaque:one", serde_json::json!({}), "collection");
+    let retained = [
+        collection,
+        "guest native:article:legacy".to_string(),
+        "guest native:_host:v1:not-base64".to_string(),
+        format!("{article}|tracks"),
+        "guest section:tracks".to_string(),
+    ];
+    let mut routes = retained.iter().map(|key| Route {
+        screen: Screen::Source, id: 0, key: key.clone()
+    }).collect::<Vec<_>>();
+    routes.push(Route { screen: Screen::Source, id: 0, key: article.clone() });
+    routes.push(record(Screen::Album, -41));
+    routes.push(record(Screen::Playlist, -42));
+    routes.push(record(Screen::Playlist, 43));
+    let queue_path = crate::source_opener::entry_of("guest", "track:queued");
+    let playlist_path = crate::source_opener::entry_of("guest", "track:playlist");
+    catalog.protect_tracks([queue_path.clone()].into());
+    catalog.protect_navigation_with_tracks(&routes, [(43, [playlist_path.clone()].into())].into());
+    let inner = catalog.lock();
+    assert!(!inner.navigation.shelves.contains(&article), "an article view owns its body outside the music shelf store");
+    assert!(!inner.navigation.identities.contains(&("guest".into(), article.split_once(" native:").unwrap().1.into())),
+        "an opaque typed article is not a musical card identity");
+    assert_eq!(inner.navigation.shelves, retained.iter().cloned().collect::<HashSet<_>>());
+    let identities = retained.iter().filter_map(|key| key.split_once(" native:"))
+        .map(|(plugin, reference)| (plugin.to_string(), reference.to_string())).collect::<HashSet<_>>();
+    assert_eq!(inner.navigation.identities, identities, "collection, legacy and malformed routes retain their existing classification");
+    assert_eq!(inner.navigation.cards, HashSet::from([-41, -42]));
+    assert_eq!(inner.navigation.playlists[&43], HashSet::from([playlist_path.clone()]));
+    assert!(inner.protection().0.contains(&queue_path));
+    assert!(inner.protection().0.contains(&playlist_path));
+}

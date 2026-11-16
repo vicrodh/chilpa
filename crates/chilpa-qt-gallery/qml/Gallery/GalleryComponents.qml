@@ -1,5 +1,6 @@
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
+import "qrc:/qt/qml/app/chilpa/discovery/qml/Patterns"
 import QtQuick
 import app.chilpa
 import app.chilpa.folders
@@ -15,6 +16,7 @@ import "qrc:/qt/qml/app/chilpa/query/qml/Patterns"
 TitledFlow {
     id: section
     title: "Components"
+    Item { width:Metrics.settingsMaxWidth; height:Metrics.settingsRow * 6; PageSkeleton {} } // derived: heading and five placeholder rows
     Text {
         id: pulsePreview
         property int ticks: 0
@@ -47,6 +49,7 @@ TitledFlow {
     AlbumArtistLine { document: ({artist_html:"<a href=\"0\">Artist</a>",artist_links:[{target:"artist",key:"Artist"}]}) }
     Clipboard {}
     Driving.FrameSettlement {}
+    Driving.WindowRequests {}
     ShelfSkeleton { width: Metrics.confirmWidth; count: 3 }
     CoverCollage { covers: ["", "", "", ""] }
     QueueProgress { visible: true }
@@ -79,6 +82,7 @@ TitledFlow {
             PlayingIndicator {}
         }
         SectionHeader { width: parent.width; title: "Section header"; link: "See all" }
+        ScreenHead { width: parent.width; title: "Albums"; count: "1,234 albums" }
         AnimatedCover { width: Metrics.heroArt; height: width; colors: [Theme.color.surfacePanel, Theme.color.accent, Theme.color.statusWarning]; label: "Daily mix" }
         ScrollMemory { key: "gallery" }
         LibraryPanes { width: parent.width; height: Metrics.panesHeight }
@@ -191,8 +195,8 @@ TitledFlow {
         PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 songs · 48 min" }
         QueueMenu { model: folderTracks; laterLabel: "Library selection" }
         Driving.VolumeControl {}
-        QueueRow { width: Metrics.rightPanel; index: 0; title: "Faded Lines"; artist: "Mora Vale"; duration: "4:04"; playing: true; art: "" }
-        QueueRow { width: Metrics.rightPanel; index: 1; title: "Rivers"; artist: "Mora Vale"; duration: "5:48"; playing: false; art: "" }
+        QueueRow { width: Metrics.rightPanel; index: 0; title: "Faded Lines"; artist: "Mora Vale"; duration: "4:04"; playing: true; art: ""; trackId: 0 }
+        QueueRow { width: Metrics.rightPanel; index: 1; title: "Rivers"; artist: "Mora Vale"; duration: "5:48"; playing: false; art: ""; trackId: 0 }
         ChoiceRow {
             width: Metrics.rightPanel
             title: "Size"
@@ -203,8 +207,8 @@ TitledFlow {
             model: audio
             SettingsRow { width: section.width; page: audio }
         }
-        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true; scanPolicy: "startup" }
-        FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false; scanPolicy: "manual" }
+        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; shownPath: path; name: "Low Orbit"; lastScan: new Date(); reachable: true; scanPolicy: "startup" }
+        FolderRow { width: section.width; path: "/mnt/nas/DSD"; shownPath: path; name: "DSD"; lastScan: undefined; reachable: false; scanPolicy: "manual" }
         ScanProgress { width: section.width }
         PillButton {
             text: "Analysis offer"

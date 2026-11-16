@@ -37,7 +37,7 @@ Row {
         onClicked: Ratings.setFavorite(marks.kind, marks.key, !marks.favorite)
     }
     RatingButton {
-        visible: marks.rates && Number.isFinite(target) && target !== 0
+        visible: marks.rates && Prefs.ratings && Number.isFinite(target) && target !== 0
         kind: marks.kind
         target: marks.rates ? Number(marks.key) : 0
         contrasted: marks.contrasted

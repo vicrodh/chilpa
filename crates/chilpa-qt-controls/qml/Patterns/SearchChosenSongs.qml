@@ -61,7 +61,7 @@ Item {
         // Clicks in its empty space do not reach the rows under it.
         // no cursor: keeps clicks off the list beneath
         MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
-        RectangularShadow {
+        Shadow {
             anchors.fill: panel
             radius: panel.radius
             offset.y: Metrics.shadowElevatedY

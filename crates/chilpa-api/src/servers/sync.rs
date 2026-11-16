@@ -1,10 +1,11 @@
 //! Mirroring a server into the library, on a thread of its own (ADR-017 §5).
 //!
-//! One server at a time, in the order they were asked for. Every page lands
-//! whole or not at all; what the server no longer has is taken out only
-//! when the whole catalogue was read and the count adds up. A sync that is
-//! cut off, or that saw fewer tracks than the server announced, leaves the
-//! library as it was.
+//! One server at a time, in the order they were asked for. What it reads is
+//! written in short transactions, with room left between them for other
+//! writers (`write`); what the server no longer has is taken out only when
+//! the whole catalogue was read and the count adds up. A sync that is cut
+//! off, or that saw fewer tracks than the server announced, takes nothing
+//! out.
 //!
 //! The server's own playlists are read on this thread too (`reading`):
 //! after its catalogue, whether the sync finished or ended partial, and
@@ -29,6 +30,21 @@ const COVER: u32 = 1200;
 /// library under the window, which read it again each time.
 const WRITE_TRACKS: usize = 500;
 const WRITE_EVERY: Duration = Duration::from_secs(5);
+
+/// Tracks one transaction saves, or stamps as unchanged, at most. A page
+/// can hold thousands (a server that lists 500 records with their songs),
+/// and the library's triggers make each saved track several milliseconds:
+/// 7,462 in one transaction held a real library for 37 s, and every other
+/// writer waited out its 5 s busy timeout and failed.
+const SAVE_PART: usize = 50;
+const KEEP_PART: usize = 500;
+
+/// After this long writing, the sync leaves the library alone for `ROOM`.
+/// A writer that waits tries again at most every 100 ms (SQLite's busy
+/// handler), so a gap longer than that is always its turn; without one, the
+/// next part began before it looked.
+const SPAN: Duration = Duration::from_secs(1);
+const ROOM: Duration = Duration::from_millis(150);
 
 /// Pages in a row that bring no track the sync had not seen. Past this the
 /// server is listing the same tracks again and again: the sync stops there,
@@ -425,7 +441,7 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
     };
     let net = tools.net.as_ref();
     if let Some(after) = after {
-        let next = covers(&lib, net, &tools.keys, source, after, &asked_to_stop);
+        let next = covers(&lib, net, &tools.keys, &tools.gate, source, after, &asked_to_stop);
         owed.store(OWE_NOTHING, Ordering::Relaxed);
         say(Event::Covers { source, next: next.filter(|_| !asked_to_stop()) });
         return;
@@ -445,7 +461,7 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
     owed.store(OWE_CATALOGUE, Ordering::Relaxed);
     say(Event::Started { source });
     let progress = |reading: Reading| say(Event::Progress { source, reading });
-    let event = run(&lib, net, &tools.keys, source, &progress, &asked_to_stop);
+    let event = run(&lib, net, &tools.keys, &tools.gate, source, &progress, &asked_to_stop);
     // What came in has its covers fetched, whether the sync finished or
     // ended partial: a server read in part still shows its records whole.
     let goes_on = reads_playlists_after(&event);
@@ -460,16 +476,40 @@ fn serve(order: Order, tools: &Tools, stop: &Mutex<HashSet<i64>>, outbox: &Sende
     }
 }
 
-/// Reads the whole catalogue of one server into the library.
+/// Reads the whole catalogue of one server into the library, with the
+/// listener's ratings and favorites when its kind keeps them (`ratings`,
+/// `favorites`).
 pub(crate) fn run(
     lib: &chilpa_library::Library,
     net: &dyn Net,
     keys: &Keys,
+    gate: &Mutex<()>,
     source: i64,
     progress: &dyn Fn(Reading),
     stopped: &dyn Fn() -> bool,
 ) -> Event {
+    let mut rates = super::ratings::Reads::begin(lib, source);
+    let event = catalogue(lib, net, keys, gate, source, progress, stopped, &mut rates);
+    if let Some(rates) = rates {
+        super::ratings::finish(lib, net, keys, source, rates, &event, stopped);
+    }
+    super::favorites::finish(lib, net, keys, source, &event, stopped, super::favorites::on_for_all());
+    event
+}
+
+#[allow(clippy::too_many_arguments)]
+fn catalogue(
+    lib: &chilpa_library::Library,
+    net: &dyn Net,
+    keys: &Keys,
+    gate: &Mutex<()>,
+    source: i64,
+    progress: &dyn Fn(Reading),
+    stopped: &dyn Fn() -> bool,
+    rates: &mut Option<super::ratings::Reads>,
+) -> Event {
     let failed = |failure: Failure| Event::Failed { source, unreachable: failure.is_unreachable(), why: failure.to_string() };
+    let opening = gate.lock().unwrap_or_else(|error| error.into_inner());
     let Some(stored) = lib.server(source).ok().flatten() else {
         return Event::Failed { source, why: chilpa_i18n::t("that server is no longer in the library"), unreachable: false };
     };
@@ -494,6 +534,10 @@ pub(crate) fn run(
     let Ok(generation) = lib.begin_server_sync(source) else {
         return Event::Failed { source, why: chilpa_i18n::t("the library could not be written"), unreachable: false };
     };
+    let session = super::session::Scope::of(&stored);
+    drop(opening);
+    let outdated = || stopped() || lib.server(source).ok().flatten().is_none_or(|now| !now.enabled || !session.matches(&now));
+    let stopped: &dyn Fn() -> bool = &outdated;
     let known = lib.server_revisions(source).unwrap_or_default();
     let mut seen: HashSet<String> = HashSet::new();
     // What was kept or saved in this sync: only that counts as read.
@@ -526,8 +570,8 @@ pub(crate) fn run(
         if media && !pace::rest(pause, stopped, &|| {}) {
             continue;
         }
-        let asked_at = Instant::now();
-        let page = match chilpa_servers::page(net, &server, &key, cursor.as_deref()) {
+        let (asked_at, asked_ms) = (Instant::now(), crate::ratings::sync::now_ms());
+        let mut page = match chilpa_servers::page(net, &server, &key, cursor.as_deref()) {
             Ok(page) => page,
             Err(failure) if media && failure.is_unreachable() => {
                 pause = paced.after(asked_at.elapsed(), false);
@@ -599,6 +643,9 @@ pub(crate) fn run(
             }
         };
         pages += 1;
+        if let Some(rates) = rates.as_mut() {
+            rates.take(asked_ms, std::mem::take(&mut page.ratings));
+        }
         if media {
             pause = paced.after(asked_at.elapsed(), page.skipped == 0);
         }
@@ -728,9 +775,10 @@ pub(crate) fn run(
             unreachable: false,
         };
     }
+    let _finishing = gate.lock().unwrap_or_else(|error| error.into_inner());
+    if stopped() { return Event::Failed { source, why:super::session::changed(), unreachable:false }; }
     match lib.finish_server_sync(source, generation) {
         Ok(gone) => {
-            let _ = lib.set_source_reachable(source, true);
             Event::Finished { source, gone }
         }
         Err(_) => Event::Failed { source, why: chilpa_i18n::t("the library could not be written"), unreachable: false },
@@ -752,8 +800,11 @@ fn back(net: &dyn Net, server: &chilpa_servers::Server, stopped: &dyn Fn() -> bo
     false
 }
 
-/// Writes what a sync read and has not written, and empties it. Each part
-/// lands whole or not at all. False when the library could not be written.
+/// Writes what a sync read and has not written, and empties it: in parts
+/// of at most `KEEP_PART` and `SAVE_PART` tracks, each its own transaction,
+/// leaving the library free for `ROOM` after every `SPAN` of writing. False
+/// when the library could not be written; the parts before stay, stamped
+/// with this sync, and take nothing out.
 fn write(
     lib: &chilpa_library::Library,
     source: i64,
@@ -761,8 +812,35 @@ fn write(
     keep: &mut Vec<String>,
     save: &mut Vec<chilpa_library::ServerTrack>,
 ) -> bool {
-    let kept = keep.is_empty() || lib.keep_server_tracks(source, generation, keep.as_slice()).is_ok();
-    let saved = kept && (save.is_empty() || lib.save_server_tracks(source, generation, save.as_slice()).is_ok());
+    let mut since = Instant::now();
+    write_in_parts(lib, source, generation, keep, save, &mut || {
+        if since.elapsed() >= SPAN {
+            std::thread::sleep(ROOM);
+            since = Instant::now();
+        }
+    })
+}
+
+/// `write`, calling `between` after each part, while nothing holds the
+/// library.
+fn write_in_parts(
+    lib: &chilpa_library::Library,
+    source: i64,
+    generation: i64,
+    keep: &mut Vec<String>,
+    save: &mut Vec<chilpa_library::ServerTrack>,
+    between: &mut dyn FnMut(),
+) -> bool {
+    let kept = keep.chunks(KEEP_PART).all(|part| {
+        let written = lib.keep_server_tracks(source, generation, part).is_ok();
+        between();
+        written
+    });
+    let saved = kept && save.chunks(SAVE_PART).all(|part| {
+        let written = lib.save_server_tracks(source, generation, part).is_ok();
+        between();
+        written
+    });
     keep.clear();
     save.clear();
     saved
@@ -782,9 +860,12 @@ pub(crate) fn covers_dir(instance: &str) -> std::path::PathBuf {
 /// image, is not asked for again until the server names another. One it
 /// could not give now (another status, no answer) is asked for again at a
 /// later sync, up to `COVER_TRIES` times.
-pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, source: i64, after: i64, stopped: &dyn Fn() -> bool) -> Option<i64> {
+pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, gate: &Mutex<()>, source: i64, after: i64, stopped: &dyn Fn() -> bool) -> Option<i64> {
+    let opening = gate.lock().unwrap_or_else(|error| error.into_inner());
     let stored = lib.server(source).ok().flatten().filter(|s| s.enabled)?;
     let (server, key) = (net::server(&stored)?, net::key(keys, &stored)?);
+    let session = super::session::Scope::of(&stored);
+    drop(opening);
     let dir = covers_dir(&stored.instance);
     let _ = std::fs::create_dir_all(&dir);
     let pending = lib.pending_server_covers_after(source, after, COVERS_PER_RUN).unwrap_or_default();
@@ -800,7 +881,10 @@ pub(crate) fn covers(lib: &chilpa_library::Library, net: &dyn Net, keys: &Keys, 
         }
         last = album;
         let request = chilpa_servers::cover(&server, &key, &cover, COVER);
-        let _ = match net.send(&request) {
+        let reply = net.send(&request);
+        let _publishing = gate.lock().unwrap_or_else(|error| error.into_inner());
+        if stopped() || lib.server(source).ok().flatten().is_none_or(|now| !now.enabled || !session.matches(&now)) { return None; }
+        let _ = match reply {
             Ok(reply) if reply.status == 200 => {
                 let kind = reply.headers.get("content-type").cloned().unwrap_or_default();
                 let ext = image_kind(&kind, &reply.body);

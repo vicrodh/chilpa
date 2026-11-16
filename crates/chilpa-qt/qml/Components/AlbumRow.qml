@@ -21,7 +21,8 @@ Item {
     property url art
     property int tint: 0
     property bool technical: false
-    readonly property var technicalFacts: technical && albumId !== 0 ? JSON.parse(AlbumActions.technical(albumId, rev) || "{}") : ({})
+    property var technicalColumns: null
+    readonly property var technicalFacts: (technical || shows("rate") || shows("bits")) && albumId !== 0 ? JSON.parse(AlbumActions.technical(albumId, rev) || "{}") : ({})
     // The columns shown, by name: "year", "tracks", "duration", "genre",
     // "rating", "source".
     property var columns: ["year"]
@@ -33,7 +34,7 @@ Item {
     property int tracks: facts.tracks || 0
     property real durationMs: facts.duration_ms || 0
     property string genre: facts.genre || ""
-    property int stars: !technical && albumId !== 0 && shows("rating") ? Ratings.stars("album", albumId, Ratings.rev) : 0
+    property int stars: !technical && albumId !== 0 && cells.shows("rating") ? Ratings.stars("album", albumId, Ratings.rev) : 0
     // The record's sources; their column only where a list mixes them.
     property var sources: []
     property bool mixed: false
@@ -50,11 +51,6 @@ Item {
     signal menu(real x, real y)
 
     function shows(column) { return row.columns.indexOf(column) >= 0 }
-    // hh:mm:ss, as long records run past the hour.
-    function clock(ms) {
-        const s = Math.round(ms / 1000), two = (n) => (n < 10 ? "0" : "") + n
-        return two(Math.floor(s / 3600)) + ":" + two(Math.floor(s / 60) % 60) + ":" + two(s % 60)
-    }
 
     implicitHeight: technical ? Metrics.rowCompact : Metrics.rowRich
     opacity: available ? 1 : Metrics.disabledOpacity
@@ -124,61 +120,29 @@ Item {
             font.pointSize: Type.meta
         }
     }
-    component Cell: Text {
-        anchors.verticalCenter: parent.verticalCenter
-        horizontalAlignment: Text.AlignRight
-        elide: Text.ElideRight
-        font.pointSize: Type.row
-        font.features: { "tnum": 1 }
-        color: Theme.color.textSecondary
-    }
-    Row {
+    AlbumListCells {
         id: cells
         visible: !row.technical
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap12
         height: parent.height
-        spacing: Metrics.gap16
-
-        Cell { objectName: "yearCell"; visible: row.shows("year"); width: Metrics.colTimeRich; text: row.year }
-        Cell { objectName: "tracksCell"; visible: row.shows("tracks"); width: Metrics.colTimeRich; text: row.tracks > 0 ? row.tracks : "" }
-        Cell { objectName: "durationCell"; visible: row.shows("duration"); width: Metrics.colPlaysCompact; text: row.durationMs > 0 ? row.clock(row.durationMs) : "" }
-        Cell {
-            objectName: "genreCell"; visible: row.shows("genre"); width: Metrics.colQualityRich
-            horizontalAlignment: Text.AlignLeft; text: row.genre
-        }
-        RatingStars {
-            id: stars
-            objectName: "ratingCell"
-            visible: row.shows("rating")
-            anchors.verticalCenter: parent.verticalCenter
-            width: Metrics.colRating
-            interactive: row.available
-            value: row.stars
-            onRated: (value) => Ratings.rate("album", row.albumId, value)
-        }
-        Row {
-            objectName: "sourceCell"
-            visible: row.mixed && row.shows("source")
-            anchors.verticalCenter: parent.verticalCenter
-            width: Metrics.colSource * 2 + Metrics.gap12 // derived: room for six sources side by side
-            layoutDirection: Qt.RightToLeft
-            spacing: Metrics.gap4
-            Repeater {
-                model: row.sources
-                SourceIcon {
-                    required property var modelData
-                    width: Metrics.iconSm + Metrics.gap4; height: width
-                    sourceInfo: modelData
-                }
-            }
-        }
+        columns: row.columns
+        facts: row.technicalFacts
+        year: row.year
+        tracks: row.tracks
+        durationMs: row.durationMs
+        genre: row.genre
+        stars: row.stars
+        available: row.available
+        mixed: row.mixed
+        sources: row.sources
+        onRated: (value) => Ratings.rate("album", row.albumId, value)
     }
 
     Loader {
         anchors.fill: parent
         active: row.technical
-        sourceComponent: TechnicalCells { explicitContent: row.explicitContent; aiGenerated: row.aiGenerated; facts: row.technicalFacts; title: row.title; artist: row.subtitle; year: row.year }
+        sourceComponent: TechnicalCells { shown: row.technicalColumns; explicitContent: row.explicitContent; aiGenerated: row.aiGenerated; facts: row.technicalFacts; title: row.title; artist: row.subtitle; year: row.year }
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
@@ -190,7 +154,7 @@ Item {
                 const at = item.mapFromItem(row, point.position.x, point.position.y)
                 return item.visible && at.x >= 0 && at.x <= item.width && at.y >= 0 && at.y <= item.height
             }
-            if (button === Qt.LeftButton && (inside(artistLabel) || inside(stars))) return
+            if (button === Qt.LeftButton && (inside(artistLabel) || inside(cells.ratingItem))) return
             if (button === Qt.RightButton)
                 return row.menu(point.position.x, point.position.y)
             // The arrow is its own place.

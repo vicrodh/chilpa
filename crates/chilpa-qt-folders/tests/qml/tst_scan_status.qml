@@ -12,7 +12,7 @@ TestCase {
     FolderRow {
         id: folder
         y: 300; width: 850
-        path: "/music"; name: "Music"; lastScan: undefined; reachable: true; scanPolicy: "manual"
+        path: "/music"; shownPath: "/home/someone/Music"; name: "Music"; lastScan: undefined; reachable: true; scanPolicy: "manual"
         onRescan: LibraryFolders.rescan(path)
         onPolicyChosen: policy => LibraryFolders.choosePolicy(path, policy)
     }
@@ -34,6 +34,10 @@ TestCase {
         folder.width = 850
     }
     function title() { return findChild(banner, "scanTitle").text }
+    function test_a_folder_shows_where_it_lives_and_acts_on_its_own_path() {
+        compare(findChild(folder, "folderShownPath").text, "/home/someone/Music")
+        compare(folder.path, "/music")
+    }
     function press(name) {
         const control = findChild(banner, name)
         verify(waitForRendering(banner))

@@ -1,4 +1,5 @@
-//! What the queue's About tab says of what plays, read from the facade.
+//! What the queue's About tab says of a track, read from the facade: the one
+//! that plays, or one a list's menu chose.
 #[cxx_qt::bridge]
 pub mod qobject {
     unsafe extern "C++" {
@@ -11,8 +12,8 @@ pub mod qobject {
         #[qml_element]
         #[qml_singleton]
         type NowAbout = super::NowAboutRust;
-        /// The track that plays, as JSON; `path` and `rev` only ask again
-        /// when what plays or what was read changes.
+        /// The track `path` names, as JSON; `path` and `rev` only ask again
+        /// when what is asked for or what was read changes.
         #[qinvokable]
         fn track(self: &NowAbout, path: &QString, rev: i32) -> QString;
         /// The record it is on, in the same shape.
@@ -22,26 +23,41 @@ pub mod qobject {
         fn refetch_album(self: &NowAbout, path: &QString) -> bool;
         #[qinvokable]
         fn retry(self: &NowAbout, part: &QString, path: &QString) -> bool;
+        /// Pins a chosen source track while its information dialog is mounted.
+        #[qinvokable]
+        fn pin_subject(self: Pin<&mut NowAbout>, path: &QString);
+        /// A menu asks the window to show what is known of a track: its
+        /// path and the title its row shows.
+        #[qsignal]
+        fn track_info_requested(self: Pin<&mut NowAbout>, path: &QString, title: &QString);
     }
 }
 use cxx_qt_lib::QString;
+use cxx_qt::CxxQtType as _;
+use std::pin::Pin;
 
 #[derive(Default)]
-pub struct NowAboutRust;
+pub struct NowAboutRust { subject_hold: Option<chilpa_api::SelectionHold> }
 
 impl qobject::NowAbout {
+    pub fn pin_subject(mut self: Pin<&mut Self>, path: &QString) {
+        let path=path.to_string();
+        let hold=if path.is_empty() || path.len()>65536 { None }
+            else { Some(chilpa_qt_kit::app::with(|api| api.hold_catalog_path(&path))) };
+        self.as_mut().rust_mut().subject_hold=hold;
+    }
     pub fn refetch_album(&self, path: &QString) -> bool {
-        chilpa_qt_kit::app::with(|api| api.refetch_now_album_about(&path.to_string()))
+        chilpa_qt_kit::app::with(|api| api.refetch_album_about(&path.to_string()))
     }
 
     pub fn retry(&self, part: &QString, path: &QString) -> bool {
-        chilpa_qt_kit::app::with(|api| api.retry_now_about(&part.to_string(), &path.to_string()))
+        chilpa_qt_kit::app::with(|api| api.retry_about(&part.to_string(), &path.to_string()))
     }
 
-    pub fn track(&self, _path: &QString, _rev: i32) -> QString {
-        QString::from(&chilpa_qt_kit::app::with(|api| api.now_track_about()))
+    pub fn track(&self, path: &QString, _rev: i32) -> QString {
+        QString::from(&chilpa_qt_kit::app::with(|api| api.track_about(&path.to_string())))
     }
-    pub fn album(&self, _path: &QString, _rev: i32) -> QString {
-        QString::from(&chilpa_qt_kit::app::with(|api| api.now_album_about()))
+    pub fn album(&self, path: &QString, _rev: i32) -> QString {
+        QString::from(&chilpa_qt_kit::app::with(|api| api.album_about(&path.to_string())))
     }
 }

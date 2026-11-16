@@ -28,8 +28,8 @@ Item {
     Modal {
         id: waiting
         objectName: "searchSelectionWait"
-        width: Metrics.confirmWidth
-        height: body.implicitHeight + Metrics.modalInsets
+        preferredWidth: Metrics.confirmWidth
+        preferredHeight: body.implicitHeight + Metrics.modalInsets
         onClosed: if (root.search && (root.search.selectionPending || root.search.selectionError !== "")) root.search.cancelSelection()
         Column {
             id: body

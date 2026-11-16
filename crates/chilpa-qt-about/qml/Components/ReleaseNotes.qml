@@ -16,6 +16,7 @@ Item {
     property var doc: ({})
     readonly property bool loading: doc.loading === true
     readonly property bool ready: !loading && doc.hasBody === true
+    implicitHeight: ready ? column.implicitHeight : Math.max(Metrics.button32,missing.implicitHeight)
 
     Text {
         anchors.centerIn: parent
@@ -25,6 +26,7 @@ Item {
         font.pointSize: Type.body
     }
     Text {
+        id: missing
         objectName: "notesMissing"
         anchors.centerIn: parent
         visible: !notes.loading && !notes.ready

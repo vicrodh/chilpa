@@ -4,33 +4,40 @@
 //! readable by any process running as the user, and that cannot be
 //! sustained in a program that promises a plugin never sees your secrets.
 //!
-//! # Two paths, one API
+//! # Three paths, one API
 //!
 //! 1. **The system keyring** (preferred): an AES-256 master key lives inside
 //!    the system store — libsecret on Linux, Keychain on macOS, DPAPI on
 //!    Windows — and everything else is encrypted with it.
-//! 2. **Derived from the machine** (when there is no keyring): the key comes
+//! 2. **The desktop portal** (inside a Flatpak, where the keyring is out of
+//!    reach): the master key is HKDF-SHA256 over a per-app value that the
+//!    desktop keeps in its own store and hands over through
+//!    `org.freedesktop.portal.Secret`.
+//! 3. **Derived from the machine** (when neither answers): the key comes
 //!    from HKDF-SHA256 over `machine-id` plus an install UUID. Weaker,
 //!    because anyone with filesystem access can rebuild it, but it works on
 //!    a headless box and **is still bound to that machine**.
 //!
-//! Both produce the same envelope, so the caller does not have to know which
-//! was used. What it can know, and tell the user, is
+//! All three produce the same envelope, so the caller does not have to know
+//! which was used. What it can know, and tell the user, is
 //! [`SecretBox::backend`].
 //!
 //! # When the path changes between starts
 //!
-//! A start can find the keyring missing or locked and the next one find it
-//! back. A box on the keyring therefore also opens what the derived path
-//! sealed on this install, with the derived key, which the install can
-//! always rebuild; what it seals from then on goes to the keyring. The other
-//! way does not work: a box without the keyring has no keyring key, and what
-//! the keyring sealed waits for a start that has it.
+//! A start can find the keyring or the portal missing or locked and the next
+//! one find it back. A box on either therefore also opens what the derived
+//! path sealed on this install, with the derived key, which the install can
+//! always rebuild; what it seals from then on goes to its own key, so a
+//! record moves over on its next write. The other way does not work: a box
+//! on the derived path has no keyring or portal key, and what they sealed
+//! waits for a start that has it. Neither do the keyring and the portal open
+//! each other's envelopes: each refuses the other's by name.
 //!
 //! # What it protects against
 //!
-//! - Copying the directory to another machine. The keyring entry is not
-//!   there, or the `machine-id` differs, and what was sealed does not open.
+//! - Copying the directory to another machine. The keyring entry or the
+//!   portal's value is not there, or the `machine-id` differs, and what was
+//!   sealed does not open.
 //! - Looking at the files. A token is not pulled out of the blob by reading.
 //!
 //! # What it does not
@@ -42,16 +49,21 @@
 //!   source, not on the cipher.
 //! - Someone who can read this install's id and the `machine-id` rebuilds
 //!   the derived key, so they can also write an envelope that a box on the
-//!   keyring accepts as the derived path's. That is the same reach as the
-//!   shell above; what the keyring sealed stays out of it.
+//!   keyring or the portal accepts as the derived path's. That is the same
+//!   reach as the shell above; what the keyring or the portal sealed stays
+//!   out of it.
 //!
-//! **Nothing is stored in the clear, ever, on either path.**
+//! **Nothing is stored in the clear, ever, on any path.**
 
 mod backend;
 mod cipher;
 mod envelope;
 mod error;
 mod install_id;
+#[cfg(target_os = "linux")]
+mod portal;
+#[cfg(all(test, target_os = "linux"))]
+mod fake_portal;
 mod store;
 
 pub use backend::BackendKind;
@@ -87,10 +99,10 @@ impl SecretBox {
         self.backend.seal(plaintext)
     }
 
-    /// Opens. Fails if it was tampered with, if the keyring sealed it and
-    /// this box is not on the keyring, or if the master key is no longer the
-    /// same. A box on the keyring also opens what the derived path sealed on
-    /// this install.
+    /// Opens. Fails if it was tampered with, if the keyring or the portal
+    /// sealed it and this box is not on that path, or if the master key is
+    /// no longer the same. A box on the keyring or the portal also opens what
+    /// the derived path sealed on this install.
     pub fn open_sealed(&self, sealed: &[u8]) -> Result<Vec<u8>, SecretError> {
         self.backend.open(sealed)
     }

@@ -19,6 +19,10 @@ TestCase {
 
     LibraryPanes { id: panes; width: 1200; height: 300 }
 
+    function init() {
+        failOnWarning(/Cannot create delegate|Object or context destroyed during incubation|invalid context|TypeError|ReferenceError/)
+    }
+
     function shown() {
         const out = []
         for (let i = 0; i < panes.children.length; ++i) {
@@ -36,20 +40,20 @@ TestCase {
         compare(shown().map(c => c.column).join(","), "year,genre,artist,album")
     }
 
-    function test_label_and_composer_take_their_place_in_order() {
+    function test_label_and_composer_follow_the_chosen_order() {
         panes.shown = ["composer", "label", "year", "artist", "album"]
         waitForRendering(panes)
-        compare(shown().map(c => c.column).join(","), "year,label,composer,artist,album")
+        compare(shown().map(c => c.column).join(","), "composer,label,year,artist,album")
         const total = shown().reduce((sum, c) => sum + c.width, 0)
         verify(Math.abs(total - (panes.width - 6)) < 2, "the columns share the width: " + total)
     }
 
     // Rating stands before the artist and draws its entries as stars.
-    function test_rating_comes_before_the_artist_and_draws_its_stars() {
+    function test_rating_keeps_its_position_and_draws_its_stars() {
         panes.shown = ["rating", "year", "artist", "album"]
         waitForRendering(panes)
-        compare(shown().map(c => c.column).join(","), "year,rating,artist,album")
-        const list = Array.from(shown()[1].children).find(c => c.contentItem !== undefined)
+        compare(shown().map(c => c.column).join(","), "rating,year,artist,album")
+        const list = Array.from(shown()[0].children).find(c => c.contentItem !== undefined)
         list.model.append({ key: "4", label: "4 stars", meta: "2", selected: false, excluded: false, all: false })
         tryVerify(() => (findChild(list, "paneStars") || {}).value === 4, 1000, "four stars drawn")
         list.model.clear()
@@ -92,5 +96,49 @@ TestCase {
         panes.shown = ["composer"]
         waitForRendering(panes)
         compare(shown().map(c => c.column).join(","), "composer")
+    }
+
+    function test_equivalent_columns_keep_their_models_and_rows() {
+        panes.shown = ["artist", "album"]
+        waitForRendering(panes)
+        const original = shown()
+        panes.shown = ["artist", "album"]
+        waitForRendering(panes)
+        compare(shown()[0], original[0])
+        compare(shown()[1], original[1])
+    }
+
+    function test_reordering_keeps_each_filter_model_and_scroll_position() {
+        panes.shown = ["year", "artist", "album"]
+        waitForRendering(panes)
+        const original = shown(), lists = original.map(column => Array.from(column.children).find(child => child.contentItem !== undefined))
+        for (const list of lists) {
+            list.model.append(Array.from({length:100},(_,at)=>({key:String(at),label:"Entry " + at,meta:"1",selected:at === 2,excluded:false,all:false})))
+            list.contentY = 100
+        }
+        const positions = lists.map(list => list.contentY)
+        panes.shown = ["album", "year", "artist"]
+        waitForRendering(panes)
+        compare(shown().map(column => column.column), ["album", "year", "artist"])
+        compare(shown(), [original[2], original[0], original[1]])
+        lists.forEach((list,index) => { compare(list.model.count,100); compare(list.model.get(2).selected,true); fuzzyCompare(list.contentY,positions[index],0.1); list.model.clear() })
+    }
+
+    function test_retiring_columns_cancels_cached_rows_before_their_contexts() {
+        const entries = Array.from({length:500}, (_, index) => ({
+            key:String(index),label:"Fixture "+index,meta:"1",selected:false,excluded:false,all:false
+        }))
+        for (let cycle = 0; cycle < 12; ++cycle) {
+            panes.shown = ["artist", "album", "bits", "rate"]
+            waitForRendering(panes)
+            for (const column of shown()) {
+                const list = Array.from(column.children).find(child => child.contentItem !== undefined)
+                list.model.append(entries)
+            }
+            wait(1)
+            panes.shown = ["artist"]
+            waitForRendering(panes)
+            compare(shown().length, 1)
+        }
     }
 }

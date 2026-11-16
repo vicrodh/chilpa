@@ -37,6 +37,8 @@ pub const ORIGIN: &str = "https://lyrics.chilpa.app";
 pub const RESOLVE_PATH: &str = "/v1/lyrics/resolve";
 /// The path lyrics already shown are sent to for a translation.
 pub const TRANSLATE_PATH: &str = "/v1/lyrics/translate";
+/// Existing lyrics sent for a Latin-script pronunciation layer.
+pub const ROMANIZE_PATH: &str = "/v1/lyrics/romanize";
 /// The largest answer read. Lyrics with every word timed are a few tens of
 /// kilobytes.
 pub const MAX_ANSWER: usize = 1024 * 1024;
@@ -92,11 +94,27 @@ pub fn translate_request(track: &Track, lines: &[String], language: &str, from: 
     Value::Object(question)
 }
 
+/// The complete document stays in order, including repeated and Latin lines.
+pub fn romanize_request(track: &Track, lines: &[String], from: Option<&str>) -> Value {
+    let mut request = translate_request(track, lines, "und", from);
+    request.as_object_mut().unwrap().remove("language");
+    request["scheme"] = json!("standard");
+    request
+}
+
 /// Reads the service's answer to a translation. A 200 that says "none" is
 /// none, and so is a layer with nothing in it: every line said the same.
 /// Anything else is a failure, with the pause the service asked for: a 503
 /// says the translation is still being made and when to ask again.
 pub fn read_translation(status: u16, retry_after: Option<&str>, body: &str) -> Translation {
+    read_layer(status, retry_after, body, LayerKind::Translation)
+}
+
+pub fn read_romanization(status: u16, retry_after: Option<&str>, body: &str) -> Translation {
+    read_layer(status, retry_after, body, LayerKind::Romanization)
+}
+
+fn read_layer(status: u16, retry_after: Option<&str>, body: &str, kind: LayerKind) -> Translation {
     let failed = |message: String| Translation::Failed { retry_after: pause(retry_after).filter(|_| matches!(status, 429 | 503)), message };
     if status != 200 {
         return failed(format!("the lyrics service answered {status}"));
@@ -113,7 +131,7 @@ pub fn read_translation(status: u16, retry_after: Option<&str>, body: &str) -> T
     match answer.get("status").and_then(Value::as_str) {
         Some("none") => Translation::None,
         Some("found") => match answer.get("layer").cloned().and_then(|l| serde_json::from_value::<Layer>(l).ok()) {
-            Some(layer) if layer.kind == LayerKind::Translation => {
+            Some(layer) if layer.kind == kind => {
                 if layer.lines.is_empty() {
                     Translation::None
                 } else {

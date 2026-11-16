@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Flatten a pinned LastGenre YAML snapshot for offline navigation.
+
+Usage: python3 tools/genres/beets-tree --from genres-tree.yaml --version 2.14.1
+Requires PyYAML for this maintenance command only; the app reads the TSV.
+"""
+import argparse
+import hashlib
+import pathlib
+
+import yaml
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+
+def edges(items, parent=None):
+    for item in items or []:
+        if isinstance(item, str):
+            if parent:
+                yield parent, item
+        elif isinstance(item, dict):
+            for name, children in item.items():
+                if parent:
+                    yield parent, name
+                yield from edges(children, name)
+        else:
+            raise ValueError(f"Unsupported taxonomy item: {item!r}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--from", dest="source", type=pathlib.Path, required=True)
+    parser.add_argument("--version", required=True)
+    args = parser.parse_args()
+    data = args.source.read_bytes()
+    pairs = sorted(set(edges(yaml.safe_load(data))))
+    if any(not name or any(c in name for c in "\t\r\n") for pair in pairs for name in pair):
+        raise ValueError("Genre names must be nonempty TSV cells")
+    lines = [f"# beets {args.version} LastGenre; MIT; see licenses/beets.txt",
+             f"# source-sha256: {hashlib.sha256(data).hexdigest()}"]
+    lines += ["\t".join(name.title() for name in pair) for pair in pairs]
+    target = ROOT / "crates/chilpa-api/data/genre-beets.tsv"
+    target.write_text("\n".join(lines) + "\n")
+    print(f"{len(pairs)} edges in {target.relative_to(ROOT)}")
+
+
+if __name__ == "__main__":
+    main()

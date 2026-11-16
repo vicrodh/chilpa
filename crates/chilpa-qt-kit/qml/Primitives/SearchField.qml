@@ -7,6 +7,7 @@ Rectangle {
     id: root
 
     property alias text: input.text
+    property alias maximumLength: input.maximumLength
     property string placeholder
     property string shortcut
     readonly property alias editing: input.activeFocus

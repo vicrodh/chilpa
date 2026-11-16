@@ -25,7 +25,7 @@ fn catalog_localization_changes_only_display_text_and_validates_the_labels() {
 }
 
 fn preset() -> Preset {
-    Preset { filters: vec![Filter { shape: Shape::Peak, frequency: 1000.0, gain_db: 6.0, q: 1.0 }], ..Preset::default() }
+    Preset { filters: vec![Filter { shape: Shape::Peak, frequency: 1000.0, gain_db: 6.0, q: 1.0, ..Default::default() }], ..Preset::default() }
 }
 fn bytes(samples: &[f32]) -> Vec<u8> { samples.iter().flat_map(|s| s.to_le_bytes()).collect() }
 fn floats(bytes: &[u8]) -> Vec<f32> { bytes.chunks_exact(4).map(|b| f32::from_le_bytes(b.try_into().unwrap())).collect() }
@@ -64,7 +64,7 @@ fn raw_native_dsd_is_never_processed() {
 
 #[test]
 fn the_response_at_chosen_frequencies_is_the_curve_at_them() {
-    let shelf = Preset { filters: vec![Filter { shape: Shape::LowShelf, frequency: 110.0, gain_db: 6.0, q: 0.707 }], ..Preset::default() };
+    let shelf = Preset { filters: vec![Filter { shape: Shape::LowShelf, frequency: 110.0, gain_db: 6.0, q: 0.707, ..Default::default() }], ..Preset::default() };
     let curve = shelf.curve(48_000);
     let grid: Vec<f64> = (0..=128).map(|i| 20.0 * 1000_f64.powf(i as f64/128.0)).collect();
     assert_eq!(shelf.response_db(&grid, 48_000), curve);
@@ -77,7 +77,7 @@ fn the_response_at_chosen_frequencies_is_the_curve_at_them() {
 #[test]
 fn peak_filter_matches_its_center_gain() {
     for gain_db in [-24.0, -12.0, -3.0, 0.0, 6.0, 12.0, 18.0] {
-        let mut filter = biquad::Biquad::new(&Filter { shape: Shape::Peak, frequency: 1000.0, gain_db, q: 1.0 }, 48_000);
+        let mut filter = biquad::Biquad::new(&Filter { shape: Shape::Peak, frequency: 1000.0, gain_db, q: 1.0, ..Default::default() }, 48_000);
         let mut input_power = 0.0; let mut output_power = 0.0;
         for i in 0..48_000 {
             let x = (2.0*std::f64::consts::PI*1000.0*i as f64/48_000.0).sin()*0.1;
@@ -91,12 +91,12 @@ fn peak_filter_matches_its_center_gain() {
 
 #[test]
 fn extreme_valid_filters_stay_finite_at_every_supported_rate() {
-    for rate in [8000, 44_100, 48_000, 96_000, 192_000, 384_000, 768_000] {
-        for shape in [Shape::Peak, Shape::LowShelf, Shape::HighShelf, Shape::HighPass, Shape::LowPass, Shape::Notch] {
+    for rate in [8000, 44_100, 48_000, 96_000, 192_000, 384_000, 768_000, 1_536_000] {
+        for shape in [Shape::Peak, Shape::LowShelf, Shape::HighShelf, Shape::HighPass, Shape::LowPass, Shape::Notch, Shape::BandPass] {
             for frequency in [10.0, 1000.0, 24_000.0] {
                 for q in [0.1, 12.0] {
                     for gain_db in [-24.0, 18.0] {
-                        let mut filter = biquad::Biquad::new(&Filter { shape, frequency, gain_db, q }, rate);
+                        let mut filter = biquad::Biquad::new(&Filter { shape, frequency, gain_db, q, ..Default::default() }, rate);
                         for i in 0..12_000 { assert!(filter.tick(if i == 0 { 1.0 } else { 0.0 }).is_finite()); }
                     }
                 }
@@ -107,7 +107,7 @@ fn extreme_valid_filters_stay_finite_at_every_supported_rate() {
 
 #[test]
 fn measured_broad_peak_keeps_its_center_gain_and_has_a_decaying_impulse() {
-    let band = Filter { shape: Shape::Peak, frequency: 8912.0, gain_db: -5.6, q: 0.18 };
+    let band = Filter { shape: Shape::Peak, frequency: 8912.0, gain_db: -5.6, q: 0.18, ..Default::default() };
     let measured = Preset { filters: vec![band.clone()], ..Preset::default() };
     measured.validate().unwrap();
     assert_eq!(measured.filters[0].q, 0.18);
@@ -139,8 +139,8 @@ fn q_bounds_reject_zero_non_finite_and_out_of_range_values() {
 #[test]
 fn compensated_high_gain_filters_use_their_combined_headroom_and_keep_pcm_bounded() {
     let settings = Preset { filters: vec![
-        Filter { shape: Shape::Peak, frequency: 1000.0, gain_db: 18.0, q: 0.18 },
-        Filter { shape: Shape::Peak, frequency: 900.0, gain_db: -24.0, q: 0.18 },
+        Filter { shape: Shape::Peak, frequency: 1000.0, gain_db: 18.0, q: 0.18, ..Default::default() },
+        Filter { shape: Shape::Peak, frequency: 900.0, gain_db: -24.0, q: 0.18, ..Default::default() },
     ], ..Preset::default() };
     settings.validate().unwrap();
     let response: f64 = settings.filters.iter().map(|band| biquad::Biquad::new(band, 48_000).magnitude_db(1000.0, 48_000)).sum();
@@ -202,7 +202,7 @@ fn live_bypass_finishes_its_transition_and_returns_to_original_bytes() {
 fn invalid_parameters_cannot_replace_a_working_preset() {
     let (control, mut engine) = processor(Some(preset()), 2);
     for bad in [Preset { preamp_db: f64::NAN, ..preset() }, Preset { width: 2.0, ..preset() },
-        Preset { filters: vec![preset().filters[0].clone(); 11], ..preset() }] {
+        Preset { filters: vec![preset().filters[0].clone(); 65], ..preset() }] {
         assert!(control.set(Some(bad)).is_err());
     }
     engine.process(&mut bytes(&vec![0.2; 2000])); assert!(control.active());
@@ -231,8 +231,8 @@ fn compression_reduces_loud_passages_without_makeup_gain() {
 #[test]
 fn automatic_headroom_follows_the_combined_response_at_the_playback_rate() {
     let p = Preset { filters: vec![
-        Filter { shape: Shape::Peak, frequency: 100.0, gain_db: 6.0, q: 3.0 },
-        Filter { shape: Shape::Peak, frequency: 10_000.0, gain_db: 6.0, q: 3.0 },
+        Filter { shape: Shape::Peak, frequency: 100.0, gain_db: 6.0, q: 3.0, ..Default::default() },
+        Filter { shape: Shape::Peak, frequency: 10_000.0, gain_db: 6.0, q: 3.0, ..Default::default() },
     ], ..Preset::default() };
     let gain = p.preamp_for_rate(48_000);
     assert!((-7.1..=-7.0).contains(&gain), "unrelated boosts need about 7 dB, not 13: {gain}");

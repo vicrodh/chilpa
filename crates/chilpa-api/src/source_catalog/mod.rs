@@ -27,10 +27,15 @@ mod revisions;
 mod revalidation;
 mod native;
 mod library_index;
+mod genre_anchor;
+pub(crate) mod integrated_index;
 pub(crate) mod genres;
 mod composers;
 pub(crate) use library_index::SourceRecord;
 mod pages;
+mod collection_page;
+pub(crate) mod collection_window;
+mod collection_cleanup;
 pub(crate) mod store;
 pub(crate) mod view;
 mod sorting;
@@ -103,6 +108,9 @@ struct Queue {
 
 #[derive(Default)]
 struct Inner {
+    integrated_index: Option<integrated_index::Publication>,
+    index_serial: u64,
+    index_epoch: u64,
     genres: genres::State,
     composers: composers::State,
     quality_requested: HashMap<i64, Instant>,
@@ -116,6 +124,8 @@ struct Inner {
     /// Queue entries stay readable even when no source listing owns them.
     protected_tracks: HashSet<String>,
     selections: HashMap<u64, selection::SelectionRoots>,
+    collection_ephemeral: collection_cleanup::Candidates,
+    collection_epochs: collection_window::Epochs,
     selection_serial: u64,
     navigation: navigation::NavigationRoots,
     residency: residency::State,
@@ -149,6 +159,9 @@ struct Inner {
 
 pub(crate) struct Catalog {
     inner: Mutex<Inner>,
+    index_builder: Mutex<()>,
+    #[cfg(test)]
+    index_captures: AtomicU64,
     wake: Condvar,
     covers_wake: Condvar,
     plugins: Mutex<Option<Arc<Mutex<Plugins>>>>,
@@ -186,6 +199,9 @@ impl Catalog {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
             inner: Mutex::new(Inner::default()),
+            index_builder: Mutex::new(()),
+            #[cfg(test)]
+            index_captures: AtomicU64::new(0),
             wake: Condvar::new(),
             covers_wake: Condvar::new(),
             plugins: Mutex::new(None),
@@ -388,6 +404,7 @@ impl Catalog {
     /// A listing as it is known now, asking for it when it is missing or stale.
     pub fn shelf(&self, key: &str) -> Option<store::Shelf> {
         if key.trim().is_empty() { return None; }
+        if split(key).1.starts_with("_collection-action:") { return self.stored_shelf(key); }
         let mut inner = self.lock();
         let shelf = inner.store.shelves.get(key).cloned();
         // What an earlier run read is drawn at once and asked for again once.
@@ -440,6 +457,7 @@ impl Catalog {
     /// fresh.
     pub fn expire_personal_pages(&self, plugin: &str) {
         let mut inner = self.lock();
+        inner.collection_epochs.invalidate(plugin, true);
         for (_, shelf) in inner.store.shelves.iter_mut_where(|key, shelf| key.starts_with(&format!("{plugin} native:")) && shelf.document["personal"] == true) { shelf.read_at = 1; }
         inner.dirty = true;
         self.changed();
@@ -447,6 +465,7 @@ impl Catalog {
 
     pub fn expire_native_pages(&self, plugin: &str) {
         let mut inner = self.lock();
+        inner.collection_epochs.invalidate(plugin, false);
         for (_, shelf) in inner.store.shelves.iter_mut_where(|key, _| key.starts_with(&format!("{plugin} native:"))) { shelf.read_at = 0; }
         inner.dirty = true;
         self.changed();
@@ -457,12 +476,20 @@ impl Catalog {
     /// read again for it (the page around the card stays as it is).
     pub fn mark_native_favorite(&self, plugin: &str, reference: &str, on: bool) {
         let mut inner = self.lock();
+        inner.collection_epochs.invalidate(plugin, false);
         for card in inner.store.cards.values_mut_where(|c| c.plugin == plugin && c.identity == reference && !c.metadata.is_array()) {
             card.metadata["favorite"] = serde_json::json!(on);
         }
         let pages = format!("{plugin} native:");
-        for (_, shelf) in inner.store.shelves.iter_mut_where(|key, shelf| key.starts_with(&pages) && shelf.document["header"]["ref"] == reference) {
-            shelf.document["header"]["favorite"] = serde_json::json!(on);
+        for (_, shelf) in inner.store.shelves.iter_mut_where(|key, _| key.starts_with(&pages)) {
+            if shelf.document["header"]["ref"] == reference { shelf.document["header"]["favorite"] = serde_json::json!(on); }
+            if collection_page::collection(&shelf.document) {
+                for item in shelf.document["items"].as_array_mut().into_iter().flatten().filter(|item| item["ref"] == reference) {
+                    item["favorite"] = serde_json::json!(on);
+                }
+                // The next visible read reconciles membership without forcing a remote refresh.
+                shelf.read_at = 1;
+            }
         }
         inner.dirty = true;
         self.changed();
@@ -502,6 +529,23 @@ impl Catalog {
         self.queue(&mut inner, job, true);
     }
 
+    pub(crate) fn manual_page(&self, key: &str) {
+        {
+            let mut inner = self.lock();
+            if !inner.store.shelves.contains_key(key) { inner.store.shelves.insert(key.into(), store::Shelf::default()); }
+        }
+        self.retry(key);
+    }
+
+    /// A visible page may continue provider synchronization without a manual refresh.
+    pub(crate) fn poll_page(&self, key: &str) {
+        let mut inner = self.lock();
+        let job = Job::Shelf(key.to_string());
+        if inner.running.contains(&job) || inner.native_running.contains_key(&job) { return; }
+        if let Some(shelf) = inner.store.shelves.get_mut(key) { shelf.read_at = now().saturating_sub(31).max(1); }
+        self.queue(&mut inner, job, true);
+    }
+
     pub fn shelf_title(&self, key: &str) -> Option<String> {
         self.lock().store.shelves.get(key).map(|s| s.title.clone())
     }
@@ -519,6 +563,38 @@ impl Catalog {
         let inner = self.lock();
         revalidation::loading(&inner, key)
             || inner.running.contains(&Job::Append(key.into())) || inner.queue.queued.contains(&Job::Append(key.into()))
+    }
+
+    /// The ratings the sources' own lists carry, raw on each source's scale:
+    /// (kind, source, identity, value). A playlist row is its song.
+    pub(crate) fn source_ratings(&self) -> Vec<(String, String, String, f64)> {
+        let inner = self.lock();
+        let rated = |metadata: &serde_json::Value| metadata.get("rating").and_then(serde_json::Value::as_f64);
+        let cards = inner.store.cards.values().filter(|card| card.kind == store::CardKind::Album)
+            .filter_map(|card| Some(("album".to_string(), card.plugin.clone(), card.identity.clone(), rated(&card.metadata)?)));
+        let tracks = inner.store.tracks.values().filter(|track| track.metadata["kind"] == "track").filter_map(|track| {
+            let reference = track.metadata["ref"].as_str()?;
+            let song = reference.split_once("@playlist:").map_or(reference, |(song, _)| song);
+            Some(("track".to_string(), track.plugin.clone(), song.to_string(), rated(&track.metadata)?))
+        });
+        cards.chain(tracks).collect()
+    }
+
+    /// What a source holds now for one item, after Chilpa wrote it there:
+    /// its lists say so until they are read again.
+    pub(crate) fn set_source_rating(&self, plugin: &str, kind: &str, identity: &str, value: f64) {
+        let mut inner = self.lock();
+        let value = serde_json::json!(value);
+        let song = |track: &store::Track| track.metadata["ref"].as_str().is_some_and(|r| r.split_once("@playlist:").map_or(r, |(song, _)| song) == identity);
+        for card in inner.store.cards.values_mut_where(|card| kind == "album" && card.kind == store::CardKind::Album && card.plugin == plugin && card.identity == identity && card.metadata.is_object()) {
+            card.metadata["rating"] = value.clone();
+        }
+        for track in inner.store.tracks.values_mut_where(|track| kind == "track" && track.plugin == plugin && track.metadata["kind"] == "track" && song(track)) {
+            track.metadata["rating"] = value.clone();
+        }
+        inner.dirty = true;
+        drop(inner);
+        self.changed();
     }
 
     /// I map transient display ids to stable identities without requesting the network.
@@ -546,12 +622,13 @@ impl Catalog {
         let mut card = inner.genres.card(card, now());
         card.art = inner.store.shown_art(&card);
         if card.art.is_empty() {
-            let image = if card.image.is_empty() {
-                card.tracks.iter().flatten().filter_map(|id| inner.store.tracks.get(id)).map(|track| track.image.clone()).find(|image| !image.is_empty()).unwrap_or_default()
-            } else { card.image.clone() };
-            match crate::pictures::kept(&image) {
+            let image = inner.store.card_image(&card);
+            match crate::pictures::kept(image) {
                 Some(kept) => card.art = kept,
-                None if ask => self.want_cover(inner, &image),
+                None if ask => {
+                    let image = image.to_owned();
+                    self.want_cover(inner, &image);
+                }
                 None => {}
             }
         }
@@ -605,15 +682,37 @@ impl Catalog {
         ids.iter().filter_map(|id| inner.store.tracks.get(id)).map(|t| (inner.composers.track(inner.genres.track(inner.store.with_album_quality(t.clone()), &inner.store, now()), now()), inner.store.art_of(t))).collect()
     }
 
-    pub fn art_of_card(&self, id: i64) -> String {
+    pub fn art_of_card(&self, id: i64) -> String { self.card_art(id, false) }
+
+    pub(super) fn visible_art_of_card(&self, id: i64) -> String { self.card_art(id, true) }
+
+    fn card_art(&self, id: i64, visible: bool) -> String {
         let mut inner = self.lock();
         let Some(card) = inner.store.cards.get(&id) else { return String::new() };
         let art = inner.store.shown_art(card);
-        if art.is_empty() {
-            let image = card.image.clone();
-            self.want_cover(&mut inner, &image);
+        if !art.is_empty() { return art; }
+        let image = inner.store.card_image(card);
+        if let Some(kept) = crate::pictures::kept(image) { return kept; }
+        let image = image.to_owned();
+        self.want_cover(&mut inner, &image);
+        if visible {
+            // A visible card goes ahead of shelf read-ahead. Running requests
+            // are absent from the deque and keep their existing deduplication.
+            if let Some(at) = inner.queue.covers.iter().position(|queued| queued == &image) {
+                if at > 0 {
+                    let queued = inner.queue.covers.remove(at).unwrap();
+                    inner.queue.covers.push_front(queued);
+                }
+            }
         }
-        art
+        String::new()
+    }
+
+    /// A cover already on disk. Read-only discovery must not queue image or
+    /// metadata work while it groups the saved library's tags.
+    pub(crate) fn cached_art(&self, id: i64) -> String {
+        let inner = self.lock();
+        inner.store.cards.get(&id).map(|card| inner.store.shown_art(card)).unwrap_or_default()
     }
 
     /// Takes in a record or a track a search found, which no listing showed:
@@ -758,6 +857,8 @@ impl Catalog {
 
     pub fn forget_plugin(&self, plugin: &str) {
         let mut inner = self.lock();
+        let retired = inner.retire_integrated_index();
+        inner.collection_epochs.invalidate(plugin, false);
         inner.residency.forget(plugin);
         inner.store.forget_plugin(plugin);
         let cards: HashSet<_> = inner.store.cards.keys().copied().collect();
@@ -776,6 +877,7 @@ impl Catalog {
         inner.epochs.remove(plugin);
         inner.dirty = true;
         drop(inner);
+        drop(retired);
         self.wake.notify_one();
         self.changed();
     }
@@ -1060,3 +1162,6 @@ mod retry_tests {
         assert!(!catalog.actions_pending(), "a disabled source cannot perpetually defer its missing card");
     }
 }
+
+#[cfg(test)]
+mod artwork_tests;

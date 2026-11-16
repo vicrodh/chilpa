@@ -94,6 +94,20 @@ TestCase {
         header.info=Object.assign({},header.info,{quality_label:"WAV 16/44.1",quality_tier:2})
         verify(findText(header,"WAV 16/44.1").visible)
     }
+    function test_album_genres_follow_the_artist_in_their_own_row() {
+        const key = JSON.stringify({kind:"genre",name:"Heavy Metal",excluded_sources:["local:default"]})
+        header.cardId = -7
+        header.record = {artistInformation:JSON.stringify({artist_html:"Artist",artist_links:[]}),genreLinks:JSON.stringify({items:[{name:"heavy-metal",key:key}]}),versions:"[]",selectedId:-7}
+        const artist = findChild(header, "albumArtistLine")
+        const genres = findChild(header, "albumGenreLine")
+        const tag = findChild(header, "albumGenre:heavy-metal")
+        verify(artist.visible); verify(genres.visible); verify(tag)
+        waitForRendering(header)
+        verify(genres.y >= artist.y + artist.height)
+        mouseClick(tag)
+        compare(Navigation.went, ["genres",key])
+        header.cardId = 0
+    }
     function test_favorites_are_filled_and_wait_for_the_matching_source_reply() {
         header.info = {kind:"album",title:"Album",plugin:"fixture",ref:"album:seed",favorite:true}
         const button = findChild(header, "sourceFavorite")

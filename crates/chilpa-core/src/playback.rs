@@ -18,6 +18,30 @@ pub enum PlayError {
     Negotiation(NegotiationError),
     Pack(PackError),
     Sink(SinkError),
+    /// The track's own data would not read: a one-bit file, a disc image or
+    /// a server's item that did not open. Not the device.
+    Unreadable(String),
+}
+
+impl PlayError {
+    /// The track is at fault, not the output: a queue passes over it instead
+    /// of ending. Negotiation, packing and the device are the output's.
+    pub fn is_track(&self) -> bool {
+        matches!(self, PlayError::Decode(_) | PlayError::Unreadable(_))
+    }
+}
+
+/// How a track ended once what went wrong is known. The renderer only hears
+/// that the source stopped giving blocks and calls it `Unreadable`; when the
+/// reason was a block the output could not take (`packing`), the failure is
+/// the output's, and the queue stops on it instead of passing the track over.
+pub(crate) fn output_fault(outcome: Outcome, packing: Option<PackError>) -> Outcome {
+    match (outcome, packing) {
+        (Outcome::Unreadable { frames, .. }, Some(error)) => {
+            Outcome::Failed { frames, error: SinkError::Backend(PlayError::Pack(error).to_string()) }
+        }
+        (outcome, _) => outcome,
+    }
 }
 
 impl std::fmt::Display for PlayError {
@@ -74,6 +98,7 @@ impl std::fmt::Display for PlayError {
             PlayError::Sink(e) => {
                 write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&e.to_string()]))
             }
+            PlayError::Unreadable(why) => write!(f, "{why}"),
         }
     }
 }
@@ -184,8 +209,8 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_stream_told(stream, caps, policy, stop, pause, dsp, open_sink,
-        &mut |delivery, _| on_delivery(delivery), on_progress)
+    play_stream_told(stream, caps, policy, stop, pause, dsp, crate::playback_events::Report::default(), open_sink,
+        &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, _, _)| played)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -196,10 +221,11 @@ pub(crate) fn play_stream_told<F, K>(
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
     dsp: Option<chilpa_audio::dsp::Control>,
+    report: crate::playback_events::Report,
     open_sink: F,
     on_delivery: &mut dyn FnMut(&Delivery, Option<u8>),
     on_progress: &mut dyn FnMut(u64),
-) -> Result<Played, PlayError>
+) -> Result<(Played, u64, crate::attempts::How), PlayError>
 where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
@@ -211,7 +237,8 @@ where
         delivery.transforms.push(chilpa_audio::negotiate::Transform::DspApplied);
     }
     on_delivery(&delivery, signal_bits(&decoded, &delivery));
-    let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
+    let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(PlayError::Sink)?, report.clone());
+    sink.begin_attempt(1, None);
     let mut frames = Frames {
         decoded: &mut decoded,
         opened: delivery.opened,
@@ -220,6 +247,11 @@ where
     };
     let outcome =
         chilpa_audio::render::render_processed(&mut frames, &mut sink, stop, pause, dsp, on_progress);
+    sink.end(match &outcome {
+        Outcome::Finished { .. } => "finished",
+        Outcome::Stopped { .. } => "stopped",
+        _ => "error",
+    });
     if let Some(e) = frames.error {
         return Err(PlayError::Pack(e));
     }
@@ -229,7 +261,17 @@ where
         sink.drain(&|| stop.is_stopped()).map_err(PlayError::Sink)?;
     }
     sink.close().map_err(PlayError::Sink)?;
-    Ok(Played { delivery, outcome, total_frames: None })
+    // How it ended, raised by what became of the audio it still had in the
+    // device: thrown away by a stop, it was stopped.
+    let mut how = crate::attempts::How::of(&outcome, false);
+    let retired = report.take().into_iter().next();
+    match retired.map(|retired| retired.lost) {
+        Some(crate::playback_events::Lost::Error) => how = how.max(crate::attempts::How::Failed),
+        Some(crate::playback_events::Lost::Cut) if stop.is_stopped() => how = how.max(crate::attempts::How::Stopped),
+        _ => {}
+    }
+    let heard = retired.map_or(0, |retired| retired.played);
+    Ok((Played { delivery, outcome, total_frames: None }, heard, how))
 }
 
 /// Plays a file on a device, with the given policy.

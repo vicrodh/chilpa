@@ -43,7 +43,12 @@ pub(crate) fn of_plugin(path: &str) -> Option<(String, String)> {
 /// lasts minutes; this is well inside that.
 const AHEAD_FOR: Duration = Duration::from_secs(120);
 
+#[cfg(test)]
+type TestLocator = Arc<dyn Fn(&RemoteEntry) -> Result<Located, String> + Send + Sync>;
+
 pub(crate) struct Openers {
+    #[cfg(test)]
+    locator: Mutex<Option<TestLocator>>,
     pub(crate) servers: Option<Arc<dyn RemoteOpener>>,
     pub(crate) plugins: Option<Arc<Mutex<Plugins>>>,
     catalog: Arc<crate::source_catalog::Catalog>,
@@ -52,11 +57,14 @@ pub(crate) struct Openers {
     /// next track's is resolved while the one before it ends, so the gap
     /// between them is not a round trip to the plugin.
     ahead: Mutex<std::collections::HashMap<String, (std::time::Instant, Located)>>,
+    /// How fast opens have been failing: a burst of failures slows the next
+    /// ones down.
+    reports: crate::queue::unavailable::Reports,
 }
 
 impl Openers {
-    pub(crate) fn new(servers: Option<Arc<dyn RemoteOpener>>, plugins: Option<Arc<Mutex<Plugins>>>, catalog: Arc<crate::source_catalog::Catalog>) -> Self {
-        Self { servers, plugins, catalog, library: Mutex::new(None), ahead: Mutex::new(std::collections::HashMap::new()) }
+    pub(crate) fn new(servers: Option<Arc<dyn RemoteOpener>>, plugins: Option<Arc<Mutex<Plugins>>>, catalog: Arc<crate::source_catalog::Catalog>, reports: crate::queue::unavailable::Reports) -> Self {
+        Self { #[cfg(test)] locator: Mutex::new(None), servers, plugins, catalog, library: Mutex::new(None), ahead: Mutex::new(std::collections::HashMap::new()), reports }
     }
 
     /// Resolves a plugin's queue entry on a thread of its own and keeps the
@@ -104,13 +112,18 @@ impl Openers {
                 gain_db: gain as f32, peak: answer["normalization"]["peak"].as_f64().map(|p| p as f32),
             }).and_then(chilpa_core::remote::Normalization::valid),
             playback: answer.get("resolution_id").and_then(serde_json::Value::as_str).and_then(|id| natives.playback(plugin, id)),
-            request: chilpa_core::RangedRequest { url: url.to_string(), headers: Vec::new() },
+            media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url: url.to_string(), headers: Vec::new() }),
             extension: answer.pointer("/format/codec").and_then(serde_json::Value::as_str).filter(|c| !c.is_empty() && *c != "unknown").map(str::to_string),
             server: self.catalog.name(plugin).unwrap_or_else(|| plugin.to_string()),
         })
     }
 
     fn locate_in_plugin(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        #[cfg(test)]
+        {
+            let locator = self.locator.lock().unwrap().clone();
+            if let Some(locator) = locator { return locator(entry); }
+        }
         let plugin = &entry.source.instance;
         if let Some(natives) = self.catalog.natives().filter(|natives| natives.is_native(plugin)) {
             return self.locate_in_native(&natives, plugin, &entry.external_id);
@@ -133,14 +146,14 @@ impl Openers {
         Ok(Located {
             normalization: None,
             playback: None,
-            request: chilpa_core::RangedRequest { url: final_address_with(&url, domains.as_deref(), |address| {
+            media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url: final_address_with(&url, domains.as_deref(), |address| {
                 if let Some(host) = url::Url::parse(address).ok().and_then(|url| url.host_str().map(str::to_string)) {
                     if let Ok(mut requests) = requests.lock() {
                         let pending = requests.entry(plugin.clone()).or_default();
                         if pending.len() < 128 { pending.insert(host); }
                     }
                 }
-            })?, headers: Vec::new() },
+            })?, headers: Vec::new() }),
             extension: stream.codec.map(|c| c.to_ascii_lowercase()).filter(|c| !c.is_empty()),
             server: name,
         })
@@ -208,8 +221,14 @@ fn joined(from: &str, to: &str) -> String {
 
 impl RemoteOpener for Openers {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
-        if chilpa_core::network::current().offline { return Err(chilpa_core::network::blocked()); }
+        // The player passes over items that fail one after another; a server
+        // or a source that keeps saying no is asked no faster than this.
+        let wait = self.reports.pause();
+        if !wait.is_zero() && !chilpa_core::network::current().offline {
+            std::thread::sleep(wait);
+        }
         if entry.source.provider == PROVIDER {
+            if chilpa_core::network::current().offline { return Err(chilpa_core::network::blocked()); }
             if let Some(located) = self.take_ahead(entry) {
                 return Ok(located);
             }
@@ -255,6 +274,8 @@ impl RemoteOpener for Openers {
     }
 
     fn failed(&self, entry: &RemoteEntry, why: &str) {
+        // Health and pacing only: the play that asked says what it passed over.
+        self.reports.failed(!chilpa_core::network::current().offline);
         if entry.source.provider != PROVIDER {
             if let Some(servers) = &self.servers {
                 servers.failed(entry, why);
@@ -266,6 +287,26 @@ impl RemoteOpener for Openers {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// An open the player started for a play that is gone, failing late:
+    /// the opener hears of it for its pacing and nothing else does.
+    #[test]
+    fn a_late_failure_of_an_open_marks_nothing_in_the_queue_in_front() {
+        let mut api = crate::Chilpa::with_listed(Vec::new(), Vec::new());
+        let entry = RemoteEntry::new(SourceId::new(PROVIDER, "app.example.shows"), "ep-1");
+        api.swap_rows(vec![entry.to_entry()]);
+        api.launched(9, 0, crate::Relaunch::Track);
+        let openers = Openers::new(None, None, api.catalog.clone(), api.unavailable.reports());
+        for _ in 0..3 {
+            openers.failed(&entry, "timed out");
+        }
+        api.poll();
+        assert!(!api.marked_at(0), "only the play that reaches the entry says it was passed over");
+        assert!(!api.now.error.starts_with("Skipped"), "{}", api.now.error);
+        // Its own play passing it over is what marks it.
+        api.apply_player_event(9, chilpa_core::player::PlayerEvent::Skipped { attempt: 1, index: 0, path: entry.to_entry().into(), message: "timed out".into() }, &mut false);
+        assert!(api.marked_at(0));
+    }
 
     #[test]
     fn an_entry_of_a_plugin_round_trips_and_a_server_s_is_not_one() {
@@ -322,3 +363,7 @@ impl crate::Chilpa {
             })
     }
 }
+
+#[cfg(test)]
+#[path = "source_opener_race_tests.rs"]
+mod race_tests;

@@ -8,17 +8,23 @@
 //! a thread; `poll`, which the window calls four times a second, picks up
 //! what came back.
 
-mod background;
+pub(crate) mod background;
 pub(crate) mod keys;
 mod lan;
-mod net;
+pub(crate) mod net;
 mod opener;
+pub(crate) mod favorites;
 pub(crate) mod playlists;
+pub(crate) mod ratings;
 mod reading;
+mod media;
 mod setup;
 mod sync;
+pub(crate) use sync::covers_dir;
 mod watch;
 pub(crate) mod writing;
+mod session;
+mod offline;
 
 use crate::Chilpa;
 use chilpa_models::RemoteEntry;
@@ -27,6 +33,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 pub use chilpa_library::Removal as ServerRemoval;
+pub(crate) use offline::LIMIT as OFFLINE_LIMIT;
+pub use offline::OfflineMarks;
 pub use setup::ServerSetup;
 
 /// A server as Settings shows it.
@@ -58,11 +66,12 @@ pub struct ServerRow {
 
 #[derive(Default)]
 pub(crate) struct Servers {
-    keys: Option<Arc<Keys>>,
+    pub(crate) keys: Option<Arc<Keys>>,
     setup: setup::Setup,
     syncer: Option<sync::Syncer>,
     watcher: Option<watch::Watcher>,
     failures: Arc<Mutex<Vec<i64>>>,
+    invalid_copies:offline::InvalidCopies,
     /// Why the last sync of each server did not finish.
     errors: HashMap<i64, String>,
     /// The servers that refused their credential at the last look.
@@ -72,6 +81,10 @@ pub(crate) struct Servers {
     /// Held while a server's playlists are read or one of them is changed.
     gate: Arc<Mutex<()>>,
     writer: Option<writing::Writer>,
+    media: media::State,
+    offline: offline::State,
+    /// The Offline music page: the selection a menu sent and its listing.
+    offline_page: offline::Page,
     /// The playlists with a change on its way to their server, and, as the
     /// negative of its source, a server with a playlist being created.
     pending: std::collections::HashSet<i64>,
@@ -80,7 +93,7 @@ pub(crate) struct Servers {
     /// is pending or why it failed.
     answers: HashMap<i64, serde_json::Value>,
     /// The library changed underneath the window.
-    changed: bool,
+    pub(crate) changed: bool,
     /// When a running sync last had the window read the library again.
     shown_at: Option<std::time::Instant>,
     /// A server being added or edited: the library is written on a thread.
@@ -95,6 +108,9 @@ pub(crate) struct Servers {
     /// What the window says once, as a notice: a number that moves with each
     /// one, and the words.
     notice: (u64, String),
+    /// The listener's rating changes on their way to servers and plugins
+    /// (`crate::ratings::sync`).
+    pub(crate) ratings: crate::ratings::sync::State,
 }
 
 /// A server being written into the library, away from the window: the
@@ -115,6 +131,9 @@ const STALE: i64 = 60 * 60;
 const SHOW_EVERY: std::time::Duration = std::time::Duration::from_secs(10);
 
 impl Chilpa {
+    pub(crate) fn server_network_changed(&self) {
+        if let Some(watcher)=&self.servers.watcher {watcher.ask();}
+    }
     /// Starts what the servers need: their credentials, the player's opener,
     /// the sync, the watcher. The window calls it once, at startup, like
     /// `start_scrobbling`; a test never does.
@@ -123,10 +142,10 @@ impl Chilpa {
             return;
         }
         let keys = Arc::new(Keys::new(chilpa_dirs::data().join("servers")));
-        self.sources.servers_opener = Some(Arc::new(opener::Opener::new(Arc::clone(&keys), Arc::clone(&self.servers.failures))));
+        self.sources.servers_opener = Some(Arc::new(opener::Opener::new(Arc::clone(&keys), Arc::clone(&self.servers.failures),self.servers.invalid_copies.clone())));
         self.install_openers();
         self.servers.syncer = Some(sync::Syncer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
-        self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys)));
+        self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys), Arc::clone(&self.servers.gate),self.servers.invalid_copies.clone()));
         self.servers.writer = Some(writing::Writer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.keys = Some(keys);
         self.servers.resumed = background::unfinished();
@@ -137,6 +156,7 @@ impl Chilpa {
         }
         let now = crate::now_unix();
         let stored = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default();
+        self.start_offline_recovery();
         // A server added before its kind had a glyph of its own takes it now.
         if let Some(lib) = self.library() {
             for s in &stored {
@@ -178,9 +198,9 @@ impl Chilpa {
                 } else if let Some(run) = running.get(&s.source_id) {
                     sync_state(run, &name)
                 } else if refused.contains(&s.source_id) {
-                    chilpa_i18n::t("Refused the sign-in. Its records stay listed and cannot be played.")
+                    chilpa_i18n::t("Sign-in was refused. Its records stay in the library.")
                 } else if !s.reachable {
-                    chilpa_i18n::t("Does not answer. Its records stay listed and cannot be played.")
+                    chilpa_i18n::t("Does not answer. Its records stay in the library.")
                 } else if let Some(why) = errors.get(&s.source_id) {
                     why.clone()
                 } else {
@@ -261,6 +281,12 @@ impl Chilpa {
             } else {
                 chilpa_i18n::t("Connected")
             };
+            let mut values: Vec<String> = if server.enabled { vec!["edit".into(), "disable".into(), "sync".into(), "remove".into()] }
+                else { vec!["edit".into(), "enable".into(), "remove".into()] };
+            let mut options = if server.enabled { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Disable"), chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")] }
+                else { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] };
+            self.server_rating_row(server.id, &mut description, &mut values, &mut options);
+            self.server_favorite_row(server.id, &mut description, &mut values, &mut options);
             rows.push(crate::SettingsRow {
                 kind: 1,
                 key,
@@ -272,10 +298,8 @@ impl Chilpa {
                     "enabled": server.enabled, "syncing": server.syncing,
                 }).to_string(),
                 action,
-                values: if server.enabled { vec!["edit".into(), "disable".into(), "sync".into(), "remove".into()] }
-                    else { vec!["edit".into(), "enable".into(), "remove".into()] },
-                options: if server.enabled { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Disable"), chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")] }
-                    else { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] },
+                values,
+                options,
                 ..Default::default()
             });
         }
@@ -299,9 +323,16 @@ impl Chilpa {
     /// The same, as JSON for the window's dialog.
     pub fn server_setup_json(&self) -> String {
         let v = &self.servers.setup.view;
+        let root = offline::global_directory(self.preference(offline::ROOT_PREFERENCE).as_deref());
+        let inherited = root.as_ref().ok().and_then(|root| self.servers.setup.offline_default(root));
+        let folder_url = |path: &std::path::Path| url::Url::from_file_path(path).ok().map(String::from).unwrap_or_default();
         serde_json::json!({
             "step": v.step, "kind": v.kind, "address": v.address, "product": v.product,
             "label": v.label, "editing": v.editing, "selectedLibraries": v.selected_libraries,
+            "offlineFolder":v.offline_folder,
+            "offlineRoot":root.as_ref().ok().map(|path| folder_url(path)),
+            "offlineDefaultFolder":inherited.as_deref().map(folder_url),
+            "offlineError":root.as_ref().err(),
             "apiKey": v.api_key, "quickConnect": v.quick_connect, "code": v.code, "link": v.link,
             "crumbs": v.crumbs.iter().map(|(id, name)| serde_json::json!({"id": id, "name": name})).collect::<Vec<_>>(),
             "folders": v.folders.iter().map(|(id, name)| serde_json::json!({"id": id, "name": name})).collect::<Vec<_>>(),
@@ -341,6 +372,8 @@ impl Chilpa {
 
     pub fn setup_label(&mut self, label: &str) { self.servers.setup.label(label); }
 
+    pub fn setup_offline_folder(&mut self, folder: &str) { self.servers.setup.view.offline_folder = folder.to_string(); }
+
     pub fn setup_address(&mut self, address: &str) {
         self.servers.setup.address(address);
     }
@@ -374,6 +407,14 @@ impl Chilpa {
     /// and its sync starts. The library and the credential are written on a
     /// thread of their own; `poll` picks up how it went and the setup says
     /// it. True when it was sent.
+    pub fn setup_finish_json(&mut self, chosen: &str) -> bool {
+        let value: serde_json::Value = serde_json::from_str(chosen).unwrap_or_default();
+        let libraries: Vec<String> = serde_json::from_value(value.get("libraries").cloned().unwrap_or_else(|| value.clone())).unwrap_or_default();
+        if let Some(label) = value.get("label").and_then(serde_json::Value::as_str) { self.setup_label(label); }
+        if let Some(folder) = value.get("offlineFolder").and_then(serde_json::Value::as_str) { self.setup_offline_folder(folder); }
+        self.setup_finish(&libraries)
+    }
+
     pub fn setup_finish(&mut self, libraries: &[String]) -> bool {
         if self.servers.adding.is_some() {
             return false;
@@ -386,8 +427,10 @@ impl Chilpa {
         let edit = self.servers.setup.edit_id;
         let (instance, label) = (ready.instance.clone(), ready.label.clone());
         let path = chilpa_library::Library::default_path();
+        let gate = Arc::clone(&self.servers.gate);
         let (tx, done) = std::sync::mpsc::channel();
         let spawned = std::thread::Builder::new().name("chilpa-server-add".into()).spawn(move || {
+            let _editing = gate.lock().unwrap_or_else(|error| error.into_inner());
             let _ = tx.send(write_server(&path, &keys, edit, &ready));
         });
         if spawned.is_err() {
@@ -440,6 +483,7 @@ impl Chilpa {
 
     /// Reads the server's catalogue again.
     pub fn sync_server(&mut self, id: i64) {
+        if self.servers.media.affects(id) { return; }
         if self.removing_server(id) || !self.library().and_then(|lib| lib.server(id).ok().flatten()).is_some_and(|s| s.enabled) {
             eprintln!("chilpa-servers: sync of source {id} not asked: the server is disabled, being removed or no longer in the library");
             return;
@@ -456,6 +500,9 @@ impl Chilpa {
     /// playlist is still on its way.
     /// Nothing is kept to send later: the server is the source of truth.
     pub(crate) fn ask_server_change(&mut self, write: writing::Write) -> Result<(), String> {
+        if matches!(&write.change, writing::Change::DeleteMedia { .. }) {
+            return Err(chilpa_i18n::t("That change is not a playlist edit."));
+        }
         let Some(stored) = self.library().and_then(|lib| lib.server(write.source).ok().flatten()) else {
             return Err(chilpa_i18n::t("that server is no longer in the library"));
         };
@@ -511,6 +558,7 @@ impl Chilpa {
     fn poll_server_changes(&mut self) {
         let done = self.servers.writer.as_ref().map(|writer| writer.poll()).unwrap_or_default();
         for written in done {
+            if written.media { self.server_media_finished(written); continue; }
             self.servers.pending.remove(&if written.asked > 0 { written.asked } else { -written.source });
             if !written.request.is_empty() {
                 let state = if written.why.is_empty() {
@@ -541,7 +589,7 @@ impl Chilpa {
         let enabled: Vec<i64> = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default().into_iter().filter(|s| s.enabled && keeps(s)).map(|s| s.source_id).collect();
         if let Some(syncer) = self.servers.syncer.as_mut() {
             for id in enabled {
-                syncer.ask_playlists(id);
+                if !self.servers.media.affects(id) { syncer.ask_playlists(id); }
             }
         }
     }
@@ -553,7 +601,7 @@ impl Chilpa {
         let Some(lib) = self.library() else { return String::new() };
         let (Ok(Some(server)), Ok(r)) = (lib.server(id), lib.removal(id)) else { return String::new() };
         serde_json::json!({
-            "name": server.label, "tracks": r.tracks, "albums": r.albums, "ratings": r.ratings, "plays": r.plays,
+            "name": server.label, "tracks": r.tracks, "albums": r.albums, "plays": r.plays,
             "playlists": r.playlists, "entries": r.playlist_entries, "touched": r.playlists_touched,
         })
         .to_string()
@@ -611,6 +659,8 @@ impl Chilpa {
 
     /// What came back from the servers' threads. `poll` calls it.
     pub(crate) fn poll_servers(&mut self) {
+        self.poll_ratings();
+        self.poll_server_offline();
         self.servers.setup.poll();
         self.poll_adding();
         self.poll_background();
@@ -652,13 +702,16 @@ impl Chilpa {
                 }
             }
         }
+        self.poll_server_media();
         let failed = std::mem::take(&mut *self.servers.failures.lock().unwrap_or_else(|e| e.into_inner()));
         if !failed.is_empty() {
             if let Some(watcher) = &self.servers.watcher {
                 watcher.ask();
             }
         }
-        if let Some(look) = self.servers.watcher.as_ref().and_then(|w| w.looked()) {
+        if let Some(mut look) = self.servers.watcher.as_ref().and_then(|w| w.looked()) {
+            look.refused.retain(|source| self.library().and_then(|lib| lib.server(*source).ok().flatten())
+                .is_some_and(|stored| look.sessions.get(source).is_some_and(|scope| scope.matches(&stored))));
             if look.refused != self.servers.refused {
                 self.servers.refused = look.refused;
                 self.servers.changed = true;
@@ -672,18 +725,35 @@ impl Chilpa {
 /// when its kind signs in, on the thread `setup_finish` starts. The id of
 /// its source, or why not.
 fn write_server(path: &std::path::Path, keys: &Keys, edit: Option<i64>, ready: &setup::Ready) -> Result<i64, String> {
+    let _session = keys.session();
     let unwritten = || chilpa_i18n::t("the library could not be written");
     let unkept = || chilpa_i18n::t("the credential could not be kept safely on this system");
     let lib = chilpa_library::Library::open_existing(path).map_err(|_| unwritten())?;
-    if lib.server_with_identity(ready.kind.provider(), &ready.identity).ok().flatten().is_some_and(|id| Some(id) != edit) {
+    let previous = match edit {
+        Some(id) => Some(lib.server(id).ok().flatten().ok_or_else(unwritten)?),
+        None => None,
+    };
+    if previous.as_ref().is_some_and(|stored| stored.account != ready.account || stored.instance != ready.instance || stored.provider != ready.kind.provider()) {
+        return Err(chilpa_i18n::t("To use a different account, add it as a separate server."));
+    }
+    if lib.server_with_account_identity(ready.kind.provider(), &ready.identity, &ready.account).ok().flatten().is_some_and(|id| Some(id) != edit) {
         return Err(chilpa_i18n::t("that server is already in the library"));
+    }
+    let mut details = ready.details.clone();
+    if ready.kind == chilpa_servers::Kind::Subsonic
+        && !matches!(details.extension_status,chilpa_servers::ExtensionStatus::Known | chilpa_servers::ExtensionStatus::Unsupported) {
+        if let Some(known) = previous.as_ref().and_then(|stored| serde_json::from_str::<chilpa_servers::Details>(&stored.details).ok()) {
+            details.extensions = known.extensions;
+            details.extension_versions = known.extension_versions;
+        }
     }
     let new = chilpa_library::NewServer {
         provider: ready.kind.provider().into(), instance: ready.instance.clone(), label: ready.label.clone(),
         icon: ready.kind.icon(&ready.product).into(), address: ready.address.clone(), account: ready.account.clone(),
         identity: ready.identity.clone(), product: ready.product.clone(),
         libraries: serde_json::to_string(&ready.libraries).unwrap_or_else(|_| "[]".into()),
-        details: serde_json::to_string(&ready.details).unwrap_or_else(|_| "{}".into()),
+        details: serde_json::to_string(&details).unwrap_or_else(|_| "{}".into()),
+        offline_folder: offline::choice(&ready.offline_folder)?,
     };
     // A kind without a sign-in has nothing to seal: the keyring is not
     // even opened for it.
@@ -778,6 +848,56 @@ fn plain_and_outside(address: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn changing_accounts_preserves_the_old_mirror_and_uses_a_new_instance() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("library.db");
+        let lib = chilpa_library::Library::open(&path).unwrap();
+        let keys = Keys::derived(root.path().join("servers"));
+        let original = setup::Ready { kind:chilpa_servers::Kind::Jellyfin, instance:keys::mint(), label:"Fixture".into(), offline_folder:String::new(),
+            address:"http://fixture.invalid".into(), account:"first-user".into(), identity:"fixture-server".into(),
+            product:"Fixture".into(), libraries:vec![], details:Default::default(),
+            key:chilpa_servers::Credential::Token {token:"first-session".into()} };
+        let first = write_server(&path,&keys,None,&original).unwrap();
+        let mut other = original.clone();
+        other.account = "second-user".into();
+        other.key = chilpa_servers::Credential::Token {token:"second-session".into()};
+        assert!(write_server(&path,&keys,Some(first),&other).is_err());
+        assert_eq!(lib.server(first).unwrap().unwrap().account,"first-user");
+        assert_eq!(keys.get(&original.instance),Some(original.key.clone()));
+        other.instance = keys::mint();
+        let second = write_server(&path,&keys,None,&other).unwrap();
+        assert_ne!(first,second);
+        assert_eq!(lib.servers().unwrap().len(),2);
+        assert!(write_server(&path,&keys,None,&other).is_err());
+    }
+
+    #[test]
+    fn a_transient_advertisement_failure_keeps_the_previous_versions() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("library.db");
+        let lib = chilpa_library::Library::open(&path).unwrap();
+        let keys = Keys::derived(root.path().join("servers"));
+        let mut ready = setup::Ready { kind:chilpa_servers::Kind::Subsonic, instance:keys::mint(), label:"Fixture".into(), offline_folder:String::new(),
+            address:"http://fixture.invalid".into(), account:"fixture-user".into(), identity:"fixture-server".into(),
+            product:"Fixture".into(), libraries:vec![], details:chilpa_servers::Details {
+                extensions:vec!["songLyrics".into()],extension_versions:std::collections::BTreeMap::from([("songLyrics".into(),vec![1,2])]),
+                extension_status:chilpa_servers::ExtensionStatus::Known,..Default::default() },
+            key:chilpa_servers::Credential::Password {user:"fixture-user".into(),password:"fixture-password".into()} };
+        let source = write_server(&path,&keys,None,&ready).unwrap();
+        ready.details = chilpa_servers::Details {extension_status:chilpa_servers::ExtensionStatus::Unavailable,..Default::default()};
+        write_server(&path,&keys,Some(source),&ready).unwrap();
+        let saved = lib.server(source).unwrap().unwrap();
+        let details: chilpa_servers::Details = serde_json::from_str(&saved.details).unwrap();
+        assert!(details.supports_extension("songLyrics",2));
+        assert_eq!(details.extension_status,chilpa_servers::ExtensionStatus::Unavailable);
+        ready.details.extension_status = chilpa_servers::ExtensionStatus::Unsupported;
+        write_server(&path,&keys,Some(source),&ready).unwrap();
+        let saved = lib.server(source).unwrap().unwrap();
+        let details: chilpa_servers::Details = serde_json::from_str(&saved.details).unwrap();
+        assert!(!details.supports_extension("songLyrics",1));
+    }
 
     #[test]
     fn plain_http_is_pointed_out_only_outside_the_lan() {

@@ -41,6 +41,7 @@ Rectangle {
         chosenRev += 1
     }
     function act(action) {
+        if (action === "metadata") { Navigation.goKey("folderMetadata",JSON.stringify(chosenPaths)); return }
         const paths = action === "next" ? chosenPaths.slice().reverse() : chosenPaths
         paths.forEach((path) => tree.menu.folder.act(path, action))
     }

@@ -196,8 +196,12 @@ fn a_track_from_a_source_resolves_and_plays() {
     assert!(e.contains("http"), "and why is said: {e}");
     assert!(e.starts_with("Test source"), "with the source's name: {e}");
 
-    // And the good one: a click, it resolves and it plays.
+    // And the good one: a click, it resolves and it plays. The capture
+    // plays it out at once, and a queue that runs out leaves the player
+    // empty; a stop-after mark keeps the track it stopped on in view, card
+    // and position, which is what is checked below.
     assert!(chilpa.play_hit(good, OUTPUT, true), "{}", chilpa.now_playing().error);
+    assert!(chilpa.set_stop_after(Some(0)), "the track is held once it ends");
     assert!(
         wait_for(&mut chilpa, |c| c.now_playing().seconds > 0.0 || !c.now_playing().playing),
         "playback started"
@@ -218,6 +222,7 @@ fn a_track_from_a_source_resolves_and_plays() {
     let hits = chilpa.found().to_vec();
     let split = hits.iter().position(|h| h.source == "com.test.parts").unwrap();
     assert!(chilpa.play_hit(split, OUTPUT, true), "{}", chilpa.now_playing().error);
+    assert!(chilpa.set_stop_after(Some(0)), "the track is held once it ends");
     assert!(
         wait_for(&mut chilpa, |c| !c.now_playing().playing && c.now_playing().seconds > 0.0),
         "the whole thing played: {:?}",

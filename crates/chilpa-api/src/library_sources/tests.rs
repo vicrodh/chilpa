@@ -1,7 +1,7 @@
 use super::*;
 use crate::{Reader, TrackOrder};
 use rusqlite::params;
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Two records of the library and, from a source, a saved record whose
 /// tracks were read, a saved record whose tracks were not, and a saved
@@ -39,7 +39,7 @@ fn labels(entries: &[FacetEntry]) -> Vec<(&str, usize)> {
 }
 
 fn refresh(reader: &Reader, index: SourceIndex, filter: &Filter, order: TrackOrder) -> (crate::Facets, crate::Snapshot) {
-    reader.refresh_using(filter, order, || true, ((1, vec![("guest".into(), true, true)]), Rc::new(index))).unwrap()
+    reader.refresh_using(filter, order, || true, ((1, vec![("guest".into(), true, true)]), Arc::new(index))).unwrap()
 }
 
 #[test]
@@ -266,7 +266,7 @@ fn measured_on_a_real_library() {
         label: format!("Label {}", n % 90), composers: vec![format!("Writer {}", n % 300)], tier: "lossless", format: "flac",
         tracks: if n % 3 == 0 { 10 } else { 1 }, saved_track: n % 2 == 0, saved_album: n % 2 == 1, playable: true, ..SourceItem::default()
     }).collect();
-    let index = Rc::new(SourceIndex::new(items, Vec::new()));
+    let index = Arc::new(SourceIndex::new(items, Vec::new()));
     let median = |run: &dyn Fn() -> ()| {
         let mut times: Vec<u128> = (0..5).map(|_| { let t = std::time::Instant::now(); run(); t.elapsed().as_micros() }).collect();
         times.sort();
@@ -327,4 +327,23 @@ fn saved_albums_and_explicit_hearts_are_independent_filters(){
     let filter=Filter{excluded_sources:vec!["plugin:guest".into()],..Default::default()};
     let found=reader.albums_view_selected("artist","","",&filter,&index,true);
     assert_eq!(found.ids,[1]);
+}
+
+#[test]
+fn discovery_album_selection_keeps_saved_track_albums_and_filters_before_copy_grouping() {
+    use std::collections::HashSet;
+    let (reader, index) = fixture();
+    let within = HashSet::from([1, -12]);
+    let legacy: Vec<_> = reader.albums_view_using("title", "", "", &Filter::default(), &index).ids
+        .into_iter().filter(|id| within.contains(id)).collect();
+    assert_eq!(legacy, [1], "the old global grid excluded the saved-track-only album");
+    assert_eq!(reader.albums_view_within("title", "", &within, &index).ids, [1,-12]);
+    assert_eq!(reader.albums_view_within("title-desc", "", &within, &index).ids, [-12,1]);
+    assert_eq!(reader.albums_view_within("title", "Kind", &within, &index).ids, [-12]);
+    let item = SourceItem { track:-70, album:-71, plugin:"fixture".into(), album_identity:"scoped-copy".into(),
+        album_title:"Blue Train".into(), album_artist:"Coltrane".into(), artists:vec!["Coltrane".into()],
+        saved_album:true, playable:true, tracks:1, ..Default::default() };
+    let copy = SourceIndex::new(vec![item], Vec::new());
+    assert_eq!(reader.albums_view_within("title", "", &HashSet::from([-71]), &copy).ids, [-71],
+        "an ineligible local copy must not hide the selected source copy");
 }

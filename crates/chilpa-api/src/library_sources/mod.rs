@@ -8,8 +8,8 @@
 //! snapshot carries. Nothing here asks a plugin: a stale listing is queued
 //! with the catalog, and what arrives shows on the next read.
 //!
-//! Bounded by what the catalog keeps (6,000 records, 30,000 tracks); the
-//! index lives in the worker's reader and is replaced, never grown.
+//! One catalog owns the current index. A query holds its immutable Arc only
+//! while reading; retained rows follow the catalog's existing residency rules.
 
 mod facets;
 mod groups;
@@ -44,12 +44,17 @@ pub(crate) struct SourceItem {
     pub album_artist: String,
     pub album_title: String,
     pub title: String,
+    /// Literal track cells only when they differ from album-level index names.
+    /// At most one pair per indexed track; released with the bounded source index.
+    pub track_names: Option<Box<(String, String)>>,
     /// Who plays it: the track's artist and its record's.
     pub artists: Vec<String>,
     pub year: Option<i32>,
     pub genres: Vec<String>,
     pub label: String,
     pub composers: Vec<String>,
+    /// The explicit work tag; never inferred from a recording title.
+    pub work: String,
     /// When the listener saved it, in Unix seconds; zero when unknown.
     pub added_at: i64,
     /// I keep a normalized release kind, or an empty string when unknown.
@@ -59,6 +64,9 @@ pub(crate) struct SourceItem {
     pub disc: Option<i64>,
     pub number: Option<i64>,
     pub duration_ms: u64,
+    /// The source's bit depth and sample rate in hertz, when it says them.
+    pub bits: Option<i64>,
+    pub rate: Option<i64>,
     /// "lossy", "lossless", "hires", "dsd" or "unknown".
     pub tier: &'static str,
     /// The library's format key ("flac", "ogg", ...), empty when unknown.
@@ -91,6 +99,14 @@ pub(crate) struct Folded {
 }
 
 impl SourceItem {
+    pub(crate) fn display_artist(&self) -> &str {
+        self.track_names.as_ref().map(|names| names.0.as_str()).unwrap_or_else(|| self.artists.first().map(String::as_str).unwrap_or(""))
+    }
+
+    pub(crate) fn display_album(&self) -> &str {
+        self.track_names.as_ref().map(|names| names.1.as_str()).unwrap_or(&self.album_title)
+    }
+
     pub(crate) fn source_key(&self) -> String {
         format!("{}:{}", crate::source_opener::PROVIDER, self.plugin)
     }
@@ -143,13 +159,15 @@ pub(crate) type Stamp = (u64, Vec<(String, bool, bool)>);
 /// library, by the listener's choice and what each plugin lists.
 fn integrated(natives: &crate::natives::Natives) -> Vec<(String, bool, bool)> {
     let root = crate::Chilpa::plugins_dir();
-    natives.ids().into_iter().filter_map(|id| {
+    let mut chosen: Vec<_> = natives.ids().into_iter().filter_map(|id| {
         let kinds = natives.library_kinds(&id);
         let chosen = crate::source_integration::read(&root, &id);
         let albums = chosen.integrate_albums && kinds.iter().any(|k| k == "albums");
         let tracks = chosen.integrate_tracks && kinds.iter().any(|k| k == "tracks");
         (albums || tracks).then_some((id, albums, tracks))
-    }).collect()
+    }).collect();
+    chosen.sort();
+    chosen
 }
 
 impl crate::Reader {
@@ -157,50 +175,25 @@ impl crate::Reader {
     /// listener changed what is integrated. Nothing integrated is one stamp
     /// whatever the catalog does, so the refreshes it causes are answered
     /// from the cache.
-    pub(crate) fn source_index(&self) -> (Stamp, std::rc::Rc<SourceIndex>) {
-        // Nothing integrated any more: what was kept of the last index goes.
-        let none = || { self.sources.borrow_mut().take(); Default::default() };
-        let Some(catalog) = &self.catalog else { return none() };
-        let Some(natives) = catalog.natives() else { return none() };
+    pub(crate) fn source_index(&self) -> (Stamp, std::sync::Arc<SourceIndex>) {
+        let Some(catalog) = &self.catalog else { return Default::default() };
+        let epoch = catalog.integration_epoch();
+        let Some(natives) = catalog.natives() else {
+            catalog.clear_integrated_index();
+            return Default::default();
+        };
         let chosen = integrated(&natives);
-        if chosen.is_empty() { return none(); }
-        let stamp = (catalog.integrated_signature(&chosen), chosen);
-        if let Some((held, index)) = self.sources.borrow().as_ref().filter(|(held, _)| *held == stamp) {
-            return (held.clone(), index.clone());
-        }
-        let index = std::rc::Rc::new(SourceIndex::read(catalog, &natives, &stamp.1));
-        *self.sources.borrow_mut() = Some((stamp.clone(), index.clone()));
-        (stamp, index)
-    }
-}
-
-impl SourceIndex {
-    /// The integrated listings of those plugins, queued for a read when they
-    /// are stale.
-    pub(crate) fn read(catalog: &crate::source_catalog::Catalog, natives: &crate::natives::Natives, chosen: &[(String, bool, bool)]) -> Self {
         let root = crate::Chilpa::plugins_dir();
-        let albums: Vec<String> = chosen.iter().filter(|(_, albums, _)| *albums).map(|(id, ..)| id.clone()).collect();
-        let tracks: Vec<String> = chosen.iter().filter(|(.., tracks)| *tracks).map(|(id, ..)| id.clone()).collect();
-        for key in albums.iter().map(|id| format!("{id} section:albums")).chain(tracks.iter().map(|id| format!("{id} section:tracks"))) {
-            catalog.shelf(&key);
-        }
-        let items = catalog.integrated_items(&albums, &tracks);
-        let records = catalog.integrated_records(chosen);
-        let mut sources: Vec<FacetEntry> = Vec::new();
-        for item in &items {
-            let key = item.source_key();
-            match sources.iter_mut().find(|entry| entry.key == key) {
-                Some(entry) => entry.albums += item.tracks,
-                None => sources.push(FacetEntry {
-                    key, albums: item.tracks, year: None,
-                    label: catalog.name(&item.plugin).unwrap_or_else(|| natives.display_name(&item.plugin)),
-                    icon: crate::plugin_icons::image_url(&root, &item.plugin),
-                }),
+        let sources: Vec<_> = chosen.iter().map(|(id, albums, tracks)| {
+            for section in [albums.then_some("albums"), tracks.then_some("tracks")].into_iter().flatten() {
+                catalog.shelf(&format!("{id} section:{section}"));
             }
-        }
-        let mut index = Self::new(items, sources);
-        index.versions.extend(records.into_iter().map(|record| (record.id, record.version())));
-        index
+            crate::source_catalog::integrated_index::Source {
+                id: id.clone(), albums: *albums, tracks: *tracks,
+                name: natives.display_name(id), icon: crate::plugin_icons::image_url(&root, id),
+            }
+        }).collect();
+        catalog.integrated_index(&sources, epoch)
     }
 }
 
@@ -239,6 +232,7 @@ impl Stars {
 /// lists joined with their single choices, so an item costs comparisons and
 /// no allocation.
 pub(crate) struct Prepared {
+    sheet: chilpa_library::store::track_sheet::Selection,
     off: bool,
     albumless: bool,
     queries: Vec<(usize, String)>,
@@ -269,6 +263,7 @@ impl Prepared {
         let excluded = f.excluded_sources.iter()
             .filter_map(|key| key.strip_prefix(crate::source_opener::PROVIDER).and_then(|rest| rest.strip_prefix(':')).map(String::from)).collect();
         Self {
+            sheet: f.sheet.clone(),
             off: f.performer.is_some(),
             albumless: f.albumless,
             queries: f.queries.iter().enumerate().map(|(at, q)| (at, q.trim().to_lowercase())).filter(|(at, q)| *at != 4 && !q.is_empty()).collect(),
@@ -292,6 +287,7 @@ impl Prepared {
     /// Whether an item passes, as the database's `WHERE` would pass a track
     /// of its own: the same columns, chosen keys and extras.
     pub(crate) fn passes(&self, item: &SourceItem, stars: &Stars) -> bool {
+        if !crate::track_sheet::passes(&self.sheet, item, stars) { return false; }
         if self.off || (self.albumless && item.album != 0) { return false; }
         let names = &item.folded;
         let holds = |values: &[String], query: &str| values.iter().any(|value| value.contains(query));
@@ -302,6 +298,8 @@ impl Prepared {
                 2 => names.label.contains(query.as_str()),
                 3 => holds(&names.composers, query),
                 5 => holds(&names.artists, query),
+                7 => item.bits.is_some_and(|value| value.to_string().contains(query.as_str())),
+                8 => item.rate.is_some_and(|value| value.to_string().contains(query.as_str())),
                 _ => names.album_title.contains(query.as_str()),
             };
             if !found { return false; }

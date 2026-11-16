@@ -24,7 +24,7 @@ Flickable {
         Sources.command("detail", key.slice(cut + 1), key.slice(0, cut))
     }
 
-    contentHeight: body.height + Metrics.contentTop * 2 // derived: padding above and below
+    contentHeight: body.height + Metrics.contentTop * 2 + Metrics.contentBottom // derived: padding above, and below clear of a floating player
     clip: true; ScrollBar.vertical: ViewportScrollBar {}
 
     Component.onCompleted: Qt.callLater(page.open)

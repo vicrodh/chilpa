@@ -188,19 +188,29 @@ pub fn load(home: &Home, external_id: &str) -> Result<Option<Sidecar>, SidecarEr
 struct Pending {
     from: PathBuf,
     to: PathBuf,
+    _lease: chilpa_tags::edit::WriteLease,
 }
 
 impl Pending {
     fn write(to: &Path, bytes: &[u8]) -> std::io::Result<Self> {
-        let from = suffixed(to, ".tmp");
-        let written = std::fs::write(&from, bytes)
-            .and_then(|()| std::fs::OpenOptions::new().write(true).open(&from))
-            .and_then(|file| file.sync_all());
-        if let Err(e) = written {
+        let lease = chilpa_tags::edit::WriteLease::acquire(to)?;
+        use std::io::Write;
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static NEXT: AtomicU64 = AtomicU64::new(0);
+        let (from, mut file) = loop {
+            let from = suffixed(to, &format!(".{}-{}.tmp", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+            match std::fs::OpenOptions::new().write(true).create_new(true).open(&from) {
+                Ok(file) => break (from, file),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+                Err(error) => return Err(error),
+            }
+        };
+        if let Err(error) = file.write_all(bytes).and_then(|()| file.sync_all()) {
+            drop(file);
             let _ = std::fs::remove_file(&from);
-            return Err(e);
+            return Err(error);
         }
-        Ok(Self { from, to: to.to_path_buf() })
+        Ok(Self { from, to: to.to_path_buf(),_lease:lease })
     }
 
     fn land(&self) -> std::io::Result<()> {
@@ -303,6 +313,17 @@ pub fn stage(home: &Home, mut sidecar: Sidecar, cover: Option<(&[u8], &str)>, no
     Ok(StagedHome { sidecar: pending, cover: pending_cover, gone, cover_at })
 }
 
+/// Stage only metadata fields. Existing artwork files are outside this operation.
+pub fn stage_fields(home: &Home, mut sidecar: Sidecar, now: i64) -> Result<StagedHome, SidecarError> {
+    if sidecar.version > VERSION { return Err(SidecarError::Newer(sidecar.version)); }
+    if home.is_hosted() { return Err(SidecarError::Unreadable("expected a local metadata file".into())); }
+    sidecar.version = VERSION;
+    sidecar.updated_at = now;
+    sidecar.imported = false;
+    let pending = Pending::write(&home.sidecar(), &sidecar.to_json()).map_err(SidecarError::Io)?;
+    Ok(StagedHome { sidecar:Some(pending),cover:None,gone:Vec::new(),cover_at:None })
+}
+
 /// Writes a home's sidecar. Beside and moved over: a sidecar half written
 /// is never read.
 pub fn store(home: &Home, sidecar: &Sidecar, now: i64) -> Result<(), SidecarError> {
@@ -393,9 +414,10 @@ mod tests {
         let home = Home::of(&file, None);
         let staged = stage(&home, titled("New"), None, 1).unwrap();
         assert!(load(&home, &file).unwrap().is_none(), "what is beside is not what is read");
-        assert!(dir.join(".chilpa.json.tmp").is_file());
+        let temporary = staged.sidecar.as_ref().unwrap().from.clone();
+        assert!(temporary.is_file());
         drop(staged);
-        assert!(!dir.join(".chilpa.json.tmp").exists(), "and what did not land goes away");
+        assert!(!temporary.exists(), "and what did not land goes away");
         assert!(!home.sidecar().exists());
         let _ = std::fs::remove_dir_all(dir);
     }
@@ -448,10 +470,10 @@ mod tests {
         let dir = folder("newer");
         let file = dir.join("01.flac").to_string_lossy().into_owned();
         let home = Home::of(&file, None);
-        let newer = br#"{"format":"chilpa-sidecar","version":2,"album":{"title":"A"},"tracks":{}}"#;
+        let newer = br#"{"format":"chilpa-sidecar","version":4,"album":{"title":"A"},"tracks":{}}"#;
         std::fs::write(home.sidecar(), newer).unwrap();
         let read = load(&home, &file).unwrap().unwrap();
-        assert!(matches!(store(&home, &read, 9), Err(SidecarError::Newer(2))));
+        assert!(matches!(store(&home, &read, 9), Err(SidecarError::Newer(4))));
         assert_eq!(std::fs::read(home.sidecar()).unwrap(), newer);
         let _ = std::fs::remove_dir_all(dir);
     }

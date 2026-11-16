@@ -9,3 +9,6 @@ rust-version.workspace = true
 # What a backend cannot promise is read by the user.
 chilpa-i18n.workspace = true
 serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"

@@ -29,3 +29,6 @@ clock
 home-gear
 list-filter
 chilpa
+compositions
+composers
+genres-tree

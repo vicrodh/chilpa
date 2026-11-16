@@ -7,6 +7,8 @@
 //! deleted all its tracks.
 
 pub mod album_folder;
+pub mod metadata_manifest;
+pub mod genre_index;
 pub mod from_path;
 pub mod playlist;
 pub mod quality;

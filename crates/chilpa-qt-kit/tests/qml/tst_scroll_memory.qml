@@ -37,6 +37,17 @@ TestCase {
         memory.restore()
         tryCompare(view, "contentY", 420)
     }
+    function test_an_unchanged_origin_does_not_rewind_a_new_scroll_before_it_is_remembered() {
+        memory.key="origin-noise"
+        memory.restore()
+        wait(20)
+        // Qt can notify a numerically noisy origin before contentY observers.
+        memory.applying=true
+        view.contentY=420
+        memory.applying=false
+        memory.rebase()
+        compare(view.contentY,420)
+    }
 
     function test_a_new_page_keeps_its_header_and_top_margin() {
         memory.viewport = headed

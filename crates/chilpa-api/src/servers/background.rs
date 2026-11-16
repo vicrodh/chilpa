@@ -262,7 +262,9 @@ impl Chilpa {
         }
         let (tx, done) = channel();
         let (path, label) = (chilpa_library::Library::default_path(), server.label.clone());
+        let gate = std::sync::Arc::clone(&self.servers.gate);
         let spawned = std::thread::Builder::new().name("chilpa-server-toggle".into()).spawn(move || {
+            let _toggling = gate.lock().unwrap_or_else(|error| error.into_inner());
             let turned = chilpa_library::Library::open_existing(&path)
                 .and_then(|lib| retried("turning a server off or on", &WAITS, chilpa_library::is_busy, || lib.set_server_enabled(id, enabled)));
             let title = if enabled {

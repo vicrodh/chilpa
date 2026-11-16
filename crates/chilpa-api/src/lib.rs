@@ -23,10 +23,13 @@ mod discogs_account;
 pub use discogs_account::DiscogsStatus;
 pub use desktop::WindowRequest;
 mod tracks_view;
+mod track_sheet;
 mod albums_view;
 mod artwork_hint;
 mod library_sources;
-pub use albums_view::{artist_cards, grid_rows, mixes_sources, AlbumsFound, GridRow, ListedArtist};
+pub use albums_view::{artist_cards, artist_cards_ordered, grid_rows, mixes_sources, AlbumsFound, GridRow, ListedArtist};
+mod portraits;
+pub use portraits::{request_artist_portrait, PortraitImage, PortraitRequest};
 pub use tracks_view::{group_of, section_at, FoundTracks, TrackGroups, TracksQuery};
 mod queries;
 pub use queries::QueryWorker;
@@ -52,7 +55,13 @@ mod listening_stats;
 pub mod listening;
 pub mod list_changes;
 mod metadata;
+mod metadata_batch;
+pub use metadata_batch::{MetadataBatchPhase, MetadataBatchProgress};
+mod native_collections;
+pub use native_collections::{NativeArticleWindow, NativeCollectionWindow};
+mod beets_runtime;
 pub mod navigation;
+pub mod discover_genres;
 pub mod queue_origin;
 pub mod playback_view;
 mod queue_activity;
@@ -66,6 +75,7 @@ pub mod device_sync;
 mod privacy;
 pub use privacy::network_allowed;
 mod play_indicator;
+mod rating_switch;
 mod playlist_sources;
 mod plugin_broker;
 mod plugin_display;
@@ -79,6 +89,7 @@ pub use worker_services::WorkerContext;
 mod worker_install;
 mod plugin_repositories;
 mod appimage_updates;
+mod sandbox;
 mod bundle_updates;
 pub mod appimage_desktop;
 pub use plugin_repositories::{PluginRepositories, PluginRepository};
@@ -93,6 +104,7 @@ mod plugin_access;
 mod svg_icon;
 mod plugin_library;
 mod plugin_center;
+mod plugin_runtimes;
 mod web_sign_in;
 mod plugin_replacement;
 mod plugin_updates;
@@ -101,6 +113,8 @@ mod source_integration;
 mod plugin_evidence;
 mod plugin_domains;
 mod natives;
+mod native_navigation;
+mod native_page_request;
 mod lyrics_client;
 mod lyrics_service;
 mod lyrics_view;
@@ -116,6 +130,8 @@ mod marks;
 pub use marks::Marks;
 mod ratings;
 pub use ratings::{RatingTarget, Ratings};
+mod player_events;
+mod plays;
 mod queue;
 mod listen;
 mod mood;
@@ -155,10 +171,11 @@ pub mod settings_schema;
 mod artist_page;
 mod now_about;
 mod artist_library;
+pub mod discovery;
 mod artist_scene;
 mod scene_catalog;
 mod scene_results;
-pub use servers::{on_a_server, ServerRemoval, ServerRow, ServerSetup};
+pub use servers::{on_a_server, OfflineMarks, ServerRemoval, ServerRow, ServerSetup};
 pub use source_opener::on_a_source;
 pub use settings_rows::{RowNotes, SettingsRow};
 pub mod sidebar;
@@ -401,7 +418,7 @@ fn channels(n: u16) -> String {
 struct InProgress {
     context: listening::ListenContext,
     path: PathBuf,
-    resuming: bool,
+    /// What was heard of it on the outputs it played at before this one.
     carried_ms: u64,
     started_at: i64,
     sample_rate_hz: u32,
@@ -600,8 +617,12 @@ pub struct Chilpa {
     core: chilpa_core::Core,
     pub(crate) pending_volume: Option<u8>,
     library: Option<chilpa_library::Library>,
-    /// What is needed to log the play when it ends.
-    in_progress: Option<InProgress>,
+    /// The plays asked of the player and not yet seen end, each with the
+    /// listens it opened.
+    plays: plays::Plays,
+    /// Counts the times the queue's rows were put in the place of others: a
+    /// play is about the rows it was launched on (`queue/rows.rs`).
+    rows_epoch: u64,
     /// Sends listens to ListenBrainz; started by the window, never by a test.
     scrobbler: Option<scrobble::Scrobbler>,
     /// The current queue's paths, whole and in the order they were queued.
@@ -689,19 +710,15 @@ pub struct Chilpa {
     audio_output: audio_output::AudioOutput,
     home: home::Home,
     sample_rate: u32,
-    /// Set while a relaunch we asked for is unwinding the old playback.
-    ///
-    /// Stopping in order to start again is not the listener stopping, and
-    /// without this the `Stopped` that comes back would be filed as a skip
-    /// and the window would blink to "not playing" on its way to the new
-    /// device. What it holds is what to do with the interrupted listen.
-    relaunching: Option<Relaunch>,
     /// The stacks and outputs as last listed, on a thread of their own. The
     /// window reads what was found and never asks the stacks itself: on
     /// PipeWire asking starts a process, and it froze the window.
     outputs_listing: outputs::Listing,
     /// The metadata editor, and the record open in it if there is one.
     metadata: metadata::Editor,
+    metadata_batch: metadata_batch::BatchEditor,
+    native_collections: Option<std::sync::Arc<native_collections::Broker>>,
+    beets_runtime: Option<beets_runtime::Managed>,
     /// My servers: adding, syncing, watching and removing them (ADR-017).
     servers: servers::Servers,
     casting: casting::Casting,
@@ -713,6 +730,9 @@ pub struct Chilpa {
     artwork: chosen_artwork::State,
     /// Every copy of a record the library and the sources keep, as cards.
     copies: album_copies::Held,
+    grouping: album_versions::Writes,
+    /// Queue entries this run found it cannot play (`queue/unavailable.rs`).
+    unavailable: queue::unavailable::State,
 }
 
 /// Why the player was told to stop, when it was us who told it.
@@ -758,7 +778,8 @@ impl Chilpa {
             core: chilpa_core::Core::new(),
             pending_volume: None,
             library: None,
-            in_progress: None,
+            plays: Default::default(),
+            rows_epoch: 0,
             scrobbler: None,
             queue: Vec::new(),
             queue_work: Default::default(),
@@ -817,15 +838,19 @@ impl Chilpa {
             audio_output: audio_output::AudioOutput::default(),
             home: home::Home::default(),
             sample_rate: 0,
-            relaunching: None,
             outputs_listing,
             metadata: metadata::Editor::default(),
+            metadata_batch: metadata_batch::BatchEditor::default(),
+            native_collections: None,
+            beets_runtime: None,
             servers: servers::Servers::default(),
             casting: casting::Casting::default(),
             credits: Default::default(),
             credits_read_at: (0, 0),
             artwork: Default::default(),
             copies: Default::default(),
+            grouping: Default::default(),
+            unavailable: Default::default(),
         };
         chilpa.migrate_output_identity();
         if let Some(tabs) = chilpa.restored_tabs() {
@@ -936,11 +961,6 @@ impl Chilpa {
         }
         self.replace_queue(vec![url.clone()]);
         self.spawn(0, device, bit_perfect);
-    }
-
-    /// What Chilpa remembers: the last output and the last folder opened.
-    pub fn settings(&self) -> chilpa_core::settings::Settings {
-        chilpa_core::settings::load()
     }
 
     /// Chooses the output, remembers it and moves what is playing there at
@@ -1158,7 +1178,7 @@ impl Chilpa {
     pub fn set_paused(&mut self, paused: bool) {
         if paused { self.casting.local_start = None; self.persist_progress(true); }
         if self.casting.active() { self.cast_pause(paused); return; }
-        if !paused && (!self.now.playing || self.player.as_ref().is_none_or(|p| p.idle())) && !self.queue.is_empty() {
+        if !paused && (!self.now.playing || self.plays.current().is_none()) && !self.queue.is_empty() {
             let restored = self.restored_at.take();
             let seconds = restored.unwrap_or(self.now.seconds).max(0.0);
             let index = self.now.index.min(self.queue.len() - 1);
@@ -1178,17 +1198,17 @@ impl Chilpa {
         self.desktop.seeked = Some(seconds);
         self.ab_jumped(seconds);
         if self.casting.active() { self.cast_seek(seconds); return; }
-        if let Some(p) = &self.player {
+        if let Some(launch) = self.current_launch() {
             let safe = seconds.max(0.0);
-            p.seek(std::time::Duration::from_secs_f64(safe));
+            launch.seek(std::time::Duration::from_secs_f64(safe));
         }
     }
 
     /// Skips to the next track in the queue.
     pub fn next_track(&mut self) {
         if self.casting.active() { self.cast_next(false); return; }
-        if let Some(p) = &self.player {
-            p.next();
+        if let Some(launch) = self.current_launch() {
+            launch.next();
         }
     }
 
@@ -1220,10 +1240,12 @@ impl Chilpa {
         if self.casting.active() { self.cast_stop(); return; }
         // An episode stopped halfway is picked up from here.
         self.keep_place(true);
-        if self.player.as_ref().is_none_or(|p| p.idle()) {
-            self.now.playing = false; self.now.paused = false;
-            self.stop_after = None; self.sleep_until = None;
-        }
+        // Stopped as this returns, whatever the player is in the middle of:
+        // what plays leaves the window, and what it says while it unwinds is
+        // not about it any more.
+        self.plays.retire(plays::Fate::Stopped);
+        self.now.playing = false; self.now.paused = false;
+        self.stop_after = None; self.sleep_until = None;
         if let Some(p) = &self.player {
             p.stop();
         }
@@ -1231,7 +1253,6 @@ impl Chilpa {
 
     /// Collects whatever has happened and updates the state the view sees.
     pub fn poll(&mut self) -> &NowPlaying {
-        use chilpa_core::player::PlayerEvent;
         if self.sleep_until.is_some_and(|deadline| std::time::Instant::now() >= deadline) {
             self.sleep_until = None;
             self.stop();
@@ -1242,218 +1263,33 @@ impl Chilpa {
         self.advance_discord();
         self.advance_source_favorites();
         self.advance_plugins();
-        self.plugin_update_activity(self.now.playing || self.now.paused || self.listen.pending.is_some());
         self.advance_dsp();
         self.advance_audio_output();
         self.advance_search();
         self.advance_sources();
         self.advance_catalog();
         self.advance_lyrics();
+        self.advance_beets_runtime();
+        self.advance_closed_metadata_batch();
         self.resolve_next_ahead();
         self.keep_place(false);
         self.advance_connect();
         self.poll_servers();
+        self.poll_grouping();
         self.poll_cast();
         if let Some(player) = &self.player {
             self.now.paused = player.is_paused();
         }
         self.follow_playing_documents();
-        let mut started = false;
-        let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
-        for event in events {
-            if self.listen.active == 0 { continue; }
-            match event {
-                PlayerEvent::Started { path, opened, route, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
-                    let requested_rate = route.delivery.requested.sample_rate_hz;
-                    self.audio_output.route = Some(route);
-                    self.dsp.passthrough = dsd_passthrough;
-                    // What was playing until now is left where it was.
-                    self.keep_place(true);
-                    started = true;
-                    self.sample_rate = opened.sample_rate_hz;
-                    self.now.path = path.display().to_string();
-                    let name = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
-                    self.now.artwork_path = artwork.as_ref().map(|p| p.display().to_string()).unwrap_or_default();
-                    match &tags {
-                        Some(t) => {
-                            self.now.title = t.title.clone().unwrap_or(name);
-                            self.now.artist = t.artist_line();
-                            self.now.album = t.album.clone().unwrap_or_default();
-                        }
-                        None => {
-                            self.now.title = name;
-                            self.now.artist = String::new();
-                            self.now.album = String::new();
-                        }
-                    }
-                    // What came from a source already carries its card from
-                    // the search. Without this the window would show the raw
-                    // URL, which is all the decoder knows about it.
-                    self.name_from_source(&path);
-                    self.now.live = self.name_from_entry(&path);
-                    self.load_album_context();
-                    if dsd_multiple.is_none() && crate::source_opener::of_plugin(&self.now.path).is_some() {
-                        // What a source's track turned out to be, measured, for its row.
-                        self.catalog.measured(&self.now.path, chilpa_core::remote::opened_codec(&self.now.path), bits, opened.sample_rate_hz);
-                    }
-                    self.now.playing = true;
-                    self.now.bit_perfect = bit_perfect;
-                    // On DSD the rate that names it is the one-bit source
-                    // rate, not the DoP carrier or native U32 frame rate.
-                    let rate = match dsd_multiple {
-                        Some(multiple) => multiple * 44_100,
-                        None => requested_rate,
-                    };
-                    let codec = self.remote_codec(&self.now.path.clone());
-                    self.now.quality = Quality::of_track(&self.now.path, codec.as_deref(), bits, Some(rate));
-                    self.load_lyrics(&path, lyrics_service::length_ms(total_frames, opened.sample_rate_hz));
-                    self.load_analysis(&path);
-                    // The player counts over what it was given; the view
-                    // counts over the whole queue.
-                    self.now.index = self.base + index;
-                    self.now.queue_len = if self.queue.is_empty() { queue_len } else { self.queue.len() };
-                    // Every start closes the previous one: in a queue, the
-                    // track that starts is the proof the one before it
-                    // finished.
-                    let started_at = now_unix();
-                    let duration_ms = match (total_frames, opened.sample_rate_hz) {
-                        (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
-                        _ => 0,
-                    };
-                    if !self.resume_listen(&path, opened.sample_rate_hz, bits, bit_perfect) {
-                        self.log_play(false);
-                        let listen = self.announce(tags.as_ref(), duration_ms, started_at);
-                        let context = self.context_at_start(&path, tags.as_ref(), started_at);
-                        self.home.changed();
-                        self.in_progress = Some(InProgress {
-                            context,
-                            path: path.clone(),
-                            resuming: false,
-                            carried_ms: 0,
-                            started_at,
-                            sample_rate_hz: opened.sample_rate_hz,
-                            // I log signal bits, not the DAC's wider transport word.
-                            bit_depth: bits,
-                            bit_perfect,
-                            duration_ms,
-                            played_frames: 0,
-                            listen,
-                            scrobbled: false,
-                        });
-                    }
-                    self.now.total_seconds = match (total_frames, opened.sample_rate_hz) {
-                        (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
-                        _ => 0.0,
-                    };
-                    // The channels are the music's: a mono track that goes
-                    // out in both channels of a stereo DAC is still mono.
-                    self.now.format = match (dsd_multiple, opened.sample_format.is_dsd(), dsd_passthrough) {
-                        (Some(multiple), true, _) => chilpa_i18n::t_args("DSD{} · Native at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
-                        // On DSD what matters is the DSD rate; the DoP
-                        // carrier is stated separately, because it is the
-                        // format the device was opened with.
-                        (Some(multiple), false, true) => chilpa_i18n::t_args("DSD{} · DoP at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
-                        (Some(multiple), false, false) => chilpa_i18n::t_args("DSD{} · PCM at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
-                        (None, _, _) => match bits {
-                            Some(bits) => format!("{} Hz · {} bits · {}", opened.sample_rate_hz, bits, channels(music_channels)),
-                            // A lossy track has no bit depth, and the word it
-                            // was rounded into is not one: "32 bits" on an
-                            // MP3 reads as more than it is.
-                            None => format!("{} Hz · {}", opened.sample_rate_hz, channels(music_channels)),
-                        },
-                    };
-                }
-                PlayerEvent::StreamTitle { title } => {
-                    // On a radio the title is sent by the station and
-                    // changes with every song. A station that was browsed
-                    // keeps its name beside the song, and gets it back when
-                    // the station sends an empty title between songs.
-                    match self.station_on() {
-                        Some(station) if title.trim().is_empty() => self.now.title = station,
-                        Some(station) => {
-                            self.song_changed(&title);
-                            self.now.title = title;
-                            self.now.artist = station;
-                        }
-                        None => self.now.title = title,
-                    }
-                }
-                PlayerEvent::Progress { frames, played } => {
-                    self.now.frames = frames;
-                    self.set_played(played);
-                    if self.sample_rate > 0 {
-                        self.now.seconds = frames as f64 / f64::from(self.sample_rate);
-                    }
-                    self.now.lyrics_line = self.line_at(self.now.seconds);
-                }
-                PlayerEvent::Finished { frames } => {
-                    // What the renderer counted: what went out, not where
-                    // the track was.
-                    self.set_played(frames);
-                    self.now.frames = frames;
-                    if self.sample_rate > 0 {
-                        self.now.seconds = frames as f64 / f64::from(self.sample_rate);
-                    }
-                    self.keep_place(true);
-                    self.now.playing = false;
-                    self.stop_after = None;
-                    self.sleep_until = None;
-                    self.log_play(false);
-                }
-                PlayerEvent::Stopped { frames } => {
-                    self.set_played(frames);
-                    self.now.frames = frames;
-                    // A stop we asked for in order to start again is not the
-                    // listener stopping. Saying `playing = false` here would
-                    // blink the window to stopped on its way to the new
-                    // device, and the play that is already queued behind this
-                    // event is what decides what happens next.
-                    match self.relaunching.take() {
-                        // Going back: the track that was left is a skip,
-                        // because somebody chose to leave it.
-                        Some(Relaunch::Track) => self.log_play(true),
-                        // I carry the delivered time into the next output segment.
-                        Some(Relaunch::Output) => {
-                            if let Some(current) = self.in_progress.as_mut() { current.resuming = true; }
-                        }
-                        None => {
-                            self.now.playing = false;
-                            self.stop_after = None;
-                            self.sleep_until = None;
-                            // Stopping mid track counts as a skip.
-                            self.log_play(true);
-                        }
-                    }
-                }
-                PlayerEvent::Failed { message } => {
-                    self.now.playing = false;
-                    self.stop_after = None;
-                    self.sleep_until = None;
-                    self.now.error = message;
-                    // A device failure is not a listen, but whatever did
-                    // play is logged, marked as interrupted.
-                    self.log_play(true);
-                }
-            }
-        }
+        let started = self.read_player_events();
         // A new track's verdict cannot see the volume moved after it. The
         // level the player holds, not the settings: this runs every tick.
         let gain = self.player.as_ref().map_or(1.0, |p| p.volume());
         self.mark_scaled(gain);
         if self.player.as_ref().is_some_and(|p| p.dsp().touched()) { self.now.bit_perfect = false; }
         self.finish_tick(started);
+        self.plugin_update_activity(self.plugin_playback_active());
         &self.now
-    }
-
-    /// Records in the log how much of the current track had played.
-    ///
-    /// The log is append-only: the stats, the smart lists and the
-    /// play count sync with a DAP all come out of here.
-    fn set_played(&mut self, frames: u64) {
-        if let Some(current) = self.in_progress.as_mut() {
-            current.played_frames = frames;
-        }
-        self.scrobble_if_heard();
     }
 
     /// The current state, without collecting events.
@@ -1480,9 +1316,8 @@ impl Drop for Chilpa {
         self.catalog.genre_window(false); self.catalog.composer_window(false);
         self.appimage_updates.take();
         self.persist_queue_session();
-        if let Some(player) = self.player.as_mut() { player.shutdown(); }
-        if self.player.is_some() { self.poll(); }
-        self.log_play(true);
+        self.retire_player(plays::Leaving::Drained);
+        self.settle_plays();
         self.shutdown_cast();
         if let Some(natives) = self.catalog.natives() { natives.flush_playback(); }
     }
@@ -1492,5 +1327,7 @@ impl Drop for Chilpa {
 mod albumless_tests;
 #[cfg(test)]
 mod lib_tests;
+#[cfg(test)]
+mod handoff_tests;
 #[cfg(test)]
 mod test_support;

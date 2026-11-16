@@ -42,6 +42,31 @@ pub(crate) fn album_of(card: &Card) -> Album {
 mod tests {
     use serde_json::json;
     #[test]
+    fn hinted_presentation_skips_catalog_loading_and_legacy_projection_keeps_routing() {
+        let mut app = crate::Chilpa::new();
+        let manifest: chilpa_plugin::Manifest = serde_json::from_value(json!({
+            "id":"fixture","name":"Fixture","version":"1.0.0","api_version":1,
+            "kind":"source","runtime":"process"})).unwrap();
+        crate::natives::tests::remember_source(&app.natives, manifest, json!({"pages":true,"article_pages":1}));
+        for layout in ["collection", "article"] {
+            let key = crate::native_page_request::route("fixture", "base", json!({}), layout);
+            let presentation: serde_json::Value = serde_json::from_str(&app.source_page_presentation(&key)).unwrap();
+            assert_eq!(presentation, json!({"music":true,"layout":layout}));
+            let inner = app.catalog.lock();
+            assert!(inner.queue.queued.is_empty() && inner.running.is_empty());
+            assert!(inner.store.cards.is_empty() && inner.store.tracks.is_empty() && inner.store.shelves.is_empty());
+        }
+        let key = "legacy section:tracks";
+        app.catalog.lock().loaded = true;
+        let full: serde_json::Value = serde_json::from_str(&app.source_page(key)).unwrap();
+        let small: serde_json::Value = serde_json::from_str(&app.source_page_presentation(key)).unwrap();
+        for field in ["music", "layout", "artist", "albumsOnly"] { assert_eq!(small[field], full[field]); }
+        assert_eq!(small.get("shelves").is_some(), full.get("shelves").is_some());
+        assert!(small.get("items").is_none() && small.get("title").is_none());
+        assert!(small.to_string().len() < 256);
+    }
+
+    #[test]
     fn a_delayed_shelf_keeps_its_pending_snapshot_until_rows_arrive() {
         let mut app = crate::Chilpa::new();
         let key = "fixture section:albums";
@@ -217,6 +242,7 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         number: track.number,
         duration_ms: track.duration_ms,
         plays: track.metadata["plays"].as_i64().filter(|n| *n >= 0).unwrap_or(0) as usize,
+        bit_depth: track.format.as_ref().and_then(|f| f.bits),
         quality: track.format.as_ref().map(|f| f.quality()).unwrap_or_default(),
         artwork_path: art,
         available: track.playable,
@@ -238,6 +264,11 @@ fn words(text: &str) -> Vec<String> {
 }
 
 impl Chilpa {
+    /// A visible source card requests missing artwork even when its snapshot is cached.
+    pub fn source_album_artwork(&self, id: i64, visible: bool) -> String {
+        if visible { self.catalog.visible_art_of_card(id) } else { self.catalog.art_of_card(id) }
+    }
+
     /// Refresh covers of an existing Home snapshot without changing its membership.
     pub fn refresh_source_album_artwork(&self, rows: &mut [Album]) {
         for row in rows { row.artwork_path = self.catalog.art_of_card(row.id); }
@@ -310,6 +341,31 @@ impl Chilpa {
         let address = if rest.starts_with("matching-artist-") { rest } else { rest.split(' ').next().unwrap_or_default() };
         self.catalog.shelf(&format!("{plugin} {address}"));
         self.catalog.shelf_tracks(&format!("{plugin} {address}")).into_iter().map(|(t, art)| row_of(&t, art)).collect()
+    }
+
+    /// Small routing state. Hinted native leaves load through their own owner.
+    pub fn source_page_presentation(&mut self, key: &str) -> String {
+        let (plugin, rest) = split(key);
+        if self.natives.has_pages(plugin) {
+            if let Some(request) = rest.strip_prefix("native:")
+                .and_then(|reference| crate::native_page_request::decode(reference).ok())
+                .filter(|request| request.layout == "collection" || (request.layout == "article" && self.natives.capability(plugin, "article_pages") == 1))
+            {
+                return serde_json::json!({"music":true,"layout":request.layout}).to_string();
+            }
+        }
+        let page: serde_json::Value = serde_json::from_str(&self.source_page(key)).unwrap_or_default();
+        let mut result = serde_json::Map::new();
+        for field in ["music", "artist", "albumsOnly"] {
+            if let Some(value) = page[field].as_bool() { result.insert(field.into(), value.into()); }
+        }
+        if let Some(layout) = page["layout"].as_str().filter(|layout| layout.len() <= 32) {
+            result.insert("layout".into(), layout.into());
+        }
+        if page.get("shelves").is_some() {
+            result.insert("shelves".into(), serde_json::json!([]));
+        }
+        serde_json::Value::Object(result).to_string()
     }
 
     /// What a source page needs besides its records and tracks, as JSON:

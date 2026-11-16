@@ -40,20 +40,29 @@ Item {
     }
     readonly property bool local: about.local === true
     readonly property string name: header.title || ""
-    readonly property var network: name !== "" ? JSON.parse(Sources.network(name, Library.remoteRev) || "{}") : ({})
+    readonly property var network: page.presented && page.visible && page.networkOpen && name !== "" ? JSON.parse(Sources.network(name, Library.remoteRev) || "{}") : ({})
     readonly property var shelves: (about.shelves || []).filter(s => s.sidebar !== true)
     // Open unless the window is narrow with a panel on the right, as QBZ.
     readonly property bool constrained: Window.width < Metrics.networkNarrow && SettingsModel.lyricsOpen
-    readonly property bool networkEnabled: network.enabled !== false
-    property bool networkOpen: !constrained
+    readonly property bool networkEnabled: Sources.networkAllowed(name, Library.remoteRev)
+    property bool networkOpen: !constrained && SettingsModel.kept("ui.artist.network") === "true"
     onNetworkEnabledChanged: if (!networkEnabled) networkOpen = false
     onConstrainedChanged: if (constrained) networkOpen = false
-    onKeyChanged: { networkOpen = !constrained; inLibrary = false }
+    onKeyChanged: { networkOpen = !constrained && SettingsModel.kept("ui.artist.network") === "true"; inLibrary = false }
     onAboutChanged: if (!inLibrary) { const info = about.header || {}; libraryKey = !local && info.plugin && info.ref ? info.plugin + " artist-library:" + info.ref : "" }
     // The shelves by key, changed only when a shelf comes or goes, so a
     // page read again keeps every block where it was.
     KeyedModel { id: shelfRows; items: page.shelves }
-    Component.onCompleted: aboutChanged()
+    Component.onCompleted: { aboutChanged(); acceptContextIntent() }
+    onNameChanged: if (presented) acceptContextIntent()
+    onPresentedChanged: if (presented) acceptContextIntent()
+    function acceptContextIntent() {
+        if (!name) return
+        const intent = Visit.recall("artist.aboutIntent", {})
+        if (!intent.name) return
+        Visit.keep("artist.aboutIntent", {})
+        if (intent.name === name && Date.now() - intent.at < Motion.artistContextIntent) networkOpen = networkEnabled
+    }
     function blockOf(id) {
         for (let i = 0; i < blocks.count; i++) {
             const item = blocks.itemAt(i)
@@ -99,10 +108,11 @@ Item {
                 height: Math.max(Metrics.artistPortrait, item ? item.implicitHeight : 0)
                 active: page.presented
                 asynchronous: true
-                sourceComponent: Component { ArtistHeader { info: page.header; local: page.local; networkOpen: page.networkOpen; networkEnabled: page.networkEnabled; sceneAvailable: page.networkEnabled && !!page.network.origin?.place && (page.network.origin?.tags || []).length > 0; onToggleNetwork: page.networkOpen = !page.networkOpen; onSceneRequested: page.askScene(); inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on } }
-                ArtTile { id: preview; visible: !head.item; width: Math.min(Metrics.artistPortrait, head.width / 3); height: width; radius: width / 2; source: page.header.art || "" } // derived: one third of the header and a circular crop
+                sourceComponent: Component { ArtistHeader { activeImages:page.visible && head.y + column.y + head.height > flick.contentY && head.y + column.y < flick.contentY + flick.height; info: page.header; local: page.local; networkOpen: page.networkOpen; networkEnabled: page.networkEnabled; sceneAvailable: page.networkEnabled && !!page.network.origin?.place && (page.network.origin?.tags || []).length > 0; onToggleNetwork: page.toggleNetwork(); onSceneRequested: page.askScene(); inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on } }
+                ArtTile { id: preview; visible: !head.item; width: Math.min(Metrics.artistPortrait, head.width / 3); height: width; radius: width / 2; source: !page.local && page.header.plugin && page.header.image ? Sources.art(page.header.plugin,page.header.image,Library.remoteArtRev) : "" } // derived: one third of the header and a circular crop
                 Text { visible: !head.item; x: preview.width + Metrics.blockGap; anchors.verticalCenter: parent.verticalCenter; width: parent.width - x; text: page.header.title || ""; font.pointSize: Type.display; font.weight: Type.bold; color: Theme.color.textPrimary }
             }
+            ArtistContext { width: parent.width; info: page.header; networkEnabled: page.networkEnabled; onAboutRequested: page.toggleNetwork() }
             // Where the jump bar sits when the page is at the top.
             Item { id: jumpSlot; width: parent.width; height: Metrics.jumpBar }
             Repeater {
@@ -115,13 +125,19 @@ Item {
                     readonly property string role: section.role || "shelf"
                     readonly property bool knownEmpty: page.about.loading !== true && ["release", "appears"].includes(role) && (section.items || []).length === 0 && !section.more && section.loading !== true
                     readonly property bool ready: status === Loader.Ready && item?.ready === true
+                    readonly property bool releaseGrid: role === "release" || role === "appears" && section.kind !== "track"
+                    readonly property real reservedHeight: releaseGrid
+                        ? Math.max(skeleton.implicitHeight, Metrics.shelfHeader + Metrics.button32
+                            + CardLayout.gridHeight((section.items || []).length, width, section.presentation === "ranked")
+                            + Metrics.gap8 + Metrics.gap12 * 2 + (section.more ? Metrics.gap12 + Metrics.pillHeight : 0)) // derived: title, controls, card rows and optional continuation
+                        : skeleton.implicitHeight
                     property bool mounted: false
                     width: column.width - panel.width
                     // Each block says whether it has anything to show; its
                     // own visibility would read back the Loader's.
                     visible: !knownEmpty && (!ready || item.shown === true)
-                    height: visible ? ready ? Math.max(skeleton.implicitHeight, item.implicitHeight) : skeleton.implicitHeight : 0
-                    active: !knownEmpty && page.presented && page.about.loading !== true && (mounted || column.y + y < flick.contentY + flick.height * 2)
+                    height: visible ? ready ? Math.max(skeleton.implicitHeight, item.implicitHeight) : reservedHeight : 0
+                    active: !knownEmpty && page.presented && (mounted || page.about.loading !== true && column.y + y < flick.contentY + flick.height * 2)
                     asynchronous: true
                     sourceComponent: role === "popular" || (role === "appears" && section.kind === "track") ? trackBlock
                         : role === "latest" ? latestBlock : role === "other" ? otherBlock : shelfBlock
@@ -139,28 +155,7 @@ Item {
         }
     }
     Component { id: trackBlock; ArtistTracks { section: parent.section; viewport: flick; actions: (section.role || "") === "popular" } }
-    Component {
-        id: latestBlock
-        Column {
-            id: latest
-            property var section: parent.section
-            readonly property bool ready: one.ready
-            readonly property bool shown: one.albums > 0
-            spacing: Metrics.gap12
-            visible: shown
-            AlbumGridModel { id: one; kind: latest.section.model || "source"; key: latest.section.model_key || latest.section.key || ""; limit: 1; columns: 1; contentRev: Library.remoteRev + Library.remoteArtRev }
-            Text { text: latest.section.title || ""; textFormat: Text.PlainText; font.pointSize: Type.section; font.weight: Type.heading; font.letterSpacing: Type.sectionTracking; color: Theme.color.textPrimary }
-            AlbumCard {
-                width: CardLayout.cardWidth
-                albumId: one.albumId(0, one.rev); title: one.title(0, one.rev); subtitle: one.subtitle(0, one.rev); year: one.year(0, one.rev); art: one.art(0, one.rev)
-                aiGenerated: one.aiGenerated(0, one.rev)
-                sources: albumId < 0 ? JSON.parse(AlbumActions.sources(albumId, one.rev) || "[]") : []
-                qualityInfo: JSON.parse(AlbumActions.quality(albumId, one.rev) || "{}")
-                canExpand: false
-                onClicked: Navigation.go("album", albumId)
-            }
-        }
-    }
+    Component { id: latestBlock; ArtistLatestRelease { section: parent.section; viewport: flick } }
     Component {
         id: shelfBlock
         SourceShelf {
@@ -220,7 +215,7 @@ Item {
         Loader {
             objectName: "artistNetworkLoader"
             anchors.fill: parent
-            active: page.presented && page.networkEnabled
+            active: page.presented && page.visible && page.networkEnabled && page.networkOpen
             asynchronous: true
             sourceComponent: Component { ArtistNetwork {
                 width: parent.width; height: parent.height
@@ -230,13 +225,17 @@ Item {
             } }
         }
     }
+    function toggleNetwork() {
+        networkOpen = !networkOpen
+        SettingsModel.keep("ui.artist.network", networkOpen ? "true" : "false")
+    }
     function askScene() { sceneChoice.active = true; sceneChoice.item.open() }
     Loader {
         id: sceneChoice
         active: false
         sourceComponent: Component { Modal {
         objectName: "sceneChoice"
-        width: Math.min(Metrics.settingsMaxWidth, page.width - Metrics.modalInsets)
+        preferredWidth: Math.min(Metrics.settingsMaxWidth, page.width - Metrics.modalInsets)
         Column {
             width: parent.width; spacing: Metrics.gap16
             Text { width: parent.width; text: I18n.tr("Artists from this scene", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }

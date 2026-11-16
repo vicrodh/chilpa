@@ -73,6 +73,7 @@ Item {
         visible: pane.entries.length > 0
         x: Metrics.scenePanelPadLeft; width: Math.max(0, parent.width - Metrics.scenePanelPadTotal); height: parent.height
         model: albumRows; clip: true; cacheBuffer: CardLayout.cardHeight * 2
+        bottomMargin: Metrics.contentBottom // the last row scrolls clear of a floating player
         boundsBehavior: Flickable.StopAtBounds
         delegate: Item {
             id: row

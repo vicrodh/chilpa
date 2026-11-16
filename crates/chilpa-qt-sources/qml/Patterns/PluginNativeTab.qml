@@ -17,6 +17,8 @@ Flickable {
     readonly property var installed: controller.installedRows.filter(p => !p.origin)
     readonly property var offered: controller.view.native_catalog || []
     contentHeight: column.height
+    // The last rows scroll clear of a floating player.
+    bottomMargin: Metrics.contentBottom
     clip: true
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8 }
@@ -24,6 +26,17 @@ Flickable {
         id: column
         width: tab.width - Metrics.gap12
         spacing: Metrics.gap8
+        Text {
+            objectName: "processPluginsUnavailable"
+            readonly property var processPlugins: tab.controller.view.process_plugins || ({})
+            visible: processPlugins.available === false
+            width: column.width
+            text: processPlugins.reason || ""
+            textFormat: Text.PlainText
+            wrapMode: Text.WordWrap
+            color: Theme.color.statusWarning
+            font.pointSize: Type.body
+        }
         Text {
             visible: tab.installed.length > 0
             text: I18n.tr("Installed", I18n.rev)
@@ -70,7 +83,7 @@ Flickable {
                         Text { width: Math.min(implicitWidth, parent.width - (offerThirdParty.visible ? offerThirdParty.width + parent.spacing : 0)); text: modelData.name + "  " + modelData.version; elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body }
                         ThirdPartyTag { id: offerThirdParty; anchors.verticalCenter: parent.verticalCenter; by: modelData.third_party_by || ""; visible: modelData.third_party === true }
                     }
-                    Text { width: parent.width; text: modelData.problem || modelData.description; elide: Text.ElideRight; color: modelData.problem ? Theme.color.statusWarning : Theme.color.textSecondary; font.pointSize: Type.meta }
+                    Text { width: parent.width; text: modelData.problem || modelData.unavailable || modelData.description; elide: Text.ElideRight; color: modelData.problem || modelData.unavailable ? Theme.color.statusWarning : Theme.color.textSecondary; font.pointSize: Type.meta }
                 }
                 // The action, and under it a small link to the versions the
                 // list does not show: one row per plugin keeps the list short.
@@ -84,8 +97,8 @@ Flickable {
                         objectName: "nativeOfferAction"
                         anchors.right: parent.right
                         text: modelData.update ? I18n.tr("Update", I18n.rev) : I18n.tr("Install", I18n.rev)
-                        enabled: !tab.controller.view.busy && !modelData.problem
-                        onClicked: tab.controller.command("install_native", {repository: modelData.repository_id, id: modelData.id})
+                        enabled: !tab.controller.view.busy && !modelData.problem && !modelData.unavailable
+                        onClicked: tab.controller.installNative(modelData)
                     }
                     Text {
                         id: older

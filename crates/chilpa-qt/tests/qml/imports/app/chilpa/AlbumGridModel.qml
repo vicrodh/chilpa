@@ -11,6 +11,9 @@ ListModel {
     property int fresh: -1
     property bool mixed: false
     property bool ready: true
+    property string error: ""
+    property int retries: 0
+    function retry() { retries++; error=""; ready=false }
     function albumId(index, revision) { return kind === "source" ? -(index + 1) : index + 1 }
     function title(index, revision) { return "Record " + index }
     property var explicitRows: []
@@ -19,7 +22,11 @@ ListModel {
     function explicitContent(index, revision) { return explicitRows.includes(index) }
     function subtitle(index, revision) { return "Artist" }
     function year(index, revision) { return "2026" }
-    function art(index, revision) { return "" }
+    property string artSource: ""
+    function art(index, revision, visible) {
+        if (arguments.length !== 3 || typeof visible !== "boolean") throw new Error("AlbumGridModel.art requires index, revision and visibility")
+        return artSource
+    }
     // An artist's card, as Artist Scene reads it: the library and one source.
     function artist(index, revision) {
         const name = "Artist " + index

@@ -162,7 +162,7 @@ impl crate::Chilpa {
         if argument.len() > 16*1024 { return Err(chilpa_i18n::t("Invalid audio check request.")); }
         if self.audio_output.pending.is_some() { return Err(chilpa_i18n::t("An audio check is already running.")); }
         // I leave transport, queue, track, volume and desktop defaults untouched.
-        if self.now.playing || self.player.as_ref().is_some_and(|p| !p.idle()) {
+        if self.now.playing || !self.plays.is_empty() {
             return Err(chilpa_i18n::t("Stop playback before checking an output. Inspection remains available while listening."));
         }
         #[derive(serde::Deserialize)]

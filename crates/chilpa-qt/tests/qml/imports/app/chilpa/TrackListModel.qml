@@ -59,7 +59,9 @@ ListModel {
             { act: "later", text: "Play later" },
             { separator: true },
             { act: "pick", text: "Add to playlist…" },
-            { act: "sync", text: "Sync to device…" }
+            { act: "sync", text: "Sync to device…" },
+            { separator: true },
+            { act: "info", text: "Track info", path: "/music/Track " + row + ".flac", title: "Track " + row }
         ])
     }
     function chosenTrackIdsJson(row) { return "[42,43]" }
@@ -81,8 +83,10 @@ ListModel {
     onLimitChanged: fill()
     Component.onCompleted: fill()
     property string filledKey: ""
+    property var initialTrackRequest: null
     function fill() {
-        const wanted = key.endsWith("|tracks") ? 8 : kind === "mostPlayed" ? 30 : 0
+        if (kind === "tracks" && initialTrackRequest === null) initialTrackRequest = {key:key, filterRev:filterRev}
+        const wanted = key.endsWith("|tracks") ? 8 : key.endsWith("|latest-tracks") ? 6 : kind === "mostPlayed" ? 30 : 0
         const count = limit > 0 ? Math.min(limit, wanted) : wanted
         if (filledKey !== key) { clear(); filledKey = key }
         while (this.count > count) remove(this.count - 1)

@@ -37,6 +37,7 @@ Item {
     // away with its track.
     readonly property var translation: found ? offered.lines : null
     LyricData.LyricTranslation { id: offered; lyrics: panel.lyrics }
+    LyricData.LyricTranslation { id: pronunciation; lyrics: panel.lyrics; kind: "romanization" }
     property bool translating: false
     onFoundChanged: if (!found) translating = false
 
@@ -141,6 +142,7 @@ Item {
         nowMs: panel.nowMs
         sungEnd: panel.lineEnd(Player.lyricsLine)
         translation: panel.translating ? panel.translation : null
+        romanization: pronunciation.lines
         size: panel.size
         sungColor: panel.sungColor
         dimming: options.dimming

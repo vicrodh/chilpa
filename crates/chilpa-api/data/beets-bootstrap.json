@@ -1,0 +1,54 @@
+{
+  "uv": "0.13.8",
+  "python": "3.13.18",
+  "platforms": [
+    {
+      "os": "linux",
+      "arch": "x86_64",
+      "url": "https://files.pythonhosted.org/packages/c5/32/52ee34636aea1ab3f8baeeae1c3599461b8cddfb379862cc72ac61b8d91c/uv-0.13.8-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "e18a57b8b352eb7c8feb317b9f6f533c8f0ad9673fd6cf34bbe3cf1a9f6a8984",
+      "bytes": 17389450,
+      "program": "uv-0.13.8.data/scripts/uv"
+    },
+    {
+      "os": "linux",
+      "arch": "aarch64",
+      "url": "https://files.pythonhosted.org/packages/9e/f0/d989ac5fcebf83f1c8c5d78974f27788e8364945969eb646f5d0db35d924/uv-0.13.8-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.musllinux_1_1_aarch64.whl",
+      "sha256": "0b3e8b1a4f5e405e31e2ff33de8af4744831e9f7338539671efbd8c3c94e791d",
+      "bytes": 17953056,
+      "program": "uv-0.13.8.data/scripts/uv"
+    },
+    {
+      "os": "macos",
+      "arch": "x86_64",
+      "url": "https://files.pythonhosted.org/packages/be/7a/fd8a719c0198f8f8341847fc33b377f25ac79f7c4a56dbce5ceb086f239c/uv-0.13.8-py3-none-macosx_10_12_x86_64.whl",
+      "sha256": "b7124ca1956ec2e476a1003ea5715a15f0266afaec37f4dc9c6972ba8183e6d1",
+      "bytes": 17374577,
+      "program": "uv-0.13.8.data/scripts/uv"
+    },
+    {
+      "os": "macos",
+      "arch": "aarch64",
+      "url": "https://files.pythonhosted.org/packages/84/46/deb3a1eb3020575e41d1f9840c07185761d8d4c25cd6f58e813afb017476/uv-0.13.8-py3-none-macosx_11_0_arm64.whl",
+      "sha256": "62b6943c7fd64fac6854f780bea6e0359e5a5bc3241f83ee357bb38276afac49",
+      "bytes": 14483721,
+      "program": "uv-0.13.8.data/scripts/uv"
+    },
+    {
+      "os": "windows",
+      "arch": "x86_64",
+      "url": "https://files.pythonhosted.org/packages/6a/1d/d813afac1a7cbe3eeeca8709b47bdcd5e5189d08364b8d7a9f693082f0f1/uv-0.13.8-py3-none-win_amd64.whl",
+      "sha256": "cfbc13020a64cdf2f116d2936824c38edbf41e5c07f1ea291baf02e31ebf3ed0",
+      "bytes": 15624377,
+      "program": "uv-0.13.8.data/scripts/uv.exe"
+    },
+    {
+      "os": "windows",
+      "arch": "aarch64",
+      "url": "https://files.pythonhosted.org/packages/98/fd/9cc888863d2326e6e5c6ae2a66d4b3ff248f9cd6bb50cb8be36a941c3e26/uv-0.13.8-py3-none-win_arm64.whl",
+      "sha256": "b4184029b1b7c54409b9cd4372c73a36ef9c2d1d7cf3b0aca59c8b1932f041dc",
+      "bytes": 15685270,
+      "program": "uv-0.13.8.data/scripts/uv.exe"
+    }
+  ]
+}

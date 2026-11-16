@@ -39,6 +39,7 @@ Item {
     property bool list: false
     // A compact record table with stored technical facts and no cover objects.
     property bool technical: false
+    property var technicalColumns: null
     // The columns of those rows (`AlbumRow.columns`).
     property var listColumns: ["year"]
     property real viewportX: 0
@@ -59,7 +60,7 @@ Item {
 
     Tools.AlbumGridInteraction { id: interaction; objectName: "albumGridInteraction"; grid: grid }
 
-    implicitHeight: shelf ? Math.max(rowHeight, view.contentItem.childrenRect.height) + Metrics.cardRing * 2 : view.contentHeight // derived: the shelf keeps both selection rings
+    implicitHeight: shelf ? interaction.shelfHeight(view, rowHeight) + Metrics.cardRing * 2 : view.contentHeight // derived: room for both selection rings
 
     Tools.MotionListView {
         id: view
@@ -99,7 +100,7 @@ Item {
         Binding {
             target: view; property: "contentWidth"
             when: grid.technical
-            value: Math.max(view.width, Metrics.nerdyTableWidth)
+            value: Math.max(view.width, view.headerItem ? view.headerItem.minimumWidth : Metrics.nerdyTableWidth)
             restoreMode: Binding.RestoreBindingOrValue
         }
 
@@ -112,22 +113,17 @@ Item {
             // The group this row opens, if it opens one.
             required property string group
             readonly property real lead: group !== "" ? Metrics.rowGroup : 0
+            readonly property bool onScreen: grid.visible && y + height > grid.visibleTop && y < grid.visibleTop + (grid.viewport ? grid.viewport.height : view.height) && (!grid.shelf || x + width > view.contentX && x < view.contentX + view.width)
             readonly property bool nearby: !grid.viewport || y + height >= grid.visibleTop - grid.viewport.height && y < grid.visibleTop + grid.viewport.height * 2
 
             width: grid.shelf ? grid.cardWidth : grid.technical ? view.contentWidth : grid.width
             height: lead + grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
 
-            Text {
+            Tools.AlbumGroupHeading {
                 visible: row.group !== ""
                 x: Metrics.cardRing
                 width: grid.layoutWidth
-                height: Metrics.rowGroup
-                verticalAlignment: Text.AlignVCenter
                 text: row.group
-                elide: Text.ElideRight
-                font.pointSize: Type.meta
-                font.weight: Type.semibold
-                color: Theme.color.textSecondary
             }
 
             AlbumRow {
@@ -138,6 +134,7 @@ Item {
                 y: row.lead
                 width: grid.layoutWidth
                 technical: grid.technical
+                technicalColumns: grid.technicalColumns
                 rev: grid.detailsRev
                 albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
                 title: shown ? grid.model.title(row.first, row.revision) : ""
@@ -145,7 +142,7 @@ Item {
                 aiGenerated: shown && grid.model.aiGenerated(row.first, row.revision)
                 subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
                 year: shown ? grid.model.year(row.first, row.revision) : ""
-                art: shown && !grid.technical ? grid.model.art(row.first, row.revision) : ""
+                art: shown && !grid.technical ? grid.model.art(row.first, row.revision, row.onScreen) : ""
                 columns: grid.listColumns
                 sources: shown && !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
                 mixed: !!grid.model && grid.model.mixed
@@ -186,7 +183,7 @@ Item {
                     aiGenerated: occupied && grid.model.aiGenerated(at, rev)
                     subtitle: occupied ? grid.model.subtitle(at, rev) : ""
                     year: occupied ? grid.model.year(at, rev) : ""
-                    art: occupied ? grid.model.art(at, rev) : ""
+                    art: occupied ? grid.model.art(at, rev, row.onScreen) : ""
                     artColors: occupied && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, grid.detailsRev) || "[]") : []
                     qualityInfo: occupied && !round ? JSON.parse(AlbumActions.quality(albumId, grid.detailsRev) || "{}") : ({})
                     tint: at
@@ -232,6 +229,7 @@ Item {
             width: grid.layoutWidth
             height: Metrics.rowHeader
             header: true
+            shown: grid.technicalColumns
         }
     }
 

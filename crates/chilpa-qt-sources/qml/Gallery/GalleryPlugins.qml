@@ -11,8 +11,12 @@ import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 
 TitledFlow {
     title: "Plugins"
+    PluginDialogActions { width: Metrics.confirmWidth; mode: "permissions"; plugin: ({revision:"example"}) }
     HomeSection { width: Metrics.confirmWidth; entry: ({kind:"albums",title:"Deferred module"}) }
     MediaListeningPanel { width: Metrics.confirmWidth; height: Metrics.panesHeight }
+    PillButton { text: "Delete server music"; onClicked: mediaDelete.open() }
+    ServerMediaDeletion { listenForRequests: false }
+    ServerMediaDeleteDialog { id: mediaDelete; kind: "album"; localId: 0 }
     ServerKindChoice { width: Metrics.confirmWidth; chosen: "dlna" }
     ServerConnect { width: Metrics.confirmWidth; kind: "dlna"; preview: true
         setup: ({step:"address",kind:"dlna",searching:false,choices:[{id:"http://192.168.0.20:8200/rootDesc.xml",name:"Media server",detail:"MiniDLNA 1.3.3"}]}) }
@@ -67,11 +71,12 @@ TitledFlow {
     PillButton { text: "Older versions modal"; onClicked: olderPreview.open() }
     SourcePlaylistRows { width: Metrics.confirmWidth; rows: [{title:"Song",artist:"Artist",member:"1"}] }
     SourcePageHeader { width: Metrics.confirmWidth; info: ({title:"Artist",description:"Biography"}) }
-    ArtistHeader { width: Metrics.confirmWidth; info: ({title:"Artist",description:"Biography",roles:["Composer"],radio_id:-1}) }
+    ArtistHeader { activeImages:false; width: Metrics.confirmWidth; info: ({title:"Artist",description:"Biography",roles:["Composer"],radio_id:-1}) }
     JumpBar { width: Metrics.confirmWidth; entries: [{id:"about",title:"About"},{id:"tracks",title:"Popular Tracks"}]; active: "about" }
     ArtistTracks { width: Metrics.confirmWidth; section: ({title:"Popular Tracks",role:"popular",key:""}) }
+    ArtistLatestRelease { width: Metrics.confirmWidth; section: ({title:"Latest release",key:"preview native:artist:1|latest",tracks_key:"preview native:artist:1|latest-tracks"}) }
     ArtistNetwork { width: Metrics.networkPanel; height: Metrics.panesHeight; document: ({header:{title:"Artist"},shelves:[{role:"labels",items:[{title:"Label"}]},{role:"similar",items:[{title:"Another"}]}]}); network: ({origin:{person:false,begin:"1975",place:"Leyton"},relationships:{any:true,members:[{name:"Member"}]},similar:["Alike"]}) }
-    SceneArtistCard { artist: ({title:"Scene artist",genres:["rock"],sources:[]}) }
+    SceneArtistCard { activeImages:false; artist: ({title:"Scene artist",genres:["rock"],sources:[]}) }
     ArtistCardGrid { width: Metrics.confirmWidth; height: Metrics.sceneCardHeight; artists: AlbumGridModel { kind: "artists"; key: "album" } }
     PurchaseAlbumCard { record: ({title: "Record", artist: "Artist", year: "2026"}) }
     SlimRow { width: Metrics.confirmWidth; height: Metrics.slimRow; title: "Compact row"; subtitle: "Artist"; count: "12" }
@@ -106,7 +111,6 @@ TitledFlow {
     ArtistSources { source: "preview"; artist: "Maiden"; sources: [{ id: "preview", name: "Preview" }] }
     TrackStarsFilter { width: Metrics.sourcesPopoverWidth / 2; ratings: [5, 0] } // derived: a column of the popover
     SourceLibraryControls { source: "preview section:albums" }
-    StartupSplash { width: Metrics.confirmWidth; height: Metrics.panesHeight }
     PluginValidation { width: Metrics.confirmWidth; phase: "passed" }
     PluginRow { width: Metrics.confirmWidth; plugin: ({name: "Catalog source", light: "yellow"}) }
     PluginRow { width: Metrics.confirmWidth; plugin: ({name: "Third-party source", light: "native", third_party: true}) }

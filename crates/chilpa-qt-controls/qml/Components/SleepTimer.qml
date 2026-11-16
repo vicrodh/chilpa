@@ -12,6 +12,7 @@ import "../Theme"
 Modal {
     id: timer
     objectName: "sleepTimer"
+    preferredWidth: Metrics.sleepTimer + Metrics.modalInsets
 
     readonly property bool running: Controls.sleepLeft !== ""
     // The times offered, in minutes; after them, one typed by hand.
@@ -35,7 +36,9 @@ Modal {
         spacing: Metrics.gap8
 
         Text {
+            width: parent.width
             text: timer.running ? I18n.tr("Stops in", I18n.rev) : I18n.tr("Stop playback after:", I18n.rev)
+            wrapMode: Text.Wrap
             font.pointSize: Type.meta
             color: Theme.color.textTertiary
         }

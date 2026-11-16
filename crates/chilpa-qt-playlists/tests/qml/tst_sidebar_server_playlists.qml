@@ -39,8 +39,12 @@ TestCase {
         verify(offered().indexOf("deletePlaylist") < 0, "one the account may only read is not deleted")
         actions.row(road, 0, 0)
         menu().chosen(offered().indexOf("deletePlaylist"))
-        verify(menu().entries[0].text.indexOf("Living room") >= 0, "the question names the server: " + menu().entries[0].text)
-        menu().chosen(offered().indexOf("confirmPlaylist"))
+        const confirmation = findChild(actions, "playlistDeletionConfirmation")
+        tryCompare(confirmation, "opened", true)
+        verify(confirmation.message.indexOf("Living room") >= 0, "the question names the server")
+        const accept = findChild(confirmation.contentItem, "confirmationAccept")
+        actions.selected = sidebar.rows.find(row => row.playlistId === 13)
+        accept.clicked()
         compare(Playlists.removed, 12)
     }
 
@@ -80,5 +84,69 @@ TestCase {
         actions.head(0, 0)
         menu().chosen(offered().indexOf("refresh"))
         compare(PlaylistManager.serverRefreshes, before + 1)
+    }
+    function test_late_folders_and_bulk_updates_keep_one_indent_per_level() {
+        sidebar.setOrder("custom")
+        const source = "fixture", parentKey = source + " folder:parent", childKey = source + " folder:child"
+        const leaf = {id:-1,name:"A retained",source:source,provider:"Catalog",native_folder:"folder:child",track_count:1}
+        let catalog = {group_sources:true,folder_sources:[{id:source,name:"Catalog",icon:""}],native_folders:[],playlists:[leaf]}
+        sidebar.expanded = ({[parentKey]:true,[childKey]:true})
+        Playlists.catalog = catalog
+        sidebar.reload()
+        const view = findChild(sidebar,"sidebarPlaylistList")
+        function host(id) {
+            for (let index = 0; index < view.count; index++) {
+                const item = view.itemAtIndex(index)
+                if (item && item.entry.id === id) return item
+            }
+            return null
+        }
+        const id = "playlist:fixture:-1"
+        view.positionViewAtBeginning()
+        tryVerify(() => host(id)?.item !== null && host(id)?.item !== undefined)
+        const retained = host(id).item
+        const groupTitle = findChild(host("source:fixture").item,"playlistGroupTitle")
+        const title = findChild(retained,"playlistTitle")
+        const base = groupTitle.mapToItem(view,0,0).x
+        verify(groupTitle.font.pointSize > title.font.pointSize)
+        function check(depth) {
+            const at = sidebar.rows.findIndex(row => row.id === id)
+            tryVerify(() => view.count > at && view.model.get(at).entry.id === id && view.model.get(at).entry.depth === depth)
+            view.forceLayout()
+            view.positionViewAtIndex(at,ListView.Beginning)
+            view.forceLayout()
+            tryVerify(() => host(id)?.item && host(id).entry.depth === depth,1000,"playlist at depth " + depth)
+            compare(host(id).x,0,"ListView positions the host without changing its indentation")
+            const current = findChild(host(id).item,"playlistTitle")
+            fuzzyCompare(current.mapToItem(view,0,0).x,base + depth * Metrics.playlistIndent,0.1)
+        }
+        check(1)
+        catalog.native_folders = [{source:source,ref:"folder:parent",name:"Parent",parent:""}]
+        Playlists.catalog = Object.assign({},catalog)
+        sidebar.reload()
+        tryCompare(view,"count",3)
+        check(1)
+        catalog.native_folders.push({source:source,ref:"folder:child",name:"Child",parent:"folder:parent"})
+        Playlists.catalog = Object.assign({},catalog)
+        sidebar.reload()
+        tryCompare(view,"count",4)
+        check(3)
+        const childTitle = findChild(host("folder:fixture folder:child").item,"playlistFolderTitle")
+        fuzzyCompare(childTitle.mapToItem(view,0,0).x,base + 2 * Metrics.playlistIndent,0.1)
+        catalog.playlists = [leaf].concat(Array.from({length:40},(_,at)=>({id:-at-100,name:"Z list " + at,source:source,track_count:0})))
+        Playlists.catalog = Object.assign({},catalog)
+        sidebar.reload()
+        tryCompare(view,"count",44)
+        check(3)
+        catalog.group_sources = false
+        Playlists.catalog = Object.assign({},catalog)
+        sidebar.reload()
+        tryCompare(view,"count",43)
+        check(2)
+        catalog.playlists[0] = Object.assign({},leaf,{native_folder:""})
+        Playlists.catalog = Object.assign({},catalog)
+        sidebar.reload()
+        compare(sidebar.rows.find(row => row.id === id).depth,0)
+        check(0)
     }
 }

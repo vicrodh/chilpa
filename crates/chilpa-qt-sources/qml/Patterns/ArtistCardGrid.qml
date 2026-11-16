@@ -33,10 +33,12 @@ GridView {
     }
 
     delegate: Item {
+        id: cell
         required property int index
         width: grid.cellWidth
         height: grid.cellHeight
         SceneArtistCard {
+            activeImages: grid.visible && cell.y + cell.height > grid.contentY && cell.y < grid.contentY + grid.height && cell.x + cell.width > grid.contentX && cell.x < grid.contentX + grid.width
             artist: JSON.parse(grid.artists.artist(parent.index, grid.artists.rev) || "{}")
             onActivated: grid.openArtist(artist)
             onSourceActivated: source => grid.openSource(source)

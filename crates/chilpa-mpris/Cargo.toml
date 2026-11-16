@@ -6,6 +6,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
+# Whether Chilpa runs in a sandbox, which changes how the desktop is reached.
+chilpa-dirs.workspace = true
 # The MPRIS interfaces, with the DesktopEntry property the shell needs.
 mpris-server = "0.10"
 # The same bus library mpris-server rides, for the instance name and logind.

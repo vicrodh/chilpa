@@ -129,7 +129,14 @@ impl Chilpa {
         self.scan_status = ScanStatus { revision: self.scan_status.revision.wrapping_add(1), ..ScanStatus::default() };
     }
 
-    pub fn scan_revision(&self) -> u64 { self.scan_status.revision }
+    /// Moves when the folders or the scan change, and when the portal said
+    /// where some folders live on the host.
+    pub fn scan_revision(&mut self) -> u64 {
+        if self.scan_runtime.host_paths.absorb() {
+            self.scan_status.revision = self.scan_status.revision.wrapping_add(1);
+        }
+        self.scan_status.revision
+    }
 
     pub fn scan_status(&mut self) -> &ScanStatus {
         self.ensure_scan_runtime();

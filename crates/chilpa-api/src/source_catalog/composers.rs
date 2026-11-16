@@ -19,6 +19,7 @@ use std::{collections::HashSet, path::Path, sync::Arc, time::Duration};
 const PASS: usize = 60;
 const RETRY: u64 = 300;
 
+#[derive(Clone)]
 pub(super) struct State {
     enabled: HashSet<String>,
     cache: Option<Arc<Cache>>,
@@ -28,6 +29,23 @@ pub(super) struct State {
     retry_at: u64,
     expires_at: u64,
     pub revision: u64,
+}
+
+/// A publication remembers cache identity without keeping its entries alive.
+pub(super) struct Hint {
+    enabled: HashSet<String>,
+    cache: Option<std::sync::Weak<Cache>>,
+    revision: u64,
+}
+
+impl Hint {
+    pub(super) fn matches(&self, state: &State) -> bool {
+        self.revision == state.revision && self.enabled == state.enabled && match (&self.cache, &state.cache) {
+            (Some(held), Some(current)) => held.ptr_eq(&Arc::downgrade(current)),
+            (None, None) => true,
+            _ => false,
+        }
+    }
 }
 
 impl Default for State {
@@ -45,6 +63,31 @@ pub(crate) fn own_composers(metadata: &Value) -> Vec<String> {
 }
 
 impl State {
+    #[cfg(test)]
+    pub(super) fn fixture(plugin: &str, key: &str, values: Vec<String>, at: u64) -> Self {
+        let mut cache = Cache::default();
+        cache.insert(key, values, at);
+        Self { enabled: [plugin.to_string()].into_iter().collect(), cache: Some(Arc::new(cache)), ..Self::default() }
+    }
+
+    pub(super) fn signature(&self, now: u64) -> u64 {
+        use std::hash::{Hash, Hasher};
+        let mut hash = std::collections::hash_map::DefaultHasher::new();
+        let mut enabled: Vec<_> = self.enabled.iter().collect();
+        enabled.sort_unstable();
+        enabled.hash(&mut hash);
+        if let Some(cache) = &self.cache { cache.live_signature(now, &mut hash); }
+        hash.finish()
+    }
+
+    pub(super) fn next_change(&self, now: u64) -> u64 {
+        self.cache.as_ref().map_or(u64::MAX, |cache| cache.next_change(now))
+    }
+
+    pub(super) fn hint(&self) -> Hint {
+        Hint { enabled: self.enabled.clone(), cache: self.cache.as_ref().map(Arc::downgrade), revision: self.revision }
+    }
+
     pub fn of_track(&self, track: &Track, now: u64) -> Vec<String> {
         let own = own_composers(&track.metadata);
         if !own.is_empty() || !self.enabled.contains(&track.plugin) { return own; }
@@ -207,5 +250,30 @@ impl Http for Guarded<'_> {
             return Ok(Reply { status: 499, headers: Default::default(), body: Vec::new() });
         }
         self.http.get(url, accept, timeout, max_bytes)
+    }
+}
+
+#[cfg(test)]
+mod hint_tests {
+    use super::*;
+
+    #[test]
+    fn weak_hint_detects_cache_mutation_without_a_revision_and_releases_old_entries() {
+        let mut state = State::fixture("fixture", "USAAA0100001", vec!["Enriched".into()], 100);
+        let hint = state.hint();
+        let revision = state.revision;
+        assert!(hint.matches(&state));
+        Arc::make_mut(state.cache.as_mut().unwrap()).retain(&HashSet::new());
+        assert_eq!(state.revision, revision);
+        assert!(!hint.matches(&state));
+        assert!(hint.cache.as_ref().unwrap().upgrade().is_none());
+        let hint = state.hint();
+        Arc::make_mut(state.cache.as_mut().unwrap()).insert("USAAA0100002", Vec::new(), 101);
+        assert_eq!(state.revision, revision);
+        assert!(!hint.matches(&state));
+        let hint = state.hint();
+        state.cache = None;
+        assert!(hint.cache.as_ref().unwrap().upgrade().is_none());
+        assert!(!hint.matches(&state));
     }
 }

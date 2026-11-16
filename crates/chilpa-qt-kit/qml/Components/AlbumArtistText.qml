@@ -22,5 +22,6 @@ Text {
         else fallback()
     }
     HoverHandler { id: hover; cursorShape: label.navigable ? Qt.PointingHandCursor : Qt.ArrowCursor }
-    TapHandler { enabled: label.navigable; gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: label.follow() }
+    // A passive grab lets this credit coexist with the page's Flickable.
+    TapHandler { enabled: label.navigable; onTapped: label.follow() }
 }

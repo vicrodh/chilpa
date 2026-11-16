@@ -136,6 +136,8 @@ Item {
         title: I18n.tr("Write into the audio files?", I18n.rev)
         message: I18n.tr("Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone.", I18n.rev)
         confirmText: I18n.tr("Write into the files", I18n.rev)
+        destructive: true
+        doubleConfirmation: true
         onConfirmed: MetadataEditor.save()
     }
     ConfirmDialog {
@@ -143,6 +145,8 @@ Item {
         title: I18n.tr("Write the external SACD XML?", I18n.rev)
         message: I18n.tr("The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar.", I18n.rev)
         confirmText: I18n.tr("Write XML", I18n.rev)
+        destructive: true
+        doubleConfirmation: true
         onConfirmed: MetadataEditor.save()
     }
     ConfirmDialog {

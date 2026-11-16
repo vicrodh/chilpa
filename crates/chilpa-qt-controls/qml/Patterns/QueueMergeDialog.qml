@@ -6,6 +6,7 @@ import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives" as Kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 Modal {
     id: dialog
@@ -14,8 +15,9 @@ Modal {
     property string error: ""
     property int selectedCount: 0
     property int trackCount: 0
-    width: Math.min(Metrics.playlistPickerWidth, parent ? parent.width - Metrics.modalInsets : 0)
-    height: Math.min(Metrics.playlistPickerHeight, parent ? parent.height - Metrics.modalInsets : 0)
+    preferredWidth: Math.min(Metrics.playlistPickerWidth, parent ? parent.width - Metrics.modalInsets : 0)
+    preferredHeight: header.implicitHeight + Math.max(Metrics.button32, list.contentHeight) + footer.implicitHeight
+        + Metrics.gap12 * 2 + Metrics.modalInsets
     ListModel { id: queues }
 
     function count() {
@@ -55,15 +57,17 @@ Modal {
     function combine() {
         const ids = []
         for (let i = 0; i < queues.count; i++) if (queues.get(i).chosen) ids.push(queues.get(i).queueId)
-        error = Queues.merge(JSON.stringify(ids), name.text, originals.value === "keep")
+        error = Queues.merge(JSON.stringify(ids),name.text,originals.value === "keep")
         ListenList.refresh()
         if (error === "") close()
     }
     onDocumentChanged: if (opened) sync()
 
+    // As tall as what it holds: in a short window the list keeps one row and
+    // the modal scrolls instead of pushing the foot past its edge.
     Column {
         id: layout
-        anchors.fill: parent
+        width: parent.width
         spacing: Metrics.gap12
         Column {
             id: header
@@ -76,7 +80,7 @@ Modal {
         ListView {
             id: list
             width: parent.width
-            height: Math.max(Metrics.button32, layout.height - header.height - footer.height - Metrics.gap12 - Metrics.gap12)
+            height: Math.max(Metrics.button32, dialog.height - Metrics.modalInsets - header.height - footer.height - Metrics.gap12 - Metrics.gap12)
             clip: true
             model: queues
             spacing: Metrics.gap4

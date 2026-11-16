@@ -9,7 +9,7 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 // The Library's filter columns side by side, in the design's proportions,
 // with a hairline between them (design/02 9).
 Rectangle {
-    id: panes
+    id: panes; objectName: "libraryFilterPanes"
 
     radius: Metrics.radiusMenu
     color: Theme.ambient ? Theme.color.ambientRaised : Theme.color.surfacePane
@@ -23,11 +23,33 @@ Rectangle {
         { column: "label", title: I18n.tr("Label", I18n.rev) },
         { column: "composer", title: I18n.tr("Composer", I18n.rev) },
         { column: "rating", title: I18n.tr("Rating", I18n.rev) },
+        { column: "bits", title: I18n.tr("Bit depth", I18n.rev) },
+        { column: "rate", title: I18n.tr("Sample rate", I18n.rev) },
         { column: "artist", title: I18n.tr("Artist", I18n.rev) },
         { column: "album", title: I18n.tr("Album", I18n.rev) }
-    ]
-    readonly property var columns: all.filter(c => shown.indexOf(c.column) >= 0)
+    ].filter(c => c.column !== "rating" || Prefs.ratings) // a chosen rating column stays chosen
+    property var columns: []
+    KeyedModel { id: keptColumns; keyField: "column"; items: panes.columns }
+    property bool built: false
     readonly property real shares: columns.reduce((sum, c) => sum + Metrics.paneShare[c.column], 0)
+    PageLifetime { id: lifetime }
+    function rebuild() {
+        const selected = shown.filter((key, index) => shown.indexOf(key) === index)
+            .map(key => all.find(column => column.column === key)).filter(Boolean)
+        if (columns.length === selected.length && columns.every((entry, index) =>
+                entry.column === selected[index].column && entry.title === selected[index].title)) return
+        // Cancel cached row creation while each column context is still alive.
+        for (let index = 0; index < repeated.count; ++index) {
+            const item = repeated.itemAt(index)
+            if (item && !selected.some(column => column.column === item.column)) lifetime.cancel(item)
+        }
+        columns = selected
+        keptColumns.reconcile()
+        keptColumns.pending.stop()
+    }
+    onShownChanged: if (built) rebuild()
+    onAllChanged: if (built) rebuild()
+    Component.onCompleted: { built = true; rebuild() }
 
     Row {
         id: group
@@ -38,15 +60,16 @@ Rectangle {
         layer.effect: MultiEffect { maskEnabled: true; maskSource: groupMask }
 
         Repeater {
-            model: panes.columns
+            id: repeated
+            model: keptColumns
 
             PaneColumn {
                 required property int index
-                required property var modelData
-                width: (panes.width - panes.columns.length - 1) * Metrics.paneShare[modelData.column] / panes.shares // derived: the seams between columns and at the edges
+                required property var entry
+                width: (panes.width - panes.columns.length - 1) * Metrics.paneShare[entry.column] / (panes.shares || 1) // derived: the seams between columns and at the edges
                 height: parent.height
-                column: modelData.column
-                title: modelData.title
+                column: entry.column
+                title: entry.title
                 Rectangle {
                     anchors.right: parent.right
                     width: 1; height: parent.height

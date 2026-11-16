@@ -343,6 +343,7 @@ ts
 tx
 ui
 ulong
+unindexed
 uninit
 uninitialize
 unix
@@ -805,13 +806,9 @@ ean
 ttls
 navbar
 dep
-gio
 gtk
 src
-webkit
 mediasource
-webaudio
-webrtc
 ipc
 
 refetch
@@ -896,3 +893,182 @@ midlight
 
 # Qt QML object factory used for presentation bindings.
 instantiator
+# Process control names from libc and prlimit, and the portal's argument names.
+argv
+cwd
+dup
+fcntl
+fds
+fsize
+getrlimit
+nproc
+prlimit
+setfd
+getfl
+killpg
+# ELF dynamic-table and program-header names, as glibc and readelf spell them.
+aux
+dt
+pt
+glibc
+interp
+libm
+rpath
+runpath
+strsz
+strtab
+verdef
+verdefnum
+verneed
+verneednum
+# The compatibility worker: its runtime folder and its interpreter.
+compat
+perl
+# The init system's session manager, which keeps the machine awake outside a sandbox.
+logind
+# The sign-in window: process calls from libc, a pkg-config option and its feature name.
+atleast
+getpgrp
+getpid
+getppid
+pdeathsig
+pr
+pidfd
+pollfd
+pollin
+prctl
+revents
+webengine
+# The sign-in window on macOS: the kernel event queue that watches the parent, from libc.
+ev
+evfilt
+fflags
+kevent
+kqueue
+oneshot
+udata
+# The portal's process ids.
+pids
+# The runner's descriptor flags and errors, from libc.
+ebadf
+getfd
+# How the runner waits on its signals and children, adopts orphans and lets go of its pipes: libc names.
+eintr
+ppid
+pthread
+sigmask
+setmask
+sig
+sigaddset
+sigchld
+sigemptyset
+sighup
+sigint
+sigset
+sigterm
+sigwaitinfo
+subreaper
+waitpid
+wexitstatus
+wifexited
+wifsignaled
+wnohang
+wtermsig
+rdwr
+stdin
+fileno
+# How a card's nodes are checked with the effective credentials, and the user namespace a test shows it in: libc names.
+eaccess
+faccessat
+getegid
+gid
+newuser
+unshare
+wronly
+# What the runner wipes and closes before the plugin starts: libc names.
+clearenv
+dumpable
+undumpable
+strlen
+# How the runner waits for a plugin asked to end: libc names.
+sigtimedwait
+timespec
+# The error a runner already gone gives: libc's name.
+esrch
+# The sandbox program, by its full name.
+bubblewrap
+# How the runner checks the export folder its descriptor holds: libc names.
+fstat
+ifdir
+ifmt
+# How the runner keeps a plugin that holds the export descriptor inside the
+# folder: Landlock's and seccomp's own names, and the libc ones around them.
+landlock
+ruleset
+unconfinable
+seccomp
+fprog
+ushort
+jf
+jt
+privs
+inotify
+af
+inet
+dgram
+socketpair
+enosys
+dupfd
+# The socket kinds and the ring the confined plugin's filter names.
+seqpacket
+uring
+# Symphonia TimeBase fields.
+denom
+numer
+# From SecPolicyCreateSSL, the Security.framework call the macOS plugin
+# sandbox test makes.
+ssl
+Romanizer
+
+# JavaScript Array method used by the bounded checklist window.
+unshift
+
+# External JPEG decoder, pixel format, and native build API names.
+cmake
+cmyk
+colorspace
+luma
+subsamp
+turbojpeg
+# Qt's executable-picker option and the pinned Python package installer.
+dont
+uv
+# SQLite virtual-machine instruction counts (StatementStatus::VmStep).
+vm
+# Rust allocator methods and DSP sidechain and startup terminology.
+dealloc
+realloc
+hpf
+warmup
+hardlink
+hardlinked
+nlink
+offscreen
+retag
+
+# Qt WebEngine settings property names.
+javascript
+rtc
+
+# Binary cache units and least-recently-used eviction.
+kib
+lru
+
+# Region named by the external genre taxonomy and SQLite error constants.
+Asian
+ioerr
+fsync
+
+# Rust global allocator trait methods.
+dealloc
+realloc

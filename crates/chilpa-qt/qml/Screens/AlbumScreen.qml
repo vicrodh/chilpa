@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
@@ -10,8 +11,10 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/discovery/qml/Patterns" as DiscoveryUi
 import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as Lists
+import "qrc:/qt/qml/app/chilpa/offline/qml/Components" as OfflineParts
 
 // A record (design/06 Album): its header, the bar with discs and where the
 // information comes from, and its tracks with a header per disc.
@@ -38,6 +41,7 @@ Flickable {
     }
     function showArtwork() { lightbox.active = true; lightbox.item.show(detail.art) }
     function showInformation() { information.active = true; information.item.open() }
+    function showGenres() { genreBrowser.active = true; genreBrowser.item.open() }
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
@@ -80,7 +84,7 @@ Flickable {
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
         spacing: Metrics.gap16
 
-        AlbumHero {
+        DiscoveryUi.AlbumHero {
             id: hero
             visible: !sourceDetails.visible
             width: parent.width
@@ -95,6 +99,7 @@ Flickable {
             onArtworkMenu: (left, top) => page.showCoverMenu(hero, left, top)
             onArtwork: page.showArtwork()
             onInformation: page.showInformation()
+            onGenresRequested: page.showGenres()
         }
 
         Loader {
@@ -109,13 +114,15 @@ Flickable {
                 selecting: page.selectionMode
                 onArtwork: page.showArtwork()
                 onInformation: page.showInformation()
+                onGenresRequested: page.showGenres()
                 onSelectToggle: page.toggleSelection()
                 onContext: (left, top) => page.showActions(sourceDetails, left, top)
                 onArtworkMenu: (left, top) => page.showCoverMenu(sourceDetails, left, top)
             }
         }
 
-        Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
+        // The header's rule, which also says how the record made available offline goes.
+        OfflineParts.OfflineLine { objectName: "albumOfflineLine"; width: parent.width; kind: "album"; selected: JSON.stringify([detail.selectedId]) }
 
         Item {
             width: parent.width
@@ -194,6 +201,11 @@ Flickable {
 
     Loader { id: albumMenu; objectName: "albumActionMenuLoader"; active: false; sourceComponent: AlbumMenu {} }
     Loader { id: lightbox; active: false; sourceComponent: CoverLightbox {} }
+    Loader {
+        id: genreBrowser
+        active: false
+        sourceComponent: DiscoveryUi.AlbumGenreBrowser { albumId: detail.selectedId; onFinished: genreBrowser.active = false }
+    }
     Loader {
         id: coverMenu
         active: false

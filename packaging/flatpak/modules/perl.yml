@@ -1,0 +1,29 @@
+# Perl for the compatibility worker, built against the runtime's glibc and
+# installed at /app/bin/perl, the path crates/chilpa-bwrap/src/flatpak_worker.rs
+# starts. Neither org.kde.Platform nor its base runtime ships Perl.
+name: perl
+buildsystem: simple
+build-commands:
+  - >-
+    ./Configure -des -Dprefix=/app
+    -Dscriptdir=/app/lib/perl5/utils -Dinstallscript=/app/lib/perl5/utils
+    -Dman1dir=none -Dman3dir=none -Dinstallman1dir=none -Dinstallman3dir=none
+    -Dinstallusrbinperl=undef -Dlocincpth=' ' -Dloclibpth=' ' -Doptimize=-O2
+  - make -j"$FLATPAK_BUILDER_N_JOBS"
+  - make install
+  # Perl installs its modules read-only; the builder strips them afterwards.
+  - chmod -R u+w /app/lib/perl5
+  - /app/bin/perl -MStorable -MDigest::SHA -MTime::HiRes -MJSON::PP -MEncode -MPOSIX -e 1
+cleanup:
+  # Its own tools, documentation and headers: the worker runs perl only, and
+  # the XS modules are built before cleanup runs.
+  - /lib/perl5/utils
+  - /bin/perl5.*
+  - /lib/perl5/5.*/pod
+  - /lib/perl5/5.*/*/CORE
+  - '*.pod'
+  - .packlist
+sources:
+  - type: archive
+    url: https://www.cpan.org/src/5.0/perl-5.44.0.tar.xz
+    sha256: 505cf43912e9480495c344c70260452e32aa2a73c546a026b3f100053b23ce91

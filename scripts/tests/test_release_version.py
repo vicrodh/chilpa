@@ -8,7 +8,7 @@ import unittest
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
-from release_version import release_version, update_information
+from release_version import not_older, release_version, update_information
 
 
 class ReleaseVersionTests(unittest.TestCase):
@@ -40,6 +40,26 @@ class ReleaseVersionTests(unittest.TestCase):
             result = subprocess.run(command, env=environment, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("tag and workspace version differ", result.stderr)
+
+    def test_a_release_replaces_only_an_older_or_equal_one(self):
+        for version, published in [("0.1.3", "0.1.2"), ("0.1.2", "0.1.2"), ("0.2.0", "0.1.10"), ("0.1.10", "0.1.9"),
+                                   ("1.0.0", "1.0.0-rc.1"), ("1.0.0-rc.2", "1.0.0-rc.1"), ("1.0.0-rc.10", "1.0.0-rc.9"),
+                                   ("1.0.0-beta", "1.0.0-alpha"), ("1.0.0-alpha.1", "1.0.0-alpha")]:
+            with self.subTest(version=version, published=published):
+                self.assertTrue(not_older(version, published))
+                self.assertEqual(not_older(published, version), version == published)
+        self.assertFalse(not_older("1.0.0-rc.1", "1.0.0"), "a prerelease comes before its release")
+        self.assertFalse(not_older("1.0.0-1", "1.0.0-alpha"), "numeric identifiers come before others")
+
+    def test_ci_refuses_to_publish_over_a_newer_release(self):
+        command = [sys.executable, str(SCRIPTS / "release_version.py"), "--version", "0.1.2"]
+        older = subprocess.run(command + ["--not-older-than", "0.1.3"], capture_output=True, text=True)
+        self.assertNotEqual(older.returncode, 0)
+        self.assertIn("0.1.2 is older than 0.1.3", older.stderr)
+        for published in ["0.1.2", "0.1.1"]:
+            self.assertEqual(subprocess.run(command + ["--not-older-than", published], capture_output=True).returncode, 0)
+        garbage = subprocess.run(command + ["--not-older-than", "latest"], capture_output=True, text=True)
+        self.assertNotEqual(garbage.returncode, 0, "an unreadable published version refuses, it does not pass")
 
 
 if __name__ == "__main__":

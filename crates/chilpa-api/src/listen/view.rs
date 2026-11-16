@@ -28,7 +28,7 @@ impl Chilpa {
                 "playing": b.id == self.listen.active && self.now.playing,
                 "paused": self.now.paused}))
         }).collect();
-        self.now.playing.hash(&mut hash); self.now.paused.hash(&mut hash);
+        self.now.playing.hash(&mut hash); self.now.paused.hash(&mut hash); self.unavailable_revision().hash(&mut hash);
         let b = self.listen.buffers.iter().find(|b| b.id == self.listen.selected);
         json!({"tabs": tabs, "selected": self.listen.selected.to_string(),
             "language": self.language(),
@@ -43,7 +43,9 @@ impl Chilpa {
         let indices: Vec<_> = b.order.iter().enumerate().filter(|&(position, &i)| b.live(i) && (full || position >= current))
             .map(|(position, &i)| (position, i)).collect();
         let paths: Vec<_> = indices.iter().map(|&(_, i)| b.paths[i].clone()).collect();
-        let tracks = self.rows_for_paths(&paths);
+        let mut tracks = self.rows_for_paths(&paths);
+        // What this run found it cannot play is dimmed where it waits.
+        self.dim_unavailable(id, &mut tracks);
         if full {
             self.listen.lengths = Some((id, indices.iter().zip(&tracks).map(|(&(_, i), t)| (i, t.duration_ms)).collect()));
         }
@@ -85,7 +87,8 @@ impl Chilpa {
         let current = b.order.iter().position(|&i| i == b.cursor).unwrap_or(0);
         let indices: Vec<_> = b.order.iter().enumerate().filter(|&(position, &i)| b.live(i) && position < current).map(|(_, &i)| i).rev().collect();
         let paths: Vec<_> = indices.iter().map(|&i| b.paths[i].clone()).collect();
-        let tracks = self.rows_for_paths(&paths);
+        let mut tracks = self.rows_for_paths(&paths);
+        self.dim_unavailable(b.id, &mut tracks);
         let query = query.trim().to_lowercase();
         let (mut rows, mut keys) = (Vec::new(), Vec::new());
         for (index, track) in indices.into_iter().zip(tracks) {
@@ -132,9 +135,9 @@ impl Chilpa {
         if active {
             self.removed = b.removed.clone(); self.stop_after = b.stop_after;
             self.casting.order = b.order.clone();
-            if let Some(p) = &self.player {
+            if let Some(p) = self.current_launch() {
                 p.set_order(b.order.clone(), b.paths.len()); p.set_stop_after(b.stop_after);
-                for (i, removed) in b.removed.iter().enumerate() { if *removed { p.remove_from_queue(i); } }
+                for (i, removed) in b.removed.iter().enumerate() { if *removed { p.remove(i); } }
             }
         }
         self.store_buffer(b); self.persist_buffers(); true

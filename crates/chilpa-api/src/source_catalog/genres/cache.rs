@@ -57,6 +57,17 @@ impl Cache {
         Ok(())
     }
 
+    pub fn live_signature(&self, now: u64, hash: &mut impl std::hash::Hasher) {
+        use std::hash::Hash;
+        for (key, entry) in &self.0 {
+            if entry.at <= now && now < entry.expires() { (key, &entry.genres).hash(hash); }
+        }
+    }
+
+    pub fn next_change(&self, now: u64) -> u64 {
+        self.0.values().flat_map(|entry| [entry.at, entry.expires()]).filter(|at| *at > now).min().unwrap_or(u64::MAX)
+    }
+
     pub fn get(&self, barcode: &str, now: u64) -> Option<&[String]> {
         self.0.get(&barcode_key(barcode)?).filter(|e| e.at <= now && now < e.expires()).map(|e| e.genres.as_slice())
     }

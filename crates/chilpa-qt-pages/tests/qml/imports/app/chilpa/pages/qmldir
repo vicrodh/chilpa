@@ -1,0 +1,5 @@
+module app.chilpa.pages
+NativeArticleModel 1.0 NativeArticleModel.qml
+singleton NativePages 1.0 NativePages.qml
+NativeSourceHost 1.0 NativeSourceHost.qml
+NativeCollectionModel 1.0 NativeCollectionModel.qml

@@ -1,0 +1,6 @@
+{
+    "app.chilpa.Chilpa": {
+        "appstream-external-screenshot-url": "Chilpa's own repository serves the metainfo's screenshots from their own URLs; mirroring them to dl.flathub.org is a step of Flathub's build.",
+        "appstream-screenshots-not-mirrored-in-ostree": "The same: outside Flathub no screenshots ref is committed to the repository."
+    }
+}

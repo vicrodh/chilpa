@@ -23,7 +23,7 @@ Item {
 
     implicitWidth: opener.implicitWidth
     implicitHeight: opener.implicitHeight
-    visible: Number.isFinite(target) && target !== 0
+    visible: Prefs.ratings && Number.isFinite(target) && target !== 0
 
     // What it is about changed under it: the flyout was for the other one.
     onTargetChanged: flyout.close()
@@ -42,6 +42,9 @@ Item {
 
     Popup {
         id: flyout
+        objectName: "ratingFlyout"
+        // Expose the owned item without starting deferred popup construction.
+        readonly property Item inputItem: ratingContent
         PopupInput { surface: flyout }
 
         modal: true
@@ -54,7 +57,7 @@ Item {
 
         background: Item {
             Hold {}
-            RectangularShadow {
+            Shadow {
                 anchors.fill: panel
                 radius: panel.radius
                 offset.y: Metrics.shadowElevatedY
@@ -71,9 +74,11 @@ Item {
         }
 
         contentItem: Column {
+            id: ratingContent
             spacing: Metrics.gap8
 
             RatingStars {
+                objectName: "ratingFlyoutStars"
                 anchors.horizontalCenter: parent.horizontalCenter
                 value: control.value
                 onRated: (stars) => {

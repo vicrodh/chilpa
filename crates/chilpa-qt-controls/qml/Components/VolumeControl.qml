@@ -14,8 +14,22 @@ Item {
     // Open under the button instead, for a bar at the window's top.
     property bool opensDown: false
 
+    // How long a keyboard volume change stays on screen after the last one.
+    property int peekMs: 2000
+
     implicitWidth: Metrics.button28
     implicitHeight: Metrics.button28
+
+    // Shows the level for a moment without taking focus or the clicks. Each
+    // call restarts the wait, so a held key keeps it up. Does nothing while
+    // the full control is open, or when the control is not there to point at.
+    function peek() {
+        if (!visible || Player.volumeLocked || volume.opened)
+            return
+        glance.place()
+        glance.visible = true
+        glanceTimer.restart()
+    }
 
     IconButton {
         id: opener
@@ -28,6 +42,35 @@ Item {
         onClicked: {
             if (!Player.volumeLocked)
                 volume.opened ? volume.close() : volume.open()
+        }
+    }
+
+    Component {
+        id: panelFrame
+        Item {
+            Hold {}
+            Shadow {
+                anchors.fill: panel
+                radius: panel.radius
+                offset.y: Metrics.shadowElevatedY
+                blur: Metrics.shadowElevatedBlur
+                color: Theme.color.shadowElevated
+            }
+            Shadow {
+                anchors.fill: panel
+                radius: panel.radius
+                offset.y: Metrics.shadowKeyY
+                blur: Metrics.shadowKeyBlur
+                color: Theme.color.shadowElevatedKey
+            }
+            Rectangle {
+                id: panel
+                anchors.fill: parent
+                radius: Metrics.radiusMenu
+                color: Theme.color.surfaceRaised
+
+                Edge {}
+            }
         }
     }
 
@@ -46,31 +89,7 @@ Item {
         padding: Metrics.gap8
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
 
-        background: Item {
-            Hold {}
-            RectangularShadow {
-                anchors.fill: panel
-                radius: panel.radius
-                offset.y: Metrics.shadowElevatedY
-                blur: Metrics.shadowElevatedBlur
-                color: Theme.color.shadowElevated
-            }
-            RectangularShadow {
-                anchors.fill: panel
-                radius: panel.radius
-                offset.y: Metrics.shadowKeyY
-                blur: Metrics.shadowKeyBlur
-                color: Theme.color.shadowElevatedKey
-            }
-            Rectangle {
-                id: panel
-                anchors.fill: parent
-                radius: Metrics.radiusMenu
-                color: Theme.color.surfaceRaised
-
-                Edge {}
-            }
-        }
+        background: Loader { sourceComponent: panelFrame }
 
         contentItem: Column {
             spacing: Metrics.gap6
@@ -114,6 +133,66 @@ Item {
                 tip: Player.muted ? I18n.tr("Unmute", I18n.rev) : I18n.tr("Mute", I18n.rev)
                 checked: Player.muted
                 onClicked: Player.chooseMuted(!Player.muted)
+            }
+        }
+    }
+
+    Timer {
+        id: glanceTimer
+        interval: control.peekMs
+        onTriggered: glance.visible = false
+    }
+
+    // The same panel as the control, read-only. It is not a Popup: a popup
+    // holds the window's shortcuts while it shows, and a held volume key has
+    // to keep arriving. It sits on the window's content, over the player bar.
+    Item {
+        id: glance
+        objectName: "volumeGlance"
+        parent: control.Window.window ? control.Window.window.contentItem : null
+        visible: false
+        z: Metrics.tooltipLayer
+        width: Metrics.volumePopupWidth
+        height: glanceColumn.implicitHeight + 2 * Metrics.gap8 // derived: the content and its padding
+
+        Loader { anchors.fill: parent; sourceComponent: panelFrame }
+
+        Column {
+            id: glanceColumn
+            x: Metrics.gap8
+            y: Metrics.gap8
+            width: parent.width - 2 * Metrics.gap8 // derived: inside the padding
+            spacing: Metrics.gap6
+            Text {
+                width: parent.width
+                horizontalAlignment: Text.AlignHCenter
+                text: String(Player.muted ? 0 : Player.volume) + "%"
+                font.pointSize: Type.micro
+                font.features: { "tnum": 1 }
+                color: Theme.color.textSecondary
+            }
+            LevelSlider {
+                anchors.horizontalCenter: parent.horizontalCenter
+                vertical: true
+                enabled: false
+                value: Player.muted ? 0 : Player.volume
+            }
+        }
+
+        // Over the button, above or below as the full control opens.
+        function place() {
+            const at = control.mapToItem(glance.parent, (control.width - width) / 2, control.opensDown ? control.height + Metrics.gap8 : -height - Metrics.gap8) // derived: as the popup
+            x = at.x
+            y = at.y
+        }
+    }
+
+    Connections {
+        target: volume
+        function onOpenedChanged() {
+            if (volume.opened) {
+                glanceTimer.stop()
+                glance.visible = false
             }
         }
     }

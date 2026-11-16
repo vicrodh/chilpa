@@ -33,6 +33,7 @@ Item {
     // An artist: a round portrait and the text centered under it
     // (design/03 ArtistCard).
     property bool round: false
+    property bool containArt: false
 
     property bool selected: false
     property bool selecting: false
@@ -40,6 +41,7 @@ Item {
     property bool canExpand: true
     // A purchase catalogue uses the same record card without library actions.
     property bool purchaseMode: false
+    property bool contextMenuEnabled: !purchaseMode
     // Nothing of it plays now: its folder is not mounted or its server does
     // not answer (ADR-017). Dimmed, and no overlay: a click says why.
     property bool available: true
@@ -58,7 +60,7 @@ Item {
         width: card.width; height: card.width
         radius: card.round ? width / 2 : Metrics.radiusCard // derived: a circle
         source: card.art
-        contain: card.sourceInfo.contain_art === true
+        contain: card.containArt || card.sourceInfo.contain_art === true
         tint: card.tint
     }
     AnimatedCover {
@@ -188,7 +190,7 @@ Item {
         onTapped: (point, button) => {
             const at = artistLabel.mapFromItem(card, point.position.x, point.position.y)
             if (button === Qt.LeftButton && artistLabel.navigable && at.x >= 0 && at.x <= artistLabel.width && at.y >= 0 && at.y <= artistLabel.height) return
-            if (button === Qt.RightButton && !card.purchaseMode)
+            if (button === Qt.RightButton && card.contextMenuEnabled)
                 return card.menu(point.position.x, point.position.y)
             if (button === Qt.RightButton)
                 return

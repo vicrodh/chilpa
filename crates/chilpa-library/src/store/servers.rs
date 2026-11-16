@@ -30,6 +30,8 @@ pub struct NewServer {
     pub libraries: String,
     /// JSON.
     pub details: String,
+    /// A selected folder URL. Empty inherits the profile's offline folder.
+    pub offline_folder: String,
 }
 
 /// A server as the library keeps it.
@@ -47,7 +49,10 @@ pub struct StoredServer {
     pub product: String,
     pub libraries: String,
     pub details: String,
+    pub offline_folder: String,
     pub added_at: i64,
+    /// Connection or account edits invalidate jobs captured before this revision.
+    pub session_revision: i64,
     pub synced_at: Option<i64>,
     /// In the library now.
     pub tracks: usize,
@@ -97,8 +102,6 @@ pub struct ServerTrack {
 pub struct Removal {
     pub tracks: usize,
     pub albums: usize,
-    /// Tracks and records that carry my stars.
-    pub ratings: usize,
     /// Listens that counted as plays.
     pub plays: usize,
     /// The server's own playlists.
@@ -125,9 +128,9 @@ impl Library {
         )?;
         let source = tx.last_insert_rowid();
         tx.execute(
-            "INSERT INTO servers (source_id, address, account, identity, product, libraries, details, added_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![source, new.address, new.account, new.identity, new.product, new.libraries, new.details, now_unix()],
+            "INSERT INTO servers (source_id, address, account, identity, product, libraries, details, added_at, offline_folder)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![source, new.address, new.account, new.identity, new.product, new.libraries, new.details, now_unix(), new.offline_folder],
         )?;
         tx.finish()?;
         Ok(source)
@@ -148,7 +151,8 @@ impl Library {
                     v.identity, v.product, v.libraries, v.details, v.added_at, v.synced_at,
                     (SELECT count(*) FROM tracks t WHERE t.source_id = v.source_id AND t.present = 1),
                     (SELECT count(DISTINCT t.album_id) FROM tracks t
-                      WHERE t.source_id = v.source_id AND t.present = 1 AND t.album_id IS NOT NULL)
+                      WHERE t.source_id = v.source_id AND t.present = 1 AND t.album_id IS NOT NULL),
+                    v.session_revision, v.offline_folder
              FROM servers v JOIN sources s ON s.id = v.source_id {tail}"
         );
         let mut stmt = self.db.prepare(&sql)?;
@@ -170,6 +174,8 @@ impl Library {
                 synced_at: r.get(13)?,
                 tracks: r.get::<_, i64>(14)? as usize,
                 albums: r.get::<_, i64>(15)? as usize,
+                session_revision: r.get(16)?,
+                offline_folder: r.get(17)?,
             })
         })?;
         rows.collect()
@@ -191,6 +197,13 @@ impl Library {
             .optional()
     }
 
+    /// Accounts on the same physical server retain separate mirrors and keys.
+    pub fn server_with_account_identity(&self, provider: &str, identity: &str, account: &str) -> rusqlite::Result<Option<i64>> {
+        if identity.is_empty() { return Ok(None); }
+        self.db.query_row("SELECT v.source_id FROM servers v JOIN sources s ON s.id = v.source_id
+            WHERE s.provider = ?1 AND v.identity = ?2 AND v.account = ?3", params![provider,identity,account], |row| row.get(0)).optional()
+    }
+
     /// Keeps what a server said about itself the last time it was asked.
     pub fn update_server(&self, source_id: i64, label: &str, address: &str, product: &str, libraries: &str, details: &str) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
@@ -208,18 +221,20 @@ impl Library {
         let tx = self.own_transaction()?;
         tx.execute("UPDATE sources SET label = ?2, icon = ?3, reachable = 0 WHERE id = ?1 AND kind = 'server'",
             params![source_id, new.label, new.icon])?;
-        tx.execute("UPDATE servers SET address = ?2, account = ?3, identity = ?4, product = ?5, libraries = ?6, details = ?7 WHERE source_id = ?1",
-            params![source_id, new.address, new.account, new.identity, new.product, new.libraries, new.details])?;
+        tx.execute("UPDATE servers SET address = ?2, account = ?3, identity = ?4, product = ?5, libraries = ?6, details = ?7, offline_folder = ?8,
+                    session_revision = session_revision + 1, generation = generation + 1 WHERE source_id = ?1",
+            params![source_id, new.address, new.account, new.identity, new.product, new.libraries, new.details, new.offline_folder])?;
         tx.execute("UPDATE tracks SET reachable = 0 WHERE source_id = ?1", params![source_id])?;
-        tx.finish()
+        tx.finish()?;
+        self.set_source_reachable(source_id,false)?;
+        Ok(())
     }
 
     /// Starts a sync and returns its generation. Every track the sync sees
     /// is stamped with it; when the sync finishes, what was not stamped is
     /// what the server no longer has.
     pub fn begin_server_sync(&self, source_id: i64) -> rusqlite::Result<i64> {
-        self.db.execute("UPDATE servers SET generation = generation + 1 WHERE source_id = ?1", params![source_id])?;
-        self.db.query_row("SELECT generation FROM servers WHERE source_id = ?1", params![source_id], |r| r.get(0))
+        self.db.query_row("UPDATE servers SET generation = generation + 1 WHERE source_id = ?1 RETURNING generation", [source_id], |row| row.get(0))
     }
 
     /// Every track of the server the library holds, with its revision. What
@@ -233,6 +248,7 @@ impl Library {
     /// Stamps tracks the sync saw unchanged, without rewriting them.
     pub fn keep_server_tracks(&self, source_id: i64, generation: i64, external_ids: &[String]) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
+        self.require_server_generation(source_id, generation)?;
         {
             let mut stamp = tx.prepare(
                 "UPDATE tracks SET sync_generation = ?3, present = 1, reachable = 1
@@ -251,6 +267,7 @@ impl Library {
     /// (`overlay`): the server's word fills what nobody changed.
     pub fn save_server_tracks(&self, source_id: i64, generation: i64, tracks: &[ServerTrack]) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
+        self.require_server_generation(source_id, generation)?;
         let now = now_unix();
         let mut written: Vec<(i64, Option<i64>, String, String)> = Vec::with_capacity(tracks.len());
         for track in tracks {
@@ -333,21 +350,43 @@ impl Library {
         tx.finish()
     }
 
+    /// Writes tracks a server was asked about outside a sync -- read back
+    /// after a change made to them there -- exactly as a sync would write
+    /// them, stamped with the server's current generation so a sync running
+    /// now counts them as seen. What is laid over them is laid again.
+    pub fn refresh_server_tracks(&self, source_id: i64, tracks: &[ServerTrack]) -> rusqlite::Result<()> {
+        let generation: i64 = self.db.query_row("SELECT generation FROM servers WHERE source_id = ?1", [source_id], |r| r.get(0))?;
+        self.save_server_tracks(source_id, generation, tracks)
+    }
+
     /// Closes a sync that saw everything: what it did not see is gone
     /// (`present = 0`, kept for my ratings and history, never listed).
     /// Returns how many went. A sync that was cut off never calls this, so
     /// a half-read server takes nothing out of the library.
     pub fn finish_server_sync(&self, source_id: i64, generation: i64) -> rusqlite::Result<usize> {
         let tx = self.own_transaction()?;
+        self.require_server_generation(source_id, generation)?;
         let gone = tx.execute(
             "UPDATE tracks SET present = 0
              WHERE source_id = ?1 AND present = 1 AND (sync_generation IS NULL OR sync_generation <> ?2)",
             params![source_id, generation],
         )?;
         tx.execute("UPDATE servers SET synced_at = ?2 WHERE source_id = ?1", params![source_id, now_unix()])?;
+        tx.execute("UPDATE sources SET reachable = 1 WHERE id = ?1", [source_id])?;
         tx.finish()?;
         self.match_credits()?;
         Ok(gone)
+    }
+
+    fn require_server_generation(&self, source_id: i64, generation: i64) -> rusqlite::Result<()> {
+        // Explicit source imports reuse this writer without a server session.
+        let (current, server): (Option<i64>, bool) = self.db.query_row(
+            "SELECT v.generation, s.kind = 'server' FROM sources s LEFT JOIN servers v ON v.source_id = s.id WHERE s.id = ?1",
+            [source_id], |row| Ok((row.get(0)?,row.get(1)?)))?;
+        if current.is_some_and(|current| current != generation) || (server && current.is_none()) {
+            return Err(rusqlite::Error::InvalidQuery);
+        }
+        Ok(())
     }
 
     /// Records of the server whose cover has not been fetched yet.
@@ -463,10 +502,6 @@ impl Library {
         Ok(Removal {
             tracks: count("SELECT count(*) FROM tracks WHERE source_id = ?1 AND present = 1")?,
             albums: count(&format!("SELECT count(*) FROM ({})", ALBUMS_ONLY_OF))?,
-            ratings: count(&format!(
-                "SELECT (SELECT count(*) FROM track_ratings WHERE stars > 0 AND track_id IN ({TRACKS_OF}))
-                      + (SELECT count(*) FROM album_ratings WHERE stars > 0 AND album_id IN ({ALBUMS_ONLY_OF}))"
-            ))?,
             plays: count(&format!(
                 "SELECT count(*) FROM play_events
                  WHERE (source_id = ?1 OR track_id IN ({TRACKS_OF}))

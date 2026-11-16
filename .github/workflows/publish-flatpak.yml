@@ -1,0 +1,256 @@
+name: Flatpak repository
+
+# Publishes the signed Flatpak repository a stable release carries
+# (chilpa-flatpak-repo-X.Y.Z.tar, attached by release-flatpak.yml) as the
+# static site behind FLATPAK_REPO_URL, when that release is published: the
+# whole site is replaced by one commit, force-pushed to the main branch of
+# the Pages repository FLATPAK_PAGES_REPOSITORY with the deploy key
+# FLATPAK_PAGES_DEPLOY_KEY. Off unless the repository variable
+# FLATPAK_REPO_PUBLISH is 'pages'; otherwise the site is assembled and
+# uploaded as an artifact.
+#
+# Everything that runs here is main's. The release's files are data: the
+# archive is unpacked to an OSTree repository's own files only, with no
+# static delta and no summary index; every commit, every object and the
+# summary are verified against packaging/flatpak/chilpa-flatpak.gpg on main,
+# and a Flatpak client with that key must see the same commits; what is
+# published is the verified mirror's tree, and the descriptors are written
+# here from that key. The version published is the one the verified app
+# commit carries (chilpa-version, with chilpa-commit naming the tag's commit),
+# so a signed repository of another release is refused. A release older than
+# the one the site serves is refused, the push leases the branch it read, and
+# one run waits for the other. A release published before its Flatpak files are attached is waited
+# for; a run that still misses them can be started again by hand, from main.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable version to publish (for example 0.1.3)'
+        required: true
+        type: string
+      publish:
+        description: 'Push the site (needs the deploy key); otherwise only an artifact'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flatpak-repo
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !github.event.release.draft)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    # Holds the deploy key; admits protected v* tags and main.
+    environment: flatpak-release
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PAGES_REPOSITORY: ${{ vars.FLATPAK_PAGES_REPOSITORY }}
+      PAGES_DOMAIN: ${{ vars.FLATPAK_PAGES_DOMAIN }}
+      REPO_URL: ${{ vars.FLATPAK_REPO_URL }}
+      REPO_PUBLISH: ${{ vars.FLATPAK_REPO_PUBLISH }}
+      KEY: packaging/flatpak/chilpa-flatpak.gpg
+      PAGES_BRANCH: main
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require main for a manual run
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+            echo "::error::A manual publication runs from main, not $GITHUB_REF."
+            exit 1
+          fi
+
+      - name: Resolve and verify the release
+        id: release
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          DISPATCH_VERSION: ${{ inputs.version }}
+        run: scripts/packaging/resolve-release.sh
+
+      - name: Decide whether to deploy
+        id: mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PUBLISH: ${{ inputs.publish }}
+        run: |
+          set -euo pipefail
+          deploy=false
+          if [[ "$REPO_PUBLISH" == pages && -n "$PAGES_REPOSITORY" && -n "$REPO_URL" ]]; then
+            if [[ "$EVENT_NAME" == release || "$DISPATCH_PUBLISH" == true ]]; then deploy=true; fi
+          else
+            echo "::notice::FLATPAK_REPO_PUBLISH, FLATPAK_PAGES_REPOSITORY or FLATPAK_REPO_URL is not set: the site goes to an artifact."
+          fi
+          if [[ ! -s "$KEY" ]]; then
+            echo "::error::$KEY is not on main: commit the repository's public key (gpg --export) before publishing."
+            exit 1
+          fi
+          echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+      - name: Install the verification tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ostree flatpak gnupg
+
+      # Attached by release-flatpak.yml's last job, which can come after the
+      # release is published.
+      - name: Wait for the repository archive and download it
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          archive="chilpa-flatpak-repo-$VERSION.tar"
+          for attempt in $(seq 1 180); do
+            names="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
+            if grep -qx "$archive" <<<"$names" && grep -qx SHA256SUMS-flatpak <<<"$names"; then break; fi
+            if [[ "$attempt" -eq 180 ]]; then echo "::error::$TAG has no $archive after 180 minutes."; exit 1; fi
+            sleep 60
+          done
+          dir="$RUNNER_TEMP/release"
+          gh release download "$TAG" --dir "$dir" --pattern SHA256SUMS-flatpak --pattern "$archive"
+          # A check of the transfer; what the files are is checked below.
+          cd "$dir"
+          grep -E "^[0-9a-f]{64}  ${archive//./\\.}\$" SHA256SUMS-flatpak | sha256sum --check --strict
+
+      - name: Unpack the repository as data
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: python3 scripts/flatpak-repo-archive.py "$RUNNER_TEMP/release/chilpa-flatpak-repo-$VERSION.tar" "$RUNNER_TEMP/unpacked"
+
+      # Every ref's commit, every object and the summary, against main's
+      # key: an untrusted mirror pull into a scratch repository checks each
+      # object's hash and fails on anything not signed with it. A Flatpak
+      # client with the same key must then see the same commit for every app
+      # and runtime ref. The archive carries no static delta and no summary
+      # index (the unpacking refuses both), and what is published is the
+      # mirror's own tree: only the objects the signed commits reach, the
+      # verified summary and its signature.
+      - name: Verify every signature and hash against main's key
+        id: verified
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          repo="$RUNNER_TEMP/unpacked/repo"
+          verify="$RUNNER_TEMP/verify"
+          ostree init --repo="$verify" --mode=archive
+          ostree remote add --repo="$verify" --gpg-import="$KEY" --set=gpg-verify-summary=true release "file://$repo"
+          ostree pull --repo="$verify" --mirror --untrusted release
+          for ref in $(ostree refs --repo="$verify" | sort); do
+            printf '%s %s\n' "$ref" "$(ostree rev-parse --repo="$verify" "$ref")"
+          done > "$RUNNER_TEMP/mirror-refs"
+          export FLATPAK_USER_DIR="$RUNNER_TEMP/flatpak-verify"
+          flatpak remote-add --user --gpg-import="$KEY" release "file://$repo"
+          for ref in $(flatpak remote-ls --user --all --columns=ref release | sort); do
+            printf '%s %s\n' "$ref" "$(flatpak remote-info --user --show-commit release "$ref")"
+          done > "$RUNNER_TEMP/client-refs"
+          cat "$RUNNER_TEMP/mirror-refs"
+          python3 scripts/flatpak-publish-site.py agree "$RUNNER_TEMP/client-refs" "$RUNNER_TEMP/mirror-refs"
+          # The release the verified app commit says it is.
+          shown="$(ostree show --repo="$verify" app/app.chilpa.Chilpa/x86_64/stable)"
+          stamped_version="$(sed -n 's/^ *chilpa-version: *\([^ ]*\) *$/\1/p' <<<"$shown")"
+          stamped_commit="$(sed -n 's/^ *chilpa-commit: *\([0-9a-f]\{40\}\) *$/\1/p' <<<"$shown")"
+          tagged="$(git rev-parse --verify "refs/tags/${TAG}^{commit}")"
+          if [[ "$stamped_version" != "$VERSION" || "$stamped_commit" != "$tagged" ]]; then
+            echo "::error::The signed app commit is ${stamped_version:-unstamped} from ${stamped_commit:-an unnamed commit}; $TAG is $VERSION from $tagged."
+            exit 1
+          fi
+          python3 scripts/flatpak-publish-site.py assemble "$verify" "$RUNNER_TEMP/site/repo"
+          echo "version=$stamped_version" >> "$GITHUB_OUTPUT"
+          rm -rf "$verify" "$FLATPAK_USER_DIR" "$RUNNER_TEMP/unpacked"
+
+      - name: Assemble the site
+        env:
+          VERSION: ${{ steps.verified.outputs.version }}
+        run: |
+          set -euo pipefail
+          site="$RUNNER_TEMP/site"
+          python3 scripts/flatpak-descriptors.py --url "${REPO_URL:-https://flatpak.invalid/repo/}" --key "$KEY" \
+            --branch stable --output "$site"
+          # The version the site serves, as its verified commit says it, read
+          # before the next one replaces it.
+          printf '%s\n' "$VERSION" > "$site/RELEASE"
+          # Pages would otherwise drop the repository's dot files.
+          touch "$site/.nojekyll"
+          if [[ -n "$PAGES_DOMAIN" ]]; then printf '%s\n' "$PAGES_DOMAIN" > "$site/CNAME"; fi
+          if find "$site" -type f -size +95M | grep -q .; then
+            echo "::error::A file in the repository exceeds the 100 MB a Pages repository accepts"; exit 1
+          fi
+          du -sh "$site"
+
+      # The deploy key exists only in this step, and no hook can run: git
+      # starts without a template and with hooks pointed at nothing.
+      - name: Replace the published repository
+        if: steps.mode.outputs.deploy == 'true'
+        env:
+          DEPLOY_KEY: ${{ secrets.FLATPAK_PAGES_DEPLOY_KEY }}
+          VERSION: ${{ steps.verified.outputs.version }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$RUNNER_TEMP/ssh"
+          trap 'rm -rf "$RUNNER_TEMP/ssh"' EXIT
+          printf '%s\n' "$DEPLOY_KEY" > "$RUNNER_TEMP/ssh/key"
+          chmod 600 "$RUNNER_TEMP/ssh/key"
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' > "$RUNNER_TEMP/ssh/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/ssh/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$RUNNER_TEMP/ssh/known_hosts -o StrictHostKeyChecking=yes"
+          git_() { git -c core.hooksPath=/dev/null -c init.templateDir= "$@"; }
+          remote="git@github.com:${PAGES_REPOSITORY}.git"
+          # What the publication branch serves now: an older release never
+          # replaces a newer one. An empty Pages repository is the first
+          # publication; one with branches but not this one is refused.
+          refs="$(git_ ls-remote "$remote")"
+          # What the push leases: the branch as read here, or its absence.
+          observed="$(awk -v ref="refs/heads/$PAGES_BRANCH" '$2 == ref { print $1 }' <<<"$refs")"
+          published=''
+          if [[ -n "$observed" ]]; then
+            git_ clone -q --template= --depth 1 --filter=blob:none --no-checkout --single-branch --branch "$PAGES_BRANCH" \
+              "$remote" "$RUNNER_TEMP/published"
+            # A site published before the version was recorded has none.
+            if [[ -n "$(git_ -C "$RUNNER_TEMP/published" ls-tree --name-only HEAD -- RELEASE)" ]]; then
+              published="$(git_ -C "$RUNNER_TEMP/published" show HEAD:RELEASE)"
+            fi
+          elif [[ -n "$refs" ]]; then
+            echo "::error::$PAGES_REPOSITORY has branches but no $PAGES_BRANCH; publish nothing over them."
+            exit 1
+          fi
+          if [[ -n "$published" ]]; then
+            python3 scripts/release_version.py --version "$VERSION" --not-older-than "$published"
+          fi
+          echo "Publishing ${VERSION}; $PAGES_BRANCH served ${published:-nothing}."
+          cd "$RUNNER_TEMP/site"
+          git_ init -q --template= -b "$PAGES_BRANCH"
+          git_ add -A
+          git_ -c user.name=vicrodh -c user.email=103399283+vicrodh@users.noreply.github.com \
+            commit -q --no-verify -m "Publish the Flatpak repository for ${TAG}"
+          if ! git_ push --force-with-lease="refs/heads/$PAGES_BRANCH:$observed" "$remote" "HEAD:refs/heads/$PAGES_BRANCH"; then
+            echo "::error::$PAGES_BRANCH changed after it was read (it was ${observed:-absent}); nothing was replaced. Run this workflow again."
+            exit 1
+          fi
+
+      - name: Upload the dry-run site
+        if: steps.mode.outputs.deploy != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: flatpak-site-dry-run
+          retention-days: 7
+          path: ${{ runner.temp }}/site
+          include-hidden-files: true
+          if-no-files-found: error

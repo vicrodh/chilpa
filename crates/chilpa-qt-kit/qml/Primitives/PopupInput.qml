@@ -7,7 +7,8 @@ TapHandler {
     id: guard
     required property var surface
     readonly property var window: surface.parent ? surface.parent.Window.window : parent ? parent.Window.window : null
-    parent: surface.contentItem
+    // A custom item avoids starting deferred content while a page incubates.
+    parent: surface.inputItem !== undefined ? surface.inputItem : surface.contentItem
     target: null
     acceptedButtons: Qt.AllButtons
     gesturePolicy: TapHandler.WithinBounds

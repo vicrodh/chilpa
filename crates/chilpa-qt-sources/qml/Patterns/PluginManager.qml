@@ -9,7 +9,9 @@ import "../Components"
 
 Item {
     id: manager
-    required property var page
+    property var page: nativeState
+    PluginCenterModel { id: nativeState }
+    property bool mounted: false
     property string initialDownloadsId: ""
     property Component purchaseCard: null
     property var view: ({})
@@ -31,6 +33,7 @@ Item {
     function read() {
         const wasBusy = view.busy === true
         const text = page.pluginsJson()
+        if (text === "") return
         if (JSON.stringify(view) !== text) view = JSON.parse(text)
         if (wasBusy && view.busy === false) Sources.refresh()
         const rows = tab === "installed" ? view.installed_catalog || [] : view.catalog || []
@@ -51,6 +54,8 @@ Item {
             openDownloads({id: initialDownloadsId})
     }
     function command(action, input) { page.pluginCommand(action, JSON.stringify(input || {})); read() }
+    // A process plugin this system cannot run is offered, never installed.
+    function installNative(entry) { if (!entry.unavailable) command("install_native", {repository: entry.repository_id, id: entry.id}) }
     function categoryLabel(value) {
         const labels = {musicservices: I18n.tr("Music services", I18n.rev), tools: I18n.tr("Tools", I18n.rev), information: I18n.tr("Information", I18n.rev), misc: I18n.tr("Other", I18n.rev), playlists: I18n.tr("Playlists", I18n.rev), hardware: I18n.tr("Hardware", I18n.rev), radio: I18n.tr("Radio", I18n.rev), scanning: I18n.tr("Library scanning", I18n.rev), skin: I18n.tr("Appearance", I18n.rev), uncategorized: I18n.tr("Uncategorized", I18n.rev)}
         return labels[value] || value
@@ -66,8 +71,9 @@ Item {
     function settings(plugin) { details.mode = "settings"; details.tab = "settings"; details.plugin = plugin; selected = plugin.id; details.open(); if (plugin.enabled !== false && (plugin.settings || plugin.origin)) command("settings", {id: plugin.id}) }
     function openDownloads(plugin) { downloadsId = plugin.id; command("downloads_open", {id: plugin.id}) }
     function downloadAction(request) { command("downloads_action", {id: downloadsId, request: request}) }
-    Component.onCompleted: read()
-    Timer { interval: Motion.poll; repeat: true; running: manager.visible; onTriggered: manager.read() }
+    Component.onCompleted: { mounted = true; if (visible) read() }
+    onVisibleChanged: if (mounted && visible) read()
+    Timer { interval: Motion.poll; repeat: true; running: manager.mounted && manager.visible; onTriggered: manager.read() }
     Timer {
         objectName: "accountSetupPoll"
         interval: Motion.accountCheck
@@ -92,11 +98,13 @@ Item {
     PluginMaintenance { controller: manager }
     // Two sections, each one scroll: the native plugins, and the compatible
     // ones Chilpa can run from other platforms. A repository serves either.
+    // The buttons go under the sections when both do not fit on one line.
     Item {
         id: header
         visible: manager.listing
         width: parent.width
-        height: sections.height
+        readonly property bool together: sections.width + Metrics.gap8 + headerActions.width <= width
+        height: together ? Math.max(sections.height, headerActions.height) : sections.height + Metrics.gap8 + headerActions.height
         P.SegmentedControl {
             id: sections
             objectName: "pluginSections"
@@ -105,8 +113,9 @@ Item {
             onActivated: (index) => manager.section = index === 1 ? "compatible" : "native"
         }
         Row {
+            id: headerActions
             anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            y: header.together ? (header.height - height) / 2 : sections.height + Metrics.gap8 // derived: centred beside the sections, or under them
             spacing: Metrics.gap8
             P.PillButton {
                 objectName: "installLocalPlugin"

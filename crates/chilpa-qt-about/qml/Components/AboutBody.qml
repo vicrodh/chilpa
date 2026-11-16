@@ -5,8 +5,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
-// What the About window says under its head, in QBZ's order: what Chilpa
-// is, the links, the build's facts in two columns, and the thanks.
+// The description, project links, build facts, acknowledgments and credits.
 Column {
     id: body
     property var doc: ({})
@@ -89,4 +88,6 @@ Column {
         font.pointSize: Type.meta
         color: Theme.color.textSecondary
     }
+    Item { width: 1; height: Metrics.gap24 }
+    AboutCredits { width: parent.width; doc: body.doc; onProfileRequested: url => Qt.openUrlExternally(url) }
 }

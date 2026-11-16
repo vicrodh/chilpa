@@ -42,6 +42,13 @@ pub(crate) struct Desktop {
     tell: Option<async_channel::Sender<MediaEvent>>,
     #[cfg(target_os = "linux")]
     tray: Option<chilpa_mpris::tray::Handle>,
+    /// The desktop's portals, inside a sandbox: its colours, and where a
+    /// chosen folder lives on the host.
+    #[cfg(target_os = "linux")]
+    pub(crate) portal: Option<chilpa_mpris::portal::Portal>,
+    /// The portal's answer the tray's glyph last followed.
+    #[cfg(target_os = "linux")]
+    appearance_seen: u64,
     /// What the tray's tooltip was last told.
     #[cfg(target_os = "linux")]
     tray_said: (String, String),
@@ -50,6 +57,8 @@ pub(crate) struct Desktop {
     told: (Option<TrackMeta>, Option<PlaybackStatus>),
     /// A jump the desktop has not heard of yet, in seconds.
     pub(crate) seeked: Option<f64>,
+    /// When the back button last restarted the track, for the second press.
+    pub(crate) back_restarted: Option<std::time::Instant>,
     /// What the menu-bar item and the Dock ask of a Mac.
     #[cfg(target_os = "macos")]
     mac: MacDesktop,
@@ -126,6 +135,7 @@ impl Chilpa {
             });
             self.desktop.link = handle.map(|handle| (handle, rx));
             self.desktop.tell = Some(tx);
+            self.desktop.portal = crate::sandbox::start_portal();
             if self.tray_wanted() {
                 self.start_tray();
             }
@@ -166,7 +176,7 @@ impl Chilpa {
                 return;
             }
             let Some(tell) = self.desktop.tell.clone() else { return };
-            let glyph = crate::tray::glyph_of(&self.tray_glyph(), chilpa_dirs::desktop_prefers_dark());
+            let glyph = crate::tray::glyph_of(&self.tray_glyph(), crate::sandbox::prefers_dark());
             let said = crate::tray::said(self.now.playing.then_some(&self.now), self.now.playing && !self.now.paused);
             let labels = tray_labels();
             self.desktop.tray = chilpa_mpris::tray::spawn(glyph, labels, chilpa_mpris::tray::Said { title: said.0.clone(), lines: said.1.clone() }, move |event| {
@@ -197,7 +207,7 @@ impl Chilpa {
     pub(crate) fn recolor_tray(&mut self) {
         #[cfg(target_os = "linux")]
         if let Some(tray) = &self.desktop.tray {
-            tray.recolor(crate::tray::glyph_of(&self.tray_glyph(), chilpa_dirs::desktop_prefers_dark()));
+            tray.recolor(crate::tray::glyph_of(&self.tray_glyph(), crate::sandbox::prefers_dark()));
         }
         #[cfg(target_os = "macos")]
         chilpa_appkit::tray::set_glyph(&self.tray_glyph());
@@ -249,6 +259,13 @@ impl Chilpa {
         }
         #[cfg(target_os = "linux")]
         {
+            // The portal said the desktop changed its colours; the "auto"
+            // glyph follows them.
+            let said = crate::sandbox::appearance_revision();
+            if said != self.desktop.appearance_seen {
+                self.desktop.appearance_seen = said;
+                self.recolor_tray();
+            }
             let Some((_, asked)) = &self.desktop.link else { return };
             let events: Vec<_> = std::iter::from_fn(|| asked.try_recv().ok()).collect();
             for event in events {
@@ -297,7 +314,7 @@ impl Chilpa {
             MacAsked::Tray(Event::Next) => self.next_track(),
             MacAsked::Tray(Event::Previous) => {
                 let (device, bit_perfect) = self.chosen_output();
-                self.previous_track(&device, bit_perfect);
+                self.back_pressed(&device, bit_perfect);
             }
             MacAsked::Tray(Event::ToggleWindow) => self.desktop.requests.push_back(WindowRequest::Toggle),
             MacAsked::Tray(Event::QuitAsked) => self.desktop.requests.push_back(WindowRequest::QuitAsked),
@@ -312,7 +329,7 @@ impl Chilpa {
                     Command::Next => self.next_track(),
                     Command::Previous => {
                         let (device, bit_perfect) = self.chosen_output();
-                        self.previous_track(&device, bit_perfect);
+                        self.back_pressed(&device, bit_perfect);
                     }
                     Command::Stop => self.stop(),
                     Command::SeekBy(_) | Command::SetPosition(_) => {
@@ -373,7 +390,7 @@ impl Chilpa {
             MediaEvent::Next => self.next_track(),
             MediaEvent::Previous => {
                 let (device, bit_perfect) = self.chosen_output();
-                self.previous_track(&device, bit_perfect);
+                self.back_pressed(&device, bit_perfect);
             }
             MediaEvent::Stop => self.stop(),
             MediaEvent::SeekBy(micros) => self.desktop_seek(self.now.seconds + micros as f64 / 1e6),

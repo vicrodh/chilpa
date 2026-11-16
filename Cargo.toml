@@ -13,6 +13,7 @@ members = [
     "crates/chilpa-analysis",
     "crates/chilpa-plugin",
     "crates/chilpa-bwrap",
+    "crates/chilpa-plugin-runner",
     "crates/chilpa-secrets",
     "crates/chilpa-auth",
     "crates/chilpa-meta",
@@ -38,6 +39,8 @@ members = [
     "crates/chilpa-api",
     "crates/chilpa-qt-kit",
     "crates/chilpa-qt-sources",
+    "crates/chilpa-qt-pages",
+    "crates/chilpa-qt-discovery",
     "crates/chilpa-qt-controls",
     "crates/chilpa-qt-ambient",
     "crates/chilpa-qt-mini",
@@ -50,6 +53,7 @@ members = [
     "crates/chilpa-qt-query",
     "crates/chilpa-qt-playlists",
     "crates/chilpa-qt-devices",
+    "crates/chilpa-qt-offline",
     "crates/chilpa-qt-wizard",
     "crates/chilpa-qt-artwork",
     "crates/chilpa-qt-about",
@@ -62,7 +66,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 license = "MIT"
 rust-version = "1.96"
@@ -103,6 +107,8 @@ chilpa-core = { path = "crates/chilpa-core" }
 chilpa-api = { path = "crates/chilpa-api" }
 chilpa-qt-kit = { path = "crates/chilpa-qt-kit" }
 chilpa-qt-sources = { path = "crates/chilpa-qt-sources" }
+chilpa-qt-pages = { path = "crates/chilpa-qt-pages" }
+chilpa-qt-discovery = { path = "crates/chilpa-qt-discovery" }
 chilpa-qt-controls = { path = "crates/chilpa-qt-controls" }
 chilpa-qt-ambient = { path = "crates/chilpa-qt-ambient" }
 chilpa-qt-mini = { path = "crates/chilpa-qt-mini" }
@@ -115,6 +121,7 @@ chilpa-qt-link = { path = "crates/chilpa-qt-link" }
 chilpa-qt-query = { path = "crates/chilpa-qt-query" }
 chilpa-qt-playlists = { path = "crates/chilpa-qt-playlists" }
 chilpa-qt-devices = { path = "crates/chilpa-qt-devices" }
+chilpa-qt-offline = { path = "crates/chilpa-qt-offline" }
 chilpa-qt-wizard = { path = "crates/chilpa-qt-wizard" }
 chilpa-qt-artwork = { path = "crates/chilpa-qt-artwork" }
 chilpa-qt-about = { path = "crates/chilpa-qt-about" }

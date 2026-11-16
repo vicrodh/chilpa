@@ -6,16 +6,23 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+[lib]
+path = "src/lib.rs"
+
 [[bin]]
 name = "chilpa-web-sign-in"
 path = "src/main.rs"
 
 [features]
-# The window itself. Off by default: building the workspace needs no web
-# engine, and a build without it answers that it is unavailable.
-webkit = ["dep:gtk", "dep:webkit6"]
+# The window itself, on Qt WebEngine. Off by default: building the workspace
+# needs no web engine, and a build without it answers that it is unavailable.
+webengine = ["dep:cc", "dep:pkg-config"]
 
-[target.'cfg(target_os = "linux")'.dependencies]
-# v4_10 exposes Accessible, which the WebKit bindings implement.
-gtk = { package = "gtk4", version = "0.11", optional = true, features = ["v4_10"] }
-webkit6 = { version = "0.6", optional = true }
+[target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
+# The engine's processes end with the window when Chilpa ends (src/parent.rs).
+libc = "0.2"
+
+[build-dependencies]
+cc = { version = "1", optional = true }
+# Qt is found through pkg-config, which also reads a Flatpak's /app prefix.
+pkg-config = { version = "0.3", optional = true }

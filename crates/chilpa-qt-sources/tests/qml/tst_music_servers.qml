@@ -32,6 +32,18 @@ TestCase {
         for (let i=0;i<80;i++) fixture.push({key:"sources.server/"+i,title:"Server "+i,description:"Connection details",action:"Connected",value:JSON.stringify({icon:"navidrome",product:"Navidrome 0.64.2",tracks:i}),options:["Edit…","Disable","Sync now","Remove…"],optionValues:["edit","disable","sync","remove"]})
         rows=fixture
         table.model=rows
+        SettingsModel.preferences = ({})
+    }
+    function test_the_global_offline_folder_can_be_chosen_and_restored() {
+        const folder = findChild(table,"globalOfflineFolder")
+        verify(folder)
+        folder.chosen("file:///tmp/M%C3%BAsica%20offline")
+        compare(SettingsModel.kept("offline.folder"),"file:///tmp/M%C3%BAsica%20offline")
+        compare(folder.folder,"file:///tmp/M%C3%BAsica%20offline")
+        compare(folder.error,"")
+        findChild(folder,"defaultFolder").clicked()
+        compare(folder.folder,"")
+        compare(SettingsModel.kept("offline.folder"),"")
     }
     function cleanup() { dialog.close(); removal.close(); tryCompare(dialog,"visible",false); tryCompare(removal,"visible",false) }
     function open() { dialog.open(); tryCompare(dialog,"opened",true); waitForRendering(dialog.contentItem) }
@@ -108,7 +120,7 @@ TestCase {
         compare(last(), ["address","http://jf.lan:8096"])
         compare(dialog.page, 2)
         Servers.show({step:"signin",kind:"jellyfin",busy:false,quickConnect:false})
-        compare(last(), ["signIn","fixture-user","fixture-secret",false], "signed in with what was typed, once")
+        tryVerify(() => JSON.stringify(last()) === JSON.stringify(["signIn","fixture-user","fixture-secret",false]),1000,"signed in with what was typed, once")
         Servers.show({step:"libraries",kind:"jellyfin",label:"Living room",product:"Jellyfin 10.10.7",address:"http://jf.lan:8096",
             choices:[{id:"music",name:"Music",detail:""},{id:"books",name:"Audiobooks",detail:""}]})
         tryCompare(dialog, "connected", true)
@@ -130,7 +142,7 @@ TestCase {
         verify(note.body.indexOf("first music source") > 0 && note.body.indexOf("plays meanwhile") > 0, note.body)
         press("serverContinue")
         compare(last()[0], "finish")
-        compare(last()[1], {label:"Living room",libraries:["music"]})
+        compare(last()[1], {label:"Living room",libraries:["music"],offlineFolder:""})
         Servers.show({step:"done",kind:"jellyfin",product:"Living room"})
         tryCompare(dialog, "done", true)
         compare(field("serverContinue").text, "Close")
@@ -208,7 +220,7 @@ TestCase {
         press("serverContinue")
         verify(field("serverNote").visible, "a media server's first import is explained too")
         press("serverContinue")
-        compare(last()[1], {label:"Plex Media Server: Lab",libraries:["byfolder"]})
+        compare(last()[1], {label:"Plex Media Server: Lab",libraries:["byfolder"],offlineFolder:""})
     }
 
     // A folder with no songs is shown, greyed, with why, and cannot be
@@ -297,7 +309,7 @@ TestCase {
         verify(!field("serverNote").visible, "an edit is not a first import")
         press("serverContinue")
         compare(last()[0],"finish")
-        compare(last()[1],{label:"Saved server",libraries:["lib2"]})
+        compare(last()[1],{label:"Saved server",libraries:["lib2"],offlineFolder:""})
         Servers.show({step:"done",kind:"jellyfin",product:"Saved server"})
         tryCompare(dialog,"visible",false, 2000, "an edit that was saved closes")
     }
@@ -311,7 +323,12 @@ TestCase {
         compare(find("serverRemoveTitle").text, "Remove Lab?")
         const facts = find("serverRemoveFacts").text
         verify(facts.indexOf("12") >= 0 && facts.indexOf("826 albums") >= 0 && facts.indexOf("not touched") > 0, facts)
+        verify(facts.indexOf("rating") < 0 && facts.indexOf("Your 3 plays of them are removed too.") >= 0, "no word of stars: " + facts)
         verify(!find("serverRemoving").visible)
+        const before = Servers.calls.length
+        find("serverRemoveConfirm").clicked()
+        compare(Servers.calls.length,before)
+        find("destructiveAcknowledgement").toggle()
         find("serverRemoveConfirm").clicked()
         compare(last(), ["remove", 7])
         tryVerify(()=>find("serverRemoving").visible, 1000, "at once, before the facade answers")
@@ -332,7 +349,10 @@ TestCase {
         compare(find("serverRemoveFailed").variant, "error")
         compare(find("serverRemoveDetail").text, "database is locked")
         verify(find("serverRemoveDetail").selectByMouse && find("serverRemoveDetail").readOnly)
-        compare(find("serverRemoveConfirm").text, "Try again")
+        compare(find("serverRemoveConfirm").text, "Continue")
+        find("serverRemoveConfirm").clicked()
+        compare(find("serverRemoveConfirm").text,"Try again")
+        find("destructiveAcknowledgement").toggle()
         find("serverRemoveConfirm").clicked()
         compare(last(), ["remove", 7], "tried again")
         Servers.show({step:"idle", removing:{id:7, name:"Lab", state:"removing"}})

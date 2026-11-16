@@ -13,6 +13,15 @@ import "../Patterns"
 TitledFlow {
     id: section
     title: "Metadata editor"
+    BatchPreviewRow { width:Metrics.settingsMaxWidth; entry:({key:"1:1",path:"Album/01.flac",title:"Track",artist:"Artist",album:"Album",selected:true,changes:[{field:"genres",before:["Power Metal"],after:["Power Metal","Symphonic Metal"]}]}) }
+    BatchProgress { width:Metrics.settingsMaxWidth; progress:({operationId:1,phase:"saving",completed:7,total:20,totalKnown:true,saved:6,failed:1}) }
+    BatchPatch { width:Metrics.metadataColumnMin; selected:4; fields:[{key:"genres",label:"Genres",type:"list",operations:["keep","set","clear","append_unique","remove_values"]}] }
+    BatchSelection { width:Metrics.metadataColumnMin }
+    BatchPreview { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; batch:({count:0,busy:false}) }
+    BatchGroupRow { width:Metrics.settingsMaxWidth; entry:({key:"1:g1",title:"Album",artist:"Artist",tracks:12,selected:12,lookup:{allowed:true}}) }
+    BatchGrouping { width:Metrics.metadataColumnMin; groups:[{key:"1:g1",title:"Album",artist:"Artist",discs:[{number:1,tracks:12}]}] }
+    BatchLookup { width:Metrics.metadataColumnMin }
+    BatchProposal { width:Metrics.metadataColumnMin }
 
     function field(name, value, extra) {
         return Object.assign({ name: name, value: value, mixed: false, dirty: false, overridden: false, editable: true, invalid: "" }, extra || {})
@@ -30,7 +39,9 @@ TitledFlow {
         cover: { path: "", waiting: true, width: 1400, height: 1400, from: "musicbrainz" },
         save: { mode: "files", files_allowed: true, files_refused: "", id3: "2.4", secondary_layers: false, done: 0, total: 0 },
         layers: { files: 12, canonical: [{ name: "Vorbis comments", files: 12 }], present: [{ name: "Vorbis comments", files: 12 }, { name: "ID3v2", files: 2 }], conflicting: 2 },
-        lookup: { provider: "musicbrainz", searching: false, loading: false, matched: 12,
+        lookup: { provider: "musicbrainz", engine:"native", searching: false, loading: false, matched: 2,
+                  changes:[{key:"album:title",field:"title",label:"Album",current:"Nevermind",proposed:"Nevermind (Remastered)",selected:true},
+                    {key:"album:genres",field:"genres",label:"Genres",current:"Alternative Rock",proposed:"Rock",selected:false}],
                   hits: [{ title: "Nevermind", artist: "Nirvana", date: "1991-09-24", country: "US", label: "DGC", catalog_number: "DGC-24425", format: "CD", tracks: 12 },
                          { title: "Nevermind", artist: "Nirvana", date: "2011", country: "XE", label: "Geffen", catalog_number: "", format: "4xCD", tracks: 70 }],
                   release: { title: "Nevermind", date: "1991-09-24", url: "" } },
@@ -48,6 +59,8 @@ TitledFlow {
     MetadataTrackRow { width: section.width; track: section.sample.tracks[1]; rowIndex: 1 }
     ReleaseHitRow { width: Metrics.metadataColumnMin; hit: section.sample.lookup.hits[0]; chosen: true }
     ReleaseHitRow { width: Metrics.metadataColumnMin; hit: section.sample.lookup.hits[1]; rowIndex: 1 }
+    MetadataChangeRow { width:Metrics.metadataColumnMin; change:section.sample.lookup.changes[0] }
+    MetadataChanges { width:Metrics.metadataColumnMin; changes:section.sample.lookup.changes }
     CoverCandidate { candidate: section.sample.artwork.candidates[0] }
     MetadataHeader { width: section.width; doc: section.sample }
     MetadataTracks { width: section.width * 2 / 3; height: Metrics.metadataDetails * 2; doc: section.sample } // derived: two thirds of the section, room for the rows

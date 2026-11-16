@@ -12,6 +12,7 @@
 use chilpa_secrets::{BackendKind, SecretBox};
 use chilpa_servers::Credential;
 use std::collections::HashMap;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
@@ -23,7 +24,10 @@ pub(crate) struct Keys {
     /// 35 s on the first start of a build. Only a thread that needs a
     /// credential waits for it now.
     secrets: Arc<OnceLock<Option<SecretBox>>>,
+    lazy: bool,
     open: RwLock<HashMap<String, Credential>>,
+    /// Atomically capture an opener's stored account and its current key.
+    editing: Mutex<()>,
     /// The last step each instance failed at, so the watcher's minute does
     /// not repeat it.
     reported: Mutex<HashMap<String, String>>,
@@ -34,6 +38,10 @@ impl Keys {
     /// folder of its instance.
     pub(crate) fn new(root: PathBuf) -> Self {
         let secrets = Arc::new(OnceLock::new());
+        let lazy=chilpa_core::network::current().offline;
+        if lazy {
+            return Self {root,secrets,lazy,open:RwLock::new(HashMap::new()),editing:Mutex::new(()),reported:Mutex::new(HashMap::new())};
+        }
         let (cell, dir) = (Arc::clone(&secrets), root.clone());
         let opened = std::thread::Builder::new()
             .name("chilpa-server-keys".into())
@@ -42,7 +50,7 @@ impl Keys {
             // No thread to wait on: opened here, rather than never.
             let _ = secrets.set(open_box(&root));
         }
-        Self { root, secrets, open: RwLock::new(HashMap::new()), reported: Mutex::new(HashMap::new()) }
+        Self { root, secrets, lazy, open: RwLock::new(HashMap::new()), editing:Mutex::new(()), reported: Mutex::new(HashMap::new()) }
     }
 
     /// Keys sealed with a key derived from this machine only, for tests: the
@@ -50,12 +58,17 @@ impl Keys {
     #[cfg(test)]
     pub(crate) fn derived(root: PathBuf) -> Self {
         let secrets = Arc::new(OnceLock::from(SecretBox::derived_only("chilpa", &root).ok()));
-        Self { root, secrets, open: RwLock::new(HashMap::new()), reported: Mutex::new(HashMap::new()) }
+        Self { root, secrets, lazy:false, open: RwLock::new(HashMap::new()), editing:Mutex::new(()), reported: Mutex::new(HashMap::new()) }
+    }
+
+    pub(crate) fn session(&self) -> std::sync::MutexGuard<'_,()> {
+        self.editing.lock().unwrap_or_else(|error| error.into_inner())
     }
 
     /// The box, once it is open: this waits for the keyring.
     fn secrets(&self) -> Option<&SecretBox> {
-        self.secrets.wait().as_ref()
+        if self.lazy {self.secrets.get_or_init(|| open_box(&self.root)).as_ref()}
+        else {self.secrets.wait().as_ref()}
     }
 
     /// The box's backend for a log line, without waiting for it.
@@ -143,7 +156,11 @@ impl Keys {
         let sealed = secrets.seal(&plain).map_err(|e| e.kind())?;
         let dir = file.parent().ok_or("bad-instance")?;
         std::fs::create_dir_all(dir).map_err(|_| "unwritable-folder")?;
-        std::fs::write(&file, sealed).map_err(|_| "unwritable-file")
+        let mut temporary = tempfile::NamedTempFile::new_in(dir).map_err(|_| "unwritable-file")?;
+        temporary.write_all(&sealed).map_err(|_| "unwritable-file")?;
+        temporary.as_file().sync_all().map_err(|_| "unwritable-file")?;
+        temporary.persist(file).map_err(|_| "unwritable-file")?;
+        Ok(())
     }
 
     /// Forgets it, on disk and in memory.
@@ -178,6 +195,7 @@ fn backend_name(kind: BackendKind) -> &'static str {
     match kind {
         BackendKind::Keyring => "keyring",
         BackendKind::Derived => "derived",
+        BackendKind::Portal => "portal",
     }
 }
 
@@ -228,6 +246,26 @@ mod tests {
         assert_eq!(keys.backend(), "derived");
         assert!(keys.get(&instance).is_none());
         let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn failed_replacement_retains_the_open_key_and_removes_its_temporary_file() {
+        let root = tempfile::tempdir().unwrap();
+        let keys = Keys::derived(root.path().to_path_buf());
+        let instance = mint();
+        let original = Credential::Token { token:"first-session".into() };
+        assert!(keys.put(&instance,&original));
+        let path = keys.file(&instance).unwrap();
+        let saved = path.with_file_name("previous.sealed");
+        std::fs::rename(&path,&saved).unwrap();
+        std::fs::create_dir(&path).unwrap();
+        assert!(!keys.put(&instance,&Credential::Token {token:"second-session".into()}));
+        assert_eq!(keys.get(&instance),Some(original.clone()));
+        assert_eq!(std::fs::read_dir(path.parent().unwrap()).unwrap().count(),2);
+        std::fs::remove_dir(&path).unwrap();
+        std::fs::rename(saved,path).unwrap();
+        let reopened = Keys::derived(root.path().to_path_buf());
+        assert_eq!(reopened.get(&instance),Some(original));
     }
 
     #[test]

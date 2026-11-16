@@ -28,8 +28,10 @@ Modal {
     property var document: ({entries: []})
     readonly property var entries: document.entries || []
     popupType: detached ? Controls.Popup.Window : Controls.Popup.Item
-    width: Math.min(roomWidth - Refine.savedDialogAround, Math.max(Refine.savedDialogMinWide, roomWidth * Refine.savedDialogShare))
-    height: Math.min(roomHeight - Refine.savedDialogAround, Math.max(Refine.savedDialogMinTall, roomHeight * Refine.savedDialogShare))
+    preferredWidth: Math.min(roomWidth - Refine.savedDialogAround, Math.max(Refine.savedDialogMinWide, roomWidth * Refine.savedDialogShare))
+    preferredHeight: header.height + (form.visible ? form.height + Metrics.gap16 : 0) + table.implicitHeight
+        + (errorText.visible ? errorText.implicitHeight + Metrics.gap12 : 0) + footer.height + Metrics.gap16 * 2 + Metrics.modalInsets
+    readonly property real minimumBodyHeight: preferredHeight - table.implicitHeight + Refine.savedHeaderTall + Refine.savedRowTall
     onOpened: {
         loadCatalog()
         if (mode === "save") nameField.focusInput()
@@ -79,7 +81,8 @@ Modal {
     }
 
     Item {
-        anchors.fill: parent
+        width: parent.width
+        height: Math.max(Math.min(dialog.preferredHeight,dialog.maximumHeight),dialog.minimumBodyHeight) - Metrics.modalInsets
         Item {
             id: header
             width: parent.width
@@ -129,6 +132,7 @@ Modal {
             }
         }
         SavedQueryTable {
+            id: table
             objectName: "savedQueriesTable"
             anchors.top: form.visible ? form.bottom : header.bottom
             anchors.topMargin: Metrics.gap16
@@ -191,7 +195,7 @@ Modal {
     ConfirmDialog {
         id: confirmation
         objectName: "savedQueryConfirmation"
-        width: Math.min(Metrics.confirmWidth, dialog.width)
+        preferredWidth: Math.min(Metrics.confirmWidth, dialog.width)
         title: I18n.tr("Delete saved query", I18n.rev)
         confirmText: I18n.tr("Delete", I18n.rev)
         destructive: true

@@ -20,6 +20,14 @@ pub mod qobject {
         #[qinvokable]
         fn command(self: Pin<&mut Sources>, action: &QString, id: &QString, text: &QString);
         /// A listing's page as JSON: title, state, folders, memberships.
+        #[qsignal]
+        fn server_media_requested(self: Pin<&mut Sources>, kind: &QString, id: i64);
+        #[qinvokable]
+        fn server_media_info(self: &Sources, kind: &QString, id: i64) -> QString;
+        #[qinvokable]
+        fn server_media_delete(self: &Sources, kind: &QString, id: i64, reference: &QString, source: i64) -> QString;
+        #[qinvokable]
+        fn server_media_status(self: &Sources, request: &QString) -> QString;
         #[qinvokable]
         fn art(self: &Sources, plugin: &QString, image: &QString, rev: i32) -> QUrl;
         #[qinvokable]
@@ -50,6 +58,8 @@ pub mod qobject {
         #[qinvokable]
         fn network(self: &Sources, name: &QString, rev: i32) -> QString;
         #[qinvokable]
+        fn network_allowed(self: &Sources, name: &QString, rev: i32) -> bool;
+        #[qinvokable]
         fn scene(self: &Sources, rev: i32) -> QString;
         #[qinvokable]
         fn scene_open(self: Pin<&mut Sources>, name: &QString, include_sources: bool);
@@ -66,6 +76,15 @@ use std::pin::Pin;
 #[derive(Default)]
 pub struct SourcesRust { snapshot: QString, revision: i32 }
 impl qobject::Sources {
+    pub fn server_media_info(&self, kind: &QString, id: i64) -> QString {
+        QString::from(crate::app::with(|api| api.server_media_info(&kind.to_string(), id)))
+    }
+    pub fn server_media_delete(&self, kind: &QString, id: i64, reference: &QString, source: i64) -> QString {
+        QString::from(crate::app::with(|api| api.server_media_delete(&kind.to_string(), id, &reference.to_string(), source)))
+    }
+    pub fn server_media_status(&self, request: &QString) -> QString {
+        QString::from(crate::app::with(|api| api.server_media_status(&request.to_string())))
+    }
     pub fn display(&self, plugin: &QString, _rev: i32) -> QUrl {
         crate::app::with(|api| api.plugin_display(&plugin.to_string()))
             .map(|(path, epoch)| {
@@ -101,6 +120,7 @@ impl qobject::Sources {
     pub fn album_libraries(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.album_libraries())) }
     pub fn page(&self, key: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.source_page(&key.to_string()))) }
     pub fn network(&self, name: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.artist_network(&name.to_string()))) }
+    pub fn network_allowed(&self, _name: &QString, _rev: i32) -> bool { crate::app::with(|api| api.artist_network_allowed()) }
     pub fn scene(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.artist_scene_json())) }
     pub fn scene_open(self: Pin<&mut Self>, name: &QString, include_sources: bool) {
         crate::app::with(|api| api.artist_scene_open(&name.to_string(), include_sources));

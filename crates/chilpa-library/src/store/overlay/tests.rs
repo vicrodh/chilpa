@@ -4,6 +4,7 @@ use rusqlite::params;
 
 fn new_server(instance: &str) -> NewServer {
     NewServer {
+        offline_folder: String::new(),
         provider: "example-server".into(),
         instance: instance.into(),
         label: format!("Server {instance}"),
@@ -340,4 +341,50 @@ fn the_editor_s_tracks_say_which_server_and_record_they_are_on() {
     assert_eq!(tracks[0].home(), home(source));
     assert_eq!(tracks[0].home().key(&tracks[0].external_id), "1");
     assert_eq!(tracks[0].container, None);
+}
+
+#[test]
+fn a_field_the_overlay_stops_laying_shows_the_server_s_word_again() {
+    let (lib, source) = shelf();
+    let mut laid = Sidecar::new(0);
+    laid.album.title = Override::Value("Mine".into());
+    laid.track_mut("1").title = Override::Value("My song".into());
+    laid.track_mut("2").title = Override::Value("Kept".into());
+    lib.store_overlay(&home(source), &laid, None, 1).unwrap();
+    assert_eq!(record(&lib, "One").1, "Mine");
+    assert_eq!(row(&lib, "1").1, "My song");
+
+    // The listener takes the record's title and one track's off; the
+    // other track's stays laid over.
+    let mut left = Sidecar::new(0);
+    left.track_mut("2").title = Override::Value("Kept".into());
+    lib.store_overlay(&home(source), &left, None, 2).unwrap();
+    assert_eq!(record(&lib, "One").1, "Mine", "an overlay taken off does not know what the server said");
+    let mut word = Sidecar::new(0);
+    word.album.title = Override::Value("One".into());
+    word.track_mut("1").title = Override::Value("Song 1".into());
+    word.track_mut("2").title = Override::Value("Song 2".into());
+    let reached = lib.lay_word(&home(source), &word).unwrap();
+    assert_eq!(reached.len(), 2);
+    assert_eq!(record(&lib, "One").1, "One", "the server's word is back");
+    assert_eq!(row(&lib, "1").1, "Song 1");
+    assert_eq!(row(&lib, "2").1, "Kept", "and what is still laid over stays on top");
+    let kept = lib.overlay(&home(source)).unwrap().unwrap();
+    assert!(kept.album.title.is_absent() && kept.tracks.get("1").is_none());
+    assert_eq!(kept.tracks["2"].title, Override::Value("Kept".into()), "laying the word keeps nothing of it");
+}
+
+#[test]
+fn a_cover_the_overlay_stops_naming_asks_for_the_server_s_again() {
+    let dir = tempfile::tempdir().unwrap();
+    let lib = Library::open(&dir.path().join("library.db")).unwrap();
+    let source = lib.add_server(&new_server("aaaa")).unwrap();
+    synced(&lib, source, &[track("1", "One")]);
+    let album = record(&lib, "One").0;
+    lib.set_server_cover(album, Some("/covers/theirs.jpg")).unwrap();
+    assert!(lib.pending_server_covers(source, 10).unwrap().is_empty());
+    lib.store_overlay(&home(source), &Sidecar::new(0), Some((b"\x89PNG", "png")), 1).unwrap();
+    assert!(lib.pending_server_covers(source, 10).unwrap().is_empty(), "a chosen cover asks for nothing");
+    lib.store_overlay(&home(source), &Sidecar::new(0), None, 2).unwrap();
+    assert_eq!(lib.pending_server_covers(source, 10).unwrap().len(), 1, "the server's cover is asked for again");
 }

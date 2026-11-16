@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic
 import QtTest
 import app.chilpa
 import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/qml/Screens"
 
 ApplicationWindow {
@@ -10,7 +11,12 @@ ApplicationWindow {
     width: 1280; height: 800; visible: true
     property string captureFolder: ""
     property bool captured: false
-    Loader { id: home; anchors.fill: parent; sourceComponent: Component { HomeScreen {} } }
+    PageTransition {
+        id: home
+        anchors.fill: parent
+        route: "native-home-modules"
+        sourceComponent: Component { HomeScreen {} }
+    }
     AlbumGridModel { id: records; kind: ""; columns: 4; maxRows: 1; limit: 8 }
     SignalSpy { id: publications; target: records; signalName: "revChanged" }
     Component {
@@ -27,6 +33,7 @@ ApplicationWindow {
         id: tests
         name: "NativeHomeModules"
         when: window.visible
+        function init() { tryVerify(() => home.item !== null, 6000) }
         function click(item) {
             verify(!!item, "the native control exists")
             waitForRendering(item)
@@ -63,9 +70,9 @@ ApplicationWindow {
             compare(JSON.stringify(selected().sort()), JSON.stringify(expected.slice().sort()))
             const dialog = findChild(home.item, "homeCustomizer")
             dialog.close()
-            home.active = false
-            wait(50)
-            home.active = true
+            const previous = home.item
+            home.request(true)
+            tryVerify(() => home.item !== null && home.item !== previous, 6000)
             tryVerify(() => selected().length === 2, 6000)
             compare(JSON.stringify(selected().sort()), JSON.stringify(expected.slice().sort()))
             verify(JSON.parse(Sources.homeLibraries(0)).every(source => !source.enabled), "individual choices preserve the default integration preference")

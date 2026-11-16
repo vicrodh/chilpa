@@ -39,12 +39,12 @@ TestCase {
     function show(doc) {
         Onboarding.doc = JSON.stringify(Object.assign({ started: true, open: true }, doc))
         tryCompare(modal, "opened", true)
-        waitForRendering(modal.contentItem)
+        waitForRendering(test)
     }
     function child(name) { return findChild(modal.contentItem, name) }
     function press(name) {
         mouseClick(child(name))
-        waitForRendering(modal.contentItem)
+        waitForRendering(test)
     }
 
     function test_the_start_is_asked_until_the_facade_answers() {
@@ -77,7 +77,7 @@ TestCase {
     function test_a_welcome_cards_button_sets_the_deck_aside_and_says_where_to_go() {
         show({ kind: "welcome", version: "0.1.0", deck: welcomeDeck })
         modal.cardIndex = 1
-        waitForRendering(modal.contentItem)
+        waitForRendering(test)
         compare(child("cardAction").text, "Add a folder")
         press("cardAction")
         tryCompare(modal, "visible", false)
@@ -89,7 +89,7 @@ TestCase {
     function test_a_whats_new_cards_button_still_closes_it_for_good() {
         show({ kind: "whatsNew", version: "0.2.0", hasBody: false, loading: false, deck: welcomeDeck.slice(0, 2) })
         modal.cardIndex = 1
-        waitForRendering(modal.contentItem)
+        waitForRendering(test)
         press("cardAction")
         tryCompare(modal, "visible", false)
         compare(Onboarding.asked, ["close"])
@@ -155,5 +155,16 @@ TestCase {
         verify(child("notesMissing").visible, "offline or unpublished, it says the notes are not available")
         verify(!child("deckBack").visible)
         compare(child("deckNext").text, "Close")
+    }
+
+    function test_the_art_keeps_its_aspect_and_is_released_when_the_deck_closes() {
+        show({kind:"welcome",version:"0.1.0",deck:welcomeDeck})
+        const card = child("deckCard"), art = child("deckArt")
+        verify(card.implicitHeight >= card.width * 9 / 16)
+        verify(modal.height <= modal.parent.height * Metrics.modalMaxHeightRatio)
+        verify(art.sourceSize.width > 0 && art.sourceSize.height > 0)
+        modal.close()
+        tryCompare(modal,"visible",false)
+        tryVerify(() => art.source.toString() === "")
     }
 }

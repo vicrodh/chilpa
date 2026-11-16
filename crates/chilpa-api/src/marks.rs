@@ -79,8 +79,18 @@ impl Chilpa {
         Some(Marks { ratings, favorites, source_tracks: self.source_track_marks() })
     }
 
-    /// False when the kind takes no stars or they could not be kept.
+    /// False when the kind takes no stars or they could not be kept. A
+    /// change of what a source rates goes to it too (`ratings::sync`).
     pub fn rate_as(&mut self, kind: &str, id: i64, stars: i32) -> bool {
+        let before = self.stars_before(kind, id);
+        let kept = self.keep_rating(kind, id, stars);
+        if kept {
+            self.rating_changed(kind, id, before, stars.clamp(0, 5) as u8);
+        }
+        kept
+    }
+
+    fn keep_rating(&mut self, kind: &str, id: i64, stars: i32) -> bool {
         if id < 0 {
             if !(0..=5).contains(&stars) { return false; }
             let Some((actual, _, source, identity)) = self.catalog.rating_identities().into_iter()
@@ -138,9 +148,14 @@ impl Chilpa {
             return self.set_tracks_favorite(&[id], on);
         }
         let Some(target) = marked(kind, key) else { return false };
+        let id = key.parse::<i64>().unwrap_or(0);
+        let before = self.hearts_before(kind, &[id]).first().copied().unwrap_or(false);
         let Some(lib) = self.library() else { return false };
         match lib.set_favorite(target, on) {
-            Ok(()) => true,
+            Ok(()) => {
+                self.heart_changed(kind, id, before, on);
+                true
+            }
             Err(error) => {
                 self.now.error = chilpa_i18n::t_args("the favorite could not be saved: {}", &[&error.to_string()]);
                 false

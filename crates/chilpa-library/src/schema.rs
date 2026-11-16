@@ -20,6 +20,15 @@ mod credits;
 mod revisions;
 mod metadata;
 mod device_sync;
+mod server_sessions;
+mod server_storage;
+mod offline_audio;
+mod rating_sync;
+mod favorite_sync;
+mod local_presentation;
+mod upgrade;
+#[cfg(test)]
+mod upgrade_tests;
 
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
@@ -27,7 +36,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 50;
+pub const VERSION: i64 = 56;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -35,7 +44,7 @@ pub const VERSION: i64 = 50;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47, MIGRATION_V48, MIGRATION_V49, MIGRATION_V50];
+const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47, MIGRATION_V48, MIGRATION_V49, MIGRATION_V50, server_sessions::MIGRATION_V51, server_storage::MIGRATION_V52, offline_audio::MIGRATION_V53, rating_sync::MIGRATION_V54, favorite_sync::MIGRATION_V55, local_presentation::MIGRATION_V56];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -66,26 +75,16 @@ pub fn backup_path(library: &Path) -> PathBuf {
 /// If it cannot be taken, the upgrade does not happen. Chilpa opening at all
 /// costs less than a library that cannot be gone back to.
 pub fn back_up_before_upgrading(db: &Connection, library: &Path) -> rusqlite::Result<()> {
-    let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
-    // Zero is a file that was just created: there is nothing in it yet.
-    if actual == 0 || actual >= VERSION {
-        return Ok(());
-    }
-    let backup = backup_path(library);
-    // VACUUM INTO refuses to write over a file that is already there.
-    let _ = std::fs::remove_file(&backup);
-    db.execute("VACUUM INTO ?1", [&backup.to_string_lossy().as_ref()]).map_err(|e| {
-        rusqlite::Error::SqliteFailure(
-            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CANTOPEN),
-            Some(chilpa_i18n::t_args(
-                "your library needs updating and a copy of it could not be kept first, \
-                 at {}: {}. Make room there, or move the library somewhere with room, \
-                 and open Chilpa again",
-                &[&backup.display().to_string(), &e.to_string()],
-            )),
-        )
-    })?;
-    Ok(())
+    let actual: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    if actual == 0 || actual >= VERSION { return Ok(()); }
+    let gate = migration_gate(db);
+    let _process = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|error| error.into_inner()));
+    let _file = upgrade::lock(library)?;
+    upgrade::backup(db, library)
+}
+
+pub(crate) fn upgrade(db: &Connection, library: &Path) -> rusqlite::Result<()> {
+    upgrade::run(db, library)
 }
 
 /// Builds a database stopped at an older version, as a shipped Chilpa would
@@ -104,6 +103,15 @@ pub(crate) fn stop_at(db: &Connection, version: usize) {
 
 /// Creates or upgrades the schema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
+    let gate = migration_gate(db);
+    let _migration = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner()));
+    let actual: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    let _file = db.path().filter(|path| !path.is_empty() && actual < VERSION)
+        .map(|path| upgrade::lock(Path::new(path))).transpose()?;
+    migrate_locked(db)
+}
+
+fn migrate_locked(db: &Connection) -> rusqlite::Result<()> {
     let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
     if actual > VERSION {
         // A database from a newer version is left alone: downgrading loses
@@ -121,10 +129,6 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
         ));
     }
     if actual == VERSION { return Ok(()); }
-    // I let one startup connection upgrade a file at a time; otherwise
-    // their per-step writer transactions can starve each other's timeout.
-    let gate = migration_gate(db);
-    let _migration = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner()));
     for (i, step) in STEPS.iter().enumerate() {
         let target = i as i64 + 1;
         if actual >= target {
@@ -149,10 +153,12 @@ fn migration_gate(db: &Connection) -> Option<std::sync::Arc<std::sync::Mutex<()>
     use std::sync::{Arc, Mutex, Weak};
     static GATES: Mutex<Option<std::collections::HashMap<String, Weak<Mutex<()>>>>> = Mutex::new(None);
     let path = db.path().filter(|path| !path.is_empty())?;
+    let path = std::fs::canonicalize(path).unwrap_or_else(|_| PathBuf::from(path));
+    let path = path.to_string_lossy();
     let mut gates = GATES.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
     let gates = gates.get_or_insert_with(Default::default);
     gates.retain(|_, gate| gate.strong_count() > 0);
-    if let Some(gate) = gates.get(path).and_then(Weak::upgrade) { return Some(gate); }
+    if let Some(gate) = gates.get(path.as_ref()).and_then(Weak::upgrade) { return Some(gate); }
     let gate = Arc::new(Mutex::new(()));
     gates.insert(path.to_string(), Arc::downgrade(&gate));
     Some(gate)
@@ -265,6 +271,25 @@ pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_failed_backup_keeps_the_previous_copy_and_original_sqlite_code() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("library.db");
+        let db = Connection::open(&path).unwrap();
+        db.execute_batch("CREATE TABLE fixture(id INTEGER); PRAGMA user_version=55;").unwrap();
+        let backup = backup_path(&path);
+        let saved = Connection::open(&backup).unwrap();
+        saved.execute_batch("CREATE TABLE fixture(id INTEGER); INSERT INTO fixture VALUES(19); PRAGMA user_version=54;").unwrap();
+        drop(saved);
+        let before = std::fs::read(&backup).unwrap();
+        db.execute_batch("PRAGMA query_only=ON").unwrap();
+        let error = back_up_before_upgrading(&db, &path).unwrap_err();
+        assert_eq!(std::fs::read(&backup).unwrap(), before);
+        assert_eq!(error.sqlite_error_code(), Some(rusqlite::ErrorCode::ReadOnly));
+        assert_eq!(db.query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0)).unwrap(), 55);
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 3);
+    }
 
     #[test]
     fn concurrent_connections_do_not_apply_the_same_migration_twice() {
@@ -477,6 +502,32 @@ mod tests {
         assert_eq!(db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(), VERSION);
         let (name, left_out, unsent): (String, i64, i64) = db.query_row("SELECT name, left_out, unsent FROM playlists WHERE id = 1", [], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?))).unwrap();
         assert_eq!((name.as_str(), left_out, unsent), ("Road", 2, 0), "the playlist is there, on its server");
+    }
+
+    #[test]
+    fn session_revisions_preserve_existing_accounts_and_advertisements() {
+        let db = Connection::open_in_memory().unwrap();
+        stop_at(&db,50);
+        db.execute_batch("INSERT INTO sources(id,provider,instance,kind) VALUES(1,'example-server','fixture','server');
+            INSERT INTO servers(source_id,address,account,identity,product,libraries,details,added_at)
+            VALUES(1,'http://fixture.invalid','fixture-user','fixture-server','Fixture','[\"music\"]','{\"extensions\":[\"songLyrics\"]}',0);").unwrap();
+        migrate(&db).unwrap();
+        let kept: (i64,String,String) = db.query_row("SELECT session_revision,account,details FROM servers WHERE source_id=1",[],
+            |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?))).unwrap();
+        assert_eq!(kept,(0,"fixture-user".into(),r#"{"extensions":["songLyrics"]}"#.into()));
+    }
+
+    #[test]
+    fn offline_destinations_start_inherited_and_preserve_existing_sessions() {
+        let db = Connection::open_in_memory().unwrap();
+        stop_at(&db,51);
+        db.execute_batch("INSERT INTO sources(id,provider,instance,kind) VALUES(1,'example-server','fixture','server');
+            INSERT INTO servers(source_id,address,account,identity,product,libraries,details,added_at,session_revision)
+            VALUES(1,'http://fixture.invalid','fixture-user','fixture-server','Fixture','[]','{}',0,7);").unwrap();
+        migrate(&db).unwrap();
+        let kept: (String,i64,String) = db.query_row("SELECT offline_folder,session_revision,account FROM servers WHERE source_id=1",[],
+            |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?))).unwrap();
+        assert_eq!(kept,(String::new(),7,"fixture-user".into()));
     }
 
     #[test]

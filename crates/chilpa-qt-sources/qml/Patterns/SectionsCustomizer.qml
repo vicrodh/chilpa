@@ -65,11 +65,16 @@ Modal {
     signal moved(int index, int delta)
     signal restored()
 
-    width: Math.min(grouped ? Metrics.settingsMaxWidth + Metrics.heroArt : Metrics.settingsMaxWidth,
+    preferredWidth: Math.min(grouped ? Metrics.settingsMaxWidth + Metrics.heroArt : Metrics.settingsMaxWidth,
                     parent.width - Metrics.modalInsets)
-    height: Math.min(parent.height - Metrics.modalInsets, Metrics.heroArt * 3) // derived: bounded dialog with a scrolling list
+    preferredHeight: title.height + actions.height + Metrics.gap16 * 2 + Metrics.modalInsets // derived: the gaps between title, list and actions
+        + (grouped ? tabs.height + Metrics.gap16 + Math.max(Metrics.button32,sourceChoices.contentHeight,
+            activeChoices.contentHeight + Metrics.button32 + Metrics.gap8) : Math.max(Metrics.button32,choices.contentHeight))
     Column {
-        anchors.fill: parent; spacing: Metrics.gap16
+        width: parent.width
+        height: Math.max(Math.min(customization.preferredHeight,customization.maximumHeight) - Metrics.modalInsets,title.height + actions.height + Metrics.button32 + Metrics.gap16 * 2 // derived: the gaps around the minimum list viewport
+            + (customization.grouped ? tabs.height + Metrics.gap16 + Metrics.button32 + Metrics.gap8 : 0))
+        spacing: Metrics.gap16
         Text { id: title; text: I18n.tr("Customize", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
         Flickable {
             id: tabs
@@ -243,4 +248,5 @@ Modal {
             PillButton { text: I18n.tr("Close", I18n.rev); onClicked: customization.close() }
         }
     }
+
 }

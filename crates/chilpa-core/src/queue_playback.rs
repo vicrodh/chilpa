@@ -4,14 +4,16 @@
 //! change. If it changes, the device has to be reopened and the break is
 //! unavoidable: it is reported, not hidden.
 //!
-//! Every track ends with its own [`Outcome`], and only a natural end lets
-//! the next one through. A device failure stops the queue right there, which
-//! is exactly what QBZ did not do: it skipped everything in silence.
+//! Every track ends with its own [`Outcome`]. A device failure stops the
+//! queue right there, which is exactly what QBZ did not do: it skipped
+//! everything in silence. A track that will not open or breaks partway is
+//! the track's fault and not the device's: it is passed over and said, and a
+//! lap of them ends the queue.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::gapless::{transition, Transition, Trimmer};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
-use chilpa_audio::pack::{duplicate_mono, pack, Samples};
+use chilpa_audio::pack::{duplicate_mono, pack, PackError, Samples};
 use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::seek::SeekSignal;
 use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSignal};
@@ -24,7 +26,13 @@ use chilpa_audio::dop::DopPacker;
 use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
 
 mod dsd_pcm;
+mod order;
+mod walk;
 use dsd_pcm::DsdPcmFrames;
+pub use order::{shuffled, shuffled_now, Order};
+use walk::next_live;
+pub(crate) use walk::first_live;
+pub use walk::StopAfter;
 
 /// What a track is read from after its route has been resolved.
 pub(crate) enum Source {
@@ -72,7 +80,7 @@ pub(crate) fn open_track(
     dsd_mode: DsdMode,
     direct_dsd: Option<&DeviceCaps>,
 ) -> Result<Opened, PlayError> {
-    let unreadable = |e: String| PlayError::Sink(SinkError::Backend(e));
+    let unreadable = PlayError::Unreadable;
     if let Some((image, number)) = crate::sacd_tracks::parse(path) {
         let reader = crate::sacd_tracks::open(&image, number).map_err(unreadable)?;
         let (source, delivery) = dsd_track(Box::new(reader), caps, dsd_mode, direct_dsd)?;
@@ -149,7 +157,7 @@ fn dsd_track(
 
 fn pcm_track(reader: Box<dyn DsdSource>, caps: &DeviceCaps) -> Result<(Source, Delivery), PlayError> {
     let converter = DsdPcmConverter::new(reader, DEFAULT_GAIN_DB)
-        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+        .map_err(|e| PlayError::Unreadable(e.to_string()))?;
     let request = StreamFormat::new(SampleFormat::F32, converter.output_rate(), converter.channels());
     let mut delivery = negotiate(request, caps, Policy::AllowAnything).map_err(PlayError::Negotiation)?;
     delivery.transforms.insert(0, chilpa_audio::negotiate::Transform::DsdToPcm);
@@ -236,40 +244,6 @@ impl RepeatMode {
     }
 }
 
-/// A queue position after which playback stops. `usize::MAX` means none.
-/// It is consumed when reached, so repeating or starting another order does
-/// not inherit an old stop point.
-#[derive(Clone)]
-pub struct StopAfter(std::sync::Arc<std::sync::atomic::AtomicUsize>);
-
-impl Default for StopAfter {
-    fn default() -> Self {
-        Self(std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(Self::NONE)))
-    }
-}
-
-impl StopAfter {
-    const NONE: usize = usize::MAX;
-
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn set(&self, index: Option<usize>) {
-        self.0.store(index.unwrap_or(Self::NONE), std::sync::atomic::Ordering::Relaxed);
-    }
-
-    pub fn take_at(&self, index: usize) -> bool {
-        self.0
-            .compare_exchange(index, Self::NONE, std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed)
-            .is_ok()
-    }
-
-    pub fn clear(&self) {
-        self.set(None);
-    }
-}
-
 /// The list of tracks, shared with whoever drives the queue.
 ///
 /// Things can be added while it plays: queueing something should not cut
@@ -353,114 +327,6 @@ impl SharedQueue {
 
 fn entries(paths: Vec<PathBuf>) -> Vec<Entry> {
     paths.into_iter().map(|path| Entry { path, removed: false }).collect()
-}
-
-/// The order the queue is traversed in, shared.
-///
-/// It can be changed while something is playing: when the track ends, where
-/// it landed in the new order is looked up and it goes on from there,
-/// without cutting the audio. Empty means the array's own order.
-#[derive(Clone, Default)]
-pub struct Order(std::sync::Arc<std::sync::Mutex<Vec<usize>>>);
-
-impl Order {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Sets an order. One that is not a permutation of `0..len` is ignored: a
-    /// half order would leave tracks unplayed or playing twice.
-    pub fn set(&self, order: Vec<usize>, len: usize) -> bool {
-        if !is_permutation(&order, len) {
-            return false;
-        }
-        if let Ok(mut g) = self.0.lock() {
-            *g = order;
-            return true;
-        }
-        false
-    }
-
-    /// Goes back to the array's own order.
-    pub fn clear(&self) {
-        if let Ok(mut g) = self.0.lock() {
-            g.clear();
-        }
-    }
-
-    pub fn get(&self) -> Vec<usize> {
-        self.0.lock().map(|g| g.clone()).unwrap_or_default()
-    }
-
-    /// Which track comes after `current`, or `None` if it ends there.
-    fn next(&self, actual: usize, len: usize, wrap: bool) -> Option<usize> {
-        let order = self.get();
-        if order.len() != len {
-            // With no order of its own, the queue goes as it comes.
-            let n = actual + 1;
-            return if n < len {
-                Some(n)
-            } else if wrap {
-                Some(0)
-            } else {
-                None
-            };
-        }
-        // Where the current track landed is looked up: if the order changed
-        // mid playback, it goes on from its new place.
-        let pos = order.iter().position(|i| *i == actual)?;
-        match order.get(pos + 1) {
-            Some(n) => Some(*n),
-            None if wrap => order.first().copied(),
-            None => None,
-        }
-    }
-
-    /// Where it starts.
-    fn first(&self, len: usize) -> usize {
-        let order = self.get();
-        if order.len() == len { order.first().copied().unwrap_or(0) } else { 0 }
-    }
-}
-
-/// A random permutation of `0..len`.
-///
-/// The generator is a three line xorshift: shuffling a queue needs nothing
-/// better, and one more dependency is one more dependency.
-pub fn shuffled(len: usize, seed: u64) -> Vec<usize> {
-    let mut order: Vec<usize> = (0..len).collect();
-    let mut x = seed | 1;
-    // Fisher and Yates, from the end backwards: every ordering is as likely.
-    for i in (1..len).rev() {
-        x ^= x << 13;
-        x ^= x >> 7;
-        x ^= x << 17;
-        order.swap(i, (x % (i as u64 + 1)) as usize);
-    }
-    order
-}
-
-/// The same, seeded from the clock.
-pub fn shuffled_now(len: usize) -> Vec<usize> {
-    let seed = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos() as u64)
-        .unwrap_or(0x2545_F491_4F6C_DD1D);
-    shuffled(len, seed)
-}
-
-fn is_permutation(order: &[usize], len: usize) -> bool {
-    if order.len() != len {
-        return false;
-    }
-    let mut seen = vec![false; len];
-    for i in order {
-        match seen.get_mut(*i) {
-            Some(v) if !*v => *v = true,
-            _ => return false,
-        }
-    }
-    true
 }
 
 /// The signals a queue is driven with while it plays.
@@ -674,6 +540,8 @@ struct TrackFrames<'a> {
     decoded_at: u64,
     /// How far ahead it is read: further for a track over the network.
     ahead: std::time::Duration,
+    /// A block the output could not take (`playback::output_fault`).
+    packing: Option<PackError>,
 }
 
 impl FrameSource for TrackFrames<'_> {
@@ -770,7 +638,7 @@ impl FrameSource for TrackFrames<'_> {
                     let mut bytes = Vec::new();
                     let samples = Samples::Int { data: &frames, bits };
                     crate::playback::pack_decoded(self.decoded, &samples, self.gain_format.sample_format, &mut bytes)
-                        .map_err(|e| PlayError::Pack(e).to_string())?;
+                        .map_err(|e| { self.packing = Some(e); PlayError::Pack(e).to_string() })?;
                     bytes
                 }
                 Ok(Some(Block::Float(data))) => {
@@ -794,7 +662,7 @@ impl FrameSource for TrackFrames<'_> {
                         bytes.extend(frames.iter().flat_map(|sample| sample.to_le_bytes()));
                     } else {
                         pack(&Samples::Float(&frames), self.gain_format.sample_format, &mut bytes)
-                            .map_err(|e| PlayError::Pack(e).to_string())?;
+                            .map_err(|e| { self.packing = Some(e); PlayError::Pack(e).to_string() })?;
                     }
                     bytes
                 }
@@ -882,19 +750,65 @@ where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_queue_told(queue, caps, policy, controls, open_sink, &mut |index, path, delivery, _| on_track(index, path, delivery), on_progress)
+    play_queue_told(queue, caps, policy, controls, open_sink, &mut |index, path, delivery, _| on_track(index, path, delivery), on_progress, &mut |_, _, _, _| {})
 }
 
-/// The same, with what each track says of itself as it starts.
+/// The same, with what each track says of itself as it starts, and each
+/// track passed over because it would not open or broke partway: its index,
+/// its path, why, and how many frames of it went out (`None` when it never
+/// opened).
 #[allow(clippy::too_many_arguments)]
 pub fn play_queue_told<F, K>(
     queue: &SharedQueue,
     caps: &DeviceCaps,
     policy: Policy,
     controls: &Controls,
-    mut open_sink: F,
+    open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery, &TrackAbout),
     on_progress: &mut dyn FnMut(usize, Progress),
+    on_passed: &mut dyn FnMut(usize, &Path, &str, Option<u64>),
+) -> Result<Vec<TrackResult>, PlayError>
+where
+    F: FnMut(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
+    play_queue_heard(
+        queue,
+        caps,
+        policy,
+        controls,
+        first_live(queue, controls, None),
+        open_sink,
+        &mut |_, index, path, delivery, about| {
+            on_track(index, path, delivery, about);
+            true
+        },
+        &mut |index, progress, _| on_progress(index, progress),
+        &mut |_, index, path, why, played| on_passed(index, path, why, played),
+        &mut |_| {},
+    )
+}
+
+/// The same, with each track's turn in the play and its ending. `on_track`
+/// is given the attempt's number and says whether it announced the track;
+/// one that was announced is closed exactly once through `on_closed`, with
+/// how it ended and how many frames of it left the device, which may be
+/// after the next one started: the last of a track is still in the device
+/// when the queue moves on. `on_progress` is also given how many frames of
+/// the track have left the device, as the device's own meter counts them:
+/// what was heard, and what is logged.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn play_queue_heard<F, K>(
+    queue: &SharedQueue,
+    caps: &DeviceCaps,
+    policy: Policy,
+    controls: &Controls,
+    start: Option<(usize, PathBuf)>,
+    mut open_sink: F,
+    on_track: &mut dyn FnMut(u64, usize, &Path, &Delivery, &TrackAbout) -> bool,
+    on_progress: &mut dyn FnMut(usize, Progress, u64),
+    on_passed: &mut dyn FnMut(u64, usize, &Path, &str, Option<u64>),
+    on_closed: &mut dyn FnMut(crate::attempts::Closed),
 ) -> Result<Vec<TrackResult>, PlayError>
 where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
@@ -903,19 +817,32 @@ where
     // `exclusive` was read when the output was chosen, before the queue.
     let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, normalize_target, prevent_clipping, volume, .. } = controls;
     let mut results = Vec::new();
+    // The tracks announced and still owed an ending. Declared before the
+    // device: however this returns, the device is let go first, its meter
+    // says what of each track left it, and then they are closed.
+    let mut attempts = crate::attempts::Attempts::new(on_closed, stop.clone());
+    let report = attempts.report();
+    // The turn of the track in front, counted from one.
+    let mut attempt = 0u64;
     let mut opened: Option<(StreamFormat, crate::playback_events::Measured<K>)> = None;
-    let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
-    let mut index = if requested < queue.len() { requested } else { order.first(queue.len()) };
+    let Some((mut index, path)) = start else { return Ok(results) };
+    let mut first = Some(path);
     // A file that delivers not one frame plus repeat turned on would be a
     // loop that spins forever. How many tracks in a row did not play is
     // counted, and it cuts off after one full lap.
     let mut consecutive_silent = 0usize;
-    // A server that stopped answering: its tracks are passed over and the
-    // queue goes on (ADR-017). The last error is kept to say, when nothing
-    // at all could play, why; and a full lap of them ends it.
+    // A track that will not open, or a server that stopped answering: it is
+    // passed over and the queue goes on (ADR-017). The last error is kept to
+    // say, when nothing at all could play, why; and a full lap of them, or of
+    // tracks that broke partway, ends it.
     let mut preload = crate::preload::Preload::default();
     let mut unreachable_in_a_row = 0usize;
     let mut passed_over: Option<PlayError> = None;
+    // The entries passed over by this play. A copy of one elsewhere in the
+    // queue is passed unopened when it is reached, under any repeat mode and
+    // whether or not whoever drives the queue has read the word: opening it
+    // again would play the part of a broken track that can be heard.
+    let mut passed = std::collections::HashSet::new();
     // The DoP marker of whatever is open. It carries on across tracks that
     // share an opening and starts over with a new one.
     let mut packer = DopPacker::new();
@@ -935,8 +862,20 @@ where
     loop {
         // A removed track is skipped without playing; if none are left, the
         // queue is over.
-        let Some(path) = next_live(queue, order, repeat, &mut index) else { break };
+        let Some(path) = first.take().or_else(|| next_live(queue, order, repeat, &mut index, Some(stop_after), &passed)) else { break };
         let path = &path;
+        // first_live already discarded controls for an omitted named start.
+        // Later tracks discard the previous seek and retain only the Next
+        // already pending here for the preceding track's tail drain.
+        let carried = if attempt == 0 {
+            false
+        } else {
+            let _ = seek.take();
+            let pending = skip.take();
+            if pending { skip.skip(); }
+            pending
+        };
+        attempt += 1;
         chilpa_audio::diagnostics::trace(
             "queue",
             "track_selected",
@@ -954,12 +893,22 @@ where
         let ready = prepared.unwrap_or_else(|| open_track(path, caps, policy, controls.dsd_mode.get(), controls.dsd_direct(caps).as_ref()));
         let Opened { mut source, mut delivery, about } = match ready {
             Ok(opened) => opened,
-            Err(error) if crate::remote::entry(path).is_some() => {
+            Err(error) if error.is_track() || crate::remote::entry(path).is_some() => {
                 chilpa_audio::diagnostics::trace(
                     "queue",
                     "source_passed_over",
                     format_args!("after={:?} path={path:?} error={error}", source_started.elapsed()),
                 );
+                // Left out of the laps that follow by the queue itself, not
+                // only once whoever drives it reads the word.
+                if error.is_track() {
+                    on_passed(attempt, index, path, &error.to_string(), None);
+                    queue.remove(index);
+                    passed.insert(path.clone());
+                }
+                // A seek or a Next asked for while it opened was meant for it:
+                // what comes next starts at its beginning and is not skipped.
+                let _ = (seek.take(), skip.take());
                 unreachable_in_a_row += 1;
                 passed_over = Some(error);
                 if unreachable_in_a_row > queue.len() || stop_after.take_at(index) {
@@ -980,7 +929,6 @@ where
                 return Err(error);
             }
         };
-        unreachable_in_a_row = 0;
         let source_kind = match &source {
             Source::Pcm(..) => "pcm",
             Source::Dop(_) => "dop",
@@ -1024,7 +972,7 @@ where
                         "sink_drain_started",
                         format_args!("format={old_format:?}"),
                     );
-                    if let Err(error) = old.drain(&give_up) {
+                    if let Err(error) = old.drain(&|| stop.is_stopped() || (carried && skip.take())) {
                         chilpa_audio::diagnostics::trace(
                             "queue",
                             "sink_drain_failed",
@@ -1075,9 +1023,11 @@ where
                 "sink_opened",
                 format_args!("after={:?} format={:?}", started.elapsed(), delivery.opened),
             );
-            opened = Some((delivery.opened, crate::playback_events::Measured::new(new)));
+            opened = Some((delivery.opened, crate::playback_events::Measured::reporting(new, report.clone())));
             packer = DopPacker::new();
         }
+        // What the device let go of on the way here is accounted for.
+        attempts.settle();
         let (_, sink) = opened.as_mut().expect("freshly opened");
         if skipped_before && keep_open {
             chilpa_audio::diagnostics::trace("queue", "sink_flush_started", format_args!("reason=skip"));
@@ -1127,30 +1077,39 @@ where
         else if dsp.is_none() || !keep_open { dsp = Some(chilpa_audio::dsp::Processor::new(controls.dsp.clone(), delivery.opened)); }
         else if skipped_before { if let Some(dsp) = &mut dsp { dsp.reset(); } }
         sink.set_dop(matches!(&source, Source::Dop(_)));
-        sink.begin(observer);
+        sink.begin_attempt(attempt, observer);
         // The next track, opened ahead for gapless: a file at once, a track
         // over the network once this one has played a while (`Preload::at`).
         if gapless.get() {
             let next = if repeat.get() == Repeat::One { Some(index) } else { order.next(index, queue.len(), repeat.get() == Repeat::All) };
             if let Some(mut next) = next {
-                if let Some(path) = next_live(queue, order, repeat, &mut next) {
+                if let Some(path) = next_live(queue, order, repeat, &mut next, None, &passed) {
                     let length = match &source {
                         Source::Pcm(decoded, _, _) => decoded.frame_count().map(|frames| frames as f64 / f64::from(decoded.stream_format().sample_rate_hz.max(1))),
                         _ => None,
                     };
                     let at = crate::preload::at(crate::remote::entry(&path).is_some(), delivery.opened.sample_rate_hz, length);
                     let (caps, dsd_mode, direct) = (caps.clone(), controls.dsd_mode.get(), controls.dsd_direct(caps));
+                    // Opened on a thread of its own; what comes of it is
+                    // taken by this loop, as it reaches the track, or by
+                    // nobody.
                     preload.request_at(path, at, move |path| open_track(path, &caps, policy, dsd_mode, direct.as_ref()));
                 }
             }
         }
-        let on_progress = &mut |index: usize, progress: Progress| {
-            preload.reached(progress.delivered);
-            on_progress(index, progress)
-        };
         controls.dsp.begin_stream();
         controls.gain_active.store(false, std::sync::atomic::Ordering::Release);
-        on_track(index, path, &delivery, &about);
+        if on_track(attempt, index, path, &delivery, &about) {
+            attempts.open(attempt, index);
+        }
+        // What was heard is the meter's count; and as this track plays, the
+        // ones before it whose last audio has now left the device are closed.
+        let on_progress = &mut |index: usize, progress: Progress| {
+            preload.reached(progress.delivered);
+            let heard = attempts.heard(attempt).unwrap_or(progress.delivered);
+            attempts.settle();
+            on_progress(index, progress, heard)
+        };
         chilpa_audio::diagnostics::trace(
             "queue",
             "render_started",
@@ -1207,6 +1166,7 @@ where
                     feed: feed.clone(),
                     decoded_at: 0,
                     ahead: if crate::remote::entry(path).is_some() { chilpa_audio::render::NETWORK_AHEAD } else { chilpa_audio::render::AHEAD },
+                    packing: None,
                 };
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);
@@ -1219,7 +1179,7 @@ where
                 if let Some(feed) = &feed {
                     feed.end(matches!(outcome, chilpa_audio::render::Outcome::Finished { .. }) && !frames.skipped);
                 }
-                (outcome, frames.skipped)
+                (crate::playback::output_fault(outcome, frames.packing), frames.skipped)
             }
             Source::Dop(reader) => {
                 let mut frames = DopFrames::new(reader.as_mut(), &mut packer, &delivery)
@@ -1269,7 +1229,7 @@ where
                 if let Some(feed) = &feed {
                     feed.end(matches!(outcome, chilpa_audio::render::Outcome::Finished { .. }) && !frames.skipped);
                 }
-                (outcome, frames.skipped)
+                (crate::playback::output_fault(outcome, frames.packing), frames.skipped)
             }
         };
         chilpa_audio::diagnostics::trace(
@@ -1280,6 +1240,9 @@ where
                 render_started.elapsed()
             ),
         );
+        // How it ended is known here; how much of it was heard, only once
+        // what it left in the device has played or been thrown away.
+        attempts.ended(attempt, crate::attempts::How::of(&outcome, skipped));
         sink.end(if skipped { "skipped" } else {
             match &outcome {
                 Outcome::Finished { .. } => "finished",
@@ -1287,24 +1250,40 @@ where
                 _ => "error",
             }
         });
-        let finished_ok = outcome.may_advance_queue();
+        // A track that broke partway is the track's fault, not the device's:
+        // what the device holds of it is heard and the queue goes on as after
+        // a natural end, without repeating it, now or on a later lap. It
+        // counts with the tracks that would not open, so a lap where nothing
+        // played whole ends the queue.
+        let broken = matches!(outcome, Outcome::Unreadable { .. });
+        if let Outcome::Unreadable { frames, reason } = &outcome {
+            on_passed(attempt, index, path, reason, Some(*frames));
+            queue.remove(index);
+            passed.insert(path.clone());
+            // A seek or a Next asked for while its last read was failing was
+            // meant for it, as when it will not open: the source looked at
+            // them before that read and never again.
+            let _ = (seek.take(), skip.take());
+        }
+        let finished_ok = outcome.may_advance_queue() || broken;
         ended_by_itself = finished_ok && !skipped;
         skipped_before = skipped;
         consecutive_silent = if outcome.frames() == 0 { consecutive_silent + 1 } else { 0 };
+        unreachable_in_a_row = if broken { unreachable_in_a_row + 1 } else { 0 };
         results.push(TrackResult {
             path: path.clone(),
             delivery,
             outcome,
             transition: transition,
         });
-        if !finished_ok || consecutive_silent > queue.len() {
+        if !finished_ok || consecutive_silent > queue.len() || unreachable_in_a_row > queue.len() {
             break;
         }
         if stop_after.take_at(index) {
             break;
         }
         let mode = repeat.get();
-        if mode == Repeat::One && !skipped {
+        if mode == Repeat::One && !skipped && !broken {
             continue;
         }
         match order.next(index, queue.len(), mode == Repeat::All) {
@@ -1348,36 +1327,13 @@ where
             format_args!("after={:?} format={format:?} final=true mode={closing}", started.elapsed()),
         );
     }
-    // Every track it reached was on a server that did not answer: that is
-    // what the window says, not that the queue ended.
-    if let (true, Some(error)) = (results.is_empty(), passed_over) {
+    // Every track it reached would not open: that is what the window says,
+    // not that the queue ended. Unless a stop came meanwhile: that is no
+    // failure.
+    if let (true, Some(error), false) = (results.is_empty(), passed_over, stop.is_stopped()) {
         return Err(error);
     }
     Ok(results)
-}
-
-/// The track at `index`, skipping the removed ones.
-///
-/// Advances `index` until it finds a live one. Returns `None` when none
-/// are left, counting laps so as not to spin forever if the whole queue
-/// was removed with repeat turned on.
-fn next_live(
-    queue: &SharedQueue,
-    order: &Order,
-    repeat: &RepeatMode,
-    index: &mut usize,
-) -> Option<PathBuf> {
-    let wrap = repeat.get() == Repeat::All;
-    for _ in 0..=queue.len() {
-        if let Some(p) = queue.get(*index) {
-            return Some(p);
-        }
-        if *index >= queue.len() {
-            return None;
-        }
-        *index = order.next(*index, queue.len(), wrap)?;
-    }
-    None
 }
 
 /// How many times the device was reopened over an already played queue.
@@ -1391,66 +1347,4 @@ pub fn finished(results: &[TrackResult]) -> impl Iterator<Item = &Path> {
         .iter()
         .filter(|r| r.outcome.may_advance_queue())
         .map(|r| r.path.as_path())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn without_an_order_of_its_own_the_queue_plays_as_it_came() {
-        let o = Order::new();
-        assert_eq!(o.first(3), 0);
-        assert_eq!(o.next(0, 3, false), Some(1));
-        assert_eq!(o.next(2, 3, false), None, "it ends there");
-        assert_eq!(o.next(2, 3, true), Some(0), "with repeat, it goes back to the first");
-    }
-
-    #[test]
-    fn an_explicit_order_wins() {
-        let o = Order::new();
-        assert!(o.set(vec![2, 0, 1], 3));
-        assert_eq!(o.first(3), 2);
-        assert_eq!(o.next(2, 3, false), Some(0));
-        assert_eq!(o.next(1, 3, false), None, "1 is the last of the order");
-        assert_eq!(o.next(1, 3, true), Some(2));
-    }
-
-    #[test]
-    fn changing_the_order_mid_queue_continues_from_where_it_was() {
-        let o = Order::new();
-        assert!(o.set(vec![0, 1, 2, 3], 4));
-        // Track 1 plays and the order changes: what comes next is whatever follows it now.
-        assert!(o.set(vec![3, 1, 0, 2], 4));
-        assert_eq!(o.next(1, 4, false), Some(0));
-    }
-
-    #[test]
-    fn an_order_that_is_not_a_permutation_is_refused() {
-        let o = Order::new();
-        assert!(!o.set(vec![0, 0, 1], 3), "repeated");
-        assert!(!o.set(vec![0, 1], 3), "incomplete");
-        assert!(!o.set(vec![0, 1, 5], 3), "out of range");
-        assert!(o.get().is_empty(), "none of that was kept");
-    }
-
-    #[test]
-    fn shuffling_gives_a_permutation_and_not_always_the_same_one() {
-        for seed in [1u64, 42, 99_999] {
-            let o = shuffled(8, seed);
-            assert!(is_permutation(&o, 8), "{o:?} is not a permutation");
-        }
-        assert_ne!(shuffled(16, 1), shuffled(16, 2), "different seeds, different shuffles");
-        assert_eq!(shuffled(16, 7), shuffled(16, 7), "the same seed always gives the same thing");
-        assert_eq!(shuffled(1, 3), vec![0], "a single track is not shuffled");
-        assert!(shuffled(0, 3).is_empty());
-    }
-
-    #[test]
-    fn clearing_restores_the_array_order() {
-        let o = Order::new();
-        assert!(o.set(vec![1, 0], 2));
-        o.clear();
-        assert_eq!(o.first(2), 0);
-    }
 }

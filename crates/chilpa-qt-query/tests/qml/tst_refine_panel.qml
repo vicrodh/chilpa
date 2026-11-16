@@ -53,7 +53,7 @@ TestCase {
         Library.queryText = ""
         tryVerify(() => findChild(panel, "refineEmpty").visible)
         verify(!findChild(panel, "refineMatch").visible)
-        compare(all("fieldChip").length, 12)
+        compare(all("fieldChip").length, 14)
         verify(!findChild(panel, "groupChip").visible, "nothing to group yet")
     }
 

@@ -38,7 +38,10 @@ fn periodic_and_startup_policies_are_persistent_incremental_and_idle_between_che
     wave(&music.path().join("track.wav"));
     let path = music.path().to_string_lossy().into_owned();
     let mut api = Chilpa::new();
-    assert!(api.start_scan(music.path()));
+    let started = api.start_scan(music.path());
+    let library_open = api.library().is_some();
+    assert!(started, "start_scan refused: now.error {:?}, scan_status.error {:?}, library open {library_open}",
+        api.now.error, api.scan_status.error);
     finish(&mut api);
     assert_eq!(api.scan_status.phase, ScanPhase::Complete);
     assert_eq!(api.scan_status.summary.read, 1);

@@ -32,16 +32,18 @@ use std::time::Duration;
 
 use crate::model::{extension_of, image, Client, Credential, Failure, Kind, Library, Page, Server, Stream, Track};
 use crate::net::{Net, Reply, Request};
+use crate::rating::{user_rating, RatingRead, Rated};
 use crate::text::{encode, id, number, string};
 
 pub mod playlists;
+pub(crate) mod media;
 
 /// Where the user confirms the PIN.
 pub const LINK: &str = "https://plex.tv/link";
 
-const PAGE: u64 = 250;
+pub(crate) const PAGE: u64 = 250;
 
-fn headers(client: &Client, token: Option<&str>) -> Vec<(String, String)> {
+pub(crate) fn headers(client: &Client, token: Option<&str>) -> Vec<(String, String)> {
     let mut out = vec![
         ("Accept".into(), "application/json".into()),
         ("X-Plex-Product".into(), Client::PRODUCT.into()),
@@ -56,19 +58,19 @@ fn headers(client: &Client, token: Option<&str>) -> Vec<(String, String)> {
     out
 }
 
-fn server_token(key: &Credential) -> Option<&str> {
+pub(crate) fn server_token(key: &Credential) -> Option<&str> {
     match key {
         Credential::Plex { server, .. } => Some(server.as_str()),
         _ => None,
     }
 }
 
-fn ask(net: &dyn Net, request: Request) -> Result<Value, Failure> {
+pub(crate) fn ask(net: &dyn Net, request: Request) -> Result<Value, Failure> {
     read(&net.send(&request).map_err(Failure::Unreachable)?)
 }
 
 /// What an answer says, or why it says nothing.
-fn read(reply: &Reply) -> Result<Value, Failure> {
+pub(crate) fn read(reply: &Reply) -> Result<Value, Failure> {
     match reply.status {
         200..=299 if reply.body.is_empty() => Ok(Value::Null),
         200..=299 => serde_json::from_slice(&reply.body).map_err(|_| not_plex(reply.status)),
@@ -264,6 +266,7 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
     // pages go on until a short one, and the sync takes nothing out.
     let total = container.get("totalSize").and_then(Value::as_u64);
     let tracks: Vec<Track> = items.iter().filter_map(track).collect();
+    let ratings = items.iter().filter_map(|meta| Some(RatingRead { rated: Rated::Track, id: id(meta, "ratingKey")?, value: user_rating(meta) })).collect();
     let partial = tracks.len() < items.len() || total.is_none();
     let read = cursor.offset + items.len() as u64;
     let more = match total {
@@ -277,7 +280,7 @@ pub fn page(net: &dyn Net, server: &Server, key: &Credential, cursor: Option<&st
     } else {
         None
     };
-    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total, scope: section, partial, skipped: 0 })
+    Ok(Page { tracks, next: next.map(|c| serde_json::to_string(&c).unwrap_or_default()), total, scope: section, partial, skipped: 0, ratings })
 }
 
 pub fn details(net: &dyn Net, server: &Server, key: &Credential, ids: &[String]) -> Result<Vec<Track>, Failure> {

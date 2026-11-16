@@ -184,7 +184,7 @@ impl qobject::Navigation {
 
     pub fn go_key(mut self: Pin<&mut Self>, screen: &QString, key: &QString) {
         if let Some(screen) = Screen::from_name(&screen.to_string()).filter(|_| !key.is_empty()) {
-            self.as_mut().rust_mut().tabs.go(Route { screen, id: 0, key: key.to_string() });
+            self.as_mut().rust_mut().tabs.go(Route { screen, id: 0, key: app::with(|api| api.route_key(screen, &key.to_string())) });
             self.publish();
         }
     }

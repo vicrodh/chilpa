@@ -84,9 +84,10 @@ fn over(value: &str, file: &str) -> Override<String> {
     }
 }
 
-/// What a field's value is laid over a record on a server as. There is no
-/// file to type back to: what was typed is kept as it is, and nothing typed
-/// clears. Only a field that changed gets here.
+/// What a field's value is laid over a record on a server as, when what the
+/// server says could not be read: there is nothing to type back to, so
+/// what was typed is kept as it is, and nothing typed clears. Only a field
+/// that changed gets here.
 fn kept(value: &str) -> Override<String> {
     if value.is_empty() {
         Override::Cleared
@@ -150,7 +151,8 @@ fn put(changes: &mut FileChanges, of_the_record: bool, name: &str, value: &str) 
 /// Whether a save writes this field.
 fn goes(cell: &Cell, mode: Mode) -> bool {
     match mode {
-        Mode::Sidecar => cell.dirty(),
+        // The server's mode is planned apart (`server::plan`).
+        Mode::Sidecar | Mode::Server | Mode::Undecided => cell.dirty(),
         Mode::Files | Mode::Xml => cell.materializes(),
     }
 }
@@ -189,10 +191,16 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
                         put(&mut files[i], true, field.name, &cell.now);
                     }
                 } else if laid.is_absent() {
-                    laid = if row.hosted() { kept(&cell.now) } else { over(&cell.now, &row.album_file[at]) };
+                    laid = if row.hosted() && !row.known { kept(&cell.now) } else { over(&cell.now, &row.album_file[at]) };
                 }
             }
             sidecar.album.put(field.name, laid);
+            for (_, row) in in_home(home) {
+                if let Some(track) = sidecar.tracks.get_mut(&row.key) {
+                    track.file_fields.remove(&format!("album.{}", field.name));
+                    track.album.put(field.name, Override::Absent);
+                }
+            }
         }
     }
     for (i, row) in draft.rows.iter().enumerate() {
@@ -216,7 +224,7 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
                     put(&mut files[i], false, field.name, &cell.now);
                 }
                 Override::Absent
-            } else if row.hosted() {
+            } else if row.hosted() && !row.known {
                 kept(&cell.now)
             } else {
                 over(&cell.now, &row.file[at])
@@ -234,7 +242,7 @@ pub(crate) fn plan(draft: &Draft, mode: Mode, options: Options, cover: Option<Wa
 
     if let Some(waiting) = &cover {
         match mode {
-            Mode::Sidecar | Mode::Xml => {}
+            Mode::Sidecar | Mode::Xml | Mode::Server | Mode::Undecided => {}
             Mode::Files => {
                 for changes in &mut files {
                     changes.cover = Change::Set(Cover { bytes: waiting.bytes.clone(), mime: waiting.mime });
@@ -435,6 +443,25 @@ impl Chilpa {
         if self.metadata.state != State::Ready {
             return false;
         }
+        // Saving the current form supersedes an outstanding proposal. Stop
+        // its child before the shared metadata worker reaches the save job.
+        if self.metadata.beets.busy() { self.metadata_cancel_lookup(); }
+        match self.metadata.mode {
+            Mode::Undecided => return self.metadata.refuse(chilpa_i18n::t("choose where to save the changes: the server cannot take them, the sidecar keeps them on this device")),
+            Mode::Server => {
+                let editor = &mut self.metadata;
+                let Some(draft) = editor.draft.as_ref() else { return false };
+                let changed = draft.touched && draft.album.iter().chain(draft.rows.iter().flat_map(|r| r.cells.iter())).any(Cell::dirty);
+                if !changed && editor.waiting.is_none() {
+                    return editor.refuse(chilpa_i18n::t("there is nothing to save"));
+                }
+                if let Some(why) = draft.first_invalid() {
+                    return editor.refuse(why);
+                }
+                return self.metadata_save_to_server();
+            }
+            Mode::Sidecar | Mode::Files | Mode::Xml => {}
+        }
         let scanning = self.scan.is_some();
         // `now.path` keeps the last track after a stop, for the player bar;
         // only a track playing or paused holds its file open.
@@ -534,7 +561,8 @@ impl Chilpa {
         let mut hosted_failed = None;
         if failed.is_none() && !hosted.is_empty() {
             let cover = self.metadata.waiting.clone();
-            match self.library().map(|lib| super::hosted::land(lib, &hosted, cover.as_ref(), now)) {
+            let words = self.metadata.draft.as_ref().map(|draft| super::hosted::words(draft, &hosted)).unwrap_or_default();
+            match self.library().map(|lib| super::hosted::land(lib, &hosted, cover.as_ref(), now, &words)) {
                 Some((landed, why)) => {
                     hosted_landed = !landed.is_empty();
                     hosted_failed = why;

@@ -10,7 +10,7 @@ fn filter(text: &str) -> Filter { Filter { query: read(text).unwrap(), ..Default
 #[test]
 fn clicks_edit_the_query_and_both_roles_for_every_column() {
     for (field, value) in [("year","1960"),("genre","Jazz"),("label","Label"),("composer","Writer"),
-        ("rating","4"),("artist","Artist"),("album","Blue Record")] {
+        ("rating","4"),("artist","Artist"),("album","Blue Record"),("bits","24"),("rate","96000")] {
         let mut rows = rows(&[value]);
         if field == "album" { rows[0].key = "42".into(); }
         let mut f = Filter::default();
@@ -152,4 +152,23 @@ fn extending_a_range_uses_alternatives_and_shift_replaces_hidden_picks() {
     let mut f=filter("genre:Hidden -genre:Soul");
     choose(&mut f,"genre",&genres,Some(0),2,2);
     assert_eq!(text(&f),"-genre:Soul genre:Jazz,Pop");
+}
+
+#[test]
+fn technical_columns_count_known_values_and_keep_other_numeric_conditions() {
+    let reader = reader();
+    reader.lib.connection().execute_batch("UPDATE tracks SET bit_depth=16,sample_rate_hz=44100 WHERE id=1;
+        UPDATE tracks SET bit_depth=24,sample_rate_hz=96000 WHERE id=2;
+        UPDATE tracks SET bit_depth=24,sample_rate_hz=48000 WHERE id=3;").unwrap();
+    let (facets,snapshot) = reader.refresh(&filter("bits:24 rate:96000"),TrackOrder::Artist,||true).unwrap();
+    assert_eq!(snapshot.ids,[2]);
+    assert_eq!(counts(&facets.bits),[("24",1)]);
+    assert_eq!(counts(&facets.rates),[("48000",1),("96000",1)]);
+    let facets = reader.refresh(&Filter::default(),TrackOrder::Artist,||true).unwrap().0;
+    assert_eq!(counts(&facets.bits),[("16",1),("24",2)]);
+    let mut searched = Filter::default();
+    searched.queries[8] = "96".into();
+    let (facets,snapshot) = reader.refresh(&searched,TrackOrder::Artist,||true).unwrap();
+    assert_eq!(snapshot.ids,[2]);
+    assert_eq!(counts(&facets.bits),[("24",1)]);
 }

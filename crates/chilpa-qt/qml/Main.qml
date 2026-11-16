@@ -40,6 +40,9 @@ Window {
     // does not keep it away, so there is none to draw, as in QBZ.
     title: systemControls.kept ? "" : "Chilpa"
 
+    ServerMediaDeletion {}
+    Driving.TrackInfoRequests {}
+
     // The dynamic background, under everything (design/01 1.6).
     Backdrop.AppBackground {
         visible: !DisplayMode.active || !DisplayMode.provider || DisplayMode.provider.ambient !== false
@@ -142,7 +145,7 @@ Window {
     WindowGrips { anchors.fill: parent; window: window }
     DevHooks { window: window }
 
-    Driving.WindowControls { id: driving; window: window }
+    Driving.WindowControls { id: driving; window: window; onVolumeKeyed: player.peekVolume() }
     Mini.MiniHost { window: window; controls: driving; beforeEnter:() => { if(DisplayMode.active)DisplayMode.leave() } }
     Overlay.ImmersiveView { anchors.fill: parent; z: 6; window: window; controls: driving }
     PluginViewHost { anchors.fill: parent; z: 2.5; window: window; standardPlayerHeight: player.height; chrome:[host,systemControls,sidebar] }
@@ -153,8 +156,8 @@ Window {
         console.info("main window constructed")
     }
 
-    // Over everything while the plugins start.
-    StartupSplash { anchors.fill: parent; z: 1000 }
+    // Over everything until what has to be read before a click is read.
+    Driving.StartupSplash { anchors.fill: parent; z: 1000 }
     // A press outside the field that has the keyboard, or another view, takes it.
     FocusRelease { key: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.screen === "folders" ? "" : Navigation.routeKey].join(" ") }
 }

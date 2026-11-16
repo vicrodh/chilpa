@@ -8,7 +8,7 @@ pub(super) fn parse(text: &str, name: &str) -> Result<Preset, String> {
         let preset: Preset = serde_json::from_str(text).map_err(|_| chilpa_i18n::t("Invalid DSP preset JSON."))?;
         preset.validate()?; return Ok(preset);
     }
-    let mut preset = Preset { name: name.trim().into(), category: "Importados".into(), ..Preset::default() };
+    let mut preset = Preset { name: name.trim().into(), category: "Imported".into(), ..Preset::default() };
     for line in text.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')) {
         let tokens: Vec<_> = line.split_whitespace().collect();
         if tokens.first() == Some(&"Preamp:") {
@@ -28,15 +28,15 @@ pub(super) fn parse(text: &str, name: &str) -> Result<Preset, String> {
         let shape = match tokens.get(position+1).copied() {
             Some("PK" | "PEQ") => Shape::Peak, Some("LS" | "LSC") => Shape::LowShelf,
             Some("HS" | "HSC") => Shape::HighShelf, Some("LP" | "LPQ") => Shape::LowPass,
-            Some("HP" | "HPQ") => Shape::HighPass, Some("NO") => Shape::Notch,
-            _ => return Err(chilpa_i18n::t("Unsupported active EQ filter. Use PK, LS, HS, LP, HP or NO.")),
+            Some("HP" | "HPQ") => Shape::HighPass, Some("NO") => Shape::Notch, Some("BP") => Shape::BandPass,
+            _ => return Err(chilpa_i18n::t("Unsupported active EQ filter. Use PK, LS, HS, LP, HP, BP or NO.")),
         };
         let field = |key: &str| tokens.iter().position(|t| *t == key).and_then(|i| tokens.get(i+1).copied());
         let frequency = number(field("Fc"))?;
         let gain_db = if matches!(shape, Shape::Peak | Shape::LowShelf | Shape::HighShelf) { number(field("Gain"))? } else { 0.0 };
         let q = match field("Q") { Some(q) => number(Some(q))?, None if matches!(shape, Shape::LowShelf | Shape::HighShelf | Shape::LowPass | Shape::HighPass) => std::f64::consts::FRAC_1_SQRT_2,
             None => return Err(chilpa_i18n::t("An active EQ filter is missing Q.")) };
-        preset.filters.push(Filter { shape, frequency, gain_db, q });
+        preset.filters.push(Filter { shape, frequency, gain_db, q, ..Default::default() });
     }
     if preset.filters.is_empty() { return Err(chilpa_i18n::t("No active parametric EQ filters were found.")); }
     preset.validate()?; Ok(preset)
@@ -70,6 +70,6 @@ mod tests {
         for text in ["", "no EQ", "Filter 1: ON PK Fc NaN Hz Gain 2 dB Q 1", "Filter 1: ON AP Fc 200 Hz Q 1",
             "Channel: L\nFilter 1: ON PK Fc 100 Hz Gain 3 dB Q 1", "Filter 1: ON LS 12dB Fc 100 Hz Gain 3 dB",
             "Filter 1: ON PK Fc 100 Hz Gain 3 dB", "Filter 1: ON PK Fc 100 Hz Gain 30 dB Q 1",
-            "Preamp: +8 dB\nFilter 1: ON PK Fc 100 Hz Gain 3 dB Q 1"] { assert!(parse(text, "test").is_err(), "{text}"); }
+            "Preamp: +25 dB\nFilter 1: ON PK Fc 100 Hz Gain 3 dB Q 1"] { assert!(parse(text, "test").is_err(), "{text}"); }
     }
 }

@@ -5,7 +5,27 @@ import QtQuick
 // 02-layout.md and 03-components.md). Nothing outside Theme/ writes a size by
 // hand; the QML literal check fails if it does.
 QtObject {
+    readonly property int discoveryEntryWidth: 300
+    readonly property int discoveryEntryHeight: 88
+    readonly property int discoveryGenreHeight: 220
+    readonly property int discoveryHeroHeight: 300
+    readonly property int albumGenresHeight: 600
+    readonly property int metadataChangeHeight: 112
+    readonly property int metadataChangeInvalid: 36
+    readonly property int metadataPreviewRows: 3
+    readonly property int discoveryTableCountWidth: 76
+    readonly property int discoveryTableCountsMin: 620
+    readonly property real discoveryTableTitleRatio: 0.6
+    readonly property int discoveryPageSize: 60
+    readonly property int discoveryPreview: 8
+    readonly property int discoverySearchChars: 256
+    readonly property int discoveryTrackNarrow: 920
     readonly property int outputDetailsWidth: 700
+    // The track information modal: room for three columns of facts, each no
+    // narrower than a cell; a narrower window takes fewer columns.
+    readonly property int trackInfoWidth: 680
+    readonly property int trackInfoHeight: 620
+    readonly property int trackInfoCell: 150
     readonly property int outputDetailsHeight: 520
     readonly property int outputDetailsChrome: 240
     // The window.
@@ -39,6 +59,7 @@ QtObject {
     readonly property int gap20: 20
     readonly property int modalInset: 20
     readonly property int modalInsets: 40
+    readonly property real modalMaxHeightRatio: 0.8
     readonly property int gap22: 22
     readonly property int gap24: 24
 
@@ -156,18 +177,45 @@ QtObject {
     readonly property int albumVersionMenuWidth: 560
     readonly property int castMenuWidth: 270
     // The optional processing editor.
-    readonly property int dspPanelWidth: 760
-    readonly property int dspPanelHeight: 800
+    readonly property int dspPanelWidth: 1200
+    readonly property int dspPanelHeight: 840
+    readonly property real dspPanelHeightRatio: 0.92
+    readonly property int dspSidebarWidth: 224
+    readonly property int dspSidebarThreshold: 880
+    readonly property int dspNavigationHeight: 44
+    readonly property int dspPresetRowHeight: 76
+    readonly property int dspFilterRowHeight: 48
+    readonly property int dspFilterMinWidth: 760
+    readonly property int dspBandIndexWidth: 32
+    readonly property int dspAdvancedFilterRowHeight: 112
+    readonly property int dspSectionGap: 32
+    readonly property int dspKnobSize: 112
+    readonly property int dspKnobIndicator: 20
+    readonly property int dspCurveHitRadius: 16
+    readonly property int dspChannelWidth: 110
+    readonly property int dspPreviewInterval: 50
+    readonly property int dspSearchInterval: 200
+    readonly property real dspCurveAspectRatio: 0.32
+    readonly property real dspCurveHeightShare: 0.42
     readonly property int dspCompactWidth: 520
     readonly property int dspSliderHeight: 180
     readonly property int dspSliderWidth: 36
+    readonly property int dspGraphicBandMinWidth: 48
     readonly property int dspSliderHandle: 16
-    readonly property int dspCurveHeight: 120
-    readonly property int dspBandShapeWidth: 128
+    readonly property int dspCurveHeight: 220
+    readonly property int dspBandShapeWidth: 176
     readonly property int dspBandValueWidth: 86
     readonly property int dspImportHeight: 180
     readonly property int menuWidth: 236
     readonly property int menuMaxWidth: 310
+    readonly property int trackFilterWidth: 320
+    readonly property int trackFilterHeight: 440
+    readonly property real trackFilterHeightShare: 0.4
+    // Each standalone track list keeps this fraction of a viewport on each side.
+    readonly property real trackScrollCacheShare: 0.25
+    readonly property int trackFilterShortHeight: 200
+    readonly property int trackSkeletonMaxRows: 64
+    readonly property int trackFilterTagWidth: 240
     readonly property int menuIconColumn: 18
     readonly property int menuItem: 30
     readonly property int menuItemTall: 44
@@ -260,6 +308,7 @@ QtObject {
     // How tall the bar stands now: the bar writes it, and whatever must stay
     // clear of it reads it here instead of asking the bar.
     property int playerSpace: playerHeight
+    readonly property int floatingPlayerClearance: playerSpace > 0 ? playerSpace + spaceWindow : 0
     // Where the window's planes (the sidebar, the content, the right panel)
     // start and how far above the window's bottom they end: the player's
     // layout writes them, under the tab bar and the window's margin unless a
@@ -324,6 +373,17 @@ QtObject {
     readonly property int slimColumns: 4
     readonly property int slimRows: 3
     readonly property int slimPages: 2
+    // The Offline music page, as QBZ's offline cache (OfflineManagerView):
+    // a record's row, a track's, the artists' rail, and the usage bar.
+    readonly property int offlineRecordRow: 60
+    readonly property int offlineTrackRow: 44
+    readonly property int offlineRail: 210
+    readonly property int offlineUsageBar: 8
+    // A track's offline state around its menu button, and the line of a
+    // selection's progress drawn over its page's header rule.
+    readonly property int offlineRing: 20
+    readonly property int offlineRingStroke: 2
+    readonly property int offlineLine: 2
     // The results page, as QBZ's (SearchView): a rail of thirty at most, six
     // songs on All and six more at a time, and twenty more at a time on a tab
     // of its own. Records page up to three rows at a time.
@@ -510,6 +570,7 @@ QtObject {
     readonly property int settingsRow: 54
     readonly property int settingsGroup: 44
     readonly property int settingsMaxWidth: 880
+    readonly property int articleWidth: 760
     readonly property int analysisInventoryWidth: 900
     readonly property int analysisInventoryHeight: 720
     // The percentage beside a settings slider.
@@ -543,7 +604,7 @@ QtObject {
     readonly property int folderTileHeight: 72
     readonly property int folderAlbumRow: 54
     // How the columns share the width, by column; the ones shown split it.
-    readonly property var paneShare: ({ year: 0.7, genre: 1.0, label: 1.0, composer: 1.1, rating: 0.9, artist: 1.2, album: 1.3 })
+    readonly property var paneShare: ({ year: 0.7, genre: 1.0, label: 1.0, composer: 1.1, rating: 0.9, bits: 0.8, rate: 1.0, artist: 1.2, album: 1.3 })
 
     // The metadata editor: a spreadsheet of tracks and the record's column.
     readonly property int metadataCover: 96
@@ -592,4 +653,6 @@ QtObject {
     readonly property int deviceNoticeHeight: 104
     readonly property int deviceGalleryHeight: 260
     readonly property int visualizerBandTall: 42
+    readonly property int statusMessageLines: 6
+    readonly property int statusBriefLines: 2
 }

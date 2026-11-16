@@ -353,7 +353,14 @@ fn language_selection_is_saved_and_available_in_appearance() {
     api.choose_language("es"); assert_eq!(api.language(), "es"); drop(api);
     let mut restored = Chilpa::new(); assert_eq!(restored.language(), "es");
     let row = restored.settings_rows("appearance", &Default::default()).0.into_iter().find(|row| row.key == "appearance.language").unwrap();
-    assert_eq!(row.value, "es"); assert_eq!(row.values, ["", "en", "es"]);
+    assert_eq!(row.value, "es");
+    // "System" first, then every shipped catalog and nothing else, in
+    // whatever order the row names them.
+    assert_eq!(row.values.first().map(String::as_str), Some(""));
+    let mut offered: Vec<&str> = row.values[1..].iter().map(String::as_str).collect();
+    let mut shipped = restored.languages().to_vec();
+    offered.sort_unstable(); shipped.sort_unstable();
+    assert_eq!(offered, shipped);
     restored.choose_language("unknown"); assert_eq!(restored.language(), "es");
     restored.choose_language("");
     assert_eq!(restored.settings_rows("appearance", &Default::default()).0.into_iter().find(|row| row.key == "appearance.language").unwrap().value, "");

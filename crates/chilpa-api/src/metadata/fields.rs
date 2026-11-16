@@ -78,6 +78,19 @@ pub(crate) fn track(name: &str) -> Option<usize> {
     TRACK.iter().position(|f| f.name == name)
 }
 
+pub(crate) fn label(name: &str, of_track: bool) -> String {
+    let label = match name {
+        "title" if of_track => chilpa_i18n::mark("Title"), "title" => chilpa_i18n::mark("Album"), "album_artist" => chilpa_i18n::mark("Album artist"), "album_artists" => chilpa_i18n::mark("Album artists"),
+        "compilation" => chilpa_i18n::mark("Compilation"), "date" => chilpa_i18n::mark("Date"), "genres" => chilpa_i18n::mark("Genres"), "catalog_number" => chilpa_i18n::mark("Catalog number"), "label" => chilpa_i18n::mark("Label"),
+        "musicbrainz_release_id" => chilpa_i18n::mark("MusicBrainz release"), "musicbrainz_release_group_id" => chilpa_i18n::mark("MusicBrainz release group"),
+        "musicbrainz_album_artist_ids" => chilpa_i18n::mark("MusicBrainz album artists"), "discogs_release_id" => chilpa_i18n::mark("Discogs release"),
+        "artist_credit" => chilpa_i18n::mark("Artist"), "artists" => chilpa_i18n::mark("Artists"), "track_number" => chilpa_i18n::mark("Track"), "disc_number" => chilpa_i18n::mark("Disc"), "disc_subtitle" => chilpa_i18n::mark("Disc subtitle"),
+        "work" => chilpa_i18n::mark("Work"), "composers" => chilpa_i18n::mark("Composers"), "performers" => chilpa_i18n::mark("Performers"), "musicbrainz_recording_id" => chilpa_i18n::mark("MusicBrainz recording"),
+        "musicbrainz_track_id" => chilpa_i18n::mark("MusicBrainz track"), "musicbrainz_artist_ids" => chilpa_i18n::mark("MusicBrainz artists"), "explicit" => chilpa_i18n::mark("Content advisory"), _ => chilpa_i18n::mark("Metadata"),
+    };
+    chilpa_i18n::t(label)
+}
+
 /// What somebody typed, as it is kept.
 pub(crate) fn normalize(kind: Kind, text: &str) -> String {
     match kind {

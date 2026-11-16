@@ -264,6 +264,20 @@ fn http(address: Option<&String>) -> String {
 }
 
 impl Store {
+    /// Monotonic counters distinguish action-only allocations from existing IDs.
+    pub(super) fn allocation_watermarks(&self) -> (i64, i64) { (self.next_card, self.next_track) }
+
+    pub(super) fn remove_action_orphans(&mut self, cards: &HashSet<i64>, tracks: &HashSet<i64>) {
+        for id in tracks {
+            if let Some(track) = self.tracks.get(id) { self.track_ids.remove(&track.path); }
+            self.tracks.remove(id);
+        }
+        for id in cards {
+            if let Some(card) = self.cards.get(id) { self.card_ids.remove(&(card.plugin.clone(), card.identity.clone())); }
+            self.cards.remove(id);
+        }
+    }
+
     pub fn forget_plugin(&mut self, plugin: &str) {
         self.cards.retain(|_, c| c.plugin != plugin);
         self.tracks.retain(|_, t| t.plugin != plugin);
@@ -476,6 +490,13 @@ impl Store {
         track.image = if image.is_empty() { under.map(|c| c.image.clone()).unwrap_or_default() } else { image };
         track.playable = entry.playable;
         id
+    }
+
+    /// A track-derived card can have its image only on one of its members.
+    pub(super) fn card_image<'a>(&'a self, card: &'a Card) -> &'a str {
+        if !card.image.is_empty() { return &card.image; }
+        card.tracks.iter().flatten().filter_map(|id| self.tracks.get(id))
+            .map(|track| track.image.as_str()).find(|image| !image.is_empty()).unwrap_or_default()
     }
 
     /// A card's cover as shown: the one the listener chose, over the one

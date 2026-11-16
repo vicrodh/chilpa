@@ -24,7 +24,8 @@ ListView {
             for (const [item, point] of targets) {
                 if (item && item.parent) { item.x = point.x; item.y = point.y; item.opacity = item.motionOpacity ?? 1 }
             }
-            forceLayout()
+            // ListView schedules its layout. Forcing it here feeds geometry
+            // back into motionVisible while that binding is still evaluating.
         }
     }
     // Destroying the templates cancels Qt's cloned jobs; I settle their rows.

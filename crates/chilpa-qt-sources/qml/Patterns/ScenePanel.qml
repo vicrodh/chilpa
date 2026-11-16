@@ -64,9 +64,14 @@ Item {
         width: Math.max(0, parent.width - x - Metrics.scenePanelPadLeft); height: parent.height - y
         contentWidth: availableWidth; clip: true
         ScrollBar.vertical: ViewportScrollBar {}
-        SourceShelf {
-            width: localAlbums.availableWidth; modelKind: "artist"; wrap: true
-            section: ({title:I18n.tr("Albums", I18n.rev),kind:"album",model_key:panel.source.key || ""})
+        Column {
+            width: localAlbums.availableWidth
+            SourceShelf {
+                width: parent.width; modelKind: "artist"; wrap: true
+                section: ({title:I18n.tr("Albums", I18n.rev),kind:"album",model_key:panel.source.key || ""})
+            }
+            // The last row scrolls clear of a floating player.
+            Item { width: 1; height: Metrics.contentBottom }
         }
     }
 }

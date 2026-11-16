@@ -25,7 +25,7 @@ fn play_restarts_a_queue_after_the_worker_reported_an_error() {
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
     assert!(!api.now.error.is_empty() && !api.now.playing);
-    assert!(!api.player.as_ref().unwrap().idle(), "no explicit stop barrier was sent");
+    assert!(api.player.is_some() && api.plays.is_empty(), "the play that failed is over, and nothing was asked to stop");
     // Repair the input and retry through the same Play action, without
     // removing the worker, resetting the queue or sending an explicit stop.
     let data_len = 4410u32 * 4;
@@ -45,6 +45,10 @@ fn play_restarts_a_queue_after_the_worker_reported_an_error() {
     std::fs::write(&track, wave).unwrap();
     api.set_paused(false);
     assert!(api.now.playing && api.now.error.is_empty(), "Play submitted a new request");
+    // The capture can start and finish the short track within one poll, and
+    // a queue that runs out empties the player. The mark keeps the track
+    // that started in view once it ends.
+    assert!(api.set_stop_after(Some(0)));
     let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
     while api.now.format.is_empty() && std::time::Instant::now() < until {
         api.poll();

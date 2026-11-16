@@ -58,7 +58,11 @@ impl Service {
             "selection_kind":kind,"selection_page":selection_page,"selection_pages":selection_pages,"selection_total":selection_total,
             "selected":i18n::tf("{} selection","{} selections",selected as i64,&[&selected.to_string()]),
             "storage_detail":destinations.iter().zip(self.destinations()).find(|(_,d)|d.id==self.status().destination).map(|(row,_)|&row["detail"]),
-            "can_review":self.selected_storage_matches(),"storage_notice":self.storage_notice(),
+            "can_review":self.selected_storage_matches(),
+            // With no storage to sync to, a sandbox that hides the cards says how to reach one.
+            "storage_notice":Some(self.storage_notice()).filter(|notice| !notice.is_empty() || self.selected_storage_matches())
+                .unwrap_or_else(crate::sandbox::removable_media_notice),
+            "removable_notice":crate::sandbox::removable_media_notice(),
             "change_count":self.change_count(),"page_count":self.change_count().div_ceil(200).max(1)}).to_string()
     }
     pub fn status_json(&self) -> String {

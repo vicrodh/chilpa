@@ -1,9 +1,14 @@
 import QtQuick
 import QtQuick.Controls.Basic
+import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
+import app.chilpa.offline
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/offline/qml/Components"
 
 Item {
     id: table
@@ -44,6 +49,17 @@ Item {
             font.pointSize: Type.meta
             color: Theme.color.textSecondary
         }
+        OfflineRootFolder {
+            objectName: "globalOfflineFolder"
+            width: parent.width
+        }
+        // The page with every download, its limit and each server's folder.
+        PillButton {
+            objectName: "offlineDownloads"
+            text: I18n.tr("Offline music", I18n.rev)
+            glyph: Icons.download
+            onClicked: Offline.requested("downloads", "[]")
+        }
         ServerTableRow { width: parent.width; heading: true }
     }
     ListView {
@@ -53,6 +69,7 @@ Item {
         anchors.bottom: parent.bottom
         width: parent.width
         clip: true
+        bottomMargin: Metrics.contentBottom // the last rows scroll clear of a floating player
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         delegate: ServerTableRow {

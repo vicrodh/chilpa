@@ -4,7 +4,6 @@ crates/chilpa-qt/qml/Components/AlbumCardOverlay.qml
 crates/chilpa-qt/qml/Components/AlbumCard.qml
 crates/chilpa-qt/qml/Components/AlbumCarousel.qml
 crates/chilpa-qt/qml/Components/AlbumGrid.qml
-crates/chilpa-qt/qml/Components/AlbumHero.qml
 crates/chilpa-qt/qml/Components/AlbumMenu.qml
 crates/chilpa-qt/qml/Components/AlbumQuickView.qml
 crates/chilpa-qt/qml/Components/AlbumRow.qml
@@ -36,8 +35,6 @@ crates/chilpa-qt/qml/Components/TrackListPointer.qml
 crates/chilpa-qt/qml/Components/TrackList.qml
 crates/chilpa-qt/qml/Components/TrackMenu.qml
 crates/chilpa-qt/qml/Components/TrackRowEnd.qml
-crates/chilpa-qt/qml/Components/TrackRowLead.qml
-crates/chilpa-qt/qml/Components/TrackRowMove.qml
 crates/chilpa-qt/qml/Components/TrackRow.qml
 crates/chilpa-qt/qml/Components/TrackSourceLabel.qml
 crates/chilpa-qt/qml/Main.qml
@@ -49,7 +46,6 @@ crates/chilpa-qt/qml/Patterns/NavMenu.qml
 crates/chilpa-qt/qml/Patterns/PlaybackOptions.qml
 crates/chilpa-qt/qml/Patterns/PlayerBar.qml
 crates/chilpa-qt/qml/Patterns/PlayerLcd.qml
-crates/chilpa-qt/qml/Patterns/PlaylistSelectionBar.qml
 crates/chilpa-qt/qml/Patterns/QualityTooltip.qml
 crates/chilpa-qt/qml/Patterns/QueuePanel.qml
 crates/chilpa-qt/qml/Patterns/RightPanel.qml

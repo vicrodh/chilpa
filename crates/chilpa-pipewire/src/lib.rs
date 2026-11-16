@@ -146,17 +146,6 @@ fn read_capped(stdout: &mut impl std::io::Read) -> Option<String> {
     Some(String::from_utf8_lossy(&bytes).into_owned())
 }
 
-/// The rates PipeWire's graph may run at, out of its own settings.
-///
-/// A stream asked for alone passes through untouched only if the graph can
-/// run at the stream's rate, and the graph switches only to the rates in
-/// `clock.allowed-rates` -- and to none when `clock.force-rate` is set. Any
-/// other rate is resampled, exclusive or not. `None` when the settings could
-/// not be read.
-fn graph_rates() -> Option<Vec<u32>> {
-    rates_in(&run("pw-metadata", &["-n", "settings"])?)
-}
-
 /// One key out of `pw-metadata`'s account of the settings.
 fn setting(settings: &str, key: &str) -> Option<String> {
     settings.lines().find_map(|line| {
@@ -166,18 +155,121 @@ fn setting(settings: &str, key: &str) -> Option<String> {
     })
 }
 
-/// `clock.force-rate` as the graph has it now; 0 is not forced.
-fn forced_rate() -> u32 {
-    run("pw-metadata", &["-n", "settings"])
-        .and_then(|s| setting(&s, "clock.force-rate"))
-        .and_then(|v| v.trim().parse().ok())
-        .unwrap_or(0)
+/// `clock.force-rate` in `pw-metadata`'s account of the settings; 0 is not
+/// forced.
+fn forced_in(settings: &str) -> u32 {
+    setting(settings, "clock.force-rate").and_then(|v| v.trim().parse().ok()).unwrap_or(0)
 }
 
-/// Sets `clock.force-rate`. Whether it took is read back by the rate check
-/// that follows, not assumed.
+/// Sets `clock.force-rate`. Whether it took is read back where it matters
+/// ([`held_at`]), not assumed.
 fn force_rate(rate: u32) {
     let _ = run("pw-metadata", &["-n", "settings", "0", "clock.force-rate", &rate.to_string()]);
+}
+
+/// The graph's clock settings, as they are read and written.
+trait Clock {
+    /// What `pw-metadata -n settings` prints now, if it answers.
+    fn settings(&self) -> Option<String>;
+    /// Writes `clock.force-rate`.
+    fn force(&self, rate: u32);
+}
+
+/// The running graph's clock, through `pw-metadata`.
+struct Graph;
+
+impl Clock for Graph {
+    fn settings(&self) -> Option<String> {
+        run("pw-metadata", &["-n", "settings"])
+    }
+
+    fn force(&self, rate: u32) {
+        force_rate(rate)
+    }
+}
+
+/// Holds the graph at `rate` when a stream is asked for alone and forcing
+/// is on, and says whether a stream at that rate reaches the device
+/// untouched. `Ok` carries the rate to put back when the stream closes, if
+/// one was set; `Err` says why the stream would be resampled, with whatever
+/// was set already put back.
+///
+/// A stream asked for alone passes through untouched only if the graph can
+/// run at the stream's rate, and the graph switches only to the rates in
+/// `clock.allowed-rates` -- and to none when `clock.force-rate` is set. Any
+/// other rate is resampled, exclusive or not.
+///
+/// Inside a Flatpak (`sandboxed`), what was set is read back before
+/// anything is promised. WirePlumber lets a program in a Flatpak read the
+/// graph's settings and not change them (`find-flatpak-access.lua` grants it
+/// `rx`), and `pw-metadata` writes without saying it was refused: the rate
+/// stayed where it was, the check found the graph unable to switch, and the
+/// reason given was a rate missing from `default.clock.allowed-rates`, for
+/// a rate that was never set. Only a read-back that names another rate says
+/// the write was dropped; one that failed says nothing about it, so what
+/// was there before is given back as it is elsewhere. Outside a Flatpak
+/// nothing is read into the write: what was there goes back on every
+/// refusal and when the stream closes.
+fn held_at(
+    clock: &dyn Clock,
+    rate: u32,
+    exclusive: bool,
+    forcing: bool,
+    sandboxed: bool,
+) -> Result<Option<u32>, String> {
+    if !exclusive {
+        return Ok(None);
+    }
+    let was = forcing.then(|| clock.settings().as_deref().map(forced_in).unwrap_or(0));
+    if was.is_some() {
+        clock.force(rate);
+    }
+    let settings = clock.settings();
+    let dropped = sandboxed && was.is_some() && settings.as_deref().is_some_and(|s| forced_in(s) != rate);
+    if was.is_some() {
+        chilpa_audio::diagnostics::trace(
+            "pipewire",
+            "force_rate",
+            format_args!("asked={rate} read_back={} dropped={dropped}", settings.is_some()),
+        );
+    }
+    let before = if dropped { None } else { was };
+    let rates = settings.as_deref().and_then(rates_in);
+    match untouched_at(rate, rates.as_deref()) {
+        Ok(()) => Ok(before),
+        Err(why) => {
+            if let Some(before) = before {
+                clock.force(before);
+            }
+            Err(match rates {
+                Some(rates) if dropped => not_set(rate, &rates),
+                _ => why,
+            })
+        }
+    }
+}
+
+/// Why a rate the graph refused to be set to would be resampled.
+fn not_set(rate: u32, rates: &[u32]) -> String {
+    let rates: Vec<String> = rates.iter().map(u32::to_string).collect();
+    chilpa_i18n::t_args(
+        "Chilpa could not set PipeWire's graph to {} Hz: its settings can be read from here but \
+         not changed, which is all a sandboxed program is allowed. The graph only runs at {} Hz, \
+         so this track would be resampled; add its rate to default.clock.allowed-rates, or \
+         choose the card itself",
+        &[&rate.to_string(), &rates.join(", ")],
+    )
+}
+
+/// Why nothing in this stack can be opened: what it opens -- the ALSA
+/// plugin's `pipewire:` PCM and the native DSD stream -- connects to
+/// PipeWire's own socket, and that socket is not here.
+fn no_native_socket() -> String {
+    chilpa_i18n::t(
+        "PipeWire's own socket, which Chilpa plays through, cannot be reached from here; inside a \
+         Flatpak, allow it with: flatpak override --user --filesystem=xdg-run/pipewire-0 \
+         app.chilpa.Chilpa",
+    )
 }
 
 /// A sink with the graph held at its rate. The rate that was set before
@@ -214,6 +306,9 @@ impl AudioSink for AtRate {
     }
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         self.inner_mut().drain(give_up)
+    }
+    fn drain_observed(&mut self, give_up: &dyn Fn() -> bool, held: &dyn Fn(u64)) -> Result<(), SinkError> {
+        self.inner_mut().drain_observed(give_up, held)
     }
     fn held(&self) -> u64 {
         self.inner().held()
@@ -293,6 +388,48 @@ fn untouched_at(rate: u32, rates: Option<&[u32]>) -> Result<(), String> {
     }
 }
 
+/// What the stack says about itself, out of who answers `pactl` and whether
+/// PipeWire's own socket is here.
+///
+/// What this stack needs is a server that answers and a PCM that reaches it.
+/// Asking for what it actually needs, rather than looking for a daemon by
+/// name, is what stops a stack being called missing when something else is
+/// providing it. And `pactl` alone does not prove the second half: it
+/// answers through the PulseAudio socket, so inside a Flatpak given only
+/// that one it says "PulseAudio (on PipeWire ...)" while the `pipewire:` PCM
+/// and the native DSD stream, which connect to PipeWire's own socket, cannot
+/// open. The stack was offered there and failed on every track.
+fn stack_info(name: &str, native_socket: bool) -> BackendInfo {
+    if name.is_empty() {
+        return BackendInfo::missing(
+            BackendKind::PipeWire,
+            chilpa_i18n::t("no sound server answered; install pipewire and pipewire-pulse"),
+        );
+    }
+    if !name.to_lowercase().contains("pipewire") {
+        return BackendInfo::missing(
+            BackendKind::PipeWire,
+            chilpa_i18n::t_args("the server answering is {}, not PipeWire", &[name]),
+        );
+    }
+    if !native_socket {
+        return BackendInfo::missing(BackendKind::PipeWire, no_native_socket());
+    }
+    BackendInfo {
+        kind: BackendKind::PipeWire,
+        present: true,
+        missing: String::new(),
+        provider: String::new(),
+        fidelity: Fidelity::Depends,
+        caveat: chilpa_i18n::t(
+            "PipeWire passes the samples through untouched only when it hands the output over \
+             to one program at a time. Chilpa asks for that whenever bit-perfect or exclusive \
+             mode is on. With both off the graph mixes this with everything else and resamples \
+             the result to whatever rate it is running at.",
+        ),
+    }
+}
+
 /// Whoever is answering the protocol, out of `pactl info`.
 ///
 /// Worth saying: on a machine where PipeWire answers for PulseAudio and for
@@ -317,36 +454,9 @@ impl OutputBackend for PipeWire {
     }
 
     fn info(&self) -> BackendInfo {
-        // What this stack needs is a server that answers and a PCM that
-        // reaches it. Asking for what it actually needs, rather than looking
-        // for a daemon by name, is what stops a stack being called missing
-        // when something else is providing it.
-        let name = server();
-        if name.is_empty() {
-            return BackendInfo::missing(
-                BackendKind::PipeWire,
-                chilpa_i18n::t("no sound server answered; install pipewire and pipewire-pulse"),
-            );
-        }
-        if !name.to_lowercase().contains("pipewire") {
-            return BackendInfo::missing(
-                BackendKind::PipeWire,
-                chilpa_i18n::t_args("the server answering is {}, not PipeWire", &[&name]),
-            );
-        }
-        BackendInfo {
-            kind: BackendKind::PipeWire,
-            present: true,
-            missing: String::new(),
-            provider: String::new(),
-            fidelity: Fidelity::Depends,
-            caveat: chilpa_i18n::t(
-                "PipeWire passes the samples through untouched only when it hands the output over \
-                 to one program at a time. Chilpa asks for that whenever bit-perfect or exclusive \
-                 mode is on. With both off the graph mixes this with everything else and resamples \
-                 the result to whatever rate it is running at.",
-            ),
-        }
+        // Asked of a Flatpak only: elsewhere the library finds its socket
+        // through settings this crate does not read.
+        stack_info(&server(), !chilpa_dirs::pipewire_out_of_reach())
     }
 
     /// A server takes whatever it is handed and makes it fit, so there is
@@ -387,6 +497,12 @@ impl OutputBackend for PipeWire {
         format: StreamFormat,
         exclusive: bool,
     ) -> Result<Box<dyn AudioSink + Send>, SinkError> {
+        // What `info` checks inside a Flatpak, checked again for an output
+        // remembered from before: without PipeWire's own socket the PCM
+        // fails, and its error reads as another program holding the output.
+        if chilpa_dirs::pipewire_out_of_reach() {
+            return Err(SinkError::Backend(no_native_socket()));
+        }
         #[cfg(target_os = "linux")]
         if format.sample_format.is_dsd() {
             return dsd::DsdSink::open(id, format, exclusive)
@@ -405,24 +521,14 @@ impl OutputBackend for PipeWire {
         // Held at the track's rate, when asked to: set before the check, so
         // the check reads what the graph really took.
         let rate = format.sample_rate_hz;
-        let before = if exclusive && FORCING.load(Ordering::Relaxed) {
-            let before = forced_rate();
-            force_rate(rate);
-            Some(before)
-        } else {
-            None
-        };
+        let sandboxed = chilpa_dirs::sandbox() == chilpa_dirs::Sandbox::Flatpak;
+        let before = held_at(&Graph, rate, exclusive, FORCING.load(Ordering::Relaxed), sandboxed)
+            .map_err(SinkError::Backend)?;
         let give_back = || {
             if let Some(before) = before {
                 force_rate(before);
             }
         };
-        if exclusive {
-            if let Err(e) = untouched_at(rate, graph_rates().as_deref()) {
-                give_back();
-                return Err(SinkError::Backend(e));
-            }
-        }
         let pcm = if exclusive {
             format!("pipewire:NODE={id},EXCLUSIVE=1")
         } else {
@@ -458,12 +564,124 @@ mod tests {
     #[test]
     #[ignore = "changes the running graph's clock.force-rate and sets it back; plays nothing"]
     fn the_forced_rate_is_set_and_given_back() {
-        let before = forced_rate();
+        let forced = || Graph.settings().as_deref().map(forced_in).unwrap_or(0);
+        let before = forced();
         force_rate(176_400);
-        assert_eq!(forced_rate(), 176_400);
-        assert_eq!(graph_rates(), Some(vec![176_400]), "the check reads the forced rate");
+        assert_eq!(forced(), 176_400);
+        assert_eq!(Graph.settings().as_deref().and_then(rates_in), Some(vec![176_400]), "the check reads the forced rate");
         force_rate(before);
-        assert_eq!(forced_rate(), before, "what was there goes back");
+        assert_eq!(forced(), before, "what was there goes back");
+    }
+
+    /// A graph's clock kept in memory: `writable` false is a Flatpak's
+    /// program, whose writes WirePlumber drops without a word.
+    /// `deaf_after_write` is a `pw-metadata` that fails or runs out of time
+    /// on every read after the first write.
+    struct Fake {
+        settings: std::cell::RefCell<String>,
+        writable: bool,
+        deaf_after_write: bool,
+        written: std::cell::RefCell<Vec<u32>>,
+    }
+
+    impl Fake {
+        fn new(writable: bool) -> Self {
+            Fake { settings: SETTINGS.to_string().into(), writable, deaf_after_write: false, written: Vec::new().into() }
+        }
+    }
+
+    impl Clock for Fake {
+        fn settings(&self) -> Option<String> {
+            if self.deaf_after_write && !self.written.borrow().is_empty() {
+                return None;
+            }
+            Some(self.settings.borrow().clone())
+        }
+
+        fn force(&self, rate: u32) {
+            self.written.borrow_mut().push(rate);
+            if self.writable {
+                let now = format!("clock.force-rate' value:'{}'", forced_in(&self.settings.borrow()));
+                let next = format!("clock.force-rate' value:'{rate}'");
+                let replaced = self.settings.borrow().replace(&now, &next);
+                *self.settings.borrow_mut() = replaced;
+            }
+        }
+    }
+
+    #[test]
+    fn a_rate_the_sandbox_cannot_set_is_said_and_never_promised_untouched() {
+        // Inside a Flatpak the graph's settings can be read and not written:
+        // the forced rate never took, and the reason given was a rate missing
+        // from default.clock.allowed-rates.
+        let clock = Fake::new(false);
+        let why = held_at(&clock, 176_400, true, true, true).expect_err("176.4 kHz would be resampled at 48");
+        assert!(why.contains("could not set"), "it says the rate was not set: {why}");
+        assert!(why.contains("176400"), "{why}");
+        assert_eq!(*clock.written.borrow(), [176_400], "nothing to put back: nothing was set");
+        // A rate the graph may switch to on its own still plays alone, and
+        // nothing is held: nothing was set to give back.
+        assert_eq!(held_at(&clock, 96_000, true, true, true), Ok(None));
+    }
+
+    #[test]
+    fn a_rate_that_was_set_is_held_and_put_back_by_whoever_holds_it() {
+        for sandboxed in [false, true] {
+            let clock = Fake::new(true);
+            let held = held_at(&clock, 176_400, true, true, sandboxed);
+            assert_eq!(held, Ok(Some(0)), "sandboxed={sandboxed}: what was there before: not forced");
+            assert_eq!(forced_in(&clock.settings().unwrap()), 176_400);
+            assert_eq!(*clock.written.borrow(), [176_400]);
+        }
+    }
+
+    #[test]
+    fn a_read_back_that_fails_still_gives_the_rate_back() {
+        // The write took and the read after it failed: nothing could be
+        // promised, the stream was refused, and the graph stayed at 192 kHz
+        // for every other program. A failed read does not show the write
+        // was dropped, so what was there goes back, as it did before the
+        // read-back.
+        for sandboxed in [false, true] {
+            let clock = Fake { deaf_after_write: true, ..Fake::new(true) };
+            assert!(held_at(&clock, 192_000, true, true, sandboxed).is_err(), "nothing read, nothing promised");
+            assert_eq!(*clock.written.borrow(), [192_000, 0], "sandboxed={sandboxed}: what was there went back");
+        }
+    }
+
+    #[test]
+    fn outside_a_flatpak_a_write_is_given_back_whatever_the_read_back_says() {
+        // On a host the forced rate is set, checked and given back as it was
+        // before the read-back existed; the read-back is a Flatpak's.
+        let clock = Fake::new(false);
+        let why = held_at(&clock, 176_400, true, true, false).expect_err("176.4 kHz would be resampled at 48");
+        assert!(why.contains("default.clock.allowed-rates") && !why.contains("could not set"), "{why}");
+        assert_eq!(*clock.written.borrow(), [176_400, 0], "given back on the refusal");
+        assert_eq!(held_at(&clock, 96_000, true, true, false), Ok(Some(0)), "held, and given back on close");
+    }
+
+    #[test]
+    fn without_forcing_the_graph_is_only_read() {
+        let clock = Fake::new(true);
+        let why = held_at(&clock, 176_400, true, false, true).expect_err("the graph cannot switch to it");
+        assert!(why.contains("default.clock.allowed-rates") && !why.contains("could not set"), "{why}");
+        assert_eq!(held_at(&clock, 176_400, false, true, true), Ok(None), "shared: nothing is asked of the graph");
+        assert!(clock.written.borrow().is_empty());
+    }
+
+    #[test]
+    fn a_stack_reached_only_through_the_pulse_socket_is_missing() {
+        // A Flatpak given --socket=pulseaudio and not PipeWire's own socket:
+        // `pactl` answers for PipeWire, and the stack was offered and failed
+        // on every track.
+        let info = stack_info("PulseAudio (on PipeWire 1.4.9)", false);
+        assert!(!info.present, "nothing it opens can reach the graph");
+        assert!(info.missing.contains("xdg-run/pipewire-0"), "it names the permission: {}", info.missing);
+        let here = stack_info("PulseAudio (on PipeWire 1.4.9)", true);
+        assert!(here.present);
+        assert_eq!(here.fidelity, Fidelity::Depends);
+        assert!(!stack_info("", true).present);
+        assert!(!stack_info("pulseaudio", true).present);
     }
 
     #[test]

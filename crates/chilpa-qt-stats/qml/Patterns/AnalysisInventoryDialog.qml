@@ -19,8 +19,10 @@ Modal {
     property var summary: ({ total: 0, standard: 0, mood: 0, matched: 0, runs: [] })
     property alias tracks: trackRows
     property string error: ""
-    width: Math.min(Metrics.analysisInventoryWidth, parent.width - Metrics.modalInset)
-    height: Math.min(Metrics.analysisInventoryHeight, parent.height - Metrics.modalInset)
+    preferredWidth: Math.min(Metrics.analysisInventoryWidth, parent.width - Metrics.modalInset)
+    readonly property real resultsHeading: history ? 0 : notice.y + notice.height + Metrics.gap8
+    readonly property real chromeHeight: tabs.y + tabs.height + footer.height + Metrics.gap12 * 2 + Metrics.modalInsets // derived: gaps above and below the results
+    preferredHeight: chromeHeight + resultsHeading + Math.max(Metrics.rowCompact,history ? runs.contentHeight : list.contentHeight)
     ListModel { id: trackRows; dynamicRoles: true }
     ListModel { id: runRows; dynamicRoles: true }
 
@@ -72,7 +74,8 @@ Modal {
     Timer { interval: Charts.inventoryPoll; repeat: true; running: dialog.opened; onTriggered: dialog.fetch(false, true) }
 
     Item {
-        anchors.fill: parent
+        width: parent.width
+        height: Math.max(Math.min(dialog.preferredHeight,dialog.maximumHeight),dialog.chromeHeight + dialog.resultsHeading + Metrics.rowCompact) - Metrics.modalInsets
         Row {
             id: heading
             width: parent.width
@@ -117,8 +120,9 @@ Modal {
             anchors.top: tabs.bottom; anchors.topMargin: Metrics.gap12; anchors.bottom: footer.top; anchors.bottomMargin: Metrics.gap12
             width: parent.width; visible: !dialog.history
             Kit.SearchField { id: search; objectName: "inventorySearch"; width: parent.width; placeholder: I18n.tr("Search title, artist or album", I18n.rev); onTextChanged: searchDelay.restart(); onAccepted: { searchDelay.stop(); dialog.fetch(true) } }
-            Row {
+            Flow {
                 id: filters
+                width: parent.width
                 anchors.top: search.bottom; anchors.topMargin: Metrics.gap8; spacing: Metrics.gap6
                 PillButton { text: I18n.tr("All", I18n.rev); kind: dialog.filter === "all" ? "primary" : "secondary"; onClicked: dialog.choose("all") }
                 PillButton { text: I18n.tr("Standard done", I18n.rev); kind: dialog.filter === "standard" ? "primary" : "secondary"; onClicked: dialog.choose("standard") }
@@ -144,6 +148,7 @@ Modal {
             Text { anchors.centerIn: list; visible: trackRows.count === 0 && !dialog.error; text: dialog.runId ? I18n.tr("No tracks have been processed in this run yet.", I18n.rev) : I18n.tr("No tracks match this filter.", I18n.rev); color: Theme.color.textTertiary; font.pointSize: Type.body }
         }
         ListView {
+            id: runs
             objectName: "inventoryRunList"
             anchors.top: tabs.bottom; anchors.topMargin: Metrics.gap12; anchors.bottom: footer.top; anchors.bottomMargin: Metrics.gap12
             width: parent.width; visible: dialog.history; model: runRows; clip: true; spacing: Metrics.gap8; boundsBehavior: Flickable.StopAtBounds

@@ -52,7 +52,9 @@ pub enum Runtime {
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Capability {
-    /// Reach the network, only these domains.
+    /// Reach the network. A WASM plugin reaches only these domains, checked
+    /// on each request; a process plugin gets the whole network when it
+    /// names at least one and none when it names none.
     Network { domains: Vec<String> },
     /// Keep things in its own store.
     Storage,
@@ -97,10 +99,11 @@ pub enum Capability {
     /// plaintext file.
     ///
     /// **It is a declaration, not a guarantee.** The other capabilities
-    /// Chilpa enforces: a domain that is not on the list does not reach the
-    /// network, full stop. This one it cannot check, because it is
-    /// precisely about what happens beyond its reach. That is why the user
-    /// is told what it is: what the plugin says about itself.
+    /// Chilpa enforces as far as the runtime lets it: a WASM plugin does not
+    /// reach a domain off its list, full stop. This one it cannot check at
+    /// all, because it is precisely about what happens beyond its reach.
+    /// That is why the user is told what it is: what the plugin says about
+    /// itself.
     OwnAccount {
         #[serde(default)]
         keyring: bool,
@@ -151,6 +154,18 @@ impl Capability {
                  wherever it decides, which may be a plaintext file. Chilpa does not see \
                  it, cannot delete it and cannot check any of this",
             ),
+        }
+    }
+
+    /// The same, for a plugin of that runtime. A process given the network
+    /// reaches any address, so its domains are named but not promised.
+    pub fn describe_for(&self, runtime: Runtime) -> String {
+        match (self, runtime) {
+            (Capability::Network { domains }, Runtime::Process) => chilpa_i18n::t_args(
+                "reach any address on the internet: it names {}, but a process plugin is not held to that list",
+                &[&domains.join(", ")],
+            ),
+            _ => self.describe(),
         }
     }
 }
@@ -394,6 +409,11 @@ impl Manifest {
         !self.allowed_domains().is_empty()
     }
 
+    /// What it asks for, in words, as its runtime holds it to them.
+    pub fn permissions(&self) -> Vec<String> {
+        self.capabilities.iter().map(|capability| capability.describe_for(self.runtime)).collect()
+    }
+
     /// What the user approved when they said yes (ADR-008).
     ///
     /// It is the plugin's kind and what it asks for, not the whole manifest:
@@ -446,7 +466,7 @@ impl Asked {
             .capabilities
             .iter()
             .filter(|c| !approved.capabilities.contains(c))
-            .map(Capability::describe)
+            .map(|c| c.describe_for(self.runtime))
             .collect();
         if self.runtime != approved.runtime {
             out.push(chilpa_i18n::t("run through a different plugin runtime"));
@@ -648,6 +668,20 @@ mod tests {
         let json = base().replace(r#""kind": "source""#, r#""kind": "source", "runtime": "process""#);
         let e = Manifest::parse(&json).expect_err("does not exist yet");
         assert!(e.to_string().contains("does not exist yet"), "{e}");
+    }
+
+    #[test]
+    fn a_process_plugin_is_not_promised_the_per_domain_limit() {
+        let wasm = Manifest::parse(&base()).unwrap();
+        assert!(wasm.permissions().contains(&"reach the internet, only api.example.com".to_string()), "{:?}", wasm.permissions());
+        let json = base().replace(r#""kind": "source""#, r#""kind": "source", "runtime": "process""#);
+        let process = Manifest::parse_for_runtime(&json, Runtime::Process).unwrap();
+        let said = process.permissions();
+        assert!(said.iter().any(|p| p.contains("any address") && p.contains("api.example.com")), "{said:?}");
+        assert!(!said.iter().any(|p| p.contains("only api.example.com")), "{said:?}");
+        let nothing = Asked { kind: process.kind, runtime: Runtime::Process, capabilities: Vec::new(), auth: None };
+        let asked = process.asks_for().beyond(&nothing);
+        assert!(asked.iter().any(|p| p.contains("any address")), "the approval says the same: {asked:?}");
     }
 
     #[test]

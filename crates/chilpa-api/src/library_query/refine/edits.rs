@@ -111,7 +111,7 @@ fn value_terms(node: Node, terms: &mut Vec<Node>) {
 }
 
 fn set_value(nodes: &mut Vec<Node>, f: Field, v: String, state: ValueState) -> Option<()> {
-    if !matches!(f, Field::Year | Field::Genre | Field::Label | Field::Composer | Field::Artist | Field::Album | Field::Rating | Field::Plays | Field::Type | Field::Quality) { return None; }
+    if !matches!(f, Field::Year | Field::Genre | Field::Label | Field::Composer | Field::Artist | Field::Album | Field::Rating | Field::Plays | Field::Type | Field::Quality | Field::Bits | Field::Rate) { return None; }
     let same = |s: &str| s.to_lowercase() == v.to_lowercase();
     let f = if f==Field::Genre && nodes.iter().any(|n| {
         let inner=if let Node::Not(inner)=n {inner.as_ref()} else {n};
@@ -156,9 +156,13 @@ fn operator(nodes: &mut Vec<Node>, at: usize, to: &str) -> Option<()> {
             if to == "exclude" { Node::Not(Box::new(node)) } else { node }
         }
         "none" if matches!(f, Field::Year | Field::Genre | Field::ExactGenre | Field::Label | Field::Composer) => Node::Is(f, Values::Missing),
-        "between" | "from" | "upTo" if matches!(f, Field::Year | Field::Plays) => {
+        "between" | "from" | "upTo" if matches!(f, Field::Year | Field::Plays | Field::Bits | Field::Rate) => {
+            let (low, high, step) = match f { Field::Bits => (16, 24, 8), Field::Rate => (44_100, 96_000, 44_100), _ => (0, 0, 0) };
             let (from, to_bound) = match values { Values::Range(a,b) => (a,b), _ => (None,None) };
             let (from, to_bound) = match to {
+                "from" if step > 0 => (Some(from.unwrap_or(high)), None),
+                "upTo" if step > 0 => (None, Some(to_bound.unwrap_or(low))),
+                "between" if step > 0 => { let from = from.unwrap_or(low); (Some(from), Some(to_bound.unwrap_or(from.checked_add(step)?))) }
                 "from" => (Some(from.unwrap_or(if f == Field::Year {1990} else {1})), None),
                 "upTo" => (None, Some(to_bound.unwrap_or(if f == Field::Year {1969} else {10}))),
                 _ => {
@@ -200,8 +204,8 @@ fn apply(any: &mut bool, nodes: &mut Vec<Node>, edit: Edit) -> Option<()> {
             in_target(nodes,target.as_deref(),|_,ns| set_value(ns,f,v,state),any)
         }
         Edit::Range {field:f,from,to,target} => {
-            let f = field(&f).filter(|f| matches!(f,Field::Year | Field::Plays))?;
-            if from.zip(to).is_some_and(|(a,b)| a>b) || (f == Field::Plays && [from,to].into_iter().flatten().any(|n| n<0)) { return None; }
+            let f = field(&f).filter(|f| matches!(f,Field::Year | Field::Plays | Field::Bits | Field::Rate))?;
+            if from.zip(to).is_some_and(|(a,b)| a>b) || (f != Field::Year && [from,to].into_iter().flatten().any(|n| n<0)) { return None; }
             in_target(nodes,target.as_deref(),|_,ns| {
                 replace(ns,f,|v| matches!(v,Values::Range(..) | Values::Missing), (from.is_some() || to.is_some()).then_some(Values::Range(from,to)));
                 Some(())

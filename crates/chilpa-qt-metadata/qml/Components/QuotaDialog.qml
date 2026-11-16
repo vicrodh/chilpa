@@ -8,7 +8,7 @@ Modal {
     objectName: "discogsQuotaDialog"
     signal tokenRequested()
     signal oauthRequested()
-    width: Metrics.confirmWidth
+    preferredWidth: Metrics.confirmWidth
     Column {
         width: parent.width; spacing: Metrics.gap12
         Text {

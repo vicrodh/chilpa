@@ -7,7 +7,7 @@ pub(super) fn media_children(medium: &str) -> Option<Vec<PanelChild>> {
         "radio" => vec![("home","Home","home"),("explore","Explore","search"),("saved","My stations","heart"),("genres","Genres","layoutGrid"),("countries","Countries","list")],
         _ => return None,
     };
-    Some(sections.into_iter().map(|(id,title,icon)| PanelChild {id:format!("media:{id}"),title:chilpa_i18n::t(title),icon:icon.into(),route:String::new()}).collect())
+    Some(sections.into_iter().map(|(id,title,icon)| PanelChild {id:format!("media:{id}"),title:chilpa_i18n::t(title),icon:icon.into(),route:String::new(),children:Vec::new()}).collect())
 }
 
 impl Chilpa {

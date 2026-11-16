@@ -10,7 +10,7 @@
 //! no lyrics of its own; and as its [`Translator`]: whoever translates the
 //! lyrics shown when they carry no translation in the reader's language.
 
-use chilpa_lyrics::pipeline::{Answer, Remote, Translation, Translator};
+use chilpa_lyrics::pipeline::{Answer, Remote, Romanizer, Translation, Translator};
 use chilpa_lyrics::{service, Timing, Track};
 use serde_json::{json, Value};
 use std::time::Duration;
@@ -96,6 +96,15 @@ impl Translator for LyricsServiceClient {
     fn translate(&self, track: &Track, lines: &[String], language: &str, from: Option<&str>, _timeout: Duration) -> Translation {
         match self.post(service::TRANSLATE_PATH, &service::translate_request(track, lines, language, from)) {
             Ok((status, retry_after, body)) => service::read_translation(status, retry_after.as_deref(), &body),
+            Err(message) => Translation::Failed { retry_after: None, message },
+        }
+    }
+}
+
+impl Romanizer for LyricsServiceClient {
+    fn romanize(&self, track: &Track, lines: &[String], from: Option<&str>, _timeout: Duration) -> Translation {
+        match self.post(service::ROMANIZE_PATH, &service::romanize_request(track, lines, from)) {
+            Ok((status, retry_after, body)) => service::read_romanization(status, retry_after.as_deref(), &body),
             Err(message) => Translation::Failed { retry_after: None, message },
         }
     }
@@ -202,5 +211,24 @@ mod tests {
         let closed = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
         let answer = LyricsServiceClient::at(&format!("http://{closed}")).resolve(&track(), None, None, Duration::from_secs(5));
         assert!(matches!(answer, Answer::Failed { retry_after: None, .. }), "{answer:?}");
+    }
+
+    #[test]
+    fn pronunciation_uses_its_own_operation_and_accepts_only_a_romanization_layer() {
+        let fixture = include_str!("../../chilpa-lyrics/tests/service/romanize-found.json");
+        let golden: Value = serde_json::from_str(fixture).unwrap();
+        let (origin, asked) = serve(fixture);
+        let track = Track { title: "Synthetic".into(), artist: "Fixture".into(), ..Track::default() };
+        let lines = ["東京".into(), "Hello".into(), "東京".into()];
+        let answer = LyricsServiceClient::at(&origin).romanize(&track, &lines, Some("ja"), Duration::from_secs(5));
+        let (path, agent, body) = asked.recv_timeout(Duration::from_secs(1)).unwrap();
+        assert_eq!(path, "POST /v1/lyrics/romanize");
+        assert!(agent.starts_with("Chilpa"));
+        assert_eq!(body, golden["request"]);
+        let Translation::Found(layer) = answer else { panic!("{answer:?}") };
+        assert_eq!(layer.kind, chilpa_lyrics::model::LayerKind::Romanization);
+        assert_eq!(layer.lines[1].line, 2);
+        assert_eq!(layer.lines[0].text, "Tōkyō");
+        assert!(matches!(service::read_translation(200, None, &golden["response"].to_string()), Translation::Failed { .. }));
     }
 }

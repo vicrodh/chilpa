@@ -6,6 +6,7 @@ import "../../../chilpa-qt-kit/qml/Theme"
 import "../../qml/Components"
 
 TestCase {
+    id: test
     name: "QueueAbout"
     when: windowShown
     visible: true
@@ -131,4 +132,28 @@ TestCase {
         compare(panel.facts[0].value, "Known label")
     }
 
+    function test_the_queue_column_does_not_say_where_the_file_or_server_entry_is() {
+        NowAbout.trackAnswer = ({loading:false, facts:[], credits:[], file:{title:"Server item", value:"provider/home/7", note:""}})
+        tryCompare(findChild(panel, "queueAboutNothing"), "visible", true)
+        compare(findChild(panel, "queueAboutFile"), null, "Media info lives in the information modal only")
+        compare(findChild(panel, "infoSectionCode"), null)
+    }
+
+    Component { id: infoExample; TrackInfoModal {} }
+    function test_the_track_information_opens_in_a_modal_wide_enough_for_its_content() {
+        Player.title = "A Track"
+        NowAbout.trackAnswer = ({loading:false, facts:[{label:"Genre", value:"Rock", group:"details"}], credits:[], file:{title:"File", value:"/music/a.flac", note:""}})
+        const modal = createTemporaryObject(infoExample, test)
+        verify(modal)
+        modal.open()
+        tryCompare(modal, "opened", true)
+        compare(modal.width, Math.min(Metrics.trackInfoWidth + Metrics.modalInsets, modal.parent.width - Metrics.modalInsets), "the modal is not the width of its content")
+        compare(findChild(modal, "trackInfoTitle").text, "A Track")
+        const sections = findChild(modal, "trackInfoSections")
+        compare(sections.width, modal.width - Metrics.modalInsets)
+        verify(sections.height > 0)
+        tryVerify(() => findChild(findChild(modal, "trackInfoMedia"), "infoSectionCode") !== null)
+        tryCompare(findChild(findChild(modal, "trackInfoMedia"), "infoSectionCode"), "text", "/music/a.flac")
+        modal.close()
+    }
 }

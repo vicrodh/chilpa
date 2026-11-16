@@ -1,7 +1,8 @@
 //! Converted DSD in the negotiated PCM format, with seek and pause recovery.
 
 use super::{
-    DsdPcmConverter, FrameSource, PlayError, Samples, SeekSignal, SkipSignal, StreamFormat, pack,
+    DsdPcmConverter, FrameSource, PackError, PlayError, Samples, SeekSignal, SkipSignal, StreamFormat,
+    pack,
 };
 use std::sync::{
     Arc,
@@ -22,6 +23,8 @@ pub(super) struct DsdPcmFrames<'a> {
     moved: bool,
     moved_at: u64,
     rewind_to: Option<u64>,
+    /// A block the output could not take (`playback::output_fault`).
+    pub(super) packing: Option<PackError>,
 }
 
 impl<'a> DsdPcmFrames<'a> {
@@ -47,6 +50,7 @@ impl<'a> DsdPcmFrames<'a> {
             moved: false,
             moved_at: 0,
             rewind_to: None,
+            packing: None,
         }
     }
 }
@@ -114,7 +118,10 @@ impl FrameSource for DsdPcmFrames<'_> {
             bytes.extend(samples.iter().flat_map(|sample| sample.to_le_bytes()));
         } else {
             pack(&Samples::Float(&samples), self.opened.sample_format, &mut bytes)
-                .map_err(|error| PlayError::Pack(error).to_string())?;
+                .map_err(|error| {
+                    self.packing = Some(error);
+                    PlayError::Pack(error).to_string()
+                })?;
         }
         Ok(Some(bytes))
     }

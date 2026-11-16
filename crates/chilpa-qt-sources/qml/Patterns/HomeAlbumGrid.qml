@@ -19,7 +19,7 @@ SlimGrid {
             readonly property int albumId: albums.model.albumId(index, revision)
             x: albums.cellX(index); y: albums.cellY(index)
             width: albums.cellWidth; height: Metrics.slimRow
-            art: albums.model.art(index, revision)
+            art: albums.model.art(index, revision, visible)
             title: albums.model.title(index, revision)
             subtitle: albums.model.subtitle(index, revision)
             onActivated: Navigation.go("album", albumId)

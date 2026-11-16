@@ -59,7 +59,9 @@ impl WorkerTransport for Box<dyn WorkerTransport> {
 /// A platform backend supplied by the application, never a package command.
 pub trait WorkerLauncher: Send + Sync {
     fn launch(&self, guest: &std::path::Path) -> Result<Box<dyn WorkerTransport>, BridgeError>;
-    fn guest_root(&self) -> &str;
+    /// Where `guest` appears inside the worker's sandbox, which `initialize`
+    /// names as its root: one fixed path, or the package's own.
+    fn guest_root(&self, guest: &std::path::Path) -> String;
     /// Empty revisions cannot reuse an inspection from another process.
     fn inspection_revision(&self) -> Option<String> { None }
 }

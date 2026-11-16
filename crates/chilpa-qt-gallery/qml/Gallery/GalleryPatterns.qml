@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import QtQuick
@@ -68,6 +69,19 @@ TitledFlow {
             PillButton { text: "Analysis inventory"; onClicked: inventoryPreview.show() }
         }
         Toast { visible: true; message: "Playback failed" }
+        Row {
+            spacing: Metrics.gap12
+            PillButton {
+                text: contentPreview.active ? "Unload content" : "Load content"
+                onClicked: contentPreview.replace(sampleContent, !contentPreview.active)
+            }
+            RetiringLoader {
+                id: contentPreview
+                width: Metrics.sidebarWidth; height: Metrics.settingsRow
+                onVisibleChanged: if (!visible) replace(null, false)
+            }
+            Component { id: sampleContent; Text { text: "Loaded content"; color: Theme.color.textPrimary } }
+        }
         PageTransition {
             width: Metrics.sidebarWidth
             height: Metrics.settingsRow

@@ -3,6 +3,7 @@ import QtTest
 import app.chilpa
 import app.chilpa.kit
 import "../../qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/qml/Screens" as Screens
 
 // The sources popover: two columns side by side, the column toggles only
 // where the screen has columns, each toggle asking the screen to turn its
@@ -21,6 +22,7 @@ TestCase {
     property var stars: []
     SourcesPopover { id: forTracks; ratings: test.stars; onRatingsChosen: (chosen) => test.stars = chosen }
     SourcesPopover { id: sourcesOnly; sourcesOnly: true; showAlbumGrouping: false }
+    Component { id: libraryFactory; Screens.LibraryScreen { width: test.width; height: test.height } }
 
     function init() { test.asked = [] }
 
@@ -34,6 +36,33 @@ TestCase {
         mouseClick(label)
         compare(test.asked.join(","), "label")
         withPanes.close()
+    }
+    function test_reordering_in_the_flyout_moves_real_filter_panels_and_persists() {
+        SettingsModel.keep("ui.library.columns", JSON.stringify(["year","genre","artist","album"]))
+        SettingsModel.panesOpen = true
+        const page = createTemporaryObject(libraryFactory,test)
+        verify(page)
+        const popup = findChild(page,"librarySources")
+        popup.open()
+        tryVerify(() => popup.opened)
+        const up = findChild(popup.contentItem,"paneMoveUp-album")
+        verify(up && up.visible && up.enabled)
+        mouseClick(up)
+        tryVerify(() => JSON.stringify(page.panes) === '["year","genre","album","artist"]')
+        compare(JSON.parse(SettingsModel.kept("ui.library.columns")),page.panes)
+        function order(screen) {
+            const panes = findChild(screen,"libraryFilterPanes"), columns = []
+            if (!panes) return columns
+            for (const child of panes.children)
+                for (const column of child.children || []) if (column.column) columns.push(column)
+            return columns.sort((a,b)=>a.x-b.x).map(column=>column.column)
+        }
+        tryVerify(() => JSON.stringify(order(page)) === JSON.stringify(page.panes))
+        popup.close()
+        page.visible = false
+        const returned = createTemporaryObject(libraryFactory,test)
+        tryVerify(() => JSON.stringify(order(returned)) === '["year","genre","album","artist"]')
+        SettingsModel.keep("ui.library.columns","")
     }
     function test_artist_and_album_are_available_in_the_compact_selector() {
         withPanes.open()

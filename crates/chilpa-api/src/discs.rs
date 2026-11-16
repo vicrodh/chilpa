@@ -156,7 +156,7 @@ mod tests {
         TrackRow {
             id: i64::from(disc), path: String::new(), title: String::new(), artist: String::new(),
             album: String::new(), album_id: 1, disc, number: 1, duration_ms: 0, plays: 0,
-            quality: Quality::default(), artwork_path: String::new(), available: true,
+            bit_depth: None, quality: Quality::default(), artwork_path: String::new(), available: true,
             composer: composer.to_string(), disc_subtitle: String::new(), work: work.to_string(),
             composer_target: String::new(),
             groups: None, ai_generated: None, explicit: None, credits: None,

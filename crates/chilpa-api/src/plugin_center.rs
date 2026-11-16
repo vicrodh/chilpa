@@ -1,17 +1,18 @@
 //! Background catalog, installation and compatibility settings workflow.
 #[path = "plugin_export.rs"]
 pub(crate) mod export;
+mod view;
+#[cfg(test)]
+use std::sync::atomic::AtomicUsize;
+use view::View;
 use crate::{plugins::Plugins, Chilpa, PluginRepositories, PreparedPlugin};
 use serde_json::{json, Value};
-use std::{path::PathBuf, sync::{Arc, Mutex, mpsc, atomic::{AtomicBool, AtomicUsize, Ordering}}};
+use std::{path::PathBuf, sync::{Arc, Mutex, mpsc, atomic::{AtomicBool, Ordering}}};
 
 pub(crate) struct PluginCenter {
     commands: Arc<mpsc::SyncSender<(String, Value)>>,
-    view: Arc<Mutex<Value>>,
-    busy: Arc<AtomicUsize>,
-    foreground: Arc<AtomicBool>,
+    view: Arc<View>,
     library_dirty: Arc<AtomicBool>,
-    operation: Arc<Mutex<String>>,
     removed: Arc<Mutex<Vec<String>>>,
     refreshed: Arc<Mutex<Vec<String>>>,
     inbox: Arc<Mutex<crate::plugin_notifications::Inbox>>,
@@ -19,26 +20,20 @@ pub(crate) struct PluginCenter {
 }
 
 impl PluginCenter {
-    fn start(plugins: Arc<Mutex<Plugins>>, root: PathBuf, catalog: Arc<crate::source_catalog::Catalog>) -> Self {
+    fn start(plugins: Arc<Mutex<Plugins>>, root: PathBuf, catalog: Arc<crate::source_catalog::Catalog>, playback_active: bool) -> Self {
         let (sender, receiver) = mpsc::sync_channel::<(String, Value)>(2);
         let commands = Arc::new(sender);
-        let view = Arc::new(Mutex::new(json!({})));
+        let view = Arc::new(View::default());
         let shared = view.clone();
-        let busy = Arc::new(AtomicUsize::new(0));
-        let active = busy.clone();
-        let foreground = Arc::new(AtomicBool::new(false));
-        let visible = foreground.clone();
         let library_dirty = Arc::new(AtomicBool::new(false));
         let changed = library_dirty.clone();
-        let operation = Arc::new(Mutex::new(String::new()));
-        let current = operation.clone();
         let removed = Arc::new(Mutex::new(Vec::new()));
         let deleted = removed.clone();
         let refreshed = Arc::new(Mutex::new(Vec::new()));
         let reload = refreshed.clone();
         let inbox = Arc::new(Mutex::new(crate::plugin_notifications::Inbox::default()));
         let notifications = inbox.clone();
-        let playback = Arc::new(AtomicBool::new(true));
+        let playback = Arc::new(AtomicBool::new(playback_active));
         let playing = playback.clone();
         let completions = Arc::downgrade(&commands);
         std::thread::spawn(move || {
@@ -54,7 +49,7 @@ impl PluginCenter {
                 let (action, input) = match receiver.recv_timeout(std::time::Duration::from_secs(60)) {
                     Ok(command) => command,
                     Err(mpsc::RecvTimeoutError::Timeout) => {
-                        if active.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire).is_err() { continue; }
+                        if !shared.begin(true, "updates_tick") { continue; }
                         ("updates_tick".to_string(), json!({}))
                     }
                     Err(mpsc::RecvTimeoutError::Disconnected) => break,
@@ -83,11 +78,8 @@ impl PluginCenter {
                     })();
                     if updates.revision() != previous_revision { *notifications.lock().unwrap() = updates.clone(); }
                     if let Err(error) = result { state["error"] = error.into(); manager_changed = true; }
-                    if manager_changed { *shared.lock().unwrap() = state.clone(); }
-                    if action != "updates_tick" {
-                        current.lock().unwrap().clear(); visible.store(false, Ordering::Release);
-                    }
-                    active.fetch_sub(1, Ordering::AcqRel);
+                    if manager_changed { shared.publish(&state); }
+                    shared.finish(action == "updates_tick");
                     continue;
                 }
                 if action == "native_settings_result" {
@@ -109,7 +101,7 @@ impl PluginCenter {
                         } else {
                             state["error"] = input["error"].clone();
                         }
-                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        shared.publish(&state);
                     }
                     continue;
                 }
@@ -118,12 +110,15 @@ impl PluginCenter {
                     let native = plugins.lock().ok().and_then(|host| host.natives.is_native(&id).then(|| (host.natives.clone(),
                         host.list().into_iter().find(|plugin| plugin.id == id).map(|plugin| plugin.name).unwrap_or_default())));
                     let capture = crate::web_sign_in::Capture::from_link(&input["url"], &input["capture"]);
+                    let window = crate::web_sign_in::executable();
+                    let skipped = if native.is_none() { "not-a-process-plugin" } else if capture.is_none() { "malformed-link" }
+                        else if window.is_none() { "no-window" } else { "closing" };
                     if let (Some((natives, name)), Some(capture), Some(window), Some(sender)) =
-                        (native, capture, crate::web_sign_in::executable(), completions.upgrade()) {
+                        (native, capture, window, completions.upgrade()) {
                         state["settings_loading_id"] = id.clone().into();
                         state["settings_id"] = id.clone().into();
                         state["error"] = Value::Null;
-                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        shared.publish(&state);
                         let revision = input["revision"].clone();
                         std::thread::spawn(move || {
                             let started = std::time::Instant::now();
@@ -149,12 +144,11 @@ impl PluginCenter {
                             let _ = sender.send(("native_settings_result".into(), result_input));
                         });
                     } else {
+                        eprintln!("warning: web-sign-in: step=start skipped={skipped}");
                         state["web_sign_in"] = false.into();
-                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        shared.publish(&state);
                     }
-                    if let Ok(mut operation) = current.lock() { operation.clear(); }
-                    visible.store(false, Ordering::Release);
-                    active.fetch_sub(1, Ordering::AcqRel);
+                    shared.finish(false);
                     continue;
                 }
                 if matches!(action.as_str(), "settings" | "submit") {
@@ -167,7 +161,7 @@ impl PluginCenter {
                         state["settings_id"] = id.into();
                         state["form"] = Value::Null;
                         state["error"] = Value::Null;
-                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        shared.publish(&state);
                         let id = id.to_string();
                         let completed_action = action.clone();
                         if let Some(sender) = completions.upgrade() {
@@ -183,9 +177,7 @@ impl PluginCenter {
                                 let _ = sender.send(("native_settings_result".into(), input));
                             });
                         }
-                        if let Ok(mut operation) = current.lock() { operation.clear(); }
-                        visible.store(false, Ordering::Release);
-                        active.fetch_sub(1, Ordering::AcqRel);
+                        shared.finish(false);
                         continue;
                     }
                     state["settings_loading_id"] = Value::Null;
@@ -219,38 +211,23 @@ impl PluginCenter {
                 if let Ok(host) = plugins.lock() {
                     if let Ok(requests) = host.network_requests.lock() { state["network_requests"] = json!(*requests); }
                 }
-                if let Ok(mut output) = shared.lock() { *output = state.clone(); }
-                if !matches!(action.as_str(), "tick" | "downloads_tick") {
-                    if let Ok(mut operation) = current.lock() { operation.clear(); }
-                    visible.store(false, Ordering::Release);
-                }
-                active.fetch_sub(1, Ordering::AcqRel);
+                shared.publish(&state);
+                shared.finish(matches!(action.as_str(), "tick" | "downloads_tick"));
             }
         });
-        Self { commands, view, busy, foreground, operation, library_dirty, removed, refreshed, inbox, playback }
+        Self { commands, view, library_dirty, removed, refreshed, inbox, playback }
     }
     fn command(&self, action: &str, input: Value) {
         let background = matches!(action, "tick" | "downloads_tick" | "updates_tick");
-        if background {
-            if self.foreground.load(Ordering::Acquire) || self.busy.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire).is_err() { return; }
-        } else {
-            if self.foreground.swap(true, Ordering::AcqRel) { return; }
-            self.busy.fetch_add(1, Ordering::AcqRel);
-            if let Ok(mut operation) = self.operation.lock() { *operation = action.into(); }
-        }
+        if !self.view.begin(background, action) { return; }
         // One foreground action can wait behind maintenance without being lost.
         if self.commands.try_send((action.to_string(), input)).is_err() {
-            if !background { self.foreground.store(false, Ordering::Release); }
-            self.busy.fetch_sub(1, Ordering::AcqRel);
+            self.view.reject(background);
         }
     }
 
     fn snapshot(&self) -> Value {
-        let mut value = self.view.lock().map(|value| value.clone()).unwrap_or(json!({}));
-        value["operation"] = self.operation.lock().map(|operation| operation.clone()).unwrap_or_default().into();
-        value["busy"] = self.foreground.load(Ordering::Acquire).into();
-        value["working"] = (self.busy.load(Ordering::Acquire) != 0).into();
-        value
+        self.view.snapshot()
     }
 }
 
@@ -267,7 +244,7 @@ impl Chilpa {
         if self.plugin_center.is_none() {
             if self.plugins.is_none() { self.start_plugins(); }
             if let Some(plugins) = &self.plugins {
-                let center = PluginCenter::start(plugins.clone(), Self::plugins_dir(), self.catalog.clone());
+                let center = PluginCenter::start(plugins.clone(), Self::plugins_dir(), self.catalog.clone(), self.plugin_playback_active());
                 center.command("refresh", json!({"initial":true}));
                 self.plugin_center = Some(center);
             }
@@ -275,6 +252,21 @@ impl Chilpa {
     }
     pub(crate) fn plugin_update_activity(&self, playing: bool) {
         if let Some(center) = &self.plugin_center { center.playback.store(playing, Ordering::Release); }
+    }
+    pub(crate) fn plugin_playback_active(&self) -> bool {
+        // A stopped window can still have a worker using a plugin.
+        let local = !self.plays.is_empty() || (self.player.is_none() && self.now.playing);
+        local || self.listen.pending.is_some() || self.casting.local_start.is_some()
+            || self.casting.active() && (self.now.playing || self.now.paused)
+    }
+    /// Advances pending plugin work and returns a document only after a visible change.
+    /// Keep the returned revision with the receiving view and pass `None` on its first read.
+    pub fn plugin_center_snapshot(&mut self, seen: Option<u64>) -> Option<(u64, String)> {
+        self.advance_plugins();
+        self.ensure_plugin_center();
+        self.advance_plugin_changes();
+        let center = self.plugin_center.as_ref()?;
+        center.view.snapshot_since(seen)
     }
     pub fn plugin_center_json(&mut self) -> String {
         self.advance_plugins();
@@ -295,6 +287,7 @@ impl Chilpa {
     }
     pub fn plugin_center_command(&mut self, action: &str, input: &str) {
         let Ok(input) = serde_json::from_str::<Value>(input) else { return };
+        self.plugin_update_activity(self.plugin_playback_active());
         if matches!(action, "disable" | "uninstall" | "restart") {
             if let Some(id) = input["id"].as_str() { self.sources.native_actions.remove(id); }
         }
@@ -329,7 +322,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                     let domains = crate::plugin_domains::candidates(&package);
                     let prepared = package.prepare_extension(repo, &entry, &inspection, domains.clone())?;
                     state["proposal"] = json!({"id":prepared.manifest().id,"catalog_id":entry.id,"repository_id":repo,"name":entry.name,"domains":domains,
-                        "permissions":prepared.manifest().capabilities.iter().map(|cap| cap.describe()).collect::<Vec<_>>(),
+                        "permissions":prepared.manifest().permissions(),
                         "inspection":inspection,"light":"green"});
                     *pending = Some(prepared);
                 }
@@ -357,7 +350,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 description: manifest.description.clone(), category: String::new(), author: String::new(),
                 repository: String::new(), package: address.into(),
                 digest: chilpa_plugin::catalog::Digest { algorithm: "sha256".into(), value: package.sha256.clone() },
-                adapter: "native".into(), problem: String::new(),
+                adapter: "native".into(), problem: String::new(), platform_build: false,
             };
             let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
             let installed = crate::native_install::installed_version(root, &manifest.id);
@@ -371,7 +364,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             let reviewed = input["permission_revision"].as_str() == Some(revision.as_str());
             if needs_review && !reviewed {
                 state["approval"] = json!({"id":manifest.id,"name":manifest.name,"description":manifest.description,"version":manifest.version,
-                    "permissions":manifest.capabilities.iter().map(|cap|cap.describe()).collect::<Vec<_>>(),"revision":revision,
+                    "permissions":manifest.permissions(),"revision":revision,
                     "update":true,"local_update":true,"path":address});
             } else {
                 let enabled = host.enabled(&manifest.id);
@@ -389,7 +382,11 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         "cancel_permissions" => state["approval"] = Value::Null,
         "enable" | "disable" => {
             if action == "enable" && input["permission_revision"] != permission_review(root, id)?["revision"] { return Err("Review and accept the plugin permissions before enabling it.".into()); }
+            let runtime = if action == "enable" { crate::plugin_runtimes::unavailable(plugins)? } else { None };
             let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+            // A process plugin that cannot start here is not switched on; switching one off still works.
+            let unavailable = crate::plugin_runtimes::ProcessPlugins::of(runtime, &plugins).installed(id);
+            if action == "enable" && !unavailable.is_empty() { return Err(unavailable); }
             if action == "enable" { plugins.approve(id)?; state["approval"] = Value::Null; } else { plugins.revoke(id)?; }
             plugins.reload_one(id);
             if action == "enable" && !plugins.update_healthy(id, true) {
@@ -530,31 +527,21 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     let mut counts = json!({"installed":0,"valid":0,"uninspected":0,"incompatible":0});
     let mut native_catalog = Vec::new();
     let third_party = repositories.third_party_ids();
+    let runtime = crate::plugin_runtimes::unavailable(plugins)?;
+    let (compatibility_available, compatibility_unavailable, process_plugins) = {
+        let host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+        (host.compatibility_launcher().is_some(), host.compatibility_unavailable(), crate::plugin_runtimes::ProcessPlugins::of(runtime, &host))
+    };
     for entry in repositories.cached("native")? {
         if entry.adapter != "native" { continue; }
-        let installed = crate::native_install::installed_version(root, &entry.id);
-        if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { continue; }
-        let mut row = json!(entry);
-        row["repository_id"] = "native".into();
-        row["update"] = installed.is_some().into();
-        row["third_party"] = third_party.contains(&entry.id).into();
-        row["third_party_by"] = third_party_by(&third_party, &entry).into();
-        native_catalog.push(row);
+        native_catalog.extend(native_offer(root, &entry, "native", &third_party, &process_plugins));
     }
-    let compatibility_available = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.compatibility_launcher().is_some();
     for repository in repositories.sources() {
         for entry in repositories.cached(&repository.id)? {
             // A native plugin is offered in its own section, to install or
             // to update when the repository has a newer version.
             if entry.adapter == "native" {
-                let installed = crate::native_install::installed_version(root, &entry.id);
-                if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { continue; }
-                let mut row = json!(entry);
-                row["repository_id"] = repository.id.clone().into();
-                row["update"] = installed.is_some().into();
-                row["third_party"] = third_party.contains(&entry.id).into();
-                row["third_party_by"] = third_party_by(&third_party, &entry).into();
-                native_catalog.push(row);
+                native_catalog.extend(native_offer(root, &entry, &repository.id, &third_party, &process_plugins));
                 continue;
             }
             if !compatibility_available { continue; }
@@ -575,6 +562,8 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         }
     }
     state["categories"] = json!(categories);
+    state["process_plugins"] = process_plugins.state();
+    state["compatibility"] = json!({"available": compatibility_available, "reason": compatibility_unavailable.unwrap_or_default()});
     state["native_catalog"] = json!(latest_per_plugin(native_catalog));
     state["catalog"] = json!(catalog);
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
@@ -590,8 +579,8 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
-        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
-            "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,"third_party":third_party.contains(&plugin.id),"third_party_by":if third_party.contains(&plugin.id) { origin["catalog_entry"]["repository"].as_str().and_then(crate::plugin_repositories::github_owner).unwrap_or_default() } else { String::new() },
+        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"unavailable":process_plugins.installed(&plugin.id),"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
+            "problem":if plugin.problem.is_empty() { export::refusal(root, &plugin.id).unwrap_or_default() } else { plugin.problem.clone() },"permissions":plugin.asks,"origin":origin,"third_party":third_party.contains(&plugin.id),"third_party_by":if third_party.contains(&plugin.id) { origin["catalog_entry"]["repository"].as_str().and_then(crate::plugin_repositories::github_owner).unwrap_or_default() } else { String::new() },
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
             "light":if !plugin.problem.is_empty() {"red"} else if origin.is_null() {"native"} else if plugin.state == "fine" {"green"} else {"yellow"}})
@@ -604,6 +593,22 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     counts["installed"] = json!(state["installed"].as_array().into_iter().flatten().filter(|row| !row["origin"].is_null()).count());
     state["counts"] = counts;
     failure.map_or(Ok(activated), Err)
+}
+
+/// A native catalog entry as the list offers it, or nothing when the version
+/// installed is the same or newer. One that cannot run here stays listed,
+/// with the reason in `unavailable`.
+fn native_offer(root: &std::path::Path, entry: &chilpa_plugin::catalog::CatalogEntry, repository: &str,
+    third_party: &std::collections::HashSet<String>, process: &crate::plugin_runtimes::ProcessPlugins) -> Option<Value> {
+    let installed = crate::native_install::installed_version(root, &entry.id);
+    if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { return None; }
+    let mut row = json!(entry);
+    row["repository_id"] = repository.into();
+    row["update"] = installed.is_some().into();
+    row["third_party"] = third_party.contains(&entry.id).into();
+    row["third_party_by"] = third_party_by(third_party, entry).into();
+    row["unavailable"] = process.offer(entry).into();
+    Some(row)
 }
 
 /// One row per plugin, whichever catalogs offer it: the highest version stays
@@ -655,7 +660,7 @@ mod tests {
     struct Launcher;
     struct Transport { id: u64, operation: String }
     impl WorkerLauncher for Launcher {
-        fn guest_root(&self) -> &str { "/guest" }
+        fn guest_root(&self, _: &std::path::Path) -> String { "/guest".into() }
         fn inspection_revision(&self) -> Option<String> { Some("fixture".into()) }
         fn launch(&self, _: &std::path::Path) -> Result<Box<dyn WorkerTransport>, BridgeError> {
             Ok(Box::new(Transport {id:0, operation:String::new()}))
@@ -680,18 +685,238 @@ mod tests {
     }
     fn wait_finished(center: &PluginCenter) -> Value {
         let deadline = Instant::now() + Duration::from_secs(10);
-        while center.busy.load(Ordering::Acquire) != 0 {
+        while center.view.working() != 0 {
             assert!(Instant::now() < deadline, "manager operation timed out");
             std::thread::sleep(Duration::from_millis(5));
         }
         center.snapshot()
     }
+    fn quiet_center(playback: bool) -> (PluginCenter, mpsc::Receiver<(String, Value)>) {
+        let (commands, received) = mpsc::sync_channel(2);
+        let center = PluginCenter {
+            commands: Arc::new(commands),
+            view: Arc::new(View::default()),
+            library_dirty: Arc::new(AtomicBool::new(false)),
+            removed: Arc::new(Mutex::new(Vec::new())),
+            refreshed: Arc::new(Mutex::new(Vec::new())),
+            inbox: Arc::new(Mutex::new(Default::default())),
+            playback: Arc::new(AtomicBool::new(playback)),
+        };
+        (center, received)
+    }
+    #[test]
+    fn an_unchanged_manager_still_consumes_library_changes_and_preserves_the_legacy_getter() {
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(false);
+        center.view.publish(&json!({"catalog":[{"id":"fixture"}],"form":{"fields":[]}}));
+        api.plugin_center = Some(center);
+        let (revision, document) = api.plugin_center_snapshot(None).unwrap();
+        assert_eq!(document, api.plugin_center_json());
+        api.library_changed();
+        api.plugin_center.as_ref().unwrap().library_dirty.store(true, Ordering::Release);
+        assert!(api.plugin_center_snapshot(Some(revision)).is_none());
+        assert!(api.library_changed(), "global plugin changes advance even without a new manager document");
+        assert!(api.plugin_center_snapshot(Some(revision)).is_none());
+        assert!(!api.library_changed());
+    }
+
+    #[test]
+    fn rejected_manager_commands_publish_the_finished_activity() {
+        for action in ["install", "downloads_tick"] {
+            let (center, received) = quiet_center(false);
+            let (revision, _) = center.view.snapshot_since(None).unwrap();
+            drop(received);
+            center.command(action, json!({}));
+            let (next, text) = center.view.snapshot_since(Some(revision)).unwrap();
+            let document: Value = serde_json::from_str(&text).unwrap();
+            assert_eq!(document["busy"], false);
+            assert_eq!(document["working"], false);
+            assert_eq!(document["operation"], if action == "install" { "install" } else { "" });
+            assert!(center.view.snapshot_since(Some(next)).is_none());
+        }
+    }
+
+    #[test]
+    fn a_full_manager_mailbox_does_not_leave_activity_running() {
+        let (center, received) = quiet_center(false);
+        center.commands.try_send(("fixture-one".into(), json!({}))).unwrap();
+        center.commands.try_send(("fixture-two".into(), json!({}))).unwrap();
+        let (before, _) = center.view.snapshot_since(None).unwrap();
+        center.command("install", json!({}));
+        let (after, text) = center.view.snapshot_since(Some(before)).unwrap();
+        let document: Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(document["busy"], false);
+        assert_eq!(document["working"], false);
+        assert_eq!(document["operation"], "install");
+        assert_eq!(received.try_recv().unwrap().0, "fixture-one");
+        assert_eq!(received.try_recv().unwrap().0, "fixture-two");
+        assert!(received.try_recv().is_err());
+        assert!(center.view.snapshot_since(Some(after)).is_none());
+    }
+
+    fn wait_snapshot(center: &PluginCenter, previous: u64, ready: impl Fn(&Value) -> bool) -> (u64, Value) {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            if let Some((revision, text)) = center.view.snapshot_since(Some(previous)) {
+                let document: Value = serde_json::from_str(&text).unwrap();
+                if ready(&document) { return (revision, document); }
+            }
+            assert!(Instant::now() < deadline, "manager did not publish its completion");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+    }
+
+    #[test]
+    fn asynchronous_native_settings_errors_publish_after_the_command_has_finished() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let host = Plugins::new(root.clone()).unwrap();
+        let manifest = chilpa_plugin::Manifest::parse_for_runtime(
+            r#"{"id":"test.source","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"}"#,
+            chilpa_plugin::Runtime::Process).unwrap();
+        let (client, pipes) = crate::natives::tests::channel();
+        crate::natives::tests::started(&host.natives, manifest, &root, &client);
+        // The native registry must contain a client to enter the asynchronous path.
+        // Closing its synthetic peer makes that RPC complete with a real channel error.
+        drop(pipes);
+        let center = PluginCenter::start(Arc::new(Mutex::new(host)), root, crate::source_catalog::Catalog::new(), false);
+        let (before, _) = center.view.snapshot_since(None).unwrap();
+        center.command("settings", json!({"id":"test.source"}));
+        let (completed, document) = wait_snapshot(&center, before, |document| {
+            document["settings_id"] == "test.source" && document["settings_loading_id"].is_null()
+                && document["busy"] == false && document["error"].as_str().is_some_and(|error| !error.is_empty())
+        });
+        assert_eq!(document["working"], false);
+        assert!(center.view.snapshot_since(Some(completed)).is_none());
+    }
+
+    #[test]
+    fn native_completion_inbox_publishes_forms_and_errors_without_a_foreground_command() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let host = Plugins::new(root.clone()).unwrap();
+        let center = PluginCenter::start(Arc::new(Mutex::new(host)), root, crate::source_catalog::Catalog::new(), false);
+        let (before, _) = center.view.snapshot_since(None).unwrap();
+        // The initial loading identity is null. Inject completions through the same
+        // worker inbox used by native RPC threads, without a process or account.
+        center.commands.send(("native_settings_result".into(), json!({"id":null,"action":"settings",
+            "form":{"fields":[{"key":"fixture","value":"ready"}]}}))).unwrap();
+        let (ready, document) = wait_snapshot(&center, before, |document| document["form"]["fields"][0]["value"] == "ready");
+        assert_eq!(document["busy"], false);
+        assert_eq!(document["working"], false);
+        center.commands.send(("native_settings_result".into(), json!({"id":null,"action":"settings","error":"fixture failure"}))).unwrap();
+        let (failed, document) = wait_snapshot(&center, ready, |document| document["error"] == "fixture failure");
+        assert_eq!(document["form"]["fields"][0]["value"], "ready");
+        assert!(center.view.snapshot_since(Some(failed)).is_none());
+    }
+
+    #[test]
+    fn a_new_manager_starts_with_the_current_playback_activity() {
+        for active in [false, true] {
+            let temporary = tempfile::tempdir().unwrap();
+            let root = temporary.path().join("plugins");
+            let host = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
+            let center = PluginCenter::start(host, root, crate::source_catalog::Catalog::new(), active);
+            assert_eq!(center.playback.load(Ordering::Acquire), active);
+        }
+    }
+    #[test]
+    fn manual_commands_replace_cached_activity_with_the_current_state() {
+        for (playing, paused, pending, expected) in [
+            (false, false, false, false), (true, false, false, true),
+            (false, true, false, false), (false, false, true, true),
+        ] {
+            let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+            let (center, _received) = quiet_center(!expected);
+            api.plugin_center = Some(center);
+            api.now.playing = playing;
+            api.now.paused = paused;
+            api.listen.pending = pending.then_some((1, 0, 0.0));
+            api.plugin_center_command("filter", "{}");
+            assert_eq!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire), expected);
+        }
+    }
+    #[test]
+    fn a_pending_local_handoff_keeps_updates_blocked() {
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(false);
+        api.plugin_center = Some(center);
+        api.casting.local_start = Some((0, "file:capture".into(), None));
+        api.plugin_center_command("filter", "{}");
+        assert!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+    }
+    fn silent_track(directory: &std::path::Path) -> PathBuf {
+        let track = directory.join("silence.wav");
+        let data_len = 4410u32 * 4;
+        let mut wave = b"RIFF".to_vec();
+        wave.extend((36 + data_len).to_le_bytes());
+        wave.extend(b"WAVEfmt ");
+        wave.extend(16u32.to_le_bytes());
+        wave.extend(1u16.to_le_bytes());
+        wave.extend(2u16.to_le_bytes());
+        wave.extend(44_100u32.to_le_bytes());
+        wave.extend(176_400u32.to_le_bytes());
+        wave.extend(4u16.to_le_bytes());
+        wave.extend(16u16.to_le_bytes());
+        wave.extend(b"data");
+        wave.extend(data_len.to_le_bytes());
+        wave.resize(wave.len() + data_len as usize, 0);
+        std::fs::write(&track, wave).unwrap();
+        track
+    }
+    #[test]
+    fn paused_playback_blocks_until_its_play_has_ended() {
+        let temporary = tempfile::tempdir().unwrap();
+        let track = silent_track(temporary.path());
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(true);
+        api.plugin_center = Some(center);
+        api.player = Some(chilpa_core::spawn_player());
+        for _ in 0..64 {
+            let spec = chilpa_core::launch::LaunchSpec { paths: vec![track.clone()], device: "file:capture".into(), paused: true, ..Default::default() };
+            api.launch(spec, 0, crate::Relaunch::Track);
+            assert!(!api.plays.is_empty());
+            api.now.paused = true;
+            api.plugin_center_command("filter", "{}");
+            assert!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+            api.player.as_ref().unwrap().stop();
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while !api.plays.is_empty() && Instant::now() < deadline {
+                api.read_player_events();
+                std::thread::sleep(Duration::from_millis(5));
+            }
+            assert!(api.plays.is_empty(), "the stopped play said how it ended");
+        }
+        api.now.playing = true;
+        api.plugin_center_command("filter", "{}");
+        assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+        api.plugin_center.as_ref().unwrap().playback.store(true, Ordering::Release);
+        api.poll();
+        assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+    }
+    #[test]
+    fn natural_completion_releases_the_update_guard_in_the_same_poll() {
+        let temporary = tempfile::tempdir().unwrap();
+        let track = silent_track(temporary.path());
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(true);
+        api.plugin_center = Some(center);
+        api.replace_queue(vec![track.to_string_lossy().into_owned()]);
+        api.now.playing = true;
+        api.player = Some(chilpa_core::spawn_player());
+        let spec = chilpa_core::launch::LaunchSpec { paths: vec![track], device: "file:capture".into(), ..Default::default() };
+        api.launch(spec, 0, crate::Relaunch::Track);
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while api.now.playing && Instant::now() < deadline {
+            api.poll();
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(!api.now.playing && api.now.error.is_empty(), "{:?}", api.now);
+        assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+    }
     #[test]
     fn maintenance_is_invisible_and_does_not_drop_a_foreground_action() {
-        let (commands, received) = mpsc::sync_channel(2);
-        let center = PluginCenter { commands: Arc::new(commands), view: Arc::new(Mutex::new(json!({}))),
-            busy: Arc::new(AtomicUsize::new(0)), foreground: Arc::new(AtomicBool::new(false)), library_dirty: Arc::new(AtomicBool::new(false)), removed: Arc::new(Mutex::new(Vec::new())), refreshed: Arc::new(Mutex::new(Vec::new())),
-            operation: Arc::new(Mutex::new(String::new())), inbox: Arc::new(Mutex::new(Default::default())), playback: Arc::new(AtomicBool::new(false)) };
+        let (center, received) = quiet_center(false);
         center.command("tick", json!({"id":"guest"}));
         assert_eq!(center.snapshot()["busy"], false);
         assert_eq!(center.snapshot()["working"], true);
@@ -724,7 +949,7 @@ mod tests {
         let mut host = Plugins::new(root.clone()).unwrap();
         host.load_all(); host.approve(id).unwrap(); host.reload_one(id);
         let host = Arc::new(Mutex::new(host));
-        let center = PluginCenter::start(host.clone(), root, crate::source_catalog::Catalog::new());
+        let center = PluginCenter::start(host.clone(), root, crate::source_catalog::Catalog::new(), false);
         center.command("tick", json!({"id":id}));
         let view = wait_finished(&center);
         assert_ne!(view["maintenance_failed"], true, "{view}");
@@ -763,7 +988,7 @@ mod tests {
         let mut plugins = Plugins::new(temporary.path().join("plugins")).unwrap();
         plugins.set_worker_launcher(Arc::new(Launcher));
         let root = temporary.path().join("plugins");
-        let center = PluginCenter::start(Arc::new(Mutex::new(plugins)), root.clone(), crate::source_catalog::Catalog::new());
+        let center = PluginCenter::start(Arc::new(Mutex::new(plugins)), root.clone(), crate::source_catalog::Catalog::new(), false);
         center.command("add", json!({"url":format!("http://{address}/catalog.xml")}));
         let view = wait(&center); let repository = view["repositories"][0]["id"].clone();
         assert_eq!(view["catalog"].as_array().unwrap().len(), 1);
@@ -800,7 +1025,7 @@ mod tests {
         let temporary = tempfile::tempdir().unwrap();
         let root = temporary.path().join("plugins");
         let host = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
-        let center = PluginCenter::start(host.clone(), root.clone(), crate::source_catalog::Catalog::new());
+        let center = PluginCenter::start(host.clone(), root.clone(), crate::source_catalog::Catalog::new(), false);
         let manifest = r#"{"id":"app.test.local","name":"Local","version":"1.0","api_version":1,"kind":"source","runtime":"process","capabilities":[{"type":"register_source"}]}"#;
         let mut archive = zip::ZipWriter::new(Cursor::new(Vec::new()));
         for (name, bytes) in [("wrapper/manifest.json", manifest.as_bytes()), ("wrapper/plugin", b"must not run".as_slice())] {
@@ -839,6 +1064,122 @@ mod tests {
         assert_ne!(wait_finished(&center)["error"], "");
     }
 
+    /// Where process plugins cannot run, their offers and installations stay
+    /// in the list with the reason instead of disappearing.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn process_plugins_that_cannot_run_here_stay_listed_and_marked() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let id = "app.test.process";
+        std::fs::create_dir_all(root.join(id)).unwrap();
+        std::fs::write(root.join(id).join("manifest.json"), format!(r#"{{"id":"{id}","name":"Process","version":"1.0.0","api_version":1,
+            "kind":"source","runtime":"process","capabilities":[]}}"#)).unwrap();
+        std::fs::write(root.join(id).join("plugin"), b"never started").unwrap();
+        let mut host = Plugins::new(root.clone()).unwrap();
+        crate::natives::tests::without_sandbox(&host.natives);
+        host.load_all(); host.approve(id).unwrap(); host.reload_one(id);
+        let platform = format!("{}-{}", std::env::consts::OS, std::env::consts::ARCH);
+        let offer = |id: &str| json!({"id":id,"name":id,"repository":"https://example.org/source","package":"https://example.org/package.zip",
+            "sha256":"a".repeat(64),"api":{"min":1,"max":1}});
+        let mut process = offer("app.test.offer");
+        process["packages"] = json!({platform: {"package":"https://example.org/platform.zip","sha256":"b".repeat(64)}});
+        let index = temporary.path().join("index.json");
+        std::fs::write(&index, json!({"version":1,"plugins":[process, offer("app.test.portable")]}).to_string()).unwrap();
+        PluginRepositories::load(root.join(".repositories")).unwrap().load_native_file(&index, "EN").unwrap();
+        let plugins = Arc::new(Mutex::new(host));
+        let (mut pending, mut state) = (None, json!({}));
+        let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"), None);
+        let playing = AtomicBool::new(false);
+        run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        let reason = chilpa_i18n::t("Process plugins need the Flatpak portal, which is not available.");
+        assert_eq!(state["process_plugins"], json!({"available": false, "reason": reason}));
+        let rows = state["native_catalog"].as_array().unwrap();
+        let process = rows.iter().find(|row| row["id"] == "app.test.offer").expect("a process plugin's offer is kept, not hidden");
+        assert_eq!(process["unavailable"], reason);
+        let portable = rows.iter().find(|row| row["id"] == "app.test.portable").expect("a portable offer is listed");
+        assert_eq!(portable["unavailable"], "", "a portable plugin still installs");
+        let installed = state["installed"].as_array().unwrap().iter().find(|row| row["id"] == id).expect("it stays installed");
+        assert_eq!((&installed["state"], &installed["problem"], &installed["unavailable"]), (&json!("unavailable"), &json!(reason), &json!(reason)));
+        let revision = permission_review(&root, id).unwrap()["revision"].clone();
+        assert_eq!(run("enable", &json!({"id":id,"permission_revision":revision}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing),
+            Err(reason.clone()), "it is not switched on");
+        run("disable", &json!({"id":id}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        assert!(!plugins.lock().unwrap().enabled(id), "switching it off still works");
+    }
+
+    #[test]
+    fn the_plugin_center_says_why_compatibility_plugins_cannot_run() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let plugins = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
+        let (mut pending, mut state) = (None, json!({}));
+        let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"), None);
+        let playing = AtomicBool::new(false);
+        run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        if cfg!(target_os = "linux") {
+            assert_eq!(state["compatibility"]["available"], false, "no runtime is installed in a fresh profile");
+            assert!(!state["compatibility"]["reason"].as_str().unwrap().is_empty(), "the reason is said: {}", state["compatibility"]);
+        }
+        plugins.lock().unwrap().set_worker_launcher(Arc::new(Launcher));
+        run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        assert_eq!(state["compatibility"], json!({"available": true, "reason": ""}));
+    }
+
+    /// Answers as a Flatpak without its portal, and counts the questions
+    /// asked while the host's lock was held.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[derive(Default)]
+    struct LockProbe {
+        host: std::sync::OnceLock<std::sync::Weak<Mutex<Plugins>>>,
+        asked: AtomicUsize,
+        while_locked: AtomicUsize,
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl chilpa_bwrap::NativeLauncher for LockProbe {
+        fn availability(&self) -> Result<(), chilpa_bwrap::Unavailable> {
+            self.asked.fetch_add(1, Ordering::SeqCst);
+            if self.host.get().and_then(std::sync::Weak::upgrade).is_some_and(|host| host.try_lock().is_err()) {
+                self.while_locked.fetch_add(1, Ordering::SeqCst);
+            }
+            Err(chilpa_bwrap::Unavailable::Portal)
+        }
+
+        fn launch(&self, _: &chilpa_bwrap::NativePaths, _: &str, _: usize, _: bool, _: chilpa_bwrap::Notice)
+            -> Result<chilpa_bwrap::LaunchedNative, BridgeError> {
+            panic!("nothing is started")
+        }
+    }
+
+    /// In Flatpak the first answer opens the portal's connection, which can
+    /// take seconds; whoever waits for the host's lock must not wait for it.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn the_plugin_center_asks_whether_process_plugins_can_run_without_the_host_lock() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let id = "app.test.process";
+        std::fs::create_dir_all(root.join(id)).unwrap();
+        std::fs::write(root.join(id).join("manifest.json"), format!(r#"{{"id":"{id}","name":"Process","version":"1.0.0","api_version":1,
+            "kind":"source","runtime":"process","capabilities":[]}}"#)).unwrap();
+        let mut host = Plugins::new(root.clone()).unwrap();
+        let probe = Arc::new(LockProbe::default());
+        crate::natives::tests::with_launcher(&host.natives, probe.clone());
+        host.load_all();
+        let plugins = Arc::new(Mutex::new(host));
+        let _ = probe.host.set(Arc::downgrade(&plugins));
+        let (mut pending, mut state) = (None, json!({}));
+        let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"), None);
+        let playing = AtomicBool::new(false);
+        let asked = probe.asked.load(Ordering::SeqCst);
+        run("filter", &json!({}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+        let revision = permission_review(&root, id).unwrap()["revision"].clone();
+        assert!(run("enable", &json!({"id":id,"permission_revision":revision}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).is_err());
+        assert!(probe.asked.load(Ordering::SeqCst) >= asked + 2, "the list and the switch both asked");
+        assert_eq!(probe.while_locked.load(Ordering::SeqCst), 0, "none of them while the host's lock was held");
+    }
+
 }
 
 pub(crate) fn permission_review(root: &std::path::Path, id: &str) -> Result<Value, String> {
@@ -849,7 +1190,7 @@ pub(crate) fn permission_review(root: &std::path::Path, id: &str) -> Result<Valu
     let manifest = chilpa_plugin::Manifest::parse_for_runtime(std::str::from_utf8(&bytes).map_err(|e| e.to_string())?, runtime).map_err(|e| e.to_string())?;
     use sha2::Digest;
     Ok(json!({"id":id,"name":manifest.name,"description":value["description"],"version":manifest.version,
-        "permissions":manifest.capabilities.iter().map(|cap| cap.describe()).collect::<Vec<_>>(),
+        "permissions":manifest.permissions(),
         "revision":format!("{:x}", sha2::Sha256::digest(&bytes))}))
 }
 

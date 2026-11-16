@@ -22,10 +22,16 @@ impl Normalization {
     }
 }
 
+pub enum Media {
+    Remote(chilpa_stream::RangedRequest),
+    /// An open handle pins the exact verified bytes, even across a rename.
+    File {file:std::fs::File,lease:Arc<dyn Send+Sync>},
+}
+
 pub struct Located {
     /// Provider gain replaces local normalization metadata, including a zero gain.
     pub normalization: Option<Normalization>,
-    pub request: chilpa_stream::RangedRequest,
+    pub media: Media,
     /// The file's own extension ("flac", "m4a"). The address has none.
     pub extension: Option<String>,
     /// The server's name, as Settings shows it: an error names it.
@@ -47,7 +53,9 @@ pub trait RemoteOpener: Send + Sync {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String>;
     fn describe(&self, entry: &RemoteEntry) -> Described;
     /// The track could not be opened. The facade decides whether its server
-    /// stopped answering.
+    /// stopped answering, and how fast to ask again: nothing else. It is not
+    /// told which play asked, and it says nothing of any queue: the play
+    /// that reaches the track says it passed it over.
     fn failed(&self, _entry: &RemoteEntry, _why: &str) {}
 }
 
@@ -85,8 +93,15 @@ pub(crate) fn open(path: &Path, entry: &RemoteEntry) -> Result<Opened, String> {
     let opened = opener.locate(entry).and_then(|located| {
         let server = located.server;
         let named = |e: String| if server.is_empty() { e } else { chilpa_i18n::t_args("the track on {} could not be read: {}", &[&server, &e]) };
-        let file = chilpa_stream::Ranged::open(located.request).map_err(|e| named(e.to_string()))?;
-        chilpa_decode::Decoded::open_remote(file, located.extension.as_deref()).map(|decoded| (decoded, located.playback, located.normalization.and_then(Normalization::valid))).map_err(|e| named(e.to_string()))
+        let decoded = match located.media {
+            Media::Remote(request) => {
+                let file = chilpa_stream::Ranged::open(request).map_err(|e| named(e.to_string()))?;
+                chilpa_decode::Decoded::open_remote(file, located.extension.as_deref())
+            }
+            Media::File {file,lease} => chilpa_decode::Decoded::open_file(file, located.extension.as_deref())
+                .map(|mut decoded| {decoded.pin(lease);decoded}),
+        };
+        decoded.map(|decoded| (decoded, located.playback, located.normalization.and_then(Normalization::valid))).map_err(|e| named(e.to_string()))
     });
     match opened {
         Ok((decoded, playback, normalization)) => {
@@ -140,4 +155,9 @@ pub fn title(path: &Path) -> Option<String> {
 pub fn external(entry: &RemoteEntry) -> Result<(Located, Described), String> {
     let opener = opener().ok_or_else(|| chilpa_i18n::t("this track is on a server, and servers are not connected"))?;
     Ok((opener.locate(entry)?, opener.describe(entry)))
+}
+
+/// Validation runs on the download worker and never opens an audio output.
+pub fn validate_copy(file: std::fs::File, extension: Option<&str>, cancelled:impl Fn()->bool) -> Result<String,String> {
+    chilpa_decode::verification::file(file,extension,cancelled).map_err(|error| error.to_string())
 }

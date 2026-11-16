@@ -204,6 +204,18 @@ fn leaf(word: &str, quoted: bool, at: usize) -> Result<Node, ParseError> {
                 .filter(|n| *n >= 0).map(|n| n.to_string())).collect();
             numbers.map(|n| Node::Is(field, Values::Any(n))).ok_or(error)
         }
+        Field::Bits | Field::Rate => {
+            let error = ParseError { at, what: if field == Field::Bits {
+                chilpa_i18n::mark("bits takes whole numbers like 16 or 24, or a range with the lower bound first")
+            } else { chilpa_i18n::mark("rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lower bound first") } };
+            let number = |text: &str| if field == Field::Bits { text.trim().parse::<i64>().ok() } else { hertz(text) };
+            if let Some((from, to)) = bounds(&scalar, number) {
+                if from.is_some_and(|n| n <= 0) || to.is_some_and(|n| n <= 0) || from.zip(to).is_some_and(|(a, b)| a > b) { return Err(error); }
+                return Ok(Node::Is(field, Values::Range(from, to)));
+            }
+            let numbers: Option<Vec<String>> = scalar.split(',').map(|n| number(n).filter(|n| *n > 0).map(|n| n.to_string())).collect();
+            numbers.map(|n| Node::Is(field, Values::Any(n))).ok_or(error)
+        }
         Field::Type | Field::Quality => {
             let error = ParseError { at, what: if field == Field::Type {
                 chilpa_i18n::mark("type takes album, single, ep, compilation, live or soundtrack")
@@ -266,10 +278,31 @@ fn unquote(text: &str) -> String {
 
 /// `1990..1999`, `..1999`, `1990..`.
 fn range(text: &str) -> Option<(Option<i64>, Option<i64>)> {
+    bounds(text, |s| s.trim().parse().ok())
+}
+
+/// A range whose bounds are read by `number`.
+fn bounds(text: &str, number: impl Fn(&str) -> Option<i64>) -> Option<(Option<i64>, Option<i64>)> {
     let (from, to) = text.split_once("..")?;
-    let bound = |s: &str| if s.trim().is_empty() { Some(None) } else { s.trim().parse().ok().map(Some) };
+    let bound = |s: &str| if s.trim().is_empty() { Some(None) } else { number(s).map(Some) };
     let (from, to) = (bound(from)?, bound(to)?);
     (from.is_some() || to.is_some()).then_some((from, to))
+}
+
+/// Hertz written whole (`44100`) or in kilohertz (`44.1k`, `96k`, `96khz`).
+fn hertz(text: &str) -> Option<i64> {
+    let text = text.trim().to_lowercase();
+    let text = text.strip_suffix("hz").unwrap_or(&text);
+    match text.strip_suffix('k') {
+        Some(kilo) => {
+            let (whole, fraction) = kilo.split_once('.').unwrap_or((kilo, ""));
+            if fraction.len() > 3 || !whole.chars().chain(fraction.chars()).all(|c| c.is_ascii_digit()) || whole.is_empty() { return None; }
+            let thousands: i64 = whole.parse().ok()?;
+            let rest: i64 = if fraction.is_empty() { 0 } else { format!("{fraction:0<3}").parse().ok()? };
+            thousands.checked_mul(1000)?.checked_add(rest)
+        }
+        None => text.parse().ok(),
+    }
 }
 
 /// `30d`, `6w`, `3m`, `1y`: seconds back from now.

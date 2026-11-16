@@ -667,3 +667,41 @@ fn two_names_that_are_not_text_get_two_copies() {
     assert_eq!(snapshot(&second).unwrap().title.as_deref(), Some("Second"));
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn totals_roundtrip_clear_and_preserve_track_positions() {
+    let directory=folder("totals");
+    for path in every_format(&directory) {
+        let mut changes=FileChanges::none(path.clone());
+        changes.disc_number=Change::Set(2);
+        changes.disc_total=Change::Set(3);
+        changes.track_total=Change::Set(12);
+        write(&[changes]).unwrap();
+        let said=snapshot(&path).unwrap();
+        assert_eq!(said.track_number,Some(3),"{}",path.display());
+        assert_eq!(said.disc_number,Some(2));
+        assert_eq!(said.disc_total,Some(3),"{}",path.display());
+        assert_eq!(said.track_total,Some(12),"{}",path.display());
+        let mut changes=FileChanges::none(path.clone());
+        changes.track_total=Change::Clear;
+        changes.disc_total=Change::Clear;
+        write(&[changes]).unwrap();
+        let said=snapshot(&path).unwrap();
+        assert_eq!((said.track_number,said.disc_number),(Some(3),Some(2)));
+        assert_eq!((said.track_total,said.disc_total),(None,None));
+    }
+}
+
+#[test]
+fn concurrent_staging_refuses_held_target_and_releases_on_drop() {
+    let directory=folder("write-lease");
+    let path=mp3(&directory,"one");
+    let mut changes=FileChanges::none(path.clone());
+    changes.title=Change::Set("First".into());
+    let held=stage(&[changes.clone()],Options::default(),&mut |_,_|{}).unwrap();
+    assert!(stage(&[changes.clone()],Options::default(),&mut |_,_|{}).is_err());
+    drop(held);
+    write(&[changes]).unwrap();
+    assert_eq!(snapshot(&path).unwrap().title.as_deref(),Some("First"));
+    assert!(!std::fs::read_dir(&directory).unwrap().any(|item|item.unwrap().file_name().to_string_lossy().ends_with(".chilpa-tmp")));
+}

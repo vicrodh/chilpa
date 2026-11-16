@@ -58,6 +58,9 @@ msgstr "-18 LUFS · ReplayGain"
 msgid "-23 LUFS · Broadcast (EBU R128)"
 msgstr "-23 LUFS · Rundfunk (EBU R128)"
 
+msgid "1 hour"
+msgstr "1 Stunde"
+
 msgid "1 hr"
 msgstr "1 Std."
 
@@ -69,6 +72,9 @@ msgstr "1. Suche deinen DAC unter „Audio > Sinks“ und notiere dir seine Numm
 
 msgid "1. Origin"
 msgstr "1. Herkunft"
+
+msgid "12 hours"
+msgstr "12 Stunden"
 
 msgid "16 bit"
 msgstr "16 bit"
@@ -87,6 +93,9 @@ msgstr "24 bit in 3 Bytes"
 
 msgid "24 bit in 32"
 msgstr "24 bit in 32"
+
+msgid "24 hours"
+msgstr "24 Stunden"
 
 msgid "3 hr"
 msgstr "3 Std."
@@ -112,6 +121,9 @@ msgstr "4. Zusammenfassung"
 msgid "5 hr"
 msgstr "5 Std."
 
+msgid "72 hours"
+msgstr "72 Stunden"
+
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Ein JACK-Graph läuft mit einer einzigen Abtastrate, und jedes Programm darin läuft mit dieser Rate – hier sind es {} Hz. Ein Titel mit einer anderen Rate wird per Resampling umgerechnet, bevor Chilpa mitreden kann, und keine Einstellung hier ändert das. JACK dient dazu, Audio zwischen Programmen zu routen; für eine Datei, die unverändert beim DAC ankommen soll, wähle die Karte selbst."
 
@@ -133,14 +145,29 @@ msgstr "Ein gewählter Ordner enthält keine Titel"
 msgid "A click on a record opens"
 msgstr "Ein Klick auf ein Album öffnet"
 
+msgid "A device assignment takes priority over its class, then the general default. Classify devices explicitly; Chilpa cannot identify headphones connected to a DAC."
+msgstr ""
+
 msgid "A device operation is still running."
 msgstr ""
 
 msgid "A device selection can contain at most 50,000 files and playlists."
 msgstr ""
 
+msgid "A disc assignment has no selected files."
+msgstr ""
+
+msgid "A disc has too many track positions for this plan."
+msgstr ""
+
+msgid "A file appears in more than one disc assignment."
+msgstr ""
+
 msgid "A folder chosen before"
 msgstr "Ein früher gewählter Ordner"
+
+msgid "A lookup file is no longer in the current selection."
+msgstr ""
 
 msgid "A media server on this network, such as MiniDLNA, Gerbera or the DLNA side of Plex. There is nothing to sign in to."
 msgstr "Ein Medienserver in diesem Netzwerk, etwa MiniDLNA, Gerbera oder die DLNA-Seite von Plex. Eine Anmeldung gibt es nicht."
@@ -148,11 +175,17 @@ msgstr "Ein Medienserver in diesem Netzwerk, etwa MiniDLNA, Gerbera oder die DLN
 msgid "A media server you run yourself. You sign in with its user and password, or with Quick Connect."
 msgstr "Ein Medienserver, den du selbst betreibst. Du meldest dich mit Benutzer und Passwort an oder mit Quick Connect."
 
+msgid "A metadata lookup field exceeds the 4096-byte input limit."
+msgstr ""
+
 msgid "A name for this memory"
 msgstr ""
 
 msgid "A new version of Chilpa is available."
 msgstr "Eine neue Version von Chilpa ist verfügbar."
+
+msgid "A newer Chilpa wrote this sidecar."
+msgstr ""
 
 msgid "A player for your own music"
 msgstr "Ein Player für deine eigene Musik"
@@ -178,6 +211,12 @@ msgstr "Ein Scan unterstützt bis zu 256 Ordner und 64 KiB gespeicherter Pfade."
 msgid "A secure cast URL could not be created."
 msgstr "Es konnte keine sichere Cast-URL erstellt werden."
 
+msgid "A selected file cannot store one of the proposed fields."
+msgstr ""
+
+msgid "A selected file is missing."
+msgstr ""
+
 msgid "A selected local file is unavailable. I kept the device unchanged."
 msgstr ""
 
@@ -187,8 +226,17 @@ msgstr ""
 msgid "A selected queue is no longer available."
 msgstr "Eine ausgewählte Warteschlange ist nicht mehr verfügbar."
 
-msgid "A sidecar sets this, not the file"
-msgstr "Eine Begleitdatei legt das fest, nicht die Datei selbst"
+msgid "A server deletion is still in progress."
+msgstr ""
+
+msgid "A sidecar sets this, not the file. Click to use the file's value."
+msgstr "Eine Begleitdatei legt dies fest, nicht die Datei. Klicke, um den Wert der Datei zu verwenden."
+
+msgid "A small icon on the status says whether the track plays or is paused."
+msgstr "Ein kleines Symbol im Status zeigt, ob der Titel läuft oder pausiert ist."
+
+msgid "A source's own cover, or the front cover the Cover Art Archive has of a local album, found by the file's MusicBrainz IDs or by the album's name. Local albums need MusicBrainz on."
+msgstr "Das eigene Cover einer Quelle oder das Frontcover, das das Cover Art Archive von einem lokalen Album hat, gefunden über die MusicBrainz-IDs der Datei oder über den Namen des Albums. Lokale Alben brauchen aktiviertes MusicBrainz."
 
 msgid "A sync operation still uses this profile."
 msgstr ""
@@ -217,8 +265,14 @@ msgstr "API-Schlüssel"
 msgid "About"
 msgstr "Über"
 
+msgid "About & connections"
+msgstr ""
+
 msgid "About Chilpa"
 msgstr "Über Chilpa"
+
+msgid "About this composer"
+msgstr ""
 
 msgid "Accent"
 msgstr "Akzent"
@@ -259,6 +313,9 @@ msgstr "Aktionen"
 msgid "Active"
 msgstr "Aktiv"
 
+msgid "Active assignment"
+msgstr ""
+
 msgid "Active modules"
 msgstr "Aktive Module"
 
@@ -295,6 +352,9 @@ msgstr "Alle zur Warteschlange hinzufügen"
 msgid "Add all tracks"
 msgstr "Alle Titel hinzufügen"
 
+msgid "Add an album or artist proposal before looking up files with empty tags."
+msgstr ""
+
 msgid "Add cover"
 msgstr "Cover hinzufügen"
 
@@ -304,11 +364,17 @@ msgstr "Filter hinzufügen"
 msgid "Add folder to library"
 msgstr "Ordner zur Bibliothek hinzufügen"
 
+msgid "Add genres to existing values"
+msgstr ""
+
 msgid "Add image"
 msgstr "Bild hinzufügen"
 
 msgid "Add only new tracks"
 msgstr "Nur neue Titel hinzufügen"
+
+msgid "Add reviewed proposal to pending changes"
+msgstr ""
 
 msgid "Add server"
 msgstr "Server hinzufügen"
@@ -378,8 +444,11 @@ msgstr "Adresse des Medienservers oder seiner Beschreibung"
 msgid "Add…"
 msgstr "Hinzufügen…"
 
-msgid "Advanced"
-msgstr "Erweitert"
+msgid "Adjust overall gain. Automatic headroom can reduce the requested gain to preserve EQ headroom."
+msgstr ""
+
+msgid "After"
+msgstr ""
 
 msgid "Album"
 msgstr "Album"
@@ -399,6 +468,9 @@ msgstr "Album-Interpreten"
 msgid "Album contains"
 msgstr "Album enthält"
 
+msgid "Album grouping"
+msgstr ""
+
 msgid "Album header"
 msgstr "Album-Kopfbereich"
 
@@ -407,6 +479,12 @@ msgstr "Album-Seite"
 
 msgid "Album radio"
 msgstr "Album-Radio"
+
+msgid "Album review"
+msgstr "Albumrezension"
+
+msgid "Album title"
+msgstr ""
 
 msgid "Albums"
 msgstr "Alben"
@@ -421,6 +499,9 @@ msgid "Albums appear as they are read"
 msgstr "Alben erscheinen nach und nach, während sie gelesen werden"
 
 msgid "Albums from streaming services will not be synced."
+msgstr ""
+
+msgid "Albums in your library"
 msgstr ""
 
 msgid "All"
@@ -441,6 +522,12 @@ msgstr "Alle Discs"
 msgid "All episode types"
 msgstr "Alle Folgentypen"
 
+msgid "All families"
+msgstr ""
+
+msgid "All files"
+msgstr ""
+
 msgid "All groups"
 msgstr "Alle Gruppen"
 
@@ -453,8 +540,14 @@ msgstr "Alle Musik"
 msgid "All of these"
 msgstr "Alle davon"
 
+msgid "All outputs"
+msgstr ""
+
 msgid "All qualities"
 msgstr "Alle Qualitäten"
+
+msgid "All recordings"
+msgstr ""
 
 msgid "All results"
 msgstr "Alle Ergebnisse"
@@ -465,14 +558,23 @@ msgstr "Alle gespeicherten Ergebnisse"
 msgid "All seasons"
 msgstr "Alle Staffeln"
 
+msgid "All selected files with pending changes will be saved, including files outside the current view. Only reviewed fields will change. Completed writes cannot be undone from Chilpa. Files are not moved or renamed."
+msgstr ""
+
 msgid "All selections"
 msgstr "Alle Auswahlen"
+
+msgid "All servers"
+msgstr "Alle Server"
 
 msgid "All set"
 msgstr "Alles bereit"
 
 msgid "All sources"
 msgstr "Alle Quellen"
+
+msgid "All subgenres"
+msgstr ""
 
 msgid "All themes"
 msgstr "Alle Themes"
@@ -524,6 +626,9 @@ msgstr "Auch nicht mehr ausgewählte Musikdateien entfernen"
 
 msgid "Also write the other tag layers"
 msgstr "Auch die anderen Tag-Ebenen schreiben"
+
+msgid "Always go to the previous track"
+msgstr "Immer zum vorherigen Titel springen"
 
 msgid "Ambient"
 msgstr "Ambient"
@@ -582,6 +687,9 @@ msgstr "Markiert den laufenden Titel mit animierten Equalizer-Balken. Standardm�
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Animierter Hintergrund aus dem Albumcover hinter der ganzen App. Hoher Ressourcenverbrauch: GPU-beschleunigt."
 
+msgid "Another Chilpa process is updating this library. Try opening it again shortly."
+msgstr ""
+
 msgid "Another device profile update is still running."
 msgstr ""
 
@@ -603,6 +711,9 @@ msgstr "Beliebige Quelle – beste Qualität (lokale gemischte Playlist)"
 msgid "Any time"
 msgstr "Beliebig"
 
+msgid "App data folder"
+msgstr "App-Datenordner"
+
 msgid "Appearance"
 msgstr "Erscheinungsbild"
 
@@ -621,14 +732,14 @@ msgstr "Anwenden"
 msgid "Apply import"
 msgstr "Import anwenden"
 
+msgid "Apply selected fields"
+msgstr ""
+
 msgid "Apply system tint to the icon"
 msgstr "Systemfarbe auf das Icon anwenden"
 
 msgid "Apply the same grouping to every source. Turn this off to show one combined playlist list."
 msgstr "Dieselbe Gruppierung für jede Quelle verwenden. Schalte dies aus, um eine kombinierte Playlist-Liste zu zeigen."
-
-msgid "Apply to the form"
-msgstr "Ins Formular übernehmen"
 
 msgid "Approve"
 msgstr "Genehmigen"
@@ -660,6 +771,9 @@ msgstr "Künstler"
 msgid "Artist mix"
 msgstr "Künstler-Mix"
 
+msgid "Artist names, one per line"
+msgstr ""
+
 msgid "Artist radio"
 msgstr "Künstler-Radio"
 
@@ -669,8 +783,14 @@ msgstr "Künstler"
 msgid "Artists from this scene"
 msgstr "Künstler aus dieser Szene"
 
+msgid "Artists in your library"
+msgstr ""
+
 msgid "Artwork"
 msgstr "Artwork"
+
+msgid "Artwork source"
+msgstr "Artwork-Quelle"
 
 msgid "Artwork view"
 msgstr "Artwork-Ansicht"
@@ -690,8 +810,26 @@ msgstr "Plex wird nach einem Code gefragt…"
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Bittet PipeWire oder PulseAudio, die Karte freizugeben, solange Chilpa darauf wiedergibt, und gibt sie zurück, wenn Chilpa stoppt oder lange pausiert."
 
+msgid "Assign a distinct target disc number to each joined disc."
+msgstr ""
+
+msgid "Assign current preset"
+msgstr ""
+
+msgid "Assign each disc using its group and source disc, or explicit files."
+msgstr ""
+
+msgid "Assign every selected file to one resulting disc."
+msgstr ""
+
+msgid "Assign to this device"
+msgstr ""
+
 msgid "Assumed fallback: {}"
 msgstr "Angenommener Ersatz: {}"
+
+msgid "Attack"
+msgstr ""
 
 msgid "Audio"
 msgstr "Audio"
@@ -726,6 +864,9 @@ msgstr "Der Vorgang für die Audioausgabe wurde unerwartet beendet."
 msgid "Audio path"
 msgstr "Audiopfad"
 
+msgid "Audio processing"
+msgstr ""
+
 msgid "Audio stack"
 msgstr "Audio-Stack"
 
@@ -743,6 +884,9 @@ msgstr "August"
 
 msgid "Aurora"
 msgstr "Aurora"
+
+msgid "Author"
+msgstr "Autor"
 
 msgid "Author: {}"
 msgstr "Autor: {}"
@@ -765,6 +909,9 @@ msgstr "Automatisch folgt den Farben des Desktops: das helle Symbol auf dunklem 
 msgid "Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"
 msgstr "Auto wählt den besten Renderer für die Grafikhardware. Nur ändern, wenn die App langsam wirkt oder fehlerhaft rendert (Neustart erforderlich)"
 
+msgid "Auto save personal presets after adjustment. Factory presets keep a separate draft."
+msgstr ""
+
 msgid "Auto-detect your DACs and set up bit-perfect playback, step by step."
 msgstr "Erkennt deine DACs automatisch und richtet die Bit-perfect-Wiedergabe Schritt für Schritt ein."
 
@@ -774,8 +921,14 @@ msgstr "Auto-Scroll"
 msgid "Auto-tail"
 msgstr "Automatisch folgen"
 
+msgid "Automatic beets installation is not available on this platform."
+msgstr ""
+
 msgid "Automatic checks are paused until you continue or dismiss this scan. Dismissing keeps the files already added."
 msgstr "Automatische Prüfungen pausieren, bis dieser Scan fortgesetzt oder verworfen wird. Bereits hinzugefügte Dateien bleiben erhalten."
+
+msgid "Automatic headroom"
+msgstr ""
 
 msgid "Automatic headroom lowers gain to leave room for EQ boosts."
 msgstr "Automatischer Headroom senkt den Gain, um Platz für EQ-Anhebungen zu lassen."
@@ -791,6 +944,12 @@ msgstr "Verfügbar"
 
 msgid "Available GPUs"
 msgstr "Verfügbare GPUs"
+
+msgid "Available offline"
+msgstr "Offline verfügbar"
+
+msgid "Available parts, grouped by album and performer. Work tags do not confirm a complete recording."
+msgstr ""
 
 msgid "Available version"
 msgstr "Verfügbare Version"
@@ -816,6 +975,9 @@ msgstr "Zurück"
 msgid "Back 10 seconds"
 msgstr "10 Sekunden zurück"
 
+msgid "Back button"
+msgstr "Zurück-Taste"
+
 msgid "Back to plugins"
 msgstr "Zurück zu Plugins"
 
@@ -831,6 +993,9 @@ msgstr "Hintergrundbild"
 msgid "Balance · −100 left / +100 right"
 msgstr "Balance · −100 links / +100 rechts"
 
+msgid "Band pass"
+msgstr ""
+
 msgid "Barcode"
 msgstr "Barcode"
 
@@ -843,11 +1008,20 @@ msgstr "Basierend auf {artist} · {genres}"
 msgid "Bass"
 msgstr "Bass"
 
+msgid "Bass and treble work alongside your headphone correction. Zero dB is neutral; EQ filters stay intact."
+msgstr ""
+
+msgid "Before"
+msgstr ""
+
 msgid "Being removed…"
 msgstr "Wird entfernt…"
 
 msgid "Between tracks"
 msgstr "Zwischen Titeln"
+
+msgid "Bit depth"
+msgstr "Bittiefe"
 
 msgid "Bit depth not stated"
 msgstr "Bittiefe nicht angegeben"
@@ -875,6 +1049,9 @@ msgstr "Booklet"
 
 msgid "Border"
 msgstr "Rand"
+
+msgid "Both"
+msgstr ""
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "Wähle einen Musikordner aus oder gib den vollständigen Pfad ein."
@@ -953,6 +1130,9 @@ msgstr "Nach Quelle"
 msgid "By year"
 msgstr "Nach Jahr"
 
+msgid "Bypass"
+msgstr ""
+
 msgid "Bypass · original samples"
 msgstr "Bypass · Original-Samples"
 
@@ -986,14 +1166,23 @@ msgstr "Abbrechen"
 msgid "Cancel Timer"
 msgstr "Timer abbrechen"
 
+msgid "Cancel check"
+msgstr ""
+
 msgid "Cancel download"
 msgstr "Download abbrechen"
+
+msgid "Cancel lookup"
+msgstr ""
 
 msgid "Cancel stop after this track"
 msgstr "Stopp nach diesem Titel abbrechen"
 
 msgid "Cancelled"
 msgstr "Abgebrochen"
+
+msgid "Cancelling the beets task…"
+msgstr ""
 
 msgid "Cancelling update…"
 msgstr "Update wird abgebrochen…"
@@ -1003,6 +1192,9 @@ msgstr ""
 
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Begrenzt die Anhebung, damit der lauteste Pegel unter der Vollaussteuerung bleibt. Aus: leise Titel erreichen das Ziel, auch wenn ihre Spitzen übersteuern."
+
+msgid "Card image"
+msgstr "Kartenbild"
 
 msgid "Cards"
 msgstr "Karten"
@@ -1031,11 +1223,17 @@ msgstr "Katalognummer"
 msgid "Categories"
 msgstr "Kategorien"
 
+msgid "Ceiling"
+msgstr ""
+
 msgid "Change cover"
 msgstr "Cover ändern"
 
 msgid "Change image"
 msgstr "Bild ändern"
+
+msgid "Change only the selected field"
+msgstr ""
 
 msgid "Change source"
 msgstr "Quelle wechseln"
@@ -1055,6 +1253,12 @@ msgstr "Anmeldung ändern"
 msgid "Changes"
 msgstr ""
 
+msgid "Changing the positions of an identified release requires a real release match."
+msgstr ""
+
+msgid "Channel"
+msgstr ""
+
 msgid "Channels"
 msgstr "Kanäle"
 
@@ -1070,8 +1274,14 @@ msgstr "Audio-Stack prüfen"
 msgid "Check a format…"
 msgstr "Ein Format prüfen…"
 
+msgid "Check again, and download again if needed"
+msgstr "Erneut prüfen und bei Bedarf neu herunterladen"
+
 msgid "Check all folders"
 msgstr "Alle Ordner prüfen"
+
+msgid "Check beets"
+msgstr ""
 
 msgid "Check for a newer version of Chilpa."
 msgstr "Nach einer neueren Version von Chilpa suchen."
@@ -1097,11 +1307,23 @@ msgstr "Prüfe seinen Namen und was dazukommt."
 msgid "Check one format"
 msgstr "Ein Format prüfen"
 
+msgid "Check or install beets in Settings."
+msgstr ""
+
 msgid "Check the address and its port, and that the server is on and reachable from this computer, then try again."
 msgstr "Prüfe die Adresse und ihren Port und ob der Server läuft und von diesem Computer erreichbar ist, und versuche es dann erneut."
 
 msgid "Check the address, that DLNA is on in the server's settings and that it lets this computer in, then try again."
 msgstr "Prüfe die Adresse, dass DLNA in den Einstellungen des Servers eingeschaltet ist und dass er diesen Computer zulässt, und versuche es dann erneut."
+
+msgid "Check the beets environment in Settings before looking up metadata."
+msgstr ""
+
+msgid "Check the selected item and the changes described above. This action cannot be undone from Chilpa."
+msgstr ""
+
+msgid "Check the selected runtime and its beets version without looking up music."
+msgstr ""
 
 msgid "Check the user and the password or the API key, then go back and try again."
 msgstr "Prüfe Benutzer und Passwort oder den API-Schlüssel, geh dann zurück und versuche es erneut."
@@ -1109,8 +1331,14 @@ msgstr "Prüfe Benutzer und Passwort oder den API-Schlüssel, geh dann zurück u
 msgid "Checking available space"
 msgstr "Verfügbaren Speicher prüfen"
 
+msgid "Checking beets…"
+msgstr ""
+
 msgid "Checking destination files"
 msgstr "Zieldateien prüfen"
+
+msgid "Checking downloaded audio…"
+msgstr "Heruntergeladene Audiodateien werden geprüft…"
 
 msgid "Checking for updates…"
 msgstr "Es wird nach Updates gesucht…"
@@ -1145,6 +1373,9 @@ msgstr "Suche läuft…"
 msgid "Chilpa"
 msgstr "Chilpa"
 
+msgid "Chilpa DSP"
+msgstr ""
+
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpa legt Rate, Sink und Exklusivmodus zur Laufzeit bereits fest. Diese Dateien ändern nur das systemweite Verhalten – kopiere und starte sie selbst, wenn du sie willst. Erstelle vorher eine Sicherung."
 
@@ -1163,11 +1394,20 @@ msgstr "Chilpa kann einige Plugins ausführen, die für andere Plattformen gemac
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa sieht die Ausgaben dieses Rechners, kann aber noch nicht darüber wiedergeben"
 
+msgid "Chilpa cannot change this server's metadata"
+msgstr "Chilpa kann die Metadaten dieses Servers nicht ändern"
+
+msgid "Chilpa cannot keep a plugin inside a folder chosen this way: this system's kernel has no Landlock. To use the folder without it, give Chilpa direct access to it with flatpak override --user --filesystem=/path/to/folder app.chilpa.Chilpa, then restart Chilpa and choose the folder again."
+msgstr "Chilpa kann ein Plugin nicht auf einen so gewählten Ordner beschränken: Der Kernel dieses Systems hat kein Landlock. Um den Ordner ohne Landlock zu nutzen, gib Chilpa mit flatpak override --user --filesystem=/pfad/zum/ordner app.chilpa.Chilpa direkten Zugriff darauf, starte Chilpa neu und wähle den Ordner erneut."
+
 msgid "Chilpa cannot read this link"
 msgstr "Chilpa kann diesen Link nicht lesen"
 
 msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
 msgstr "Chilpa konnte die exklusive Ausgabe nicht freigeben. Stoppe die Wiedergabe und starte die Diagnose erneut."
+
+msgid "Chilpa could not set PipeWire's graph to {} Hz: its settings can be read from here but not changed, which is all a sandboxed program is allowed. The graph only runs at {} Hz, so this track would be resampled; add its rate to default.clock.allowed-rates, or choose the card itself"
+msgstr "Chilpa konnte den Graph von PipeWire nicht auf {} Hz stellen: Seine Einstellungen lassen sich von hier aus lesen, aber nicht ändern, und mehr ist einem Programm in einer Sandbox nicht erlaubt. Der Graph läuft nur mit {} Hz, daher würde dieser Titel per Resampling umgerechnet; füge seine Rate zu default.clock.allowed-rates hinzu oder wähle die Soundkarte selbst"
 
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpa sendet keine {}-Anfragen an einen Server"
@@ -1185,13 +1425,13 @@ msgid "Chilpa never writes these files"
 msgstr "Chilpa schreibt diese Dateien nie"
 
 msgid "Chilpa opens with the tabs it had when it closed."
-msgstr "Chilpa merkt sich die offenen Tabs und stellt diese beim starten automatisch wieder her."
+msgstr "Chilpa merkt sich die offenen Tabs und stellt diese beim Starten automatisch wieder her."
 
 msgid "Chilpa output"
 msgstr "Ausgabe von Chilpa"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
-msgstr "Chilpa spielt Dateien von deinen lokalen Laufwerken und deinen Servern ab, und mit Plugins lassen sich zahreiche weitere Quellen hinzufügen. Es zeigt dir klar an, ob das an deinen DAC gesendete Audiosignal bitgenau ankommt."
+msgstr "Chilpa spielt Dateien von deinen lokalen Laufwerken und deinen Servern ab, und mit Plugins lassen sich zahlreiche weitere Quellen hinzufügen. Es zeigt dir klar an, ob das an deinen DAC gesendete Audiosignal bitgenau ankommt."
 
 msgid "Chilpa plugins"
 msgstr "Chilpa-Plugins"
@@ -1220,6 +1460,9 @@ msgstr "Chilpa stellt das Gerät auf die Rate jedes Titels ein. Bei aktivem Exkl
 msgid "Chilpa will make smaller covers and backgrounds again when needed."
 msgstr "Chilpa erstellt kleinere Cover und Hintergründe bei Bedarf neu."
 
+msgid "Chilpa will stop checking this repository for plugins and updates.\n{}"
+msgstr "Chilpa wird dieses Repository nicht mehr nach Plugins und Updates durchsuchen.\n{}"
+
 msgid "Chilpa {} is available"
 msgstr "Chilpa {} ist verfügbar"
 
@@ -1228,6 +1471,9 @@ msgstr "Chilpa {} ist bereit"
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "Chilpas Icon im Panel: Ein Klick zeigt oder verbirgt das Fenster, die mittlere Taste startet oder pausiert die Wiedergabe, das Mausrad ändert die Lautstärke."
+
+msgid "Chilpa's sandbox hides memory cards and USB drives. Choose a folder on one, or allow Chilpa to read {}."
+msgstr "Die Sandbox von Chilpa verbirgt Speicherkarten und USB-Laufwerke. Wähle einen Ordner auf einem davon aus oder erlaube Chilpa, {} zu lesen."
 
 msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
 msgstr "Chilpatl ist Nahuatl für Hornisse. Chilpa ist ein Musikplayer für den Desktop, in dem lokale Dateien, selbst gehostete Server und Plugins alle einfach Quellen sind."
@@ -1241,11 +1487,26 @@ msgstr "Auswählen"
 msgid "Choose DSP on or bypass."
 msgstr "Wähle zwischen DSP an und Bypass."
 
+msgid "Choose DSP presets."
+msgstr ""
+
 msgid "Choose Unknown, Clean or Explicit"
 msgstr "Unbekannt, Unbedenklich oder Explizit wählen"
 
+msgid "Choose a DSP band."
+msgstr ""
+
 msgid "Choose a DSP favorite."
 msgstr "Wähle einen DSP-Favoriten."
+
+msgid "Choose a DSP filter parameter."
+msgstr ""
+
+msgid "Choose a DSP filter position."
+msgstr ""
+
+msgid "Choose a DSP filter."
+msgstr ""
 
 msgid "Choose a DSP plugin."
 msgstr "Wähle ein DSP-Plugin."
@@ -1286,25 +1547,70 @@ msgstr ""
 msgid "Choose a playback control"
 msgstr "Wiedergabesteuerung wählen"
 
+msgid "Choose a preset"
+msgstr ""
+
 msgid "Choose a preset."
 msgstr "Wähle ein Preset."
 
+msgid "Choose a readable group with at most 1024 files."
+msgstr ""
+
+msgid "Choose a resulting album title for each disc."
+msgstr ""
+
 msgid "Choose a saved device profile."
+msgstr ""
+
+msgid "Choose a smaller selection, up to 32 discs for one plan."
 msgstr ""
 
 msgid "Choose a value"
 msgstr "Wert wählen"
 
+msgid "Choose a visible DSP preset."
+msgstr ""
+
+msgid "Choose albums with Use in disc plan. Only selected files participate."
+msgstr ""
+
+msgid "Choose albums, disc assignments and a resulting album title."
+msgstr ""
+
+msgid "Choose an album and look it up. Choosing a match prepares a proposal without writing files."
+msgstr ""
+
+msgid "Choose an assignment scope."
+msgstr ""
+
+msgid "Choose an autosave policy."
+msgstr ""
+
 msgid "Choose an available writable storage."
+msgstr ""
+
+msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
 msgstr ""
 
 msgid "Choose an image"
 msgstr "Bild auswählen"
 
+msgid "Choose an output class."
+msgstr ""
+
 msgid "Choose at least two different queues."
 msgstr "Wähle mindestens zwei verschiedene Warteschlangen."
 
+msgid "Choose at most 1024 files for one metadata lookup."
+msgstr ""
+
 msgid "Choose at most 512 playlists or queries for one storage."
+msgstr ""
+
+msgid "Choose between 1 and 10,000 server tracks for an offline download."
+msgstr "Wähle zwischen 1 und 10.000 Servertiteln für den Offline-Download."
+
+msgid "Choose between 1 and 256 folders or files."
 msgstr ""
 
 msgid "Choose between 1 and 50,000 Library tracks."
@@ -1316,6 +1622,15 @@ msgstr "Download-Ordner wählen"
 msgid "Choose download folder…"
 msgstr "Download-Ordner wählen…"
 
+msgid "Choose executable…"
+msgstr ""
+
+msgid "Choose fewer offline files for this action."
+msgstr "Wähle für diese Aktion weniger Offline-Dateien."
+
+msgid "Choose files from the current metadata selection."
+msgstr ""
+
 msgid "Choose file…"
 msgstr "Datei wählen…"
 
@@ -1326,6 +1641,9 @@ msgid "Choose image…"
 msgstr "Bild wählen…"
 
 msgid "Choose music for this storage"
+msgstr ""
+
+msgid "Choose personal presets to delete."
 msgstr ""
 
 msgid "Choose playlist"
@@ -1343,10 +1661,28 @@ msgstr "Plugin-Icon wählen"
 msgid "Choose queues and arrange their order. Repeated tracks are kept."
 msgstr "Wähle Warteschlangen und lege ihre Reihenfolge fest. Wiederholte Titel bleiben erhalten."
 
+msgid "Choose readable files for the disc plan."
+msgstr ""
+
+msgid "Choose readable files for this metadata lookup."
+msgstr ""
+
 msgid "Choose storage"
 msgstr ""
 
+msgid "Choose supported fields and a genre operation."
+msgstr ""
+
+msgid "Choose the Python environment containing beets."
+msgstr ""
+
+msgid "Choose the Python executable for beets"
+msgstr ""
+
 msgid "Choose the connected player and its storage first."
+msgstr ""
+
+msgid "Choose the engine used by the metadata editor."
 msgstr ""
 
 msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
@@ -1358,8 +1694,17 @@ msgstr "Wählen Sie den Empfänger unter Wiedergeben auf, um eine Verbindung her
 msgid "Choose the storage paired with this profile."
 msgstr ""
 
+msgid "Choose up to 32 discs for one plan."
+msgstr ""
+
+msgid "Choose valid absolute file paths."
+msgstr ""
+
 msgid "Choose where to open this music"
 msgstr ""
+
+msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
+msgstr "Wähle „Offline verfügbar machen“ im Menü eines Albums, einer Playlist oder von Titeln eines Servers."
 
 msgid "Clean"
 msgstr "Unbedenklich"
@@ -1373,7 +1718,13 @@ msgstr "Nach diesem Titel leeren"
 msgid "Clear all"
 msgstr "Alle entfernen"
 
+msgid "Clear field"
+msgstr ""
+
 msgid "Clear filter"
+msgstr "Filter löschen"
+
+msgid "Clear filters"
 msgstr "Filter löschen"
 
 msgid "Clear generated images"
@@ -1381,6 +1732,9 @@ msgstr "Erzeugte Bilder löschen"
 
 msgid "Clear generated images?"
 msgstr "Erzeugte Bilder löschen?"
+
+msgid "Clear logs?"
+msgstr "Protokolle löschen?"
 
 msgid "Clear loop"
 msgstr "Schleife aufheben"
@@ -1391,8 +1745,14 @@ msgstr "Songtext-Cache leeren"
 msgid "Clear lyrics cache?"
 msgstr "Liedtext-Cache leeren?"
 
+msgid "Clear on pause"
+msgstr "Bei Pause leeren"
+
 msgid "Clear queue"
 msgstr "Warteschlange leeren"
+
+msgid "Clear selection"
+msgstr ""
 
 msgid "Clear temporary remote artwork"
 msgstr "Temporäres Remote-Artwork löschen"
@@ -1405,6 +1765,9 @@ msgstr "Den Filter entfernen"
 
 msgid "Clear the selection"
 msgstr "Auswahl aufheben"
+
+msgid "Clear the status while playback is paused."
+msgstr "Leert den Status, solange die Wiedergabe pausiert ist."
 
 msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr "Geleert: {} Songtexte vergessen. Sie werden bei der Wiedergabe der Titel erneut abgefragt."
@@ -1433,6 +1796,9 @@ msgstr "Schließen / Ausblenden"
 msgid "Close Tab"
 msgstr "Tab schließen"
 
+msgid "Close folder metadata?"
+msgstr ""
+
 msgid "Close media"
 msgstr "Medium schließen"
 
@@ -1441,6 +1807,9 @@ msgstr "Suche schließen"
 
 msgid "Close tab"
 msgstr "Tab schließen"
+
+msgid "Close the current metadata selection before opening another."
+msgstr ""
 
 msgid "Close the quotation marks."
 msgstr "Schließe die Anführungszeichen."
@@ -1471,6 +1840,9 @@ msgstr "Seitenleiste einklappen"
 
 msgid "Color"
 msgstr "Farbe"
+
+msgid "Color group"
+msgstr ""
 
 msgid "Colors"
 msgstr "Farben"
@@ -1514,6 +1886,15 @@ msgstr "Kompatibilität ist nicht vollständig geprüft"
 msgid "Compatible plugins"
 msgstr "Kompatible Plugins"
 
+msgid "Compatible plugins do not run while Chilpa runs as root."
+msgstr "Kompatible Plugins laufen nicht, solange Chilpa als root läuft."
+
+msgid "Compatible plugins need the Flatpak portal, which is not available."
+msgstr "Kompatible Plugins brauchen das Flatpak-Portal, das nicht verfügbar ist."
+
+msgid "Compatible plugins need {}, which is not installed."
+msgstr "Kompatible Plugins brauchen {}, das nicht installiert ist."
+
 msgid "Compilation"
 msgstr "Compilation"
 
@@ -1532,8 +1913,23 @@ msgstr "Abgeschlossene Arbeit ist gespeichert. Fortsetzen prüft den Ordner erne
 msgid "Composer"
 msgstr "Komponist"
 
+msgid "Composer not tagged"
+msgstr ""
+
 msgid "Composers"
 msgstr "Komponisten"
+
+msgid "Composition"
+msgstr ""
+
+msgid "Compositions"
+msgstr ""
+
+msgid "Compression reduction"
+msgstr ""
+
+msgid "Compressor and expander"
+msgstr ""
 
 msgid "Compressor ratio · 1–6"
 msgstr "Kompressor-Ratio · 1–6"
@@ -1552,6 +1948,12 @@ msgstr "Bestätigen"
 
 msgid "Confirm this preview and its removals before syncing."
 msgstr ""
+
+msgid "Confirm “{}” for {}?"
+msgstr "„{}“ für {} bestätigen?"
+
+msgid "Confirmation {} of {}"
+msgstr "Bestätigung {} von {}"
 
 msgid "Connect"
 msgstr "Verbinden"
@@ -1601,6 +2003,9 @@ msgstr "Weiterhören"
 msgid "Continue or dismiss the interrupted scan before starting another."
 msgstr "Setze den unterbrochenen Scan fort oder verwirf ihn, bevor ein weiterer gestartet wird."
 
+msgid "Contributors"
+msgstr "Mitwirkende"
+
 msgid "Convert to PCM"
 msgstr "In PCM umwandeln"
 
@@ -1640,11 +2045,17 @@ msgstr "Preset-JSON kopieren"
 msgid "Copy report"
 msgstr "Bericht kopieren"
 
+msgid "Copy selected JSON"
+msgstr ""
+
 msgid "Copy the colors of the currently applied theme into the editor as a starting point."
 msgstr "Kopiert die Farben des aktuell angewendeten Themes als Ausgangspunkt in den Editor."
 
 msgid "Copy the redacted logs to help diagnose the issue. You can review them before sharing."
 msgstr "Die Protokolle mit unkenntlich gemachten Daten zur Fehlerdiagnose kopieren. Sie können vor dem Teilen geprüft werden."
+
+msgid "Copy track, album and artist"
+msgstr "Titel, Album und Künstler kopieren"
 
 msgid "Copyright"
 msgstr "Copyright"
@@ -1667,8 +2078,17 @@ msgstr "Das Bild konnte nicht geladen werden"
 msgid "Could not move the playlist."
 msgstr "Die Playlist konnte nicht verschoben werden."
 
+msgid "Could not read genres"
+msgstr ""
+
 msgid "Could not read the analysis inventory."
 msgstr "Die Analyse-Übersicht konnte nicht gelesen werden."
+
+msgid "Could not read the library"
+msgstr ""
+
+msgid "Could not read track durations from the library."
+msgstr ""
 
 msgid "Could not remove the saved profile."
 msgstr ""
@@ -1724,6 +2144,9 @@ msgstr "Kritiker-Auswahl"
 msgid "Crossfeed · 0–50%"
 msgstr "Crossfeed · 0–50%"
 
+msgid "Current"
+msgstr ""
+
 msgid "Current signal path"
 msgstr "Aktueller Signalweg"
 
@@ -1744,6 +2167,9 @@ msgstr "Benutzerdefiniert"
 
 msgid "Custom Image"
 msgstr "Eigenes Bild"
+
+msgid "Custom Python executable"
+msgstr ""
 
 msgid "Custom image"
 msgstr "Eigenes Bild"
@@ -1829,11 +2255,20 @@ msgstr "DSP gilt für die lokale Ausgabe. Casting sendet das Originalaudio."
 msgid "DSP catalog is too large."
 msgstr "Der DSP-Katalog ist zu groß."
 
+msgid "DSP catalog page is too large."
+msgstr ""
+
 msgid "DSP changes the signal and breaks strict bit-perfect playback."
 msgstr "DSP verändert das Signal und hebt die strikte Bit-perfect-Wiedergabe auf."
 
 msgid "DSP control is unavailable."
 msgstr "Die DSP-Steuerung ist nicht verfügbar."
+
+msgid "DSP enabled"
+msgstr ""
+
+msgid "DSP export selection is too large."
+msgstr ""
 
 msgid "DSP filters need 10–24000 Hz, −24–18 dB and Q 0.1–12."
 msgstr "DSP-Filter brauchen 10–24000 Hz, −24–18 dB und Q 0.1–12."
@@ -1841,11 +2276,20 @@ msgstr "DSP-Filter brauchen 10–24000 Hz, −24–18 dB und Q 0.1–12."
 msgid "DSP host is unavailable."
 msgstr "Der DSP-Host ist nicht verfügbar."
 
+msgid "DSP import is too large."
+msgstr ""
+
 msgid "DSP input is too large."
 msgstr "Die DSP-Eingabe ist zu groß."
 
+msgid "DSP preferences exceed the storage limit."
+msgstr ""
+
 msgid "DSP preset is unavailable."
 msgstr "Das DSP-Preset ist nicht verfügbar."
+
+msgid "DSP supports PCM up to 1536 kHz; higher rates bypass processing."
+msgstr ""
 
 msgid "DSP · Equalizer and presets"
 msgstr "DSP · Equalizer und Presets"
@@ -1904,23 +2348,44 @@ msgstr "Standard"
 msgid "Delete"
 msgstr "Löschen"
 
-msgid "Delete folder"
-msgstr "Ordner löschen"
+msgid "Delete album from server?"
+msgstr "Album vom Server löschen?"
 
 msgid "Delete folder…"
 msgstr "Ordner löschen…"
 
+msgid "Delete from server"
+msgstr "Vom Server löschen"
+
+msgid "Delete from server…"
+msgstr ""
+
 msgid "Delete playlist"
 msgstr "Playlist löschen"
+
+msgid "Delete playlist?"
+msgstr "Wiedergabeliste löschen?"
 
 msgid "Delete preset"
 msgstr "Preset löschen"
 
+msgid "Delete preset?"
+msgstr "Voreinstellung löschen?"
+
 msgid "Delete saved query"
 msgstr "Gespeicherte Abfrage löschen"
 
+msgid "Delete selected"
+msgstr ""
+
+msgid "Delete selected presets?"
+msgstr ""
+
 msgid "Delete the saved query “{}”?"
 msgstr "Gespeicherte Abfrage „{}“ löschen ?"
+
+msgid "Delete track from server?"
+msgstr "Titel vom Server löschen?"
 
 msgid "Delete “{}” on {}? It leaves the server too."
 msgstr "„{}“ auf {} löschen? Sie wird auch vom Server entfernt."
@@ -1928,8 +2393,14 @@ msgstr "„{}“ auf {} löschen? Sie wird auch vom Server entfernt."
 msgid "Delete “{}”?"
 msgstr "„{}“ löschen?"
 
+msgid "Deleted from server."
+msgstr "Vom Server gelöscht."
+
 msgid "Delete…"
 msgstr "Löschen…"
+
+msgid "Deleting…"
+msgstr "Wird gelöscht…"
 
 msgid "Description"
 msgstr "Beschreibung"
@@ -1947,7 +2418,7 @@ msgid "Destinations"
 msgstr "Ziele"
 
 msgid "Details"
-msgstr ""
+msgstr "Details"
 
 msgid "Details available"
 msgstr "Details verfügbar"
@@ -1963,6 +2434,9 @@ msgstr "Entwickler"
 
 msgid "Device"
 msgstr "Gerät"
+
+msgid "Device class"
+msgstr ""
 
 msgid "Device profiles exceed 1 MiB."
 msgstr ""
@@ -2018,8 +2492,17 @@ msgstr "Deaktiviert. Seine Alben bleiben in der Bibliothek."
 msgid "Disc"
 msgstr "Disc"
 
+msgid "Disc number"
+msgstr ""
+
+msgid "Disc plan"
+msgstr ""
+
 msgid "Disc subtitle"
 msgstr "Disc-Untertitel"
+
+msgid "Disc total"
+msgstr ""
 
 msgid "Disc {}"
 msgstr "Disc {}"
@@ -2123,8 +2606,8 @@ msgstr "Wieder in die Bibliothek andocken"
 msgid "Documentation"
 msgstr "Dokumentation"
 
-msgid "Does not answer. Its records stay listed and cannot be played."
-msgstr "Antwortet nicht. Seine Alben bleiben aufgelistet und lassen sich nicht wiedergeben."
+msgid "Does not answer. Its records stay in the library."
+msgstr "Antwortet nicht. Die Alben bleiben in der Bibliothek."
 
 msgid "Don't ask again"
 msgstr "Nicht mehr fragen"
@@ -2144,11 +2627,23 @@ msgstr "Fertig. Du kannst diesen Tab schließen und zu Chilpa zurückkehren."
 msgid "Download"
 msgstr "Herunterladen"
 
+msgid "Download a private Python environment with beets. A successful installation becomes the default runtime."
+msgstr ""
+
+msgid "Download a private copy managed by Chilpa."
+msgstr ""
+
 msgid "Download again"
 msgstr "Erneut herunterladen"
 
 msgid "Download album"
 msgstr "Album herunterladen"
+
+msgid "Download and install"
+msgstr ""
+
+msgid "Download cancelled."
+msgstr "Download abgebrochen."
 
 msgid "Download track"
 msgstr "Titel herunterladen"
@@ -2159,6 +2654,12 @@ msgstr "Heruntergeladen"
 msgid "Downloading episodes…"
 msgstr ""
 
+msgid "Downloading for offline listening"
+msgstr "Wird für die Offline-Wiedergabe heruntergeladen"
+
+msgid "Downloading the verified installer…"
+msgstr ""
+
 msgid "Downloading update…"
 msgstr "Update wird heruntergeladen…"
 
@@ -2167,6 +2668,12 @@ msgstr "{} von {} werden heruntergeladen"
 
 msgid "Downloads"
 msgstr "Downloads"
+
+msgid "Downloads are grouped by server type. Each account has its own subfolder."
+msgstr "Downloads werden nach Servertyp gruppiert. Jedes Konto hat einen eigenen Unterordner."
+
+msgid "Downloads stop when offline music reaches this size, and nothing is deleted to make room. Each file can be up to 512 MiB. Unlimited lets offline music use all the free space on the disk, with no size limit per file."
+msgstr "Downloads stoppen, wenn die Offline-Musik diese Größe erreicht, und nichts wird gelöscht, um Platz zu schaffen. Jede Datei darf bis zu 512 MiB groß sein. Mit „Unbegrenzt“ darf Offline-Musik den ganzen freien Platz auf dem Datenträger nutzen, ohne Größenlimit pro Datei."
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Ziehe oder nutze ↑↓, um eine eigene Reihenfolge zu behalten."
@@ -2186,20 +2693,29 @@ msgstr "Niederländisch"
 msgid "Dynamic background"
 msgstr "Dynamischer Hintergrund"
 
+msgid "Dynamics"
+msgstr ""
+
 msgid "EPs"
 msgstr "EPs"
 
 msgid "EPs & Singles"
 msgstr "EPs und Singles"
 
-msgid "EQ response · 20 Hz–20 kHz · ±18 dB · before preamp"
-msgstr "EQ-Frequenzgang · 20 Hz–20 kHz · ±18 dB · vor dem Vorverstärker"
+msgid "EQ and tone · upper channel response · 20 Hz–20 kHz · before preamp"
+msgstr ""
+
+msgid "EQ enabled"
+msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "Jede Datei wird kopiert, die Kopie wird geschrieben und zurückgelesen, und erst dann ersetzt sie das Original. Dafür wird so viel freier Speicherplatz benötigt, wie das Album belegt. Was geschrieben wird, lässt sich nicht rückgängig machen."
 
 msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
 msgstr "Jedes ausgewählte Ziel erstellt eine eigene Playlist. Gemischte Playlists bleiben in Chilpa und können Titel aus jeder verbundenen Quelle enthalten."
+
+msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
+msgstr ""
 
 msgid "Earlier"
 msgstr "Früher"
@@ -2239,6 +2755,9 @@ msgstr "Erhöht"
 
 msgid "Embedded tags only"
 msgstr "Nur eingebettete Tags"
+
+msgid "Empty"
+msgstr ""
 
 msgid "Empty folders"
 msgstr "Leere Ordner"
@@ -2309,9 +2828,6 @@ msgstr ""
 msgid "Episode notes"
 msgstr "Folgennotizen"
 
-msgid "Equalizer"
-msgstr "Equalizer"
-
 msgid "Equipment"
 msgstr "Gerät"
 
@@ -2329,6 +2845,9 @@ msgstr "Alle 12 Stunden"
 
 msgid "Every 24 hours"
 msgstr "Alle 24 Stunden"
+
+msgid "Every track plays on this output, whatever its source, even when the system default changes. If it is unplugged, Chilpa plays on the default and says so."
+msgstr "Jeder Titel läuft über diese Ausgabe, egal aus welcher Quelle, auch wenn sich die Standardausgabe des Systems ändert. Wird sie getrennt, spielt Chilpa über die Standardausgabe und weist darauf hin."
 
 msgid "Every week"
 msgstr "Jede Woche"
@@ -2351,11 +2870,20 @@ msgstr "Exklusivmodus"
 msgid "Exclusive mode was requested."
 msgstr "Exklusivmodus wurde angefordert."
 
+msgid "Existing genres are unselected by default."
+msgstr ""
+
+msgid "Existing values stay on each file. Equivalent values are not added twice."
+msgstr ""
+
 msgid "Exit Immersive"
 msgstr "Immersive Ansicht verlassen"
 
 msgid "Expand"
 msgstr "Ausklappen"
+
+msgid "Expander ratio"
+msgstr ""
 
 msgid "Experimental: theme may not match your system exactly."
 msgstr "Experimentell: Das Theme stimmt möglicherweise nicht exakt mit deinem System überein."
@@ -2363,11 +2891,20 @@ msgstr "Experimentell: Das Theme stimmt möglicherweise nicht exakt mit deinem S
 msgid "Explicit"
 msgstr "Explizit"
 
+msgid "Explicit track numbers must belong to this disc's selected files."
+msgstr ""
+
 msgid "Explore"
 msgstr "Erkunden"
 
+msgid "Explore works, recordings and albums credited to this composer."
+msgstr ""
+
 msgid "Export"
 msgstr "Exportieren"
+
+msgid "Export at most 64 presets at once."
+msgstr ""
 
 msgid "Export diagnostics"
 msgstr "Diagnose exportieren"
@@ -2377,6 +2914,9 @@ msgstr "Hörverlauf exportieren"
 
 msgid "Export…"
 msgstr "Exportieren…"
+
+msgid "External JSON supports peak and shelf EQ bands. Pass-filter gain semantics are not transferable."
+msgstr ""
 
 msgid "Extra controls"
 msgstr "Zusätzliche Bedienelemente"
@@ -2408,6 +2948,9 @@ msgstr "Fehlgeschlagen"
 msgid "Failed in this run"
 msgstr "In diesem Durchlauf fehlgeschlagen"
 
+msgid "Failed only"
+msgstr "Nur fehlgeschlagene"
+
 msgid "Failed to load albums"
 msgstr "Alben konnten nicht geladen werden"
 
@@ -2419,6 +2962,9 @@ msgstr "Favorisiertes Preset"
 
 msgid "Favorites"
 msgstr "Favoriten"
+
+msgid "Favorites are not synced with it."
+msgstr "Favoriten werden mit diesem Server nicht synchronisiert."
 
 msgid "Feb"
 msgstr "Feb."
@@ -2441,6 +2987,12 @@ msgstr "Dateigröße"
 msgid "Files"
 msgstr "Dateien"
 
+msgid "Files to change"
+msgstr ""
+
+msgid "Files were changed before this session stopped. {} file saves completed. Reopen the selection to review the remaining work."
+msgstr ""
+
 msgid "Fill missing composers from MusicBrainz"
 msgstr "Fehlende Komponisten aus MusicBrainz ergänzen"
 
@@ -2461,6 +3013,9 @@ msgstr "Nach Genre filtern"
 
 msgid "Filter playlists"
 msgstr "Playlists filtern"
+
+msgid "Filter recordings"
+msgstr ""
 
 msgid "Filter the library"
 msgstr "Bibliothek filtern"
@@ -2489,6 +3044,9 @@ msgstr "Musik oder gespeicherte Auswahlen suchen…"
 msgid "Find playlists"
 msgstr "Playlists suchen"
 
+msgid "Find profiles for this device"
+msgstr ""
+
 msgid "Find this music in your library and connected sources."
 msgstr ""
 
@@ -2504,11 +3062,23 @@ msgstr "Abschließen"
 msgid "Finish or cancel the current analysis first."
 msgstr "Schließe zuerst die laufende Analyse ab oder brich sie ab."
 
+msgid "Finish pending saves before preparing a disc plan."
+msgstr ""
+
 msgid "Finish selecting"
 msgstr "Auswahl beenden"
 
+msgid "Finish the pending save before applying this proposal."
+msgstr ""
+
+msgid "Finish the pending save before changing this file's proposal."
+msgstr ""
+
 msgid "Finished"
 msgstr "Abgeschlossen"
+
+msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
+msgstr "Erste Zeile des Status. Felder: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] erscheint nur, wenn ein Feld darin einen Wert hat. Funktionen: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Leer stellt den Standard wieder her."
 
 msgid "First track"
 msgstr "Erster Titel"
@@ -2528,6 +3098,9 @@ msgstr "Dem laufenden Titel folgen"
 msgid "Folder colors in the sidebar"
 msgstr "Ordnerfarben in der Seitenleiste"
 
+msgid "Folder metadata"
+msgstr ""
+
 msgid "Folder name"
 msgstr "Ordnername"
 
@@ -2537,6 +3110,9 @@ msgstr ""
 msgid "Folder path"
 msgstr "Ordnerpfad"
 
+msgid "Folder reading was cancelled. Only the files already captured are shown."
+msgstr ""
+
 msgid "Folders"
 msgstr "Ordner"
 
@@ -2545,6 +3121,9 @@ msgstr "Die Ordner sind nicht verfügbar. Ihre vorhandenen Titel bleiben in der 
 
 msgid "Follow"
 msgstr "Folgen"
+
+msgid "Follow a style into its subgenres, or search for one directly."
+msgstr ""
 
 msgid "Follow lyrics"
 msgstr "Songtext folgen"
@@ -2579,8 +3158,8 @@ msgstr "Vier Sterne oder mehr; rating:0 heißt ohne Sterne"
 msgid "French"
 msgstr "Französisch"
 
-msgid "Frequency · Hz   /   Gain · dB   /   ±12 dB"
-msgstr "Frequenz · Hz   /   Gain · dB   /   ±12 dB"
+msgid "Frequency"
+msgstr ""
 
 msgid "Fri"
 msgstr "Fr"
@@ -2654,6 +3233,12 @@ msgstr "Lückenlos"
 msgid "Gapless playback"
 msgstr "Lückenlose Wiedergabe"
 
+msgid "Gate / expander threshold"
+msgstr ""
+
+msgid "Gate below threshold"
+msgstr ""
+
 msgid "Generate"
 msgstr "Erzeugen"
 
@@ -2672,6 +3257,9 @@ msgstr "Erzeugtes Testsignal"
 msgid "Genre"
 msgstr "Genre"
 
+msgid "Genre images"
+msgstr "Genrebilder"
+
 msgid "Genres"
 msgstr "Genres"
 
@@ -2686,6 +3274,9 @@ msgstr "Erste Schritte"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr "GitHub begrenzt die Anfragen aus diesem Netzwerk. Versuche es später erneut."
+
+msgid "Global offline folder"
+msgstr "Globaler Offline-Ordner"
 
 msgid "Go Back"
 msgstr "Zurück"
@@ -2708,6 +3299,9 @@ msgstr "Zu den Protokollen"
 msgid "Go to podcast"
 msgstr "Zum Podcast"
 
+msgid "Go to release"
+msgstr "Zur Veröffentlichung"
+
 msgid "Go to source"
 msgstr "Zur Quelle"
 
@@ -2722,6 +3316,12 @@ msgstr "Goniometer"
 
 msgid "Graphic EQ"
 msgstr "Grafischer EQ"
+
+msgid "Graphic EQ gain needs −12–12 dB."
+msgstr ""
+
+msgid "Graphic EQ needs 5–32 bands and a valid frequency range."
+msgstr ""
 
 msgid "Graphic equalizer"
 msgstr "Grafischer Equalizer"
@@ -2777,11 +3377,23 @@ msgstr "Hardware-Lautstärke"
 msgid "Hardware volume control"
 msgstr "Hardware-Lautstärkeregelung"
 
+msgid "Header image"
+msgstr "Kopfzeilenbild"
+
+msgid "Headphones"
+msgstr ""
+
+msgid "Headroom"
+msgstr ""
+
 msgid "Heard"
 msgstr "Gehört"
 
 msgid "Heard {} of {}"
 msgstr "{} von {} gehört"
+
+msgid "Hearts on the tracks and records of your servers go both ways. Turned off, they stay in Chilpa."
+msgstr "Favoriten für Titel und Alben deiner Server werden in beide Richtungen abgeglichen. Ausgeschaltet bleiben sie in Chilpa."
 
 msgid "Hi-Res"
 msgstr "Hi-Res"
@@ -2805,7 +3417,7 @@ msgid "Hide audio path"
 msgstr "Audiopfad ausblenden"
 
 msgid "Hide details"
-msgstr ""
+msgstr "Details ausblenden"
 
 msgid "Hide explicit"
 msgstr "Explizite ausblenden"
@@ -2861,6 +3473,9 @@ msgstr "Hohe Auflösung"
 msgid "High shelf"
 msgstr "High-Shelf"
 
+msgid "Highest frequency"
+msgstr ""
+
 msgid "Historical result; the current device or configuration is not verified."
 msgstr "Historisches Ergebnis; das aktuelle Gerät oder seine Konfiguration ist nicht verifiziert."
 
@@ -2869,6 +3484,9 @@ msgstr "Verlauf"
 
 msgid "Home"
 msgstr "Startseite"
+
+msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
+msgstr "Wie lange Litterbox ein hochgeladenes Cover behält. Solange das Album noch läuft, wird es vorher erneut hochgeladen."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Wie stark das Hintergrundbild hinter dem Fenster weichgezeichnet wird: 0 % lässt es scharf, 100 % ist die stärkste Unschärfe."
@@ -2929,6 +3547,9 @@ msgstr ""
 msgid "I do not know the list \"{}\""
 msgstr "Ich kenne die Liste „{}“ nicht"
 
+msgid "I have reviewed the changes and want to continue."
+msgstr ""
+
 msgid "I keep this filter applied; edit its text to change it."
 msgstr "Ich behalte diesen Filter bei; zum Ändern den Text bearbeiten."
 
@@ -2980,6 +3601,12 @@ msgstr "Immersive Ansicht"
 msgid "Import / export"
 msgstr "Import / Export"
 
+msgid "Import at most 64 presets at once."
+msgstr ""
+
+msgid "Import between 1 and 64 presets."
+msgstr ""
+
 msgid "Import cancelled"
 msgstr "Import abgebrochen"
 
@@ -2989,6 +3616,9 @@ msgstr "Import abgeschlossen"
 msgid "Import playlist"
 msgstr "Playlist importieren"
 
+msgid "Import to library"
+msgstr ""
+
 msgid "Imported"
 msgstr "Importiert"
 
@@ -2997,6 +3627,9 @@ msgstr "Öffne in einer Jellyfin-App, in der du angemeldet bist, Quick Connect u
 
 msgid "In library"
 msgstr "In der Bibliothek"
+
+msgid "In my library"
+msgstr ""
 
 msgid "In progress"
 msgstr "Begonnen"
@@ -3034,8 +3667,14 @@ msgstr "Informationen"
 msgid "Information could not be retrieved. Try again shortly."
 msgstr "Die Informationen konnten nicht abgerufen werden. Bitte in Kürze erneut versuchen."
 
+msgid "Inherit class / default"
+msgstr ""
+
 msgid "Init system (service commands)"
 msgstr "Init-System (Dienstbefehle)"
+
+msgid "Input"
+msgstr ""
 
 msgid "Input channels"
 msgstr "Eingangskanäle"
@@ -3082,11 +3721,20 @@ msgstr "Installiere und aktiviere einen Playlist-Importer unter Einstellungen �
 msgid "Install and enable the Mood plugin first."
 msgstr "Installiere und aktiviere zuerst das Stimmungs-Plugin."
 
+msgid "Install beets"
+msgstr ""
+
+msgid "Install beets {} in the selected Python environment."
+msgstr ""
+
 msgid "Install from ZIP…"
 msgstr "Aus ZIP installieren…"
 
 msgid "Install method"
 msgstr "Installationsmethode"
+
+msgid "Install or check beets in Settings > Library to use folder metadata."
+msgstr ""
 
 msgid "Install plugin from ZIP"
 msgstr "Plugin aus ZIP installieren"
@@ -3109,8 +3757,14 @@ msgstr "Installation"
 msgid "Installed"
 msgstr "Installiert"
 
+msgid "Installing beets and its pinned packages…"
+msgstr ""
+
 msgid "Installing plugin…"
 msgstr "Plugin wird installiert…"
+
+msgid "Installing private Python…"
+msgstr ""
 
 msgid "Instrument"
 msgstr "Instrument"
@@ -3133,8 +3787,26 @@ msgstr "Oberflächengröße"
 msgid "Interrupted"
 msgstr "Unterbrochen"
 
+msgid "Invalid DSP catalog page."
+msgstr ""
+
+msgid "Invalid DSP catalog query."
+msgstr ""
+
 msgid "Invalid DSP catalog."
 msgstr "Ungültiger DSP-Katalog."
+
+msgid "Invalid DSP export selection."
+msgstr ""
+
+msgid "Invalid DSP filter frequency."
+msgstr ""
+
+msgid "Invalid DSP filter gain."
+msgstr ""
+
+msgid "Invalid DSP filter parameter."
+msgstr ""
 
 msgid "Invalid DSP gain, stereo, delay or dynamics settings."
 msgstr "Ungültige DSP-Einstellungen für Gain, Stereo, Verzögerung oder Dynamik."
@@ -3148,6 +3820,9 @@ msgstr "Ungültige DSP-Parameter."
 msgid "Invalid DSP preset JSON."
 msgstr "Ungültiges DSP-Preset-JSON."
 
+msgid "Invalid DSP preset bundle."
+msgstr ""
+
 msgid "Invalid DSP preset identity."
 msgstr "Ungültige DSP-Preset-Kennung."
 
@@ -3159,6 +3834,21 @@ msgstr "Ungültige Argumente; :help zeigt die Syntax."
 
 msgid "Invalid audio check request."
 msgstr "Ungültige Anfrage zur Audioprüfung."
+
+msgid "Invalid discovery options."
+msgstr ""
+
+msgid "Invalid discovery selection."
+msgstr ""
+
+msgid "Invalid external EQ JSON."
+msgstr ""
+
+msgid "Invalid external EQ gain."
+msgstr ""
+
+msgid "Invalid graphic EQ layout."
+msgstr ""
 
 msgid "Invalid output identity."
 msgstr "Ungültige Ausgabeidentität."
@@ -3230,6 +3920,9 @@ msgstr "Januar"
 msgid "Japanese"
 msgstr "Japanisch"
 
+msgid "Join as a multidisc album"
+msgstr ""
+
 msgid "Jul"
 msgstr "Juli"
 
@@ -3242,8 +3935,14 @@ msgstr "Juni"
 msgid "June"
 msgstr "Juni"
 
+msgid "Keep at most 64 DSP output assignments."
+msgstr ""
+
 msgid "Keep at most 64 personal presets."
 msgstr "Behalte höchstens 64 eigene Presets."
+
+msgid "Keep current values"
+msgstr ""
 
 msgid "Keep original queues"
 msgstr "Ursprüngliche Warteschlangen behalten"
@@ -3254,6 +3953,12 @@ msgstr "Das aktuelle behalten"
 msgid "Keep the queue between sessions"
 msgstr "Warteschlange zwischen Sitzungen behalten"
 
+msgid "Keep track numbers"
+msgstr ""
+
+msgid "Keep uploads for"
+msgstr "Uploads behalten für"
+
 msgid "Keep words literal and match a genre without expanding it"
 msgstr "Wörter wörtlich lesen und ein Genre ohne Erweiterung suchen"
 
@@ -3262,6 +3967,9 @@ msgstr "Bleibt in Chilpa, bis du die ersten Titel hinzufügst, und geht dann an 
 
 msgid "Kept in Chilpa; tracks from any source mix in it"
 msgstr "Bleibt in Chilpa; Titel aus jeder Quelle lassen sich mischen"
+
+msgid "Kept on this device, over what the server says, until you take it off."
+msgstr "Bleibt auf diesem Gerät und gilt vor den Angaben des Servers, bis du es entfernst."
 
 msgid "Kernel"
 msgstr "Kernel"
@@ -3278,6 +3986,9 @@ msgstr "Tastenschema"
 msgid "Kind"
 msgstr "Art"
 
+msgid "Knee"
+msgstr ""
+
 msgid "LABELS"
 msgstr "LABELS"
 
@@ -3293,6 +4004,9 @@ msgstr "Sprache"
 msgid "Large"
 msgstr "Groß"
 
+msgid "Largest"
+msgstr "Größte"
+
 msgid "Last 12 months"
 msgstr "Letzte 12 Monate"
 
@@ -3301,6 +4015,9 @@ msgstr "Letzte 3 Monate"
 
 msgid "Last check"
 msgstr "Letzte Prüfung"
+
+msgid "Last file changed: {}"
+msgstr ""
 
 msgid "Last playlist"
 msgstr "Letzte Playlist"
@@ -3341,8 +4058,14 @@ msgstr "Ein Feld leer lassen für ein offenes Ende. Beide Enden zählen mit."
 msgid "Leave view"
 msgstr "Ansicht verlassen"
 
+msgid "Left"
+msgstr ""
+
 msgid "Left delay · 0–30 ms"
 msgstr "Verzögerung links · 0–30 ms"
+
+msgid "Legal data"
+msgstr "Rechtliche Angaben"
 
 msgid "Length"
 msgstr "Länge"
@@ -3395,11 +4118,20 @@ msgstr "Titel zu Favoriten hinzufügen"
 msgid "Like cursor track"
 msgstr "Ausgewählten Titel zu Favoriten hinzufügen"
 
+msgid "Limiter"
+msgstr ""
+
+msgid "Limiter reduction"
+msgstr ""
+
 msgid "Limits and cleanup"
 msgstr "Limits und Bereinigung"
 
 msgid "Line Bed"
 msgstr "Line Bed"
+
+msgid "Linked peak compression keeps stereo balance. The sidechain high-pass changes detection only. The separate limiter controls sample peaks, including makeup gain; it is not a true-peak limiter."
+msgstr ""
 
 msgid "Linux audio diagnostics…"
 msgstr "Linux-Audiodiagnose…"
@@ -3488,6 +4220,12 @@ msgstr "Lokal – Kein Ordner"
 msgid "Local — {}"
 msgstr "Lokal – {}"
 
+msgid "Lock filter"
+msgstr ""
+
+msgid "Lock output device"
+msgstr "Ausgabegerät sperren"
+
 msgid "Logs"
 msgstr "Protokolle"
 
@@ -3506,6 +4244,12 @@ msgstr "Nachschlagen"
 msgid "Look up lyrics through Chilpa's lyrics service when the file and its source have none."
 msgstr "Songtexte über Chilpas Songtext-Service suchen, wenn weder die Datei noch ihre Quelle welche hat."
 
+msgid "Look up this group again to choose a current candidate."
+msgstr ""
+
+msgid "Look up with beets"
+msgstr ""
+
 msgid "Looking for files…"
 msgstr "Dateien werden gesucht…"
 
@@ -3516,6 +4260,12 @@ msgid "Looking for lyrics…"
 msgstr "Songtext wird gesucht…"
 
 msgid "Looking for players…"
+msgstr ""
+
+msgid "Looking up metadata is turned off in Settings."
+msgstr ""
+
+msgid "Lookup cancelled."
 msgstr ""
 
 msgid "Lossless"
@@ -3536,8 +4286,8 @@ msgstr "Tiefpass"
 msgid "Low shelf"
 msgstr "Low-Shelf"
 
-msgid "Lower the overall level without changing the EQ. Zero adds no attenuation."
-msgstr "Senkt den Gesamtpegel, ohne den EQ zu ändern. Null fügt keine Dämpfung hinzu."
+msgid "Lowest frequency"
+msgstr ""
 
 msgid "Lyricist"
 msgstr "Texter"
@@ -3569,8 +4319,14 @@ msgstr "Magazin"
 msgid "Maintenance"
 msgstr "Wartung"
 
+msgid "Make available offline"
+msgstr "Offline verfügbar machen"
+
 msgid "Make it yours"
 msgstr "Mach es zu deinem"
+
+msgid "Makeup gain"
+msgstr ""
 
 msgid "Manage"
 msgstr "Verwalten"
@@ -3605,6 +4361,9 @@ msgstr "Mastering-Techniker"
 msgid "Match"
 msgstr "Treffer bei"
 
+msgid "Match score: {}"
+msgstr ""
+
 msgid "Match {} exactly"
 msgstr "{} genau suchen"
 
@@ -3619,6 +4378,9 @@ msgstr "Maximum 32/384"
 
 msgid "May"
 msgstr "Mai"
+
+msgid "Media info"
+msgstr "Medieninfo"
 
 msgid "Member Of"
 msgstr "Mitglied von"
@@ -3638,6 +4400,12 @@ msgstr "Nachricht"
 msgid "Metadata"
 msgstr "Metadaten"
 
+msgid "Metadata changed after lookup. Look up this group again."
+msgstr ""
+
+msgid "Metadata search engine"
+msgstr ""
+
 msgid "Micro"
 msgstr "Mikro"
 
@@ -3646,9 +4414,6 @@ msgstr "Mikroansicht"
 
 msgid "Middle click opens a new tab"
 msgstr "Mittelklick öffnet einen neuen Tab"
-
-msgid "Mids"
-msgstr "Mitten"
 
 msgid "Mini player"
 msgstr "Mini-Player"
@@ -3722,8 +4487,20 @@ msgstr "Mehr"
 msgid "More actions"
 msgstr "Weitere Aktionen"
 
+msgid "More genres"
+msgstr ""
+
 msgid "More options"
 msgstr "Weitere Optionen"
+
+msgid "More than 16 bits"
+msgstr "Mehr als 16 Bit"
+
+msgid "More than 48 kHz"
+msgstr "Mehr als 48 kHz"
+
+msgid "Most albums"
+msgstr ""
 
 msgid "Most at {}:00"
 msgstr "Am meisten um {}:00"
@@ -3812,6 +4589,9 @@ msgstr "Stumm"
 msgid "My Playlist"
 msgstr "Meine Playlist"
 
+msgid "My genre tags"
+msgstr ""
+
 msgid "My library"
 msgstr "Meine Bibliothek"
 
@@ -3877,6 +4657,9 @@ msgstr "Vorhersage der Aushandlung, kein Wiedergabetest: {}"
 
 msgid "Nerdy"
 msgstr "Nerdy"
+
+msgid "Nested directory links and links outside this folder are skipped. Select their target explicitly to edit it."
+msgstr ""
 
 msgid "Network"
 msgstr "Netzwerk"
@@ -3968,17 +4751,29 @@ msgstr ""
 msgid "No albums found"
 msgstr "Keine Alben gefunden"
 
+msgid "No albums in this selection"
+msgstr ""
+
 msgid "No artists from this scene were found."
 msgstr "Es wurden keine Künstler aus dieser Szene gefunden."
 
 msgid "No artists from your selected plugins were found in this scene."
 msgstr "In dieser Szene wurden keine Künstler aus deinen ausgewählten Plugins gefunden."
 
+msgid "No artists in this selection"
+msgstr ""
+
 msgid "No audio output is known yet; try again in a moment."
 msgstr "Noch ist keine Audioausgabe bekannt; versuche es gleich noch einmal."
 
+msgid "No changes to apply."
+msgstr ""
+
 msgid "No composer"
 msgstr "Ohne Komponist"
+
+msgid "No composer credits yet. Add composers in the metadata editor."
+msgstr ""
 
 msgid "No conditions yet. Add one below, or click values in Columns."
 msgstr "Noch keine Bedingungen. Füge unten eine hinzu oder klicke Werte in den Spalten an."
@@ -3998,6 +4793,9 @@ msgstr "Keine Geräte gefunden"
 msgid "No download folder selected"
 msgstr "Kein Download-Ordner ausgewählt"
 
+msgid "No downloaded files were found in this selection."
+msgstr "In dieser Auswahl wurden keine heruntergeladenen Dateien gefunden."
+
 msgid "No files need to change."
 msgstr ""
 
@@ -4015,6 +4813,9 @@ msgstr "Ohne Genre"
 
 msgid "No genres in this period."
 msgstr "Keine Genres in diesem Zeitraum."
+
+msgid "No genres with albums in this selection"
+msgstr ""
 
 msgid "No grouping"
 msgstr "Keine Gruppierung"
@@ -4043,6 +4844,9 @@ msgstr "Kein Songtext für diesen Titel."
 msgid "No matches"
 msgstr "Keine Treffer"
 
+msgid "No matches. Try another search."
+msgstr ""
+
 msgid "No matching music."
 msgstr "Keine passende Musik."
 
@@ -4057,6 +4861,9 @@ msgstr "Kein Medienserver hat auf die Suche geantwortet. Manche antworten nicht 
 
 msgid "No music has been synced with Chilpa to this storage yet."
 msgstr "Auf diesen Speicher wurde noch keine Musik mit Chilpa synchronisiert."
+
+msgid "No offline music yet"
+msgstr "Noch keine Offline-Musik"
 
 msgid "No opening was confirmed"
 msgstr "Kein Öffnen wurde bestätigt"
@@ -4090,6 +4897,9 @@ msgstr "Kein Preset passt zu dieser Suche."
 
 msgid "No purchases match the current view."
 msgstr "Keine Käufe passen zur aktuellen Ansicht."
+
+msgid "No results"
+msgstr ""
 
 msgid "No results for"
 msgstr "Keine Ergebnisse für"
@@ -4145,6 +4955,9 @@ msgstr "In diesem Durchlauf wurden noch keine Titel verarbeitet."
 msgid "No tracks in the selected libraries yet."
 msgstr "Noch keine Titel in den ausgewählten Bibliotheken."
 
+msgid "No tracks in this selection"
+msgstr ""
+
 msgid "No tracks match all of these"
 msgstr "Kein Titel erfüllt alle diese Bedingungen"
 
@@ -4155,6 +4968,9 @@ msgid "No tracks match your search."
 msgstr "Keine Titel entsprechen deiner Suche."
 
 msgid "No tracks without an album match these filters."
+msgstr ""
+
+msgid "No work tags in this selection. Composer credits are still available under Albums and Tracks."
 msgstr ""
 
 msgid "No year"
@@ -4172,14 +4988,23 @@ msgstr "Normalisierung"
 msgid "Not answering"
 msgstr "Antwortet nicht"
 
+msgid "Not checked"
+msgstr ""
+
 msgid "Not compatible"
 msgstr "Nicht kompatibel"
 
 msgid "Not for me"
 msgstr "Nichts für mich"
 
+msgid "Not found on disk"
+msgstr "Auf dem Datenträger nicht gefunden"
+
 msgid "Not heard first"
 msgstr "Nicht Gehörtes zuerst"
+
+msgid "Not in the library"
+msgstr "Nicht in der Bibliothek"
 
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "Nicht in der Bibliothek: Das ist der Ordner, wie er auf dem Datenträger liegt."
@@ -4189,6 +5014,9 @@ msgstr "Weder in deiner Bibliothek noch in deinen Quellen"
 
 msgid "Not inspected"
 msgstr "Nicht geprüft"
+
+msgid "Not installed"
+msgstr ""
 
 msgid "Not now"
 msgstr "Jetzt nicht"
@@ -4280,6 +5108,9 @@ msgstr "Aktuelle Wiedergabe: {}"
 msgid "Number of tracks"
 msgstr "Anzahl der Titel"
 
+msgid "Number tracks in order"
+msgstr ""
+
 msgid "OR needs a condition on each side"
 msgstr "OR braucht auf beiden Seiten eine Bedingung"
 
@@ -4298,8 +5129,20 @@ msgstr "Aus"
 msgid "Offline"
 msgstr ""
 
+msgid "Offline download failed"
+msgstr "Offline-Download fehlgeschlagen"
+
+msgid "Offline folder"
+msgstr "Offline-Ordner"
+
+msgid "Offline folder for this server"
+msgstr "Offline-Ordner für diesen Server"
+
 msgid "Offline mode"
 msgstr "Offline-Modus"
+
+msgid "Offline music"
+msgstr "Offline-Musik"
 
 msgid "Older temporary images are removed in the background. Artwork referenced by your library is kept."
 msgstr "Ältere temporäre Bilder werden im Hintergrund entfernt. Von deiner Bibliothek referenziertes Artwork bleibt erhalten."
@@ -4322,9 +5165,6 @@ msgstr "Beim App-Start"
 msgid "On the sidebar's destinations."
 msgstr "Bei den Einträgen der Seitenleiste."
 
-msgid "On this device"
-msgstr "Auf diesem Gerät"
-
 msgid "Onboarding"
 msgstr "Einführung"
 
@@ -4337,8 +5177,14 @@ msgstr "Ein Titel geht direkt in den nächsten über."
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr "Ein Titel geht direkt in den nächsten über. Aus: Das Gerät spielt aus und wird erneut geöffnet."
 
+msgid "One value per line"
+msgstr ""
+
 msgid "One-bit DSD"
 msgstr "Ein-Bit-DSD"
+
+msgid "Only personal presets can be changed."
+msgstr ""
 
 msgid "Only personal presets can be deleted."
 msgstr "Nur eigene Presets können gelöscht werden."
@@ -4368,7 +5214,7 @@ msgid "Open Last.fm"
 msgstr "Last.fm öffnen"
 
 msgid "Open ListenList"
-msgstr "Wiedergabeliste öffnen"
+msgstr "ListenList öffnen"
 
 msgid "Open Music Link"
 msgstr "Musik-Link öffnen"
@@ -4466,6 +5312,12 @@ msgstr ""
 msgid "Open the folder used for disposable files."
 msgstr "Den Ordner für entbehrliche Dateien öffnen."
 
+msgid "Open the offline folder"
+msgstr "Offline-Ordner öffnen"
+
+msgid "Open the selection again"
+msgstr ""
+
 msgid "Open view"
 msgstr "Ansicht öffnen"
 
@@ -4495,6 +5347,15 @@ msgstr "Wird geöffnet…"
 
 msgid "Operating system"
 msgstr "Betriebssystem"
+
+msgid "Operation cancelled"
+msgstr ""
+
+msgid "Operation complete"
+msgstr ""
+
+msgid "Operation stopped with errors"
+msgstr ""
 
 msgid "Optional access token for private playlists"
 msgstr "Optionales Zugriffstoken für private Playlists"
@@ -4526,11 +5387,17 @@ msgstr "Andere / unbekannt"
 msgid "Other cache"
 msgstr "Sonstiger Cache"
 
+msgid "Other fields stay unchanged."
+msgstr ""
+
 msgid "Out of date"
 msgstr "Veraltet"
 
 msgid "Output"
 msgstr "Ausgabe"
+
+msgid "Output assignments"
+msgstr ""
 
 msgid "Output details…"
 msgstr "Ausgabedetails…"
@@ -4544,6 +5411,9 @@ msgstr "Ausgabeformat"
 msgid "Output identity could not be saved."
 msgstr "Die Ausgabeidentität konnte nicht gespeichert werden."
 
+msgid "Overview"
+msgstr ""
+
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "PCM-Samples können nicht in einen nativen DSD-Stream geschrieben werden"
 
@@ -4553,20 +5423,29 @@ msgstr "PEAK"
 msgid "Page {} of {}"
 msgstr ""
 
+msgid "Parametric EQ"
+msgstr ""
+
+msgid "Parametric filters"
+msgstr ""
+
 msgid "Parentheses group; NOT works like the minus"
 msgstr "Klammern gruppieren; NOT wirkt wie das Minus"
 
 msgid "Password"
 msgstr "Passwort"
 
+msgid "Paste AutoEq text, Chilpa JSON or a preset bundle. Poweramp parametric JSON transfers tone, peak and shelf bands. Unsupported settings reject the whole import."
+msgstr ""
+
+msgid "Paste DSP presets."
+msgstr ""
+
 msgid "Paste EQ filter settings here"
 msgstr "EQ-Filtereinstellungen hier einfügen"
 
 msgid "Paste a link from one of your sources or from another service"
 msgstr "Füge einen Link aus einer deiner Quellen oder von einem anderen Dienst ein"
-
-msgid "Paste a parametric EQ profile or a Chilpa preset JSON. Active unsupported filters reject the whole import."
-msgstr "Füge ein parametrisches EQ-Profil oder ein Chilpa-Preset-JSON ein. Aktive nicht unterstützte Filter lehnen den gesamten Import ab."
 
 msgid "Paste a parametric EQ profile."
 msgstr "Füge ein parametrisches EQ-Profil ein."
@@ -4598,8 +5477,17 @@ msgstr "Pausiert"
 msgid "Peak"
 msgstr "Peak"
 
+msgid "Peak hold · reset to measure a new passage"
+msgstr ""
+
 msgid "Pending"
 msgstr "Ausstehend"
+
+msgid "Pending changes will be discarded. Files already saved keep their changes."
+msgstr ""
+
+msgid "Pending work was cancelled."
+msgstr ""
 
 msgid "Pending: it will be sent to {} with its first tracks."
 msgstr "Ausstehend: Sie geht mit den ersten Titeln an {}."
@@ -4621,6 +5509,12 @@ msgstr "Berechtigung erforderlich"
 
 msgid "Permission review required"
 msgstr "Berechtigungsprüfung erforderlich"
+
+msgid "Personal"
+msgstr ""
+
+msgid "Personal presets"
+msgstr ""
 
 msgid "Physical format combinations"
 msgstr "Physische Formatkombinationen"
@@ -4645,6 +5539,9 @@ msgstr "PipeWire reicht die Samples nur dann unverändert durch, wenn es die Aus
 
 msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
 msgstr "Der Graph von PipeWire läuft nur mit {} Hz, daher würde {} Hz per Resampling umgerechnet; füge die Rate zu default.clock.allowed-rates hinzu oder wähle die Soundkarte selbst"
+
+msgid "PipeWire's own socket, which Chilpa plays through, cannot be reached from here; inside a Flatpak, allow it with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr "der eigene Socket von PipeWire, über den Chilpa abspielt, ist von hier aus nicht erreichbar; in einem Flatpak erlaubst du ihn mit: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
 
 msgid "Plain seek bar"
 msgstr "Einfache Positionsleiste"
@@ -4775,8 +5672,8 @@ msgstr "Playlist-Vorschau"
 msgid "Playlists"
 msgstr "Playlists"
 
-msgid "Playlists will be kept at the root."
-msgstr "Playlists bleiben auf der obersten Ebene."
+msgid "Playlists in this folder move to the root."
+msgstr "Wiedergabelisten in diesem Ordner werden auf die oberste Ebene verschoben."
 
 msgid "Plays"
 msgstr "Wiedergaben"
@@ -4789,6 +5686,9 @@ msgstr "Spielt vier Titel mit unterschiedlichen Bittiefen und Abtastraten über 
 
 msgid "Plex did not accept the session; sign in again"
 msgstr "Plex hat die Sitzung nicht akzeptiert; melde dich erneut an"
+
+msgid "Plugin"
+msgstr "Plugin"
 
 msgid "Plugin Settings"
 msgstr "Plugin-Einstellungen"
@@ -4817,6 +5717,9 @@ msgstr "Plugins"
 msgid "Podcasts"
 msgstr ""
 
+msgid "Points show individual filter gains. Drag to adjust frequency and gain; scroll over a point to adjust Q. Locked filters stay fixed."
+msgstr ""
+
 msgid "Popular Tracks"
 msgstr "Beliebte Titel"
 
@@ -4829,11 +5732,11 @@ msgstr "Position"
 msgid "Position in Streaming"
 msgstr "Position unter Streaming"
 
+msgid "Pre-gain"
+msgstr ""
+
 msgid "Preamp"
 msgstr "Vorverstärkung"
-
-msgid "Precise filters"
-msgstr "Präzise Filter"
 
 msgid "Predicted unchanged PCM; DoP decoding and audible output are untested"
 msgstr "Unverändertes PCM vorhergesagt; DoP-Dekodierung und hörbare Ausgabe sind ungeprüft"
@@ -4847,6 +5750,12 @@ msgstr "Stimmungsanalyse wird vorbereitet"
 msgid "Preparing analysis…"
 msgstr "Analyse wird vorbereitet…"
 
+msgid "Preparing beets…"
+msgstr ""
+
+msgid "Preparing metadata changes…"
+msgstr ""
+
 msgid "Preparing playlists"
 msgstr "Wiedergabelisten vorbereiten"
 
@@ -4856,11 +5765,26 @@ msgstr "Ergebnisse werden vorbereitet…"
 msgid "Preparing the updated AppImage…"
 msgstr "Aktualisiertes AppImage wird vorbereitet…"
 
+msgid "Preset name"
+msgstr ""
+
+msgid "Presets"
+msgstr ""
+
 msgid "Press keys…"
 msgstr "Tasten drücken…"
 
 msgid "Prevent clipping"
 msgstr "Übersteuerung vermeiden"
+
+msgid "Preview changes"
+msgstr ""
+
+msgid "Preview disc plan"
+msgstr ""
+
+msgid "Preview selected fields"
+msgstr ""
 
 msgid "Previous"
 msgstr "Zurück"
@@ -4889,6 +5813,18 @@ msgstr "Zuvor gespeichert"
 msgid "Privacy & network"
 msgstr "Datenschutz und Netzwerk"
 
+msgid "Process plugins cannot run on this system yet."
+msgstr "Prozess-Plugins laufen auf diesem System noch nicht."
+
+msgid "Process plugins do not run while Chilpa runs as root."
+msgstr "Prozess-Plugins laufen nicht, solange Chilpa als root läuft."
+
+msgid "Process plugins need the Flatpak portal, which is not available."
+msgstr "Prozess-Plugins brauchen das Flatpak-Portal, das nicht verfügbar ist."
+
+msgid "Process plugins need {}, which is not installed."
+msgstr "Prozess-Plugins brauchen {}, das nicht installiert ist."
+
 msgid "Processed"
 msgstr "Verarbeitet"
 
@@ -4910,6 +5846,15 @@ msgstr "Profilname"
 msgid "Profile removed. Some local sync history could not be cleared."
 msgstr ""
 
+msgid "Pronunciation"
+msgstr "Aussprache"
+
+msgid "Proposal"
+msgstr ""
+
+msgid "Proposed"
+msgstr ""
+
 msgid "Provider identifiers"
 msgstr "Anbieter-Kennungen"
 
@@ -4928,6 +5873,9 @@ msgstr "Käufe"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Lege einen Plugin-Ordner im Plugin-Verzeichnis von Chilpa ab und öffne die App erneut."
 
+msgid "Q"
+msgstr ""
+
 msgid "Qt version"
 msgstr "Qt-Version"
 
@@ -4939,9 +5887,6 @@ msgstr "Qualität unbekannt"
 
 msgid "Quality, format and source filters"
 msgstr "Filter für Qualität, Format und Quelle"
-
-msgid "Quality, format, source and rating filters"
-msgstr "Filter für Qualität, Format, Quelle und Bewertung"
 
 msgid "Quarantined"
 msgstr "In Quarantäne"
@@ -5036,8 +5981,23 @@ msgstr ""
 msgid "Rate"
 msgstr "Bewerten"
 
+msgid "Rate tracks, albums and playlists with one to five stars. Off, stars leave every list, page and filter; the ratings already given are kept."
+msgstr "Titel, Alben und Playlists mit einem bis fünf Sternen bewerten. Aus: Die Sterne verschwinden aus allen Listen, Seiten und Filtern; vergebene Bewertungen bleiben erhalten."
+
 msgid "Rating"
 msgstr "Bewertung"
+
+msgid "Ratings"
+msgstr "Bewertungen"
+
+msgid "Ratings are not synced with it."
+msgstr "Bewertungen werden mit diesem Server nicht synchronisiert."
+
+msgid "Ratio"
+msgstr ""
+
+msgid "Re-download"
+msgstr "Erneut herunterladen"
 
 msgid "Re-fetch album information"
 msgstr "Albuminformationen erneut abrufen"
@@ -5087,6 +6047,9 @@ msgstr ""
 msgid "Reading file sizes"
 msgstr "Dateigrößen lesen"
 
+msgid "Reading folder metadata…"
+msgstr ""
+
 msgid "Reading it from {}…"
 msgstr "Wird von {} gelesen…"
 
@@ -5098,6 +6061,9 @@ msgstr "Ausgewählte Titel werden gelesen…"
 
 msgid "Reading the files…"
 msgstr "Dateien werden gelesen…"
+
+msgid "Reading the library…"
+msgstr "Bibliothek wird gelesen…"
 
 msgid "Reading the media server's description and its folders…"
 msgstr "Die Beschreibung des Medienservers und seine Ordner werden gelesen…"
@@ -5124,6 +6090,12 @@ msgid "Ready to review"
 msgstr "Bereit zur Prüfung"
 
 msgid "Ready to sync"
+msgstr ""
+
+msgid "Rebuild bands"
+msgstr ""
+
+msgid "Rebuilding the graphic layout starts flat and keeps the previous EQ available for restoration. Tone and stereo settings stay in place."
 msgstr ""
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
@@ -5165,6 +6137,9 @@ msgstr "Zuletzt gespielte Playlists in der Bibliothek"
 msgid "Recording engineer"
 msgstr "Aufnahmetechniker"
 
+msgid "Recordings"
+msgstr ""
+
 msgid "Records"
 msgstr "Alben"
 
@@ -5201,11 +6176,11 @@ msgstr "Käufe aktualisieren"
 msgid "Refresh settings"
 msgstr "Einstellungen aktualisieren"
 
-msgid "Refused the sign-in. Its records stay listed and cannot be played."
-msgstr "Die Anmeldung wurde abgelehnt. Seine Alben bleiben aufgelistet und lassen sich nicht wiedergeben."
-
 msgid "Regenerate"
 msgstr "Neu generieren"
+
+msgid "Reinstall"
+msgstr ""
 
 msgid "Release"
 msgstr "Veröffentlichung"
@@ -5225,6 +6200,9 @@ msgstr "Veröffentlichungsart"
 msgid "Releases"
 msgstr "Veröffentlichungen"
 
+msgid "Reload"
+msgstr ""
+
 msgid "Remember"
 msgstr "Merken"
 
@@ -5237,14 +6215,29 @@ msgstr "Limit für Remote-Bilder"
 msgid "Remove"
 msgstr "Entfernen"
 
+msgid "Remove a chosen genre image before adding another."
+msgstr ""
+
+msgid "Remove assignment"
+msgstr ""
+
 msgid "Remove condition"
 msgstr "Bedingung entfernen"
 
 msgid "Remove cover"
 msgstr "Cover entfernen"
 
+msgid "Remove downloaded audio?"
+msgstr "Heruntergeladene Audiodateien entfernen?"
+
+msgid "Remove downloaded files…"
+msgstr "Heruntergeladene Dateien entfernen…"
+
 msgid "Remove filter"
 msgstr "Filter entfernen"
+
+msgid "Remove from disc plan"
+msgstr ""
 
 msgid "Remove from favorites"
 msgstr "Aus Favoriten entfernen"
@@ -5270,17 +6263,28 @@ msgstr "Gruppe entfernen"
 msgid "Remove image"
 msgstr "Bild entfernen"
 
+msgid "Remove offline copy"
+msgid_plural "Remove offline copies"
+msgstr[0] "Offline-Kopie entfernen"
+msgstr[1] "Offline-Kopien entfernen"
+
 msgid "Remove one condition to get results:"
 msgstr "Entferne eine Bedingung, um Ergebnisse zu erhalten:"
 
 msgid "Remove original queues"
 msgstr "Ursprüngliche Warteschlangen entfernen"
 
+msgid "Remove plugin repository?"
+msgstr "Plugin-Repository entfernen?"
+
 msgid "Remove saved profile"
-msgstr ""
+msgstr "Gespeichertes Profil entfernen"
 
 msgid "Remove smaller covers and backgrounds. Chilpa makes them again as needed."
 msgstr "Entfernt kleinere Cover und Hintergründe. Chilpa erstellt sie bei Bedarf neu."
+
+msgid "Remove this playlist from your library?"
+msgstr "Diese Wiedergabeliste aus der Bibliothek entfernen?"
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "Dieses Plugin samt Konto, Einstellungen und zwischengespeicherter Bibliothek aus Chilpa entfernen? Dein Konto und deine Playlists bei der Quelle werden dadurch nicht gelöscht."
@@ -5288,11 +6292,17 @@ msgstr "Dieses Plugin samt Konto, Einstellungen und zwischengespeicherter Biblio
 msgid "Remove unreferenced images from sources and plugins. Needed images download again."
 msgstr "Entfernt nicht mehr referenzierte Bilder von Quellen und Plugins. Benötigte Bilder werden erneut heruntergeladen."
 
+msgid "Remove values"
+msgstr ""
+
 msgid "Remove {}?"
 msgstr "{} entfernen?"
 
 msgid "Remove…"
 msgstr "Entfernen…"
+
+msgid "Removing offline copy"
+msgstr "Offline-Kopie wird entfernt"
 
 msgid "Removing saved profile…"
 msgstr ""
@@ -5318,6 +6328,9 @@ msgstr "Renderer automatisch gewechselt — der vorherige konnte nicht starten"
 msgid "Rendering backend"
 msgstr "Rendering-Backend"
 
+msgid "Renumber resulting discs"
+msgstr ""
+
 msgid "Reopens the upcoming queue paused, at the place where you left it."
 msgstr "Öffnet die anstehende Warteschlange pausiert wieder, an der Stelle, an der du aufgehört hast."
 
@@ -5336,8 +6349,17 @@ msgstr "Wiederholen"
 msgid "Replace current queue"
 msgstr "Aktuelle Warteschlange ersetzen"
 
+msgid "Replace genres"
+msgstr ""
+
+msgid "Replace personal preset"
+msgstr ""
+
 msgid "Replace queue {}"
 msgstr "Warteschlange {} ersetzen"
+
+msgid "Replace values"
+msgstr ""
 
 msgid "Report an issue"
 msgstr "Problem melden"
@@ -5381,6 +6403,9 @@ msgstr "EQ zurücksetzen"
 msgid "Reset counter"
 msgstr "Zähler zurücksetzen"
 
+msgid "Reset meters"
+msgstr ""
+
 msgid "Resolution reduced from {} to {} bits"
 msgstr "Auflösung von {} auf {} Bit verringert"
 
@@ -5392,6 +6417,9 @@ msgstr "Chilpa neu starten"
 
 msgid "Restart plugin"
 msgstr "Plugin neu starten"
+
+msgid "Restart the track, then go back"
+msgstr "Titel neu starten, dann zurückspringen"
 
 msgid "Restore"
 msgstr "Wiederherstellen"
@@ -5411,6 +6439,9 @@ msgstr "Tabs wiederherstellen"
 msgid "Result saved on this computer."
 msgstr "Ergebnis auf diesem Computer gespeichert."
 
+msgid "Resulting album title"
+msgstr ""
+
 msgid "Results are saved after every track. Run Analyze again to continue the pending tracks."
 msgstr "Die Ergebnisse werden nach jedem Titel gespeichert. Starte die Analyse erneut, um die ausstehenden Titel fortzusetzen."
 
@@ -5419,6 +6450,12 @@ msgstr "Fortsetzen"
 
 msgid "Retry"
 msgstr "Erneut versuchen"
+
+msgid "Retry download"
+msgstr "Download erneut versuchen"
+
+msgid "Retry pending files"
+msgstr ""
 
 msgid "Revert"
 msgstr "Verwerfen"
@@ -5444,6 +6481,12 @@ msgstr ""
 msgid "Review diagnostics"
 msgstr "Diagnose prüfen"
 
+msgid "Review proposal"
+msgstr ""
+
+msgid "Review the current proposal before applying it."
+msgstr ""
+
 msgid "Review the device changes before syncing."
 msgstr ""
 
@@ -5458,6 +6501,9 @@ msgstr "Ausführlich"
 
 msgid "Rich rows"
 msgstr "Ausführliche Zeilen"
+
+msgid "Right"
+msgstr ""
 
 msgid "Right delay · 0–30 ms"
 msgstr "Verzögerung rechts · 0–30 ms"
@@ -5516,6 +6562,9 @@ msgstr "Sa"
 msgid "Save"
 msgstr "Speichern"
 
+msgid "Save a copy of the current sound, or rename and replace a personal preset. Factory corrections remain available."
+msgstr ""
+
 msgid "Save as an image"
 msgstr "Als Bild speichern"
 
@@ -5528,8 +6577,8 @@ msgstr "Speichern unter…"
 msgid "Save changes"
 msgstr "Änderungen speichern"
 
-msgid "Save preset"
-msgstr "Preset speichern"
+msgid "Save copy"
+msgstr ""
 
 msgid "Save profile"
 msgstr ""
@@ -5582,6 +6631,9 @@ msgstr "Gespeicherte Abfragen"
 msgid "Saved results remain available between sessions."
 msgstr "Gespeicherte Ergebnisse bleiben zwischen den Sitzungen erhalten."
 
+msgid "Saved to {} and read back from it."
+msgstr "Wird auf {} gespeichert und von dort zurückgelesen."
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -5621,14 +6673,23 @@ msgstr "Zum Anpassen der Lautstärke scrollen"
 msgid "Search"
 msgstr "Suche"
 
+msgid "Search MusicBrainz, or upload if not found"
+msgstr "In MusicBrainz suchen, sonst hochladen"
+
 msgid "Search again"
 msgstr "Erneut suchen"
 
 msgid "Search artists"
 msgstr "Künstler suchen"
 
+msgid "Search engine"
+msgstr ""
+
 msgid "Search folders"
 msgstr "Ordner suchen"
+
+msgid "Search genres"
+msgstr ""
 
 msgid "Search listens"
 msgstr "Hörverlauf durchsuchen"
@@ -5681,11 +6742,17 @@ msgstr "Diese Ansicht durchsuchen…"
 msgid "Search title, artist or album"
 msgstr "Titel, Künstler oder Album suchen"
 
+msgid "Search your library"
+msgstr ""
+
 msgid "Searching MusicBrainz for {genre} artists…"
 msgstr "MusicBrainz wird nach Künstlern ({genre}) durchsucht…"
 
 msgid "Searching for devices…"
 msgstr "Suche nach Geräten…"
+
+msgid "Searching presets…"
+msgstr ""
 
 msgid "Searching this network…"
 msgstr "Dieses Netzwerk wird durchsucht…"
@@ -5695,6 +6762,9 @@ msgstr "Suche läuft…"
 
 msgid "Search…"
 msgstr "Suchen…"
+
+msgid "Second line of the status, written like the title."
+msgstr "Zweite Zeile des Status, geschrieben wie der Titel."
 
 msgid "Secondary text"
 msgstr "Sekundärer Text"
@@ -5740,11 +6810,44 @@ msgstr "Bild auswählen..."
 msgid "Select a folder to see its contents."
 msgstr "Wähle einen Ordner aus, um seinen Inhalt anzuzeigen."
 
+msgid "Select album files"
+msgstr ""
+
+msgid "Select all"
+msgstr "Alle auswählen"
+
 msgid "Select an artist to see their albums"
 msgstr "Wähle einen Künstler aus, um seine Alben zu sehen"
 
+msgid "Select at most 64 presets."
+msgstr ""
+
+msgid "Select files for the disc plan."
+msgstr ""
+
+msgid "Select files from the captured lookup before preparing this candidate."
+msgstr ""
+
+msgid "Select files from this group before looking up metadata."
+msgstr ""
+
+msgid "Select files with consistent album and release tags for one lookup."
+msgstr ""
+
 msgid "Select folders"
 msgstr "Ordner auswählen"
+
+msgid "Select one album or prepare a consistent album proposal before looking up this group."
+msgstr ""
+
+msgid "Select preset"
+msgstr ""
+
+msgid "Select the required release identity fields together."
+msgstr ""
+
+msgid "Select these artists"
+msgstr ""
 
 msgid "Select tracks"
 msgstr "Titel auswählen"
@@ -5758,6 +6861,9 @@ msgstr "Ausgewählte Musik"
 msgid "Selected output"
 msgstr "Ausgewählte Ausgabe"
 
+msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
+msgstr "Sendet das Cover des Albums von diesem Computer an litterbox.catbox.moe, einen öffentlichen Dateihoster, damit Discord es anzeigen kann. Wer den Link hat, kann es öffnen, bis es abläuft. Nur das Bild geht raus: kein Name, kein Dateipfad."
+
 msgid "Send to Last.fm"
 msgstr "An Last.fm senden"
 
@@ -5770,17 +6876,26 @@ msgstr "Die Änderung wird an {} gesendet …"
 msgid "Sep"
 msgstr "Sept."
 
+msgid "Separate by disc"
+msgstr ""
+
 msgid "Separate input limits do not establish every combination of rate, word width and channels."
 msgstr "Getrennte Eingangsgrenzen belegen nicht jede Kombination aus Abtastrate, Wortbreite und Kanalzahl."
 
 msgid "September"
 msgstr "September"
 
+msgid "Server"
+msgstr "Server"
+
 msgid "Server added"
 msgstr "Server hinzugefügt"
 
 msgid "Server address"
 msgstr "Serveradresse"
+
+msgid "Server item"
+msgstr "Eintrag auf dem Server"
 
 msgid "Server name"
 msgstr "Servername"
@@ -5806,14 +6921,17 @@ msgstr "Schleifenende setzen (B)"
 msgid "Set loop start (A)"
 msgstr "Schleifenanfang setzen (A)"
 
-msgid "Set on this device, not what the server says"
-msgstr "Auf diesem Gerät festgelegt, nicht was der Server sagt"
+msgid "Set on this device, over what the server says. Click to use the server's value."
+msgstr "Auf diesem Gerät festgelegt, vor den Angaben des Servers. Klicke, um den Wert des Servers zu verwenden."
 
 msgid "Set preference"
 msgstr "Einstellung ändern"
 
 msgid "Set the overall light or dark polarity. Affects derived shades, borders and overlays."
 msgstr "Legt die generelle helle oder dunkle Polarität fest. Betrifft abgeleitete Schattierungen, Ränder und Overlays."
+
+msgid "Set up beets in Settings to look up metadata."
+msgstr ""
 
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Stellt den Graphen von PipeWire auf die Abtastrate des jeweiligen Titels ein, solange Chilpa die Ausgabe allein nutzt, damit der DAC die Rate erhält, die in der Datei steckt. Die Rate wird zurückgesetzt, wenn Chilpa stoppt."
@@ -5854,6 +6972,9 @@ msgstr "Anzeigen"
 msgid "Show Shortcuts"
 msgstr "Tastenkürzel anzeigen"
 
+msgid "Show artwork"
+msgstr "Artwork anzeigen"
+
 msgid "Show audio path"
 msgstr "Audiopfad anzeigen"
 
@@ -5884,8 +7005,17 @@ msgstr ""
 msgid "Show older versions"
 msgstr "Ältere Versionen anzeigen"
 
+msgid "Show play state"
+msgstr "Wiedergabestatus anzeigen"
+
 msgid "Show playlist only from the same source as the track"
 msgstr "Nur Playlists aus derselben Quelle wie der Titel anzeigen"
+
+msgid "Show pronunciation in Latin script. Missing readings are generated by Chilpa's lyrics API."
+msgstr "Aussprache in lateinischer Schrift anzeigen. Fehlende Lesungen werden von Chilpas Liedtext-API erzeugt."
+
+msgid "Show pronunciation in Latin script. When it is missing, send the lyrics to Chilpa's lyrics API to generate it. Off by default."
+msgstr "Aussprache in lateinischer Schrift anzeigen. Fehlt sie, werden die Liedtexte zur Erzeugung an Chilpas Liedtext-API gesendet. Standardmäßig deaktiviert."
 
 msgid "Show review details"
 msgstr "Prüfdetails anzeigen"
@@ -5923,6 +7053,12 @@ msgstr "Fenster ein-/ausblenden"
 msgid "Showing"
 msgstr "Angezeigt"
 
+msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
+msgstr "{} von {} Titeln werden angezeigt. Wähle einen Künstler oder einen Server, um den Rest zu sehen."
+
+msgid "Shown when pointing at the cover, written like the title."
+msgstr "Erscheint beim Zeigen auf das Cover, geschrieben wie der Titel."
+
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Zeigt beim Tippen Ergebnisse unter dem Suchfeld. Ausgeschaltet öffnet das Tippen die Ergebnisseite."
 
@@ -5940,6 +7076,9 @@ msgstr ""
 
 msgid "Sidecar"
 msgstr "Begleitdatei"
+
+msgid "Sidechain high-pass"
+msgstr ""
 
 msgid "Sign in from Account to see your purchases."
 msgstr "Melde dich unter „Konto“ an, um deine Käufe zu sehen."
@@ -5964,6 +7103,9 @@ msgstr "Stattdessen mit einem API-Schlüssel anmelden (OpenSubsonic-Server, die 
 
 msgid "Sign in with your Plex account"
 msgstr "Mit deinem Plex-Konto anmelden"
+
+msgid "Sign-in was refused. Its records stay in the library."
+msgstr "Die Anmeldung wurde abgelehnt. Die Alben bleiben in der Bibliothek."
 
 msgid "Signed out"
 msgstr "Abgemeldet"
@@ -5998,6 +7140,11 @@ msgstr "Größe"
 msgid "Skipped"
 msgstr "Übersprungen"
 
+msgid "Skipped {} unavailable track"
+msgid_plural "Skipped {} unavailable tracks"
+msgstr[0] "{} nicht verfügbarer Titel übersprungen"
+msgstr[1] "{} nicht verfügbare Titel übersprungen"
+
 msgid "Skips"
 msgstr "Übersprungen"
 
@@ -6009,6 +7156,9 @@ msgstr "Klein"
 
 msgid "Smaller covers and background images; Chilpa can make these again."
 msgstr "Kleinere Cover und Hintergrundbilder; Chilpa kann sie erneut erstellen."
+
+msgid "Smallest"
+msgstr "Kleinste"
 
 msgid "Soft"
 msgstr "Leicht"
@@ -6022,13 +7172,25 @@ msgstr "Softwarelautstärke"
 msgid "Some endpoint streams could not be read."
 msgstr "Einige Streams des Endpunkts konnten nicht gelesen werden."
 
+msgid "Some explicit files are outside the selected disc plan."
+msgstr ""
+
 msgid "Some of these tracks were already added"
 msgstr "Einige dieser Titel wurden bereits hinzugefügt"
 
 msgid "Some packages are missing"
 msgstr "Einige Pakete fehlen"
 
+msgid "Some ratings or favorites could not reach their source. Chilpa will try again."
+msgstr "Einige Bewertungen oder Favoriten konnten ihre Quelle nicht erreichen. Chilpa versucht es erneut."
+
 msgid "Some selected Library tracks are missing. I kept the device unchanged."
+msgstr ""
+
+msgid "Some selected files have no mapping in this candidate. Adjust the selection before applying it."
+msgstr ""
+
+msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
 msgid "Songs"
@@ -6054,6 +7216,9 @@ msgstr "Quellen bestimmen, was in der Bibliothek ist. Verfeinern grenzt darin ei
 
 msgid "Spanish"
 msgstr "Spanisch"
+
+msgid "Speakers"
+msgstr ""
 
 msgid "Spectral Ribbon"
 msgstr "Spectral Ribbon"
@@ -6081,6 +7246,9 @@ msgstr "Standard ausstehend"
 
 msgid "Standard processed"
 msgstr "Standard verarbeitet"
+
+msgid "Star ratings"
+msgstr "Sternebewertungen"
 
 msgid "Start"
 msgstr "Starten"
@@ -6115,8 +7283,8 @@ msgstr "Von Chilpa erzeugte Statistiken"
 msgid "Status"
 msgstr "Status"
 
-msgid "Stereo and dynamics"
-msgstr "Stereo und Dynamik"
+msgid "Stereo and crossfeed"
+msgstr ""
 
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "Die Stereo-Regler gelten für zweikanaliges PCM. EQ und verknüpfte Kompression gelten für alle Kanäle."
@@ -6148,6 +7316,12 @@ msgstr "Wiedergabe zur Diagnose stoppen?"
 msgid "Stop scan"
 msgstr "Scan anhalten"
 
+msgid "Stop syncing favorites"
+msgstr "Favoriten nicht synchronisieren"
+
+msgid "Stop syncing ratings"
+msgstr "Bewertungen nicht synchronisieren"
+
 msgid "Stopped"
 msgstr "Gestoppt"
 
@@ -6163,6 +7337,9 @@ msgstr "Stoppt in {}"
 msgid "Storage"
 msgstr "Speicher"
 
+msgid "Storage limit"
+msgstr "Speicherlimit"
+
 msgid "Stream address"
 msgstr "Stream-Adresse"
 
@@ -6177,6 +7354,9 @@ msgstr "Studio 24/48"
 
 msgid "Stumbling"
 msgstr "Instabil"
+
+msgid "Subgenres"
+msgstr ""
 
 msgid "Subscribe"
 msgstr "Abonnieren"
@@ -6208,11 +7388,20 @@ msgstr ""
 msgid "Sync complete"
 msgstr ""
 
+msgid "Sync favorites"
+msgstr "Favoriten synchronisieren"
+
+msgid "Sync favorites with sources"
+msgstr "Favoriten mit Quellen synchronisieren"
+
 msgid "Sync needs attention"
 msgstr ""
 
 msgid "Sync now"
 msgstr "Jetzt synchronisieren"
+
+msgid "Sync ratings"
+msgstr "Bewertungen synchronisieren"
 
 msgid "Sync to device…"
 msgstr ""
@@ -6272,6 +7461,9 @@ msgstr "Modul"
 msgid "Target loudness"
 msgstr "Ziel-Lautheit"
 
+msgid "Technical data"
+msgstr "Technische Daten"
+
 msgid "Temporary episode storage is unavailable."
 msgstr ""
 
@@ -6292,6 +7484,9 @@ msgstr "Text"
 
 msgid "That answer does not belong to this window."
 msgstr "Diese Antwort gehört nicht zu diesem Fenster."
+
+msgid "That change is not a playlist edit."
+msgstr ""
 
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Diese Datei ist kein JPEG-, PNG- oder WebP-Bild"
@@ -6335,8 +7530,32 @@ msgstr "Das Konto ist abgelaufen; verbinde es erneut."
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "Die Adresse, unter der du den Server im Browser öffnest, mit Port, und der Benutzer, mit dem Chilpa sich anmeldet."
 
+msgid "The beets installer could not be downloaded. Try again."
+msgstr ""
+
+msgid "The beets lookup exceeded its metadata size limit."
+msgstr ""
+
+msgid "The beets lookup timed out. Try again."
+msgstr ""
+
+msgid "The beets setting could not be changed while a task is running."
+msgstr ""
+
+msgid "The beets task reached its time limit."
+msgstr ""
+
+msgid "The beets task was cancelled."
+msgstr ""
+
 msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr "Der integrierte Test spielt vier Titel mit unterschiedlichen Bittiefen und Abtastraten ab (16/44.1, 24/44.1, 24/96, 24/192), sodass du siehst, wie dein DAC umschaltet. Jeder ist der meistgespielte Titel deiner Bibliothek in diesem Format oder ein erzeugtes Testsignal, falls du keinen hast. Wenn du lieber deine eigene Warteschlange nutzen möchtest, füge zuerst einen Titel jeder Art hinzu, damit jede Rate geprüft wird."
+
+msgid "The candidate belongs to another metadata group."
+msgstr ""
+
+msgid "The candidate includes an unsupported metadata field."
+msgstr ""
 
 msgid "The check finished, but the previous physical format could not be restored."
 msgstr "Die Prüfung ist beendet, aber das vorherige physische Format konnte nicht wiederhergestellt werden."
@@ -6371,8 +7590,23 @@ msgstr ""
 msgid "The device task stopped. Its progress is saved for recovery."
 msgstr ""
 
+msgid "The disc proposal was cancelled."
+msgstr ""
+
+msgid "The download is incomplete. Try again."
+msgstr "Der Download ist unvollständig. Versuche es erneut."
+
 msgid "The download view is unavailable."
 msgstr "Die Download-Ansicht ist nicht verfügbar."
+
+msgid "The download was interrupted. Try again."
+msgstr "Der Download wurde unterbrochen. Versuche es erneut."
+
+msgid "The download worker could not be started."
+msgstr "Der Download-Prozess konnte nicht gestartet werden."
+
+msgid "The downloaded file could not be verified as complete audio."
+msgstr "Die heruntergeladene Datei konnte nicht als vollständige Audiodatei geprüft werden."
 
 msgid "The engine reports unchanged samples on this route."
 msgstr "Der Audiomotor meldet unveränderte Samples auf diesem Signalweg."
@@ -6392,6 +7626,27 @@ msgstr ""
 msgid "The episode exceeds the download limit."
 msgstr ""
 
+msgid "The file changed while its metadata was being read."
+msgstr ""
+
+msgid "The file is no longer in the current selection."
+msgstr ""
+
+msgid "The file or its sidecar changed after preview. Reopen the selection before saving it."
+msgstr ""
+
+msgid "The file save progressed, but its session record could not be stored. Retry to record the completed phases: {}"
+msgstr ""
+
+msgid "The file selection belongs to another metadata session."
+msgstr ""
+
+msgid "The file tags have been written."
+msgstr ""
+
+msgid "The filter cannot be read."
+msgstr "Der Filter kann nicht gelesen werden."
+
 msgid "The filter cannot be read: {}"
 msgstr "Der Filter kann nicht gelesen werden: {}"
 
@@ -6407,8 +7662,20 @@ msgstr "Die schwebende Player-Leiste zieht sich nach zehn Sekunden ohne Mausbewe
 msgid "The folder is no longer in the library."
 msgstr "Der Ordner ist nicht mehr in der Bibliothek."
 
+msgid "The folder metadata has been saved."
+msgstr ""
+
 msgid "The folder scan policy is invalid."
 msgstr "Die Scan-Richtlinie für den Ordner ist ungültig."
+
+msgid "The genre image preferences are invalid."
+msgstr ""
+
+msgid "The genre image preferences are too large."
+msgstr ""
+
+msgid "The group belongs to another metadata session."
+msgstr ""
 
 msgid "The image could not be kept"
 msgstr "Das Bild konnte nicht behalten werden"
@@ -6425,17 +7692,50 @@ msgstr "Das Bild ist zu groß"
 msgid "The incorrect lyrics could not be excluded. Try again."
 msgstr "Der falsche Liedtext konnte nicht ausgeschlossen werden. Bitte erneut versuchen."
 
+msgid "The installer archive could not be opened safely."
+msgstr ""
+
+msgid "The installer did not match its pinned checksum."
+msgstr ""
+
+msgid "The installer exceeded its output limit."
+msgstr ""
+
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Die Bibliothek konnte nicht geändert werden. Versuche es erneut; das Detail unten sagt, was passiert ist."
 
+msgid "The library could not be opened."
+msgstr ""
+
+msgid "The library could not be read."
+msgstr "Die Bibliothek konnte nicht gelesen werden."
+
+msgid "The library entry changed while metadata was being edited."
+msgstr ""
+
+msgid "The library stayed busy with another task, so this choice was not kept. Try again in a moment."
+msgstr "Die Bibliothek war weiter mit einer anderen Aufgabe beschäftigt, deshalb wurde diese Auswahl nicht gespeichert. Versuche es gleich noch einmal."
+
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "Die Bibliothek war weiter mit einer anderen Aufgabe beschäftigt. Nichts weiter wurde entfernt; versuche es gleich noch einmal."
+
+msgid "The library update stopped while preparing its backup at {}: {}"
+msgstr ""
+
+msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
+msgstr ""
 
 msgid "The line being sung stays in view."
 msgstr "Die gerade gesungene Zeile bleibt im Blick."
 
 msgid "The listening history could not be saved"
 msgstr "Der Hörverlauf konnte nicht gespeichert werden"
+
+msgid "The local album proposal is invalid."
+msgstr ""
+
+msgid "The locked output is not connected; playing on {}."
+msgstr "Die gesperrte Ausgabe ist nicht verbunden; Wiedergabe über {}."
 
 msgid "The log file could not be opened. Session logs remain available here."
 msgstr "Die Protokolldatei konnte nicht geöffnet werden. Sitzungsprotokolle bleiben hier verfügbar."
@@ -6458,8 +7758,56 @@ msgstr "Die Liedtext-API konnte die Meldung nicht speichern. Dieses Ergebnis ist
 msgid "The lyrics cache could not be opened."
 msgstr "Der Songtext-Cache konnte nicht geöffnet werden."
 
+msgid "The metadata group is no longer in the current selection."
+msgstr ""
+
+msgid "The metadata lookup has no saved selection."
+msgstr ""
+
+msgid "The metadata lookup was cancelled."
+msgstr ""
+
+msgid "The metadata operation is invalid."
+msgstr ""
+
+msgid "The metadata proposal summary exceeds the page budget."
+msgstr ""
+
+msgid "The metadata selection changed. Prepare this proposal again."
+msgstr ""
+
+msgid "The metadata selection is invalid or belongs to another session."
+msgstr ""
+
+msgid "The metadata session stopped. Reopen the selection to review the files."
+msgstr ""
+
+msgid "The metadata value has the wrong type."
+msgstr ""
+
+msgid "The metadata worker is not available."
+msgstr ""
+
 msgid "The network is off; turn it on in Settings › Integrations"
 msgstr "Das Netzwerk ist aus; schalte es in Einstellungen › Integrationen ein"
+
+msgid "The offline copy is damaged. Remove the offline copy before downloading it again."
+msgstr "Die Offline-Kopie ist beschädigt. Entferne sie vor einem erneuten Download."
+
+msgid "The offline file could not be removed. Check playback and folder permissions."
+msgstr "Die Offline-Datei konnte nicht entfernt werden. Prüfe Wiedergabe und Ordnerberechtigungen."
+
+msgid "The offline file could not be written."
+msgstr "Die Offline-Datei konnte nicht geschrieben werden."
+
+msgid "The offline folder cannot be represented as a local path."
+msgstr "Der Offline-Ordner kann nicht als lokaler Pfad dargestellt werden."
+
+msgid "The offline folder must be an absolute local folder."
+msgstr "Der Offline-Ordner muss ein lokaler Ordner mit einem absoluten Pfad sein."
+
+msgid "The offline storage limit has been reached."
+msgstr "Das Limit des Offline-Speichers wurde erreicht."
 
 msgid "The output changed during the check. Its new configuration was kept."
 msgstr "Die Ausgabe hat sich während der Prüfung geändert. Ihre neue Konfiguration wurde beibehalten."
@@ -6472,6 +7820,9 @@ msgstr "Die Ausgabe spielt noch"
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "Die Ausgabe spielt nur Chilpa. Andere Programme warten, bis Chilpa sie freigibt."
+
+msgid "The people behind the music in your library."
+msgstr ""
 
 msgid "The player is busy. Close the other file transfer application and try again."
 msgstr ""
@@ -6497,8 +7848,32 @@ msgstr "Das Plugin hat nicht innerhalb von 15 Sekunden geantwortet. Der Status s
 msgid "The plugin interface could not be opened."
 msgstr ""
 
+msgid "The previous EQ is no longer available."
+msgstr ""
+
+msgid "The previous EQ parameters are invalid."
+msgstr ""
+
+msgid "The previous beets lookup is still stopping."
+msgstr ""
+
+msgid "The previous beets task is still stopping."
+msgstr ""
+
 msgid "The previous sample rate did not settle after the check."
 msgstr "Die vorherige Abtastrate hat sich nach der Prüfung nicht stabilisiert."
+
+msgid "The private beets environment could not be installed. The previous runtime is unchanged."
+msgstr ""
+
+msgid "The private beets environment could not be saved."
+msgstr ""
+
+msgid "The private beets environment exceeded its size limit."
+msgstr ""
+
+msgid "The provider for Chilpa's lookup engine. Embedded tags only disables online lookup for both engines."
+msgstr ""
 
 msgid "The publisher did not return an audio file."
 msgstr ""
@@ -6514,9 +7889,6 @@ msgstr "Der Empfänger meldet das Format seines physischen DACs nicht."
 
 msgid "The record is not open in the editor."
 msgstr "Das Album ist im Editor nicht geöffnet."
-
-msgid "The record is on a server. Changes stay on this device and are not sent to it."
-msgstr "Das Album liegt auf einem Server. Änderungen bleiben auf diesem Gerät und werden nicht an ihn gesendet."
 
 msgid "The record's cover"
 msgstr "Das Cover des Albums"
@@ -6581,8 +7953,32 @@ msgstr "Der Scan konnte nicht gestartet werden: {}"
 msgid "The scan worker stopped unexpectedly."
 msgstr "Der Scan-Prozess wurde unerwartet beendet."
 
+msgid "The selected Python environment could not start beets."
+msgstr ""
+
+msgid "The selected environment does not provide beets 2.14.1."
+msgstr ""
+
+msgid "The selected file belongs to another metadata group."
+msgstr ""
+
+msgid "The selected file cannot store this field: {}"
+msgstr ""
+
+msgid "The selected file is no longer in the current selection."
+msgstr ""
+
+msgid "The selected files disagree on this disc's track total. Prepare a consistent total or use sequential numbering."
+msgstr ""
+
 msgid "The selected hardware volume control is gone."
 msgstr "Der ausgewählte Hardware-Lautstärkeregler ist nicht mehr vorhanden."
+
+msgid "The selected lookup exceeds the 1 MiB input limit."
+msgstr ""
+
+msgid "The selected music changed. Open its menu and confirm again."
+msgstr ""
 
 msgid "The selected queues are empty."
 msgstr "Die ausgewählten Warteschlangen sind leer."
@@ -6593,11 +7989,35 @@ msgstr "Der ausgewählte Speicher wurde gewechselt oder getrennt."
 msgid "The selected tracks could not be read."
 msgstr "Die ausgewählten Titel konnten nicht gelesen werden."
 
+msgid "The selected tracks will be removed from this playlist and its saved order."
+msgstr "Die ausgewählten Titel werden aus dieser Wiedergabeliste und ihrer gespeicherten Reihenfolge entfernt."
+
+msgid "The selection changed. Preview the proposal again before applying it."
+msgstr ""
+
+msgid "The selection changed. Review the current metadata before preparing this proposal."
+msgstr ""
+
 msgid "The server answered, and Chilpa can read its music."
 msgstr "Der Server hat geantwortet, und Chilpa kann seine Musik lesen."
 
+msgid "The server cannot take the changes: {}. Choose Sidecar to keep them on this device."
+msgstr "Der Server kann die Änderungen nicht annehmen: {}. Wähle „Begleitdatei“, um sie auf diesem Gerät zu behalten."
+
+msgid "The server connection or account changed. Review the action and try again."
+msgstr "Die Serververbindung oder das Konto hat sich geändert. Prüfe die Aktion und versuche es erneut."
+
+msgid "The server deleted the music, but the local catalogue could not be updated. Sync the server again."
+msgstr ""
+
+msgid "The server did not identify the account for this API key."
+msgstr "Der Server hat das Konto für diesen API-Schlüssel nicht identifiziert."
+
 msgid "The server did not take it: {}"
 msgstr "Der Server hat es nicht übernommen: {}"
+
+msgid "The server does not keep this. Choose Sidecar to change it here."
+msgstr "Der Server speichert das nicht. Wähle „Begleitdatei“, um es hier zu ändern."
 
 msgid "The server took it. It applies to what it sends this computer from now on."
 msgstr "Der Server hat es übernommen. Es gilt ab jetzt für das, was er diesem Computer sendet."
@@ -6607,6 +8027,9 @@ msgstr "Der Dienst hat keinen Code gesendet."
 
 msgid "The service's answer is missing."
 msgstr "Die Antwort des Dienstes fehlt."
+
+msgid "The settings could not be saved."
+msgstr "Die Einstellungen konnten nicht gespeichert werden."
 
 msgid "The source disconnected. Check the playlist before retrying."
 msgstr "Die Quelle hat die Verbindung getrennt. Prüfe die Playlist, bevor du es erneut versuchst."
@@ -6621,6 +8044,9 @@ msgstr[1] "Die Synchronisierung kommt seit {} Minuten nicht voran. „Jetzt sync
 
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "Das Hintergrundbild des Systems. Alternativ ein eigenes Bild wählen."
+
+msgid "The target changed. Cancel and review the action again."
+msgstr "Das Ziel hat sich geändert. Brich ab und prüfe die Aktion erneut."
 
 msgid "The temporary media queue cannot be combined."
 msgstr "Die temporäre Medien-Warteschlange kann nicht zusammengeführt werden."
@@ -6649,14 +8075,23 @@ msgstr "Theme"
 msgid "There are no folders inside this one. Choose it from the level above, or go back up."
 msgstr "In diesem Ordner gibt es keine Ordner. Wähle ihn eine Ebene höher oder geh zurück."
 
+msgid "There are no selected changes to save."
+msgstr ""
+
 msgid "There is no previous EQ to restore."
 msgstr "Es gibt keinen vorherigen EQ zum Wiederherstellen."
+
+msgid "There is not enough free space on the disk for this file."
+msgstr "Auf dem Datenträger ist nicht genug freier Platz für diese Datei."
 
 msgid "There is not enough space for this selection and its temporary files."
 msgstr ""
 
 msgid "These answered a search of this network. Choose yours, or type its address."
 msgstr "Diese haben auf eine Suche in diesem Netzwerk geantwortet. Wähle deinen oder gib seine Adresse ein."
+
+msgid "These files identify different releases. Choose a real release match before joining them."
+msgstr ""
 
 msgid "These records' barcodes are sent to MusicBrainz."
 msgstr "Die Barcodes dieser Alben werden an MusicBrainz gesendet."
@@ -6679,6 +8114,9 @@ msgstr ""
 msgid "This address belongs to a different server."
 msgstr "Diese Adresse gehört zu einem anderen Server."
 
+msgid "This adds changes to the file preview. Write reviewed changes saves them."
+msgstr ""
+
 msgid "This album is no longer in the current view."
 msgstr "Dieses Album ist nicht mehr in der aktuellen Ansicht."
 
@@ -6688,8 +8126,23 @@ msgstr "Diese Version kann die Ausgabe abfragen, aber noch kein Audio darüber w
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr "Das kann einige Minuten dauern, wenn MusicBrainz ausgelastet ist."
 
+msgid "This candidate contains inconsistent disc or track positions."
+msgstr ""
+
+msgid "This candidate does not contain a complete release identity and disc mapping."
+msgstr ""
+
+msgid "This candidate has no matching track for this file."
+msgstr ""
+
+msgid "This candidate proposal is invalid."
+msgstr ""
+
 msgid "This chapter format is not supported."
 msgstr "Dieses Kapitelformat wird nicht unterstützt."
+
+msgid "This choice could not be kept: {}"
+msgstr "Diese Auswahl konnte nicht gespeichert werden: {}"
 
 msgid "This collection exceeds the current page limit."
 msgstr "Diese Sammlung überschreitet das aktuelle Seitenlimit."
@@ -6697,8 +8150,23 @@ msgstr "Diese Sammlung überschreitet das aktuelle Seitenlimit."
 msgid "This computer"
 msgstr "Dieser Computer"
 
+msgid "This deletion request is no longer active."
+msgstr ""
+
+msgid "This device"
+msgstr ""
+
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "Diese direkte Ausgabe hat keine Hardware-Lautstärkeregelung. Nutze den DAC oder den Verstärker."
+
+msgid "This disc assignment contains invalid titles or positions."
+msgstr ""
+
+msgid "This disc plan is invalid."
+msgstr ""
+
+msgid "This edition requires these identity fields together:"
+msgstr ""
 
 msgid "This entry is no longer at hand. Open it again from its source."
 msgstr "Dieser Eintrag ist nicht mehr verfügbar. Öffne ihn erneut über seine Quelle."
@@ -6709,11 +8177,35 @@ msgstr ""
 msgid "This episode material could not be loaded."
 msgstr "Das Material zu dieser Folge konnte nicht geladen werden."
 
+msgid "This field cannot be written to every selected file."
+msgstr ""
+
+msgid "This file cannot be tagged."
+msgstr ""
+
+msgid "This file path cannot be represented in the metadata editor."
+msgstr ""
+
+msgid "This file's metadata exceeds the batch editor limit."
+msgstr ""
+
 msgid "This folder has no tracks."
 msgstr "Dieser Ordner enthält keine Titel."
 
 msgid "This folder repeats the same songs under several views. Pick one view (we suggest By Folder) so each song is read once."
 msgstr "Dieser Ordner zeigt dieselben Titel in mehreren Ansichten. Wähle eine einzige Ansicht (wir empfehlen By Folder), damit jeder Titel nur einmal gelesen wird."
+
+msgid "This folder tree exceeds the batch traversal limit. Select a smaller part."
+msgstr ""
+
+msgid "This format cannot be read from character {}, so Discord gets an empty line. Close every %, [, ( and quote, and use only the functions listed under Title."
+msgstr "Dieses Format ist ab Zeichen {} nicht lesbar, daher bekommt Discord eine leere Zeile. Schließe jedes %, [, ( und Anführungszeichen und verwende nur die unter Titel aufgeführten Funktionen."
+
+msgid "This genre is no longer available."
+msgstr ""
+
+msgid "This genre is no longer present on the album."
+msgstr ""
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Das dauert länger als gewöhnlich. MusicBrainz ist möglicherweise ausgelastet. Versuche es gleich noch einmal."
@@ -6721,8 +8213,26 @@ msgstr "Das dauert länger als gewöhnlich. MusicBrainz ist möglicherweise ausg
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Das ist der Ort, an den der Rechner ohnehin schon Ton schickt. Was mit den Samples geschieht, hängt also davon ab, wie dieser eingerichtet ist – meist werden sie mit allem anderen gemischt und das Ergebnis wird per Resampling umgerechnet. Es funktioniert immer. Für Samples, die so ankommen, wie sie die Datei verlassen haben, wähle die Soundkarte selbst."
 
+msgid "This item is no longer available from the server."
+msgstr ""
+
 msgid "This looks like a playlist."
 msgstr "Das sieht nach einer Playlist aus."
+
+msgid "This metadata field cannot be written."
+msgstr ""
+
+msgid "This metadata field is not supported."
+msgstr ""
+
+msgid "This metadata group is invalid."
+msgstr ""
+
+msgid "This metadata page is not supported."
+msgstr ""
+
+msgid "This metadata proposal is invalid."
+msgstr ""
 
 msgid "This month"
 msgstr "Diesen Monat"
@@ -6733,11 +8243,17 @@ msgstr "Dieser Monat vs. letzter Monat"
 msgid "This music view exceeds 50,000 files or 16 MiB of metadata."
 msgstr "Diese Musikansicht überschreitet 50.000 Dateien oder 16 MiB Metadaten."
 
+msgid "This offline file is in use. Stop playback before removing it."
+msgstr "Diese Offline-Datei wird verwendet. Beende die Wiedergabe vor dem Entfernen."
+
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Diese Ausgabe macht keinen Ton. Sie schreibt auf, was an das Gerät gegangen wäre, sodass die Datei mit dem Titel verglichen werden kann, aus dem sie stammt – nur so lässt sich Bit-perfect belegen, statt es nur zu behaupten."
 
 msgid "This opens and closes the selected output without writing audio. Stop playback first. The queue, volume and desktop default stay as they are."
 msgstr "Öffnet und schließt die ausgewählte Ausgabe ohne Audiodaten zu senden. Stoppen Sie zuerst die Wiedergabe. Warteschlange, Lautstärke und Standardausgabe des Desktops bleiben erhalten."
+
+msgid "This operation is not supported for that field."
+msgstr ""
 
 msgid "This output has no hardware mute switch."
 msgstr "Diese Ausgabe hat keinen Hardware-Stummschalter."
@@ -6757,6 +8273,36 @@ msgstr "Diese Ausgabe nimmt in PCM umgewandeltes DSD. DoP braucht den Exklusivmo
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Diese Ausgabe nimmt in PCM umgewandeltes DSD. Nur eine Karte an hw nimmt es unverändert an; die Auswahl für die Karte bleibt erhalten."
 
+msgid "This permanently clears cached plugin data. Content may need to be downloaded again."
+msgstr "Die zwischengespeicherten Daten des Plugins werden endgültig gelöscht. Inhalte müssen möglicherweise erneut heruntergeladen werden."
+
+msgid "This permanently clears the saved diagnostic log. Copy any entries you need first."
+msgstr "Das gespeicherte Diagnoseprotokoll wird endgültig gelöscht. Kopiere benötigte Einträge vorher."
+
+msgid "This permanently deletes files managed by the plugin. Review the affected files in the plugin's description."
+msgstr "Vom Plugin verwaltete Dateien werden endgültig gelöscht. Prüfe die betroffenen Dateien in der Beschreibung des Plugins."
+
+msgid "This permanently deletes the album and all its tracks from the server's filesystem. It cannot be undone from Chilpa."
+msgstr "Das Album und alle seine Titel werden endgültig aus dem Dateisystem des Servers gelöscht. Dies kann in Chilpa nicht rückgängig gemacht werden."
+
+msgid "This permanently deletes the playlist at the source."
+msgstr "Die Wiedergabeliste wird an der Quelle endgültig gelöscht."
+
+msgid "This permanently deletes the selected personal audio preset and its saved settings."
+msgstr "Die ausgewählte eigene Audio-Voreinstellung und ihre gespeicherten Einstellungen werden endgültig gelöscht."
+
+msgid "This permanently deletes the selected personal presets and clears their assignments."
+msgstr ""
+
+msgid "This permanently deletes the track from the server's filesystem. It cannot be undone from Chilpa."
+msgstr "Der Titel wird endgültig aus dem Dateisystem des Servers gelöscht. Dies kann in Chilpa nicht rückgängig gemacht werden."
+
+msgid "This permanently deletes {} downloaded audio files from this device."
+msgstr "Dadurch werden {} heruntergeladene Audiodateien endgültig von diesem Gerät gelöscht."
+
+msgid "This permanently removes the playlist and its saved order."
+msgstr "Die Wiedergabeliste und ihre gespeicherte Reihenfolge werden endgültig gelöscht."
+
 msgid "This playlist already contains {} of the {} tracks you're adding. Add only the new ones, or add everything including duplicates."
 msgstr "Diese Playlist enthält bereits {} der {} Titel, die du hinzufügst. Füge nur die neuen hinzu oder alle, einschließlich Duplikaten."
 
@@ -6769,8 +8315,29 @@ msgstr "Diese Wiedergabeliste ist nicht gültig UTF-8-kodiert."
 msgid "This playlist references music outside the recorded selection. Sync it again to refresh its contents."
 msgstr "Diese Wiedergabeliste verweist auf Musik außerhalb der aufgezeichneten Auswahl. Synchronisiere sie erneut, um ihren Inhalt zu aktualisieren."
 
+msgid "This plugin action permanently removes or replaces data. Review the action and its description before proceeding."
+msgstr "Diese Plugin-Aktion entfernt oder ersetzt Daten endgültig. Prüfe die Aktion und ihre Beschreibung vor dem Fortfahren."
+
+msgid "This plugin needs the library {}, which this system does not have."
+msgstr "Dieses Plugin braucht die Bibliothek {}, die auf diesem System fehlt."
+
+msgid "This plugin needs the program {}, which this system does not have."
+msgstr "Dieses Plugin braucht das Programm {}, das auf diesem System fehlt."
+
+msgid "This plugin needs {} from {}, and this system has {} at most."
+msgstr "Dieses Plugin braucht {} aus {}, und dieses System hat höchstens {}."
+
+msgid "This plugin needs {} from {}, which this system does not have."
+msgstr "Dieses Plugin braucht {} aus {}, das auf diesem System fehlt."
+
+msgid "This plugin's program is not built for this system."
+msgstr "Das Programm dieses Plugins ist nicht für dieses System gebaut."
+
 msgid "This preset uses precise filters; each band shows its level. To move the bands, create a separate graphic EQ. You can restore your previous EQ."
 msgstr "Dieses Preset verwendet präzise Filter; jedes Band zeigt seinen Pegel. Um die Bänder zu verschieben, erstelle einen separaten grafischen EQ. Du kannst deinen vorherigen EQ wiederherstellen."
+
+msgid "This proposal summary exceeds the metadata page limit. Choose fewer groups or fields."
+msgstr ""
 
 msgid "This purchase is unavailable for download."
 msgstr "Dieser Kauf steht nicht zum Download bereit."
@@ -6780,6 +8347,12 @@ msgstr "Diese Abfrage verschachtelt Gruppen drei Ebenen tief. Zeilen zeigen zwei
 
 msgid "This record cannot be played now."
 msgstr "Dieses Album kann gerade nicht wiedergegeben werden."
+
+msgid "This removes the plugin's saved account session and account-related data from this device. You will need to sign in again."
+msgstr "Die gespeicherte Kontositzung des Plugins und zugehörige Kontodaten werden von diesem Gerät entfernt. Eine erneute Anmeldung ist erforderlich."
+
+msgid "This replaces the plugin's saved settings. Review the affected settings before proceeding."
+msgstr "Die gespeicherten Einstellungen des Plugins werden ersetzt. Prüfe die betroffenen Einstellungen vor dem Fortfahren."
 
 msgid "This saved query catalog uses an unsupported version; I kept its original data."
 msgstr "Diese Katalogversion wird nicht unterstützt; ich habe die Originaldaten erhalten."
@@ -6805,6 +8378,9 @@ msgstr "Dieser Server nimmt keinen API-Schlüssel an. Geh zurück und melde dich
 msgid "This server is no longer available."
 msgstr "Dieser Server ist nicht mehr verfügbar."
 
+msgid "This sidecar exceeds the batch editor limit."
+msgstr ""
+
 msgid "This source cannot accept these tracks right now."
 msgstr "Diese Quelle kann diese Titel gerade nicht annehmen."
 
@@ -6828,6 +8404,9 @@ msgstr "Das dauert ein paar Sekunden."
 
 msgid "This track has no album to open"
 msgstr "Dieser Titel hat kein Album, das sich öffnen ließe"
+
+msgid "This track has no verified offline copy. Download it while connected."
+msgstr "Dieser Titel hat keine geprüfte Offline-Kopie. Lade ihn bei bestehender Verbindung herunter."
 
 msgid "This transcript format is not supported."
 msgstr "Dieses Transkriptformat wird nicht unterstützt."
@@ -6856,6 +8435,9 @@ msgstr "Dieses Jahr"
 msgid "This year vs Last year"
 msgstr "Dieses Jahr vs. letztes Jahr"
 
+msgid "Threshold"
+msgstr ""
+
 msgid "Thu"
 msgstr "Do"
 
@@ -6877,6 +8459,9 @@ msgstr "Bis"
 msgid "To move to"
 msgstr "Zum Bewegen"
 
+msgid "To use a different account, add it as a separate server."
+msgstr "Füge ein anderes Konto als separaten Server hinzu."
+
 msgid "Today"
 msgstr "Heute"
 
@@ -6897,6 +8482,12 @@ msgstr "Seitenleiste ein-/ausblenden"
 
 msgid "Token"
 msgstr "Token"
+
+msgid "Tone"
+msgstr ""
+
+msgid "Tone enabled"
+msgstr ""
 
 msgid "Too many device storage locations were reported."
 msgstr ""
@@ -6937,11 +8528,17 @@ msgstr "Titeldetails · {}"
 msgid "Track format"
 msgstr "Format des Titels"
 
+msgid "Track info"
+msgstr "Titelinfo"
+
 msgid "Track lists"
 msgstr "Titellisten"
 
 msgid "Track menu"
 msgstr "Titelmenü"
+
+msgid "Track positions are missing or duplicated. Choose sequential numbering or explicit positions."
+msgstr ""
 
 msgid "Track review"
 msgstr "Titelprüfung"
@@ -6951,6 +8548,9 @@ msgstr "Abtastrate des Titels"
 
 msgid "Track title"
 msgstr "Titelname"
+
+msgid "Track total"
+msgstr ""
 
 msgid "Track {}"
 msgstr "Titel {}"
@@ -7008,6 +8608,12 @@ msgstr "Tunnel Flow"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Schalte das Netzwerk ein, um eine Playlist eines Servers zu ändern."
+
+msgid "Turn the network on to change the server's metadata."
+msgstr "Schalte das Netzwerk ein, um die Metadaten des Servers zu ändern."
+
+msgid "Turn the network on to delete music from the server."
+msgstr ""
 
 msgid "Type"
 msgstr "Typ"
@@ -7099,11 +8705,26 @@ msgstr "Quelle unbekannt"
 msgid "Unknown target; use Tab to complete the source."
 msgstr "Unbekanntes Ziel; vervollständige die Quelle mit Tab."
 
+msgid "Unknown title"
+msgstr "Unbekannter Titel"
+
 msgid "Unknown year"
 msgstr "Jahr unbekannt"
 
+msgid "Unlimited"
+msgstr "Unbegrenzt"
+
+msgid "Unlock filter"
+msgstr ""
+
+msgid "Unlock the filter before editing it."
+msgstr ""
+
 msgid "Unmatched"
 msgstr "Nicht zugeordnet"
+
+msgid "Unmatched file"
+msgstr ""
 
 msgid "Unmute"
 msgstr "Ton an"
@@ -7114,11 +8735,17 @@ msgstr "Nicht gespielt"
 msgid "Unrated"
 msgstr "Nicht bewertet"
 
+msgid "Unselected files remain in their current albums."
+msgstr ""
+
 msgid "Unselected playlists are removed after approval. Enable this option to remove unselected music too."
 msgstr "Nicht ausgewählte Wiedergabelisten werden nach Bestätigung entfernt. Aktiviere diese Option, um auch nicht ausgewählte Musik zu entfernen."
 
 msgid "Unsupported"
 msgstr "Nicht unterstützt"
+
+msgid "Unsupported DSP preset bundle."
+msgstr ""
 
 msgid "Unsupported EQ directive. Paste parametric filters without channel routing or other commands."
 msgstr "Nicht unterstützte EQ-Anweisung. Füge parametrische Filter ohne Kanalrouting oder andere Befehle ein."
@@ -7126,8 +8753,14 @@ msgstr "Nicht unterstützte EQ-Anweisung. Füge parametrische Filter ohne Kanalr
 msgid "Unsupported EQ filter syntax or frequency unit."
 msgstr "Nicht unterstützte EQ-Filtersyntax oder Frequenzeinheit."
 
-msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP or NO."
-msgstr "Nicht unterstützter aktiver EQ-Filter. Verwende PK, LS, HS, LP, HP oder NO."
+msgid "Unsupported active EQ filter. Use PK, LS, HS, LP, HP, BP or NO."
+msgstr ""
+
+msgid "Unsupported external EQ channel."
+msgstr ""
+
+msgid "Unsupported external tone routing or type."
+msgstr ""
 
 msgid "Unsupported or empty DSP preset catalog."
 msgstr "Nicht unterstützter oder leerer DSP-Preset-Katalog."
@@ -7186,8 +8819,17 @@ msgstr "Nutzung wird aktualisiert…"
 msgid "Upload (public)"
 msgstr "Hochladen (öffentlich)"
 
+msgid "Upload covers to Litterbox"
+msgstr "Cover zu Litterbox hochladen"
+
 msgid "Upload failed."
 msgstr "Hochladen fehlgeschlagen."
+
+msgid "Upload only"
+msgstr "Nur hochladen"
+
+msgid "Upload, or search MusicBrainz if it fails"
+msgstr "Hochladen, sonst in MusicBrainz suchen"
 
 msgid "Uploading…"
 msgstr "Wird hochgeladen…"
@@ -7198,26 +8840,38 @@ msgstr "Großbuchstaben"
 msgid "Usage"
 msgstr "Nutzung"
 
+msgid "Use Import to library for a preset bundle."
+msgstr ""
+
 msgid "Use MusicBrainz"
 msgstr "MusicBrainz verwenden"
 
 msgid "Use a name of 1 to 80 characters, without line breaks."
 msgstr "Verwende einen Namen mit 1 bis 80 Zeichen ohne Zeilenumbrüche."
 
+msgid "Use a parametric export with two tone bands and at most 64 EQ bands."
+msgstr ""
+
 msgid "Use a token"
 msgstr "Token verwenden"
 
-msgid "Use at most 10 DSP filters."
-msgstr "Verwende höchstens 10 DSP-Filter."
+msgid "Use at most 64 DSP filters."
+msgstr ""
 
 msgid "Use current colors"
 msgstr "Aktuelle Farben verwenden"
+
+msgid "Use in disc plan"
+msgstr ""
 
 msgid "Use my current queue"
 msgstr "Meine aktuelle Warteschlange verwenden"
 
 msgid "Use the default"
 msgstr "Standard verwenden"
+
+msgid "Use the global offline folder or choose a separate destination."
+msgstr "Verwende den globalen Offline-Ordner oder wähle ein anderes Ziel."
 
 msgid "Use the playlist icon or a cover collage."
 msgstr "Das Playlist-Symbol oder eine Cover-Collage verwenden."
@@ -7237,11 +8891,17 @@ msgstr "Gültig"
 msgid "Valid node name"
 msgstr "Gültiger Knotenname"
 
+msgid "Value"
+msgstr ""
+
 msgid "Verify files after transfer"
 msgstr ""
 
 msgid "Verifying copied files…"
 msgstr ""
+
+msgid "Verifying downloaded audio…"
+msgstr "Heruntergeladene Audiodatei wird verifiziert…"
 
 msgid "Version"
 msgstr "Version"
@@ -7294,6 +8954,15 @@ msgstr "Lautstärke {}%"
 msgid "Wait for the audio check to finish."
 msgstr "Warten Sie, bis die Audioprüfung abgeschlossen ist."
 
+msgid "Wait for the beets installation or check to finish in Settings."
+msgstr ""
+
+msgid "Wait for the current beets operation to finish."
+msgstr ""
+
+msgid "Wait for the current metadata operation to finish."
+msgstr ""
+
 msgid "Wait for the queue to finish switching."
 msgstr "Warte, bis die Warteschlange den Wechsel abgeschlossen hat."
 
@@ -7313,6 +8982,9 @@ msgid "Waiting for {} to come back… ({} track read)"
 msgid_plural "Waiting for {} to come back… ({} tracks read)"
 msgstr[0] "Warte, bis {} wieder erreichbar ist… ({} Titel gelesen)"
 msgstr[1] "Warte, bis {} wieder erreichbar ist… ({} Titel gelesen)"
+
+msgid "Waiting in the offline queue"
+msgstr "Wartet in der Offline-Warteschlange"
 
 msgid "Wallpaper"
 msgstr "Hintergrundbild"
@@ -7356,11 +9028,17 @@ msgstr "Willkommen bei Chilpa"
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Was die Eingabetaste mit einem Ergebnis der Suche in der immersiven Ansicht macht. „Deaktiviert“ schaltet die Suche aus."
 
+msgid "What is tried first for a local album's cover."
+msgstr "Was für das Cover eines lokalen Albums zuerst versucht wird."
+
 msgid "What it is"
 msgstr "Was es ist"
 
 msgid "What kind of server is it?"
 msgstr "Was für ein Server ist es?"
+
+msgid "What one press does. A second press right after goes to the previous track."
+msgstr "Was ein Druck bewirkt. Ein zweiter Druck direkt danach springt zum vorherigen Titel."
 
 msgid "What should happen to the original queues?"
 msgstr "Was soll mit den ursprünglichen Warteschlangen geschehen?"
@@ -7385,9 +9063,6 @@ msgstr "Wo ist er, und wer meldet sich an?"
 
 msgid "Where is your music?"
 msgstr "Wo ist deine Musik?"
-
-msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
-msgstr "Wo der Metadaten-Editor zuerst sucht. „Nur eingebettete Tags“ geht nie ins Netzwerk."
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Wohin die Samples gehen: direkt zum Gerät oder über einen Soundserver."
@@ -7452,6 +9127,9 @@ msgstr "Wörter im Albumtitel und im Namen des Titels"
 msgid "Work"
 msgstr "Werk"
 
+msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
+msgstr ""
+
 msgid "Write XML"
 msgstr "XML schreiben"
 
@@ -7461,6 +9139,12 @@ msgstr "In die Audiodateien schreiben?"
 msgid "Write into the files"
 msgstr "In die Dateien schreiben"
 
+msgid "Write reviewed changes"
+msgstr ""
+
+msgid "Write reviewed changes?"
+msgstr ""
+
 msgid "Write the external SACD XML?"
 msgstr "Die externe SACD-XML-Datei schreiben?"
 
@@ -7469,6 +9153,9 @@ msgstr "In eine Datei schreiben"
 
 msgid "Writer"
 msgstr "Autor"
+
+msgid "Writing reviewed changes…"
+msgstr ""
 
 msgid "Wrong lyric"
 msgstr "Falscher Liedtext"
@@ -7512,6 +9199,9 @@ msgstr "Dein Audio-Stack ist bereit für Bit-perfect-Wiedergabe."
 msgid "Your distribution"
 msgstr "Deine Distribution"
 
+msgid "Your genre tags"
+msgstr ""
+
 msgid "Your music"
 msgstr "Deine Musik"
 
@@ -7532,9 +9222,6 @@ msgstr "Deine ausgewählten Quellen brauchen länger als gewöhnlich. Versuche e
 
 msgid "Your shows"
 msgstr "Deine Sendungen"
-
-msgid "Your {} and {} of them are removed too."
-msgstr "Auch deine {} und {} davon werden entfernt."
 
 msgid "Your {} of them are removed too."
 msgstr "Auch deine {} davon werden entfernt."
@@ -7590,6 +9277,9 @@ msgstr "ein Frame des Stereobereichs ist nicht stereo"
 msgid "a list needs a name"
 msgstr "eine Liste braucht einen Namen"
 
+msgid "a media server (DLNA) takes no changes"
+msgstr "ein Medienserver (DLNA) nimmt keine Änderungen an"
+
 msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
 msgstr "eine neuere Chilpa-Version hat diese Begleitdatei geschrieben; aktualisiere Chilpa, um sie zu ändern"
 
@@ -7611,8 +9301,8 @@ msgstr "eine Bewertung geht von 0 bis 5"
 msgid "a rating must be between 0 and 5 stars"
 msgstr "eine Bewertung muss zwischen 0 und 5 Sternen liegen"
 
-msgid "a record on a server keeps its changes on this device"
-msgstr "ein Album auf einem Server behält seine Änderungen auf diesem Gerät"
+msgid "a record on a server has no files here to write to"
+msgstr "ein Album auf einem Server hat hier keine Dateien zum Beschreiben"
 
 msgid "a scan is already running"
 msgstr "es läuft bereits ein Scan"
@@ -7674,8 +9364,32 @@ msgstr "wartet auf Genehmigung"
 msgid "be a plugin of another kind: {}"
 msgstr "ein Plugin anderer Art sein: {}"
 
+msgid "beets 2.14.1 is ready."
+msgstr ""
+
+msgid "beets accepts up to {} tracks per lookup."
+msgstr ""
+
+msgid "beets availability"
+msgstr ""
+
+msgid "beets could not return a valid metadata proposal."
+msgstr ""
+
+msgid "beets matches"
+msgstr ""
+
+msgid "beets settings"
+msgstr ""
+
+msgid "beets {} is ready."
+msgstr ""
+
 msgid "between"
 msgstr "zwischen"
+
+msgid "bits takes whole numbers like 16 or 24, or a range with the lower bound first"
+msgstr "bits nimmt ganze Zahlen wie 16 oder 24 oder einen Bereich mit der unteren Grenze zuerst"
 
 msgid "bring catalogue: search for and fetch music"
 msgstr "einen Katalog bereitstellen: Musik suchen und abrufen"
@@ -7703,6 +9417,9 @@ msgstr "wähle mindestens einen Ordner, der deine Musik enthält"
 
 msgid "choose at least one library"
 msgstr "wähle mindestens eine Bibliothek"
+
+msgid "choose where to save the changes: the server cannot take them, the sidecar keeps them on this device"
+msgstr "wähle, wo die Änderungen gespeichert werden: der Server kann sie nicht annehmen, die Begleitdatei behält sie auf diesem Gerät"
 
 msgid "contains"
 msgstr "enthält"
@@ -7748,6 +9465,9 @@ msgstr "Display"
 
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "verschlüsselt und an diesen Rechner gebunden (es gibt keinen System-Schlüsselbund)"
+
+msgid "encrypted with a key the system keyring keeps for Chilpa"
+msgstr "verschlüsselt mit einem Schlüssel, den der System-Schlüsselbund für Chilpa aufbewahrt"
 
 msgid "exactly"
 msgstr "genau"
@@ -7949,6 +9669,9 @@ msgstr "in der Nähe"
 msgid "network"
 msgstr "Netzwerk"
 
+msgid "no JACK graph answered, and PipeWire's own socket, through which PipeWire answers for JACK, cannot be reached from here; start a JACK graph, or inside a Flatpak allow the socket with: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+msgstr "kein JACK-Graph hat geantwortet, und der eigene Socket von PipeWire, über den PipeWire für JACK antwortet, ist von hier aus nicht erreichbar; starte einen JACK-Graph oder erlaube den Socket in einem Flatpak mit: flatpak override --user --filesystem=xdg-run/pipewire-0 app.chilpa.Chilpa"
+
 msgid "no JACK graph is running"
 msgstr "es läuft kein JACK-Graph"
 
@@ -7985,6 +9708,9 @@ msgstr "nicht unterstützt: {}"
 msgid "nothing was found"
 msgstr "es wurde nichts gefunden"
 
+msgid "nothing was saved to the server: {}"
+msgstr "auf dem Server wurde nichts gespeichert: {}"
+
 msgid "now at {}"
 msgstr "jetzt bei {}"
 
@@ -7999,6 +9725,9 @@ msgstr "eine oder mehrere Dateien lassen sich nicht beschreiben"
 
 msgid "one or more files cannot take tags"
 msgstr "eine oder mehrere Dateien können keine Tags aufnehmen"
+
+msgid "only an administrator of this server can change its metadata"
+msgstr "nur ein Administrator dieses Servers kann seine Metadaten ändern"
 
 msgid "open it again from where it is listed"
 msgstr "öffne es erneut dort, wo es aufgeführt ist"
@@ -8024,6 +9753,9 @@ msgstr "plughw: wandelt um, was abgelehnt wird"
 msgid "present"
 msgstr "heute"
 
+msgid "presets"
+msgstr ""
+
 msgid "process PCM audio with equalization and stereo controls"
 msgstr "PCM-Audio mit Equalizer und Stereo-Reglern verarbeiten"
 
@@ -8036,8 +9768,14 @@ msgstr "quality akzeptiert lossy, cd, hires oder dsd"
 msgid "quarantined"
 msgstr "in Quarantäne"
 
+msgid "rate takes hertz or kilohertz like 44100 or 44.1k, or a range with the lower bound first"
+msgstr "rate nimmt Hertz oder Kilohertz wie 44100 oder 44.1k oder einen Bereich mit der unteren Grenze zuerst"
+
 msgid "ratings could not be loaded: {}"
 msgstr "Bewertungen konnten nicht geladen werden: {}"
+
+msgid "reach any address on the internet: it names {}, but a process plugin is not held to that list"
+msgstr "jede Adresse im Internet erreichen: es nennt {}, aber ein Prozess-Plugin ist nicht an diese Liste gebunden"
 
 msgid "reach the internet, only {}"
 msgstr "ins Internet gehen, nur zu {}"
@@ -8056,6 +9794,11 @@ msgstr ""
 
 msgid "run through a different plugin runtime"
 msgstr "über eine andere Plugin-Laufzeit ausgeführt werden"
+
+msgid "saved; the server keeps {} change differently, and what it keeps is shown"
+msgid_plural "saved; the server keeps {} changes differently, and what it keeps is shown"
+msgstr[0] "gespeichert; der Server speichert {} Änderung anders, und angezeigt wird, was er speichert"
+msgstr[1] "gespeichert; der Server speichert {} Änderungen anders, und angezeigt wird, was er speichert"
 
 msgid "sector {} could not be read: {}"
 msgstr "Sektor {} konnte nicht gelesen werden: {}"
@@ -8138,6 +9881,9 @@ msgstr "diese Datei ist kein Bild"
 msgid "that id does not work as a folder"
 msgstr "diese ID funktioniert nicht als Ordner"
 
+msgid "that image cannot be sent"
+msgstr "dieses Bild kann nicht gesendet werden"
+
 msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr "das ist ein Emby-Server, und Chilpa spricht kein Emby"
 
@@ -8162,14 +9908,23 @@ msgstr "danach kann {} nicht gefragt werden"
 msgid "that list is empty"
 msgstr "diese Liste ist leer"
 
+msgid "that music item is no longer available from this server"
+msgstr ""
+
 msgid "that server has no music library"
 msgstr "dieser Server hat keine Musikbibliothek"
 
 msgid "that server is already in the library"
 msgstr "dieser Server ist bereits in der Bibliothek"
 
+msgid "that server is being removed"
+msgstr ""
+
 msgid "that server is disabled"
 msgstr "dieser Server ist deaktiviert"
+
+msgid "that server is disabled or no longer in the library"
+msgstr ""
 
 msgid "that server is no longer in the library"
 msgstr "dieser Server ist nicht mehr in der Bibliothek"
@@ -8249,11 +10004,20 @@ msgstr "der Bereich deklariert keine Titel"
 msgid "the audio area falls outside the image"
 msgstr "der Audiobereich liegt außerhalb des Images"
 
+msgid "the change could not be written down"
+msgstr "die Änderung konnte nicht vorbereitet werden"
+
 msgid "the changes could not be kept in the library: {}"
 msgstr "die Änderungen konnten nicht in der Bibliothek gespeichert werden: {}"
 
 msgid "the changes were saved"
 msgstr "die Änderungen wurden gespeichert"
+
+msgid "the changes were saved to the server"
+msgstr "die Änderungen wurden auf dem Server gespeichert"
+
+msgid "the changes were saved to the server, but it could not be read back: {}; sync it to see them"
+msgstr "die Änderungen wurden auf dem Server gespeichert, aber er konnte nicht zurückgelesen werden: {}; synchronisiere ihn, um sie zu sehen"
 
 msgid "the client_id came in empty"
 msgstr "die client_id kam leer an"
@@ -8531,11 +10295,20 @@ msgstr "der Scan ist fehlgeschlagen: {}"
 msgid "the sector is not encoded the way its area says"
 msgstr "der Sektor ist nicht so codiert, wie sein Bereich angibt"
 
+msgid "the selected item is not the music item that was confirmed"
+msgstr ""
+
 msgid "the server answered with a message instead of the file"
 msgstr "der Server hat mit einer Meldung statt mit der Datei geantwortet"
 
 msgid "the server answered with something that is not HTTP"
 msgstr "der Server hat mit etwas geantwortet, das kein HTTP ist"
+
+msgid "the server answered without the item"
+msgstr "der Server hat ohne das Element geantwortet"
+
+msgid "the server answered without the item's library"
+msgstr "der Server hat ohne die Mediathek des Elements geantwortet"
 
 msgid "the server answered {}"
 msgstr "der Server hat mit {} geantwortet"
@@ -8549,6 +10322,9 @@ msgstr "der Server kann keinen Teil einer Datei senden, und diese ist zu groß, 
 msgid "the server could not be reached"
 msgstr "der Server war nicht erreichbar"
 
+msgid "the server could not be read: {}"
+msgstr "der Server konnte nicht gelesen werden: {}"
+
 msgid "the server did not accept the session; sign in again"
 msgstr "der Server hat die Sitzung nicht akzeptiert; melde dich erneut an"
 
@@ -8558,11 +10334,20 @@ msgstr "der Server hat den Benutzer oder das Passwort nicht akzeptiert"
 msgid "the server did not describe every track it listed; nothing was taken out, sync again"
 msgstr "der Server hat nicht jeden aufgelisteten Titel beschrieben; nichts wurde entfernt, synchronisiere erneut"
 
+msgid "the server did not describe the selected music item"
+msgstr ""
+
 msgid "the server did not say how long the file is"
 msgstr "der Server hat nicht gesagt, wie lang die Datei ist"
 
+msgid "the server did not take the change (HTTP {})"
+msgstr "der Server hat die Änderung nicht angenommen (HTTP {})"
+
 msgid "the server does not accept this way of signing in"
 msgstr "der Server akzeptiert diese Art der Anmeldung nicht"
+
+msgid "the server does not take \"{}\""
+msgstr "der Server nimmt „{}“ nicht an"
 
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "der Server wandelt die Datei um, statt sie unverändert zu senden"
@@ -8597,6 +10382,9 @@ msgstr "der Server hat kein Audio gesendet: {}"
 msgid "the server stopped sending the file"
 msgstr "der Server hat aufgehört, die Datei zu senden"
 
+msgid "the server takes no image for it"
+msgstr "der Server nimmt dafür kein Bild an"
+
 msgid "the server takes no list this long in one request"
 msgstr "der Server nimmt keine so lange Liste in einer einzigen Anfrage an"
 
@@ -8608,6 +10396,9 @@ msgstr "das Zertifikat des Servers wird von diesem System nicht als vertrauensw�
 
 msgid "the sidecar could not be written: {}"
 msgstr "die Begleitdatei konnte nicht geschrieben werden: {}"
+
+msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
+msgstr "die Soundkarten sind in /proc/asound aufgeführt, aber ihre Geräte in /dev/snd lassen sich von hier aus nicht öffnen; in einem Flatpak erlaubst du sie mit: flatpak override --user --device=all app.chilpa.Chilpa"
 
 msgid "the sound server would not let go of card {}"
 msgstr "der Soundserver wollte die Karte {} nicht freigeben"
@@ -8702,6 +10493,9 @@ msgstr "auf diesem Rechner gibt es keinen Ort, um ein Geheimnis aufzubewahren"
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "dieser Mac hat keine Ausgabe mehr mit dem Namen „{}“"
 
+msgid "this account may not change that server's metadata"
+msgstr "dieses Konto darf die Metadaten dieses Servers nicht ändern"
+
 msgid "this cannot be played"
 msgstr "das lässt sich nicht abspielen"
 
@@ -8735,14 +10529,35 @@ msgstr "dieses Plugin hat keine Netzwerkberechtigung deklariert"
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "dieser Server kann keinen Titel verschieben, der mehr als einmal in der Playlist ist"
 
+msgid "this server does not keep this field; save it to the sidecar on this device, or put it back"
+msgstr "dieser Server speichert dieses Feld nicht; speichere es in der Begleitdatei auf diesem Gerät oder stelle es zurück"
+
+msgid "this server does not support deleting music from Chilpa"
+msgstr ""
+
 msgid "this server does not take a playlist's description from Chilpa"
 msgstr "dieser Server übernimmt die Beschreibung einer Playlist nicht von Chilpa"
+
+msgid "this server keeps no favorites Chilpa can change"
+msgstr "dieser Server speichert keine Favoriten, die Chilpa ändern kann"
+
+msgid "this server keeps no ratings Chilpa can change"
+msgstr "dieser Server speichert keine Bewertungen, die Chilpa ändern kann"
+
+msgid "this server reads tags and covers from its files and offers no way to change them"
+msgstr "dieser Server liest Tags und Cover aus seinen Dateien und bietet keine Möglichkeit, sie zu ändern"
 
 msgid "this server takes every copy of a track out of a playlist at once; take them all out, or change it on the server"
 msgstr "dieser Server entfernt alle Kopien eines Titels auf einmal aus der Playlist; entferne alle oder ändere sie auf dem Server"
 
+msgid "this server takes no cover from Chilpa; save the cover to the sidecar on this device"
+msgstr "dieser Server nimmt kein Cover von Chilpa an; speichere das Cover in der Begleitdatei auf diesem Gerät"
+
 msgid "this track is on a server, and servers are not connected"
 msgstr "dieser Titel liegt auf einem Server, und Server sind nicht verbunden"
+
+msgid "this user may not delete that music on the server"
+msgstr ""
 
 msgid "this user may not do that on the server"
 msgstr "dieser Benutzer darf das auf dem Server nicht tun"
@@ -8762,6 +10577,9 @@ msgstr "gib einen Titel, einen Künstler oder eine Katalognummer zum Suchen ein"
 msgid "type takes album, single, ep, compilation, live or soundtrack"
 msgstr "type akzeptiert album, single, ep, compilation, live oder soundtrack"
 
+msgid "unavailable"
+msgstr "nicht verfügbar"
+
 msgid "unrated"
 msgstr "unbewertet"
 
@@ -8777,6 +10595,9 @@ msgstr "virtuell"
 msgid "vs {}"
 msgstr "vs. {}"
 
+msgid "what the server says now could not be written down in the library: {}; sync it to see it"
+msgstr "was der Server jetzt angibt, konnte nicht in die Mediathek übernommen werden: {}; synchronisiere ihn, um es zu sehen"
+
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "was gespeichert wurde, konnte nicht in der Bibliothek vermerkt werden: {}; scanne neu, um es zu sehen"
 
@@ -8785,9 +10606,6 @@ msgstr "heruntergeladene Dateien in den Ordner schreiben, den du für dieses Plu
 
 msgid "write the address alone: no user, password or query in it"
 msgstr "gib nur die Adresse an: ohne Benutzer, Passwort oder Abfrage"
-
-msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
-msgstr "deine Bibliothek muss aktualisiert werden, und zuvor konnte keine Kopie davon unter {} aufbewahrt werden: {}. Schaffe dort Platz oder verschiebe die Bibliothek an einen Ort mit genug Platz und öffne Chilpa erneut"
 
 msgid "your sources"
 msgstr "deine Quellen"
@@ -8811,6 +10629,16 @@ msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] "{} Album"
 msgstr[1] "{} Alben"
+
+msgid "{} album in your library"
+msgid_plural "{} albums in your library"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} albumless track"
+msgid_plural "{} albumless tracks"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "{} analysiert, {} ohne Tempo, {} nicht lesbar"
@@ -8838,6 +10666,9 @@ msgstr ""
 msgid "{} bit at {} Hz, {}"
 msgstr "{} Bit bei {} Hz, {}"
 
+msgid "{} bits"
+msgstr "{} Bit"
+
 msgid "{} came out with different audio; nothing was replaced"
 msgstr "{} enthielt danach anderes Audio; nichts wurde ersetzt"
 
@@ -8845,6 +10676,11 @@ msgid "{} channel"
 msgid_plural "{} channels"
 msgstr[0] "{} Kanal"
 msgstr[1] "{} Kanäle"
+
+msgid "{} composition"
+msgid_plural "{} compositions"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} condition"
 msgid_plural "{} conditions"
@@ -8899,6 +10735,26 @@ msgstr "{} antwortet nicht. Das Album öffnet sich, sobald es wieder da ist."
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{} antwortet nicht; ändere die Playlist, wenn der Server wieder da ist."
 
+msgid "{} favorite waits to reach it: {}"
+msgid_plural "{} favorites wait to reach it: {}"
+msgstr[0] "{} Favorit wartet auf die Übertragung: {}"
+msgstr[1] "{} Favoriten warten auf die Übertragung: {}"
+
+msgid "{} file has pending changes"
+msgid_plural "{} files have pending changes"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} file read"
+msgid_plural "{} files read"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} file saved"
+msgid_plural "{} files saved"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
 msgstr[0] "{} Datei, deren Tags voneinander abweichen"
@@ -8952,6 +10808,11 @@ msgstr "{} ist nicht verfügbar. Das Album öffnet sich, sobald es wieder da ist
 msgid "{} is still syncing its library for the first time. Try again when it finishes."
 msgstr "{} synchronisiert seine Bibliothek noch zum ersten Mal. Versuche es noch einmal, wenn das fertig ist."
 
+msgid "{} item"
+msgid_plural "{} items"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} item needs attention before bit-perfect playback will work."
 msgid_plural "{} items need attention before bit-perfect playback will work."
 msgstr[0] "{} Punkt erfordert Aufmerksamkeit, bevor die Bit-perfect-Wiedergabe funktioniert."
@@ -8959,6 +10820,9 @@ msgstr[1] "{} Punkte erfordern Aufmerksamkeit, bevor die Bit-perfect-Wiedergabe 
 
 msgid "{} keeps no playlists; make this one in Chilpa."
 msgstr "{} hat keine Playlists; erstelle diese in Chilpa."
+
+msgid "{} keeps this copy of Chilpa up to date. Update it from your software center."
+msgstr "{} hält diese Kopie von Chilpa aktuell. Aktualisiere sie über deine Softwareverwaltung."
 
 msgid "{} label"
 msgid_plural "{} labels"
@@ -9019,8 +10883,23 @@ msgstr "{} der Titel der Liste sind weg"
 msgid "{} of {}"
 msgstr "{} von {}"
 
+msgid "{} of {} changes reached the server before it failed: {}"
+msgstr "{} von {} Änderungen haben den Server erreicht, bevor es fehlschlug: {}"
+
 msgid "{} of {} chosen"
 msgstr "{} von {} gewählt"
+
+msgid "{} of {} downloaded. {} failed."
+msgstr "{} von {} heruntergeladen. {} fehlgeschlagen."
+
+msgid "{} of {} files processed"
+msgstr ""
+
+msgid "{} of {} files removed. {} failed."
+msgstr "{} von {} Dateien entfernt. {} fehlgeschlagen."
+
+msgid "{} of {} files selected"
+msgstr ""
 
 msgid "{} of {} files were changed before it failed: {}"
 msgstr "{} von {} Dateien wurden geändert, bevor es fehlschlug: {}"
@@ -9033,6 +10912,11 @@ msgstr "{} von {} Formaten kommen unverändert an"
 
 msgid "{} of {} tracks match this release"
 msgstr "{} von {} Titeln passen zu dieser Veröffentlichung"
+
+msgid "{} part"
+msgid_plural "{} parts"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} play"
 msgid_plural "{} plays"
@@ -9050,10 +10934,10 @@ msgstr "{} von der Bibliothek geschützt"
 msgid "{} queues · {} tracks"
 msgstr "{} Warteschlangen · {} Titel"
 
-msgid "{} rating"
-msgid_plural "{} ratings"
-msgstr[0] "{} Bewertung"
-msgstr[1] "{} Bewertungen"
+msgid "{} rating waits to reach it: {}"
+msgid_plural "{} ratings wait to reach it: {}"
+msgstr[0] "{} Bewertung wartet auf die Übertragung: {}"
+msgstr[1] "{} Bewertungen warten auf die Übertragung: {}"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} gelesen, {} unverändert, {} fehlen"
@@ -9071,8 +10955,16 @@ msgstr[1] "{} hier bearbeitete Alben oder Titel werden vom Server nicht mehr auf
 msgid "{} required"
 msgstr ""
 
+msgid "{} saved · {} failed"
+msgstr ""
+
 msgid "{} sel"
 msgstr "{} ausgew."
+
+msgid "{} selected file"
+msgid_plural "{} selected files"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} selection"
 msgid_plural "{} selections"
@@ -9115,6 +11007,11 @@ msgid "{} track on the server is not in your library"
 msgid_plural "{} tracks on the server are not in your library"
 msgstr[0] "{} Titel auf dem Server ist nicht in deiner Bibliothek"
 msgstr[1] "{} Titel auf dem Server sind nicht in deiner Bibliothek"
+
+msgid "{} track selected"
+msgid_plural "{} tracks selected"
+msgstr[0] "{} Titel ausgewählt"
+msgstr[1] "{} Titel ausgewählt"
 
 msgid "{} tracks"
 msgstr "{} Titel"
@@ -9163,6 +11060,9 @@ msgstr "{}. {} {}"
 
 msgid "{} {}, {}"
 msgstr "{2}. {1} {3}"
+
+msgid "{} · disc {}"
+msgstr ""
 
 msgid "{} · {}"
 msgstr "{} · {}"

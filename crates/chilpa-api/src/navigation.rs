@@ -17,6 +17,9 @@ pub enum Screen {
     Home,
     Library,
     Artists,
+    Genres,
+    Composers,
+    Compositions,
     Albums,
     /// Every track of the library, in one list.
     Tracks,
@@ -29,6 +32,9 @@ pub enum Screen {
     PluginDownloads,
     /// Settings > Library > Library folders.
     LibraryFolders,
+    /// Settings > Music servers > Offline music: what the servers' music
+    /// keeps on this device, its limit and its folders.
+    OfflineMusic,
     DeviceSync,
     /// The library by folder, or a folder opened from the disk.
     Folders,
@@ -40,6 +46,8 @@ pub enum Screen {
     Search,
     /// The metadata editor, on one record.
     Metadata,
+    /// A metadata batch over a frozen folder selection.
+    FolderMetadata,
     ListenList,
     /// What was listened to, a period at a time, and the history whole.
     Stats,
@@ -57,6 +65,9 @@ impl Screen {
             Screen::Home => "home",
             Screen::Library => "library",
             Screen::Artists => "artists",
+            Screen::Genres => "genres",
+            Screen::Composers => "composers",
+            Screen::Compositions => "compositions",
             Screen::Albums => "albums",
             Screen::Tracks => "tracks",
             Screen::Album => "album",
@@ -65,6 +76,7 @@ impl Screen {
             Screen::Settings => "settings",
             Screen::PluginDownloads => "pluginDownloads",
             Screen::LibraryFolders => "libraryFolders",
+            Screen::OfflineMusic => "offlineMusic",
             Screen::DeviceSync => "deviceSync",
             Screen::Folders => "folders",
             Screen::OpenMedia => "openMedia",
@@ -72,6 +84,7 @@ impl Screen {
             Screen::PlaylistManager => "playlistManager",
             Screen::PlaylistImport => "playlistImport",
             Screen::Metadata => "metadata",
+            Screen::FolderMetadata => "folderMetadata",
             Screen::ListenList => "listenlist",
             Screen::Stats => "stats",
             Screen::ListeningHistory => "listeningHistory",
@@ -82,7 +95,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Genres, Screen::Composers, Screen::Compositions, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::FolderMetadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -270,6 +283,11 @@ impl Tabs {
 /// Where the open tabs are kept between runs.
 const TABS_KEY: &str = "ui.tabs";
 
+fn discovery_title(key: &str, fallback: String) -> String {
+    crate::discovery::Selection::parse(key).map(|selected| selected.name)
+        .filter(|name| !name.is_empty()).unwrap_or(fallback)
+}
+
 impl crate::Chilpa {
     /// I perform the destination's source work after its acknowledgement frame.
     pub fn prepare_planned_route(&mut self, plan: PlannedRoute) -> bool {
@@ -287,6 +305,9 @@ impl crate::Chilpa {
             Screen::Home => (self.t("Home"), "home"),
             Screen::Library => (self.t("Library"), "columns3"),
             Screen::Artists => (self.t("Artists"), "microphone2"),
+            Screen::Genres => (discovery_title(&r.key, self.t("Genres")), "hierarchy2"),
+            Screen::Composers => (discovery_title(&r.key, self.t("Composers")), "pencil"),
+            Screen::Compositions => (discovery_title(&r.key, self.t("Compositions")), "music"),
             Screen::Albums => (self.t("Albums"), "disc"),
             Screen::Tracks => (self.t("Tracks"), "music"),
             Screen::Settings => (self.t("Settings"), "settings"),
@@ -295,6 +316,7 @@ impl crate::Chilpa {
                 .and_then(|plugins| plugins.list().into_iter().find(|plugin| plugin.id == r.key).map(|plugin| plugin.name))
                 .unwrap_or_else(|| self.t("Purchases")), "download"),
             Screen::LibraryFolders => (self.t("Library folders"), "folder"),
+            Screen::OfflineMusic => (self.t("Offline music"), "download"),
             Screen::Artist => (r.key.clone(), "user"),
             Screen::ArtistScene => (self.t("Artists from this scene"), "hierarchy2"),
             Screen::Folders => match std::path::Path::new(&r.key).file_name() {
@@ -308,6 +330,7 @@ impl crate::Chilpa {
             Screen::PlaylistImport => (self.t("Import playlist"), "playlist"),
             Screen::ListenList => (self.t("Queues"), "listDetails"),
             Screen::Metadata => (self.t("Edit metadata"), "listDetails"),
+            Screen::FolderMetadata => (self.t("Folder metadata"), "listDetails"),
             Screen::Stats => (self.t("Listening stats"), "chartBar"),
             Screen::ListeningHistory => (self.t("Listening history"), "history"),
             Screen::Search => (r.key.clone(), "search"),
@@ -414,6 +437,17 @@ mod tests {
         assert_eq!(back.active(), 1);
         assert_eq!(Tabs::restore("").routes(), [Route::of(Screen::Home)], "nothing kept, Home");
         assert_eq!(Tabs::restore("9\nnowhere\t0\t").routes(), [Route::of(Screen::Home)], "nothing usable, Home");
+    }
+
+    #[test]
+    fn the_offline_page_is_a_route_with_back_and_restore() {
+        assert_eq!(Screen::from_name("offlineMusic"), Some(Screen::OfflineMusic));
+        let mut tabs = Tabs::default();
+        tabs.go(Route { screen: Screen::Settings, id: 0, key: "sources".into() });
+        tabs.go(Route::of(Screen::OfflineMusic));
+        assert_eq!(Tabs::restore(&tabs.save()).current(), Route::of(Screen::OfflineMusic));
+        tabs.back();
+        assert_eq!(tabs.current().key, "sources", "back returns to Music servers");
     }
 
     #[test]

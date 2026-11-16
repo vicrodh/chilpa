@@ -94,10 +94,10 @@ impl chilpa_core::remote::RemoteOpener for Opener {
         _: &chilpa_models::RemoteEntry,
     ) -> Result<chilpa_core::remote::Located, String> {
         Ok(chilpa_core::remote::Located {
-            request: chilpa_core::RangedRequest {
+            media: chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest {
                 url: self.0.clone(),
                 headers: Vec::new(),
-            },
+            }),
             extension: None,
             server: "Local test".into(),
             playback: None,

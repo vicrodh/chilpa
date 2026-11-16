@@ -17,6 +17,7 @@ Item {
     Flickable {
         anchors.fill: parent
         contentHeight: content.implicitHeight
+        bottomMargin: Metrics.contentBottom // the last rows scroll clear of a floating player
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }

@@ -56,7 +56,7 @@ fn selected_processing_changes_pcm_and_marks_the_delivery() {
 }
 #[test]
 fn live_bypass_takes_effect_after_read_ahead_without_restarting_the_track() {
-    let (samples, said, touched) = play(Some(Preset { preamp_db: -6.0, filters: vec![Filter { shape: Shape::Peak, frequency: 1000.0, gain_db: -2.0, q: 1.0 }], ..Preset::default() }), Some(8000));
+    let (samples, said, touched) = play(Some(Preset { preamp_db: -6.0, filters: vec![Filter { shape: Shape::Peak, frequency: 1000.0, gain_db: -2.0, q: 1.0, ..Default::default() }], ..Preset::default() }), Some(8000));
     assert!(said && touched); assert_eq!(samples.len(), 48_000);
     assert!(samples[30_000..].iter().all(|s| *s == 10_000));
 }

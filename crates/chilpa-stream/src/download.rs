@@ -4,6 +4,8 @@ use std::{
     time::Duration,
 };
 
+pub mod server;
+
 pub fn allowed(address: &str) -> bool {
     let Ok(url) = url::Url::parse(address) else {
         return false;

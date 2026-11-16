@@ -42,6 +42,9 @@ pub enum PluginError {
     OutOfMemory,
     /// It asked for something its manifest did not declare.
     NotAllowed(String),
+    /// Its runtime cannot start on this system. Nothing the plugin did, and
+    /// trying again does not help; the reason is already in the user's words.
+    RuntimeUnavailable(String),
 }
 
 impl std::fmt::Display for PluginError {
@@ -79,6 +82,7 @@ impl std::fmt::Display for PluginError {
                 "{}",
                 chilpa_i18n::t_args("it asked for {}, which its manifest did not declare", &[q])
             ),
+            PluginError::RuntimeUnavailable(reason) => f.write_str(reason),
         }
     }
 }

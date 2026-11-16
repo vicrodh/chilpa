@@ -181,6 +181,7 @@ Item {
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
         width: head.width
+        bottomMargin: Metrics.contentBottom // the last rows scroll clear of a floating player
         clip: true; ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         model: page.view.entries || []
         header: SourceAbout {

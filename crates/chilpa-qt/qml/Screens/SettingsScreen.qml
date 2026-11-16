@@ -141,7 +141,6 @@ Item {
     PluginManager {
         id: pluginManager
         visible: page.section === "plugins" && search.text === ""
-        page: rows
         purchaseCard: page.purchaseCard
         anchors.top: title.bottom
         anchors.topMargin: Metrics.section
@@ -169,6 +168,7 @@ Item {
     QtObject {
         id: actions
         property string editingServerKey: ""
+        function setFile(key, value) { rows.setFile(key, value) }
         function set(key, value) {
             if (key.startsWith("sources.server/") && value === "edit") {
                 editingServerKey = key
@@ -201,8 +201,8 @@ Item {
     Timer {
         interval: Motion.refresh
         repeat: true
-        running: page.visible && !page.leaving && search.text === "" && page.section === "sources" && actions.editingServerKey === "" && !adding.opened
-        onTriggered: { rows.refresh(); Sources.refresh() }
+        running: page.visible && !page.leaving && search.text === "" && (rows.working || page.section === "sources" && actions.editingServerKey === "" && !adding.opened)
+        onTriggered: { rows.refresh(); if (page.section === "sources") Sources.refresh() }
     }
 
     Text {

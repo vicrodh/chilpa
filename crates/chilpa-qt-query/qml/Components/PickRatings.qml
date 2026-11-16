@@ -12,6 +12,7 @@ Grid {
     property var rating: null
     signal edit(var change)
     readonly property var choices: [[-1, -1], [4, 5], [3, 5], [5, 5], [3, 3], [2, 4], [0, 0]]
+    visible: Prefs.ratings
     columns: 2
     columnSpacing: Refine.ratingColumnsApart
     rowSpacing: Refine.segTrackPad

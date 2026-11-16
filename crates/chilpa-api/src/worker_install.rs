@@ -36,7 +36,7 @@ pub(crate) fn install(
         let context = WorkerContext::new(manifest.clone(), store.clone()).with_requests(requests);
         let transport = launcher.launch(guest).map_err(|_| PluginError::Crashed("the isolated worker could not start".into()))?;
         BridgePlugin::start(manifest, transport, context,
-            json!({"root":launcher.guest_root(), "namespace":descriptor.namespace, "language":"EN"}), Duration::from_secs(15))
+            json!({"root":launcher.guest_root(guest), "namespace":descriptor.namespace, "language":"EN"}), Duration::from_secs(15))
             .map(|plugin| Box::new(plugin) as Box<dyn chilpa_plugin::RuntimePlugin>)
     })
 }

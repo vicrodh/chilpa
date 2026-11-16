@@ -1,0 +1,31 @@
+{
+ "created": "2026-11-11T04:45:46.487Z",
+ "count": 156,
+ "offset": 0,
+ "releases": [
+  {
+   "id": "8d17f5db-b9d0-4e35-9a06-9e1bffebc5be",
+   "score": 100,
+   "title": "The Dark Side of the Moon",
+   "release-group": {
+    "id": "f5093c06-23e3-404f-aeaa-40f72885ee3a"
+   }
+  },
+  {
+   "id": "12fb801c-5903-4a99-a10c-7af599fe3986",
+   "score": 100,
+   "title": "The Dark Side of the Moon",
+   "release-group": {
+    "id": "f5093c06-23e3-404f-aeaa-40f72885ee3a"
+   }
+  },
+  {
+   "id": "e92282b9-8963-4362-87b3-bbc990d40360",
+   "score": 100,
+   "title": "The Dark Side of the Moon",
+   "release-group": {
+    "id": "f5093c06-23e3-404f-aeaa-40f72885ee3a"
+   }
+  }
+ ]
+}

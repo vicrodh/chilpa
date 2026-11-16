@@ -96,6 +96,7 @@ fn serve(file: Vec<u8>) -> (String, Arc<AtomicU64>) {
 
 struct Fake {
     url: String,
+    local: tempfile::NamedTempFile,
     failed: Mutex<Vec<String>>,
     located: Mutex<Vec<String>>,
 }
@@ -112,7 +113,9 @@ impl RemoteOpener for Fake {
         Ok(Located {
             normalization: None,
             playback: entry.external_id.starts_with("events-").then(|| Arc::new(Recorded(entry.external_id.clone())) as Arc<dyn chilpa_core::playback_events::Observer>),
-            request: chilpa_core::RangedRequest { url, headers: vec![("X-Token".into(), "letmein".into())] },
+            media: if entry.external_id.starts_with("offline-") {
+                chilpa_core::remote::Media::File {file:self.local.reopen().map_err(|error| error.to_string())?,lease:Arc::new(())}
+            } else {chilpa_core::remote::Media::Remote(chilpa_core::RangedRequest { url, headers: vec![("X-Token".into(), "letmein".into())] })},
             extension: Some("wav".into()),
             server: "Lab".into(),
         })
@@ -133,7 +136,9 @@ fn fake() -> (&'static Fake, Arc<AtomicU64>) {
     static FAKE: OnceLock<(&'static Fake, Arc<AtomicU64>)> = OnceLock::new();
     let (fake, authorized) = FAKE.get_or_init(|| {
         let (url, authorized) = serve(wav(30_000));
-        let fake: &'static Fake = Box::leak(Box::new(Fake { url, failed: Mutex::new(Vec::new()), located: Mutex::new(Vec::new()) }));
+        let mut local=tempfile::NamedTempFile::new().unwrap();
+        let mut silent=wav(30_000);silent[44..].fill(0);local.write_all(&silent).unwrap();local.flush().unwrap();
+        let fake: &'static Fake = Box::leak(Box::new(Fake { url, local, failed: Mutex::new(Vec::new()), located: Mutex::new(Vec::new()) }));
         struct Shared(&'static Fake);
         impl RemoteOpener for Shared {
             fn locate(&self, e: &RemoteEntry) -> Result<Located, String> { self.0.locate(e) }
@@ -202,6 +207,26 @@ fn a_remote_track_seeks() {
 }
 
 #[test]
+fn downloaded_files_keep_remote_names_exact_frames_seek_and_gapless_continuity() {
+    fake();
+    let written=Arc::new(AtomicU64::new(0));
+    let player=player(written.clone());
+    player.play_all(&[entry("offline-one"),entry("offline-two")],"fake");
+    let events=wait(&player,|events| events.iter().any(|event| matches!(event,PlayerEvent::Finished {..}|PlayerEvent::Failed {..})));
+    let started:Vec<_>=events.iter().filter_map(|event| match event {
+        PlayerEvent::Started {tags,total_frames,index,..}=>Some((tags.as_ref().and_then(|tags| tags.title.clone()),*total_frames,*index)),_=>None,
+    }).collect();
+    assert_eq!(started,vec![(Some("Song offline-one".into()),Some(30_000),0),(Some("Song offline-two".into()),Some(30_000),1)]);
+    assert!(matches!(events.last(),Some(PlayerEvent::Finished {..})),"{events:?}");
+    assert_eq!(written.load(Ordering::Relaxed),60_000);
+    written.store(0,Ordering::Relaxed);
+    player.play_all_from(&[entry("offline-seek")],"fake",Some(Duration::from_millis(500)));
+    let events=wait(&player,|events| events.iter().any(|event| matches!(event,PlayerEvent::Finished {..}|PlayerEvent::Failed {..})));
+    assert!(matches!(events.last(),Some(PlayerEvent::Finished {..})),"{events:?}");
+    assert_eq!(written.load(Ordering::Relaxed),30_000-22_050);
+}
+
+#[test]
 fn a_track_whose_server_does_not_answer_is_passed_over() {
     let (fake, _) = fake();
     let written = Arc::new(AtomicU64::new(0));
@@ -267,28 +292,36 @@ fn repeated_remote_resources_each_report_their_consumed_audio_once() {
 }
 
 #[test]
-fn the_next_remote_track_opens_before_the_current_track_renders() {
+fn the_next_remote_track_opens_after_delivery_reaches_its_preload_point() {
     use chilpa_core::queue_playback::{play_queue_with, SharedQueue, Controls};
     let (fake, _) = fake();
     let written = Arc::new(AtomicU64::new(0));
     let caps = DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true };
     let mut opens = 0;
+    let mut prepared = false;
     let results = play_queue_with(
         &SharedQueue::new(vec![entry("preload-first"), entry("preload-next")]),
         &caps, chilpa_audio::negotiate::Policy::BitPerfect, &Controls::default(),
         |stream| { opens += 1; Ok(NullSink { stream, written: written.clone() }) },
         &mut |index, _, _| {
             if index == 0 {
+                assert!(!fake.located.lock().unwrap().iter().any(|id| id == "preload-next"),"remote preloading waits for delivered frames");
+                assert_eq!(written.load(Ordering::Relaxed),0);
+            }
+        }, &mut |index,progress| {
+            if index == 0 && progress.delivered >= 15_000 {
                 let limit = Instant::now() + Duration::from_secs(3);
                 while !fake.located.lock().unwrap().iter().any(|id| id == "preload-next") && Instant::now() < limit {
                     std::thread::sleep(Duration::from_millis(5));
                 }
                 assert!(fake.located.lock().unwrap().iter().any(|id| id == "preload-next"), "the next remote resource was not prepared during the current track");
-                assert_eq!(written.load(Ordering::Relaxed), 0);
+                assert!(written.load(Ordering::Relaxed)>0);
+                prepared = true;
             }
-        }, &mut |_, _| {},
+        },
     ).unwrap();
     assert_eq!(results.len(), 2);
+    assert!(prepared,"the next remote track opened while the first was being delivered");
     assert_eq!(opens, 1);
     assert_eq!(written.load(Ordering::Relaxed), 60_000);
     assert_eq!(fake.located.lock().unwrap().iter().filter(|id| *id == "preload-next").count(), 1);

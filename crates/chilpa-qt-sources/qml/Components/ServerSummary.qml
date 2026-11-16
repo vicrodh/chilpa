@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // The last look before a server is added: the name it goes by here, what it
 // is, where it is and what comes in, and what happens next. Once added it
@@ -13,6 +14,7 @@ Column {
     property bool done: false
     property var comesIn: []
     readonly property alias label: nameField.text
+    property alias offlineFolder: offline.folder
     spacing: Metrics.gap8
 
     Component.onCompleted: nameField.text = setup.label || ""
@@ -48,6 +50,19 @@ Column {
             width: parent.width
             placeholder: I18n.tr("Server name", I18n.rev)
             onTextEdited: summary.named = true
+        }
+        FolderChoice {
+            id: offline
+            objectName: "serverOfflineFolder"
+            width: parent.width
+            visible: !summary.done
+            title: I18n.tr("Offline folder for this server",I18n.rev)
+            description: I18n.tr("Use the global offline folder or choose a separate destination.",I18n.rev)
+            defaultLabel: I18n.tr("Global offline folder",I18n.rev)
+            defaultFolder: summary.setup.offlineDefaultFolder || ""
+            folder: summary.setup.offlineFolder || ""
+            error: folder ? "" : summary.setup.offlineError || ""
+            onChosen: folder => offline.folder = folder
         }
         Grid {
             id: facts

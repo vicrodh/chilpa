@@ -23,7 +23,7 @@ Menu {
             play: Icons.playerPlayFilled, queue: Lucide.listEnd,
             next: Lucide.listStart, later: Lucide.listPlus,
             pick: Icons.playlistAdd, album: Icons.disc, artist: SourceGlyphs.musicArtist,
-            folder: Icons.folder
+            folder: Icons.folder, info: Icons.infoCircle
         }
         entries = JSON.parse(search.menuJson(row)).map(function(entry) {
             const act = (entry.act || "").split(":")[0]
@@ -47,6 +47,8 @@ Menu {
         const entry = entries[index]
         if (entry.act === "mark") {
             Ratings.setFavorite(entry.kind, entry.key, entry.on)
+        } else if (entry.act === "info") {
+            NowAbout.trackInfoRequested(entry.path, entry.title)
         } else if (entry.act === "pick") {
             search.pickMenu()
         } else {

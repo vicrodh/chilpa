@@ -40,6 +40,7 @@ pub mod qobject {
         #[qproperty(i32, max_rows)]
         #[qproperty(i32, albums)]
         #[qproperty(bool, ready)]
+        #[qproperty(QString, error)]
         #[qproperty(i32, rev)]
         /// Bound to `Library.contentRev`: the library changed. A grid of
         /// kind "library" binds it to `Library.rev`: the filter moved.
@@ -60,6 +61,8 @@ pub mod qobject {
         #[qproperty(QString, group_index)]
         type AlbumGridModel = super::AlbumGridRust;
         #[qinvokable]
+        fn retry(self: Pin<&mut AlbumGridModel>);
+        #[qinvokable]
         fn title(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
         fn explicit_content(self: &AlbumGridModel, index: i32, rev: i32) -> bool;
@@ -70,7 +73,7 @@ pub mod qobject {
         #[qinvokable]
         fn year(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
-        fn art(self: &AlbumGridModel, index: i32, rev: i32) -> QUrl;
+        fn art(self: &AlbumGridModel, index: i32, rev: i32, visible: bool) -> QUrl;
         #[qinvokable]
         fn album_id(self: &AlbumGridModel, index: i32, rev: i32) -> i64;
         #[qinvokable]
@@ -153,6 +156,7 @@ pub struct AlbumGridRust {
     max_rows: i32,
     albums: i32,
     ready: bool,
+    error: QString,
     source_ready: bool,
     rev: i32,
     content_rev: i32,
@@ -188,6 +192,8 @@ impl AlbumGridRust {
 }
 
 impl qobject::AlbumGridModel {
+    pub fn retry(self: Pin<&mut Self>) { self.schedule(); }
+
     pub fn prepare_open(&self, index: i32) {
         if !matches!(self.rust().kind.to_string().as_str(), "artist" | "appearsOn") { return; }
         if let Some(id) = self.rust().get(index, |album| album.id) {
@@ -212,8 +218,8 @@ impl qobject::AlbumGridModel {
     pub fn year(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| a.year.map(|year| QString::from(&year.to_string())).unwrap_or_default()).unwrap_or_default()
     }
-    pub fn art(&self, index: i32, _rev: i32) -> QUrl {
-        self.rust().get(index, |album| crate::format::art_url(&album.artwork_path)).unwrap_or_default()
+    pub fn art(&self, index: i32, _rev: i32, visible: bool) -> QUrl {
+        self.rust().get(index, |album| chilpa_qt_kit::album_rows::artwork(album, visible)).unwrap_or_default()
     }
     pub fn artist(&self, index: i32, _rev: i32) -> QString {
         self.rust().artist_cards.get(index.max(0) as usize).map(QString::from).unwrap_or_default()
@@ -226,16 +232,8 @@ impl qobject::AlbumGridModel {
     }
 
     pub fn select(mut self: Pin<&mut Self>, index: i32, modifiers: i32) {
-        let from = match self.rust().anchor {
-            Some(a) if modifiers & 2 != 0 => a,
-            _ => index,
-        };
-        let ids: Vec<i64> =
-            (from.min(index)..=from.max(index)).filter_map(|i| self.rust().get(i, |a| a.id)).collect();
-        if modifiers & 2 == 0 {
-            self.as_mut().rust_mut().anchor = Some(index);
-        }
-        let toggle = modifiers & 2 == 0;
+        let (ids, toggle, anchor) = self.rust().list.selection(self.rust().anchor, index, modifiers);
+        self.as_mut().rust_mut().anchor = anchor;
         registry::album_actions(move |actions| actions.select(ids, toggle));
     }
 
@@ -259,6 +257,11 @@ impl qobject::AlbumGridModel {
     }
 
     fn schedule(mut self: Pin<&mut Self>) {
+        let identity = (self.kind().to_string(), self.key().to_string(), self.order().to_string(), self.group().to_string(), self.filter().to_string());
+        if self.rust().loaded.as_ref() != Some(&identity) || !self.error().is_empty() {
+            self.as_mut().set_ready(false);
+        }
+        self.as_mut().set_error(QString::default());
         self.as_mut().rust_mut().generation = self.rust().generation.wrapping_add(1);
         if self.rust().pending {
             return;
@@ -302,7 +305,7 @@ impl qobject::AlbumGridModel {
             return;
         }
         let list = match self.rust().kind.to_string().as_str() {
-            "all" => {
+            "all" | "discovery" => {
                 // Sorting the whole library does not fit in a frame: the
                 // worker takes the snapshot and the rows follow.
                 let generation = self.rust().generation + 1;
@@ -310,11 +313,10 @@ impl qobject::AlbumGridModel {
                 let (order, group, text) = (self.rust().order.to_string(), self.rust().group.to_string(), self.rust().filter.to_string());
                 let extras = crate::browse::read(|s| s.filter.clone());
                 let scope = self.rust().key.to_string();
-                let thread = self.qt_thread();
-                worker::submit(move |reader| {
-                    let found = reader.albums_view_scoped(&order, &group, &text, &extras, &scope);
-                    let _ = thread.queue(move |model| model.arrive(generation, found));
-                });
+                worker::query(self.qt_thread(),
+                    move |reader| reader.collection_albums(&kind, &order, &group, &text, &extras, &scope),
+                    move |model, found| model.arrive(generation, found),
+                    move |model, error| model.failed(generation, error));
                 return;
             }
             "artist" | "appearsOn" | "artistLatest" => {
@@ -324,29 +326,23 @@ impl qobject::AlbumGridModel {
                 records
             }
             "source" => {
-                let snapshot = app::with(|api| api.source_shelf_snapshot(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string()));
+                let snapshot = chilpa_qt_kit::album_rows::source_snapshot(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string(), self.rust().limit);
                 let ready = snapshot.ready();
                 self.as_mut().rust_mut().source_ready = ready;
                 if !ready { self.as_mut().set_ready(false); }
-                let (mut cards, mut groups) = (snapshot.albums, snapshot.groups);
-                if self.rust().limit > 0 {
-                    cards.truncate(limit);
-                    groups.retain(|(at, _)| *at < cards.len());
-                }
-                self.as_mut().rust_mut().groups = groups; cards
+                self.as_mut().rust_mut().groups = snapshot.groups; snapshot.albums
             }
-            "artists" => {
+            "artists" | "discoveryArtists" => {
                 // An artist is drawn as a card too: its name where a record's
                 // title goes, how many records it has under it.
                 let generation = self.rust().generation + 1;
                 self.as_mut().rust_mut().generation = generation;
                 let role = self.rust().key.to_string();
                 let extras = crate::browse::read(|s| s.filter.clone());
-                let thread = self.qt_thread();
-                worker::submit(move |reader| {
-                    let artists = reader.listed_artists(&role, &extras);
-                    let _ = thread.queue(move |model| model.arrive_artists(generation, artists));
-                });
+                worker::query(self.qt_thread(),
+                    move |reader| if kind == "discoveryArtists" { reader.discovery_artists(&role) } else { reader.listed_artists(&role, &extras) },
+                    move |model, artists| model.arrive_artists(generation, artists),
+                    move |model, error| model.failed(generation, error));
                 return;
             }
             "library" => {
@@ -385,9 +381,15 @@ impl qobject::AlbumGridModel {
         self.show_artists();
     }
 
+    fn failed(mut self: Pin<&mut Self>, generation: u64, error: String) {
+        if generation != self.rust().generation { return; }
+        self.as_mut().set_error(QString::from(error));
+        self.as_mut().set_ready(true);
+    }
+
     /// The artists the filter leaves, as cards.
     fn show_artists(mut self: Pin<&mut Self>) {
-        let (cards, shown) = chilpa_api::artist_cards(&self.rust().artists, &self.rust().filter.to_string());
+        let (cards, shown) = chilpa_api::artist_cards_ordered(&self.rust().artists, &self.rust().filter.to_string(), &self.rust().order.to_string());
         self.as_mut().rust_mut().artist_cards = shown;
         self.show(Albums::Loaded(cards));
     }
@@ -400,26 +402,23 @@ impl qobject::AlbumGridModel {
     }
 
     fn show(mut self: Pin<&mut Self>, mut list: Albums) {
+        self.as_mut().set_error(QString::default());
         let groups = serde_json::to_string(&self.rust().groups).unwrap_or_else(|_| "[]".into());
         self.as_mut().set_group_index(QString::from(groups));
         let identity = (self.kind().to_string(), self.key().to_string(), self.order().to_string(), self.group().to_string(), self.filter().to_string());
         let same = self.rust().loaded.as_ref() == Some(&identity);
         let rows = list_changes::album_rows(list.len(), self.rust().columns.max(0) as usize, self.rust().max_rows.max(0) as usize, &self.rust().groups);
         if same && rows == self.rust().rows && matches!((&self.rust().list, &list), (Albums::Loaded(a), Albums::Loaded(b)) if a == b) { let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready; self.as_mut().set_ready(ready); return; }
-        let next = self.rev().wrapping_add(1);
-        self.as_mut().set_rev(next);
+        self.as_mut().rust_mut().rev = self.rev().wrapping_add(1);
         let plan = if same && !self.rust().rows.is_empty() { match (&self.rust().list, &list) {
             (Albums::Loaded(old), Albums::Loaded(new)) => list_changes::albums(old, new, &self.rust().rows, &rows),
             _ => None,
         } } else { None };
         self.as_mut().set_fresh(-1);
-        let opened = self.rust().get(self.rust().expanded, |a| a.id)
-            .map(|id| app::with(|api| api.selected_album_version(id)));
-        let expanded = opened.and_then(|id| list.position(id)).map(|at| at as i32).unwrap_or(-1);
+        let expanded = list.retained_index(&self.rust().list, Some(self.rust().expanded), true).unwrap_or(-1);
         let count = list.len() as i32;
         self.as_mut().set_mixed(list.mixed());
-        let anchor = self.rust().anchor.and_then(|at| self.rust().get(at, |a| a.id));
-        self.as_mut().rust_mut().anchor = anchor.and_then(|id| list.position(id)).map(|at| at as i32);
+        self.as_mut().rust_mut().anchor = list.retained_index(&self.rust().list, self.rust().anchor, false);
         let offset = list.stage(&mut self.as_mut().rust_mut().list, plan.as_ref());
         self.as_mut().rust_mut().list = list;
         self.as_mut().set_expanded(expanded);
@@ -458,6 +457,7 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_albums(count);
         let ready = self.rust().kind.to_string() != "source" || self.rust().source_ready;
         self.as_mut().set_ready(ready);
+        self.as_mut().rev_changed();
     }
 
     /// Reflows cached albums without querying their data again.
@@ -489,8 +489,9 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
         }).release();
         self.as_mut()
             .on_filter_changed(|m| match m.kind().to_string().as_str() {
-                "artists" => m.show_artists(),
-                "all" | "source" => m.schedule(),
+                "artists" | "discoveryArtists" if *m.ready() && m.error().is_empty() => m.show_artists(),
+                "artists" | "discoveryArtists" => m.schedule(),
+                "all" | "source" | "discovery" => m.schedule(),
                 _ => {}
             })
             .release();

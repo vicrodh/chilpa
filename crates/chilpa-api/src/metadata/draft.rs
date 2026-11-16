@@ -54,6 +54,8 @@ impl Cell {
         self.now = self.start.clone();
         self.mixed = self.start_mixed;
     }
+
+    pub fn initial(&self) -> (&str, bool) { (&self.start, self.start_mixed) }
 }
 
 /// What a file's tags said when the record was opened.
@@ -86,6 +88,8 @@ pub(crate) struct Row {
     /// What it goes by in its home.
     pub key: String,
     pub placed: Vec<&'static str>,
+    /// What it says was read: from its file, or from its server.
+    pub known: bool,
     /// What its file says of each of its fields, in `TRACK`'s order.
     pub file: Vec<String>,
     /// And of each of the record's, in `ALBUM`'s.
@@ -189,26 +193,27 @@ impl Draft {
             let home = track.home();
             let at = homes.iter().position(|h| h.home == home).unwrap_or(0);
             let key = home.key(&track.external_id);
-            let over = homes.get(at).and_then(|h| h.sidecar.as_ref()).and_then(|s| s.tracks.get(&key));
+            let over = homes.get(at).and_then(|h| h.sidecar.as_ref()).and_then(|s| s.effective_track(&key));
             let file: Vec<String> = TRACK.iter().map(|f| track_file(f, &read, &track)).collect();
             let cells = TRACK
                 .iter()
                 .zip(&file)
-                .map(|(f, file)| match over.and_then(|o| laid(o.get(f.name))) {
+                .map(|(f, file)| match over.as_ref().and_then(|o| laid(o.get(f.name))) {
                     Some(laid) => Cell::of(laid, true),
                     None => {
                         let mut cell = Cell::of(file.clone(), false);
+                        // A server's track has no file for it to go into.
                         cell.unwritten = f.name == "disc_number" && read.known && read.said.disc_number.is_none()
-                            && track.disc_number.is_some();
+                            && track.disc_number.is_some() && track.hosted.is_none();
                         cell
                     },
                 })
                 .collect();
             let album_file = ALBUM.iter().map(|f| album_file(f, &read, &track, album)).collect();
-            rows.push(Row { track, home: at, key, placed: read.placed, file, album_file, cells });
+            rows.push(Row { track, home: at, key, placed: read.placed, known: read.known, file, album_file, cells });
         }
 
-        let of_home = |row: &Row, name: &str| homes.get(row.home).and_then(|h| h.sidecar.as_ref()).and_then(|s| laid(s.album.get(name)));
+        let of_home = |row: &Row, name: &str| homes.get(row.home).and_then(|h| h.sidecar.as_ref()).and_then(|s| laid(s.effective_album(&row.key).get(name)));
         let cells = ALBUM
             .iter()
             .enumerate()
@@ -222,7 +227,9 @@ impl Draft {
                     "title" => Cell::of(album.title.clone(), overridden),
                     "album_artist" => {
                         let mut cell = Cell::of(album.album_artist.clone(), overridden);
-                        cell.unwritten = in_force.iter().any(String::is_empty);
+                        // What a server says is what it says: nothing of it
+                        // goes out unasked.
+                        cell.unwritten = in_force.iter().any(String::is_empty) && !rows.iter().any(Row::hosted);
                         cell
                     }
                     _ if in_force.windows(2).all(|pair| fields::same(field.kind, &pair[0], &pair[1])) => {

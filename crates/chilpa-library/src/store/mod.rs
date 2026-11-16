@@ -48,8 +48,12 @@ pub mod order_keys;
 pub mod query;
 mod refine;
 mod browse_candidates;
+pub mod track_sheet;
 pub mod credits;
 pub mod metadata;
+pub mod compositions;
+mod discovery;
+mod track_durations;
 pub mod edit;
 pub mod favorites;
 pub mod features;
@@ -68,11 +72,15 @@ pub mod progress_writer;
 pub mod listening;
 pub mod ratings;
 pub mod external_ratings;
+pub mod rating_sync;
+pub mod favorite_sync;
 pub mod regroup;
 pub mod saved;
 mod related;
 pub(crate) mod reach;
 pub mod server_playlists;
+pub mod server_media;
+pub mod offline;
 pub mod servers;
 pub mod overlay;
 mod compilations;
@@ -178,8 +186,7 @@ impl Library {
         query::register(&db)?;
         schema::apply_pragmas(&db)?;
         // Before the shape of the file changes, and only when it is going to.
-        schema::back_up_before_upgrading(&db, path)?;
-        schema::migrate(&db)?;
+        schema::upgrade(&db, path)?;
         // Not only after a scan: a library that already exists carries the
         // statistics of an empty database and would keep them until its next
         // scan, which may be never.
@@ -270,6 +277,11 @@ impl Library {
     /// Where this user's library lives.
     pub fn default_path() -> PathBuf {
         chilpa_dirs::data().join("library.db")
+    }
+
+    pub fn metadata_track_id(&self, path: &Path) -> rusqlite::Result<Option<i64>> {
+        self.db.query_row("SELECT t.id FROM tracks t JOIN sources s ON s.id=t.source_id
+            WHERE s.provider='local' AND t.external_id=?1 LIMIT 1", [path.to_string_lossy().as_ref()], |row| row.get(0)).optional()
     }
 
     /// The source's id, creating it if needed.

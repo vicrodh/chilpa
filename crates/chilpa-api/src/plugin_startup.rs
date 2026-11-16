@@ -37,6 +37,10 @@ impl Chilpa {
         let progress = self.plugin_startup.progress.clone();
         self.plugin_startup.start(move || {
             let mut plugins = Plugins::new(root)?;
+            // Asked first, here, before the host has a lock: in Flatpak the
+            // first answer opens the portal's connection, and later ones,
+            // asked under the lock, only read it.
+            let _ = plugins.natives.availability();
             plugins.load_all_with(|done, total, name| {
                 if let Ok(mut at) = progress.lock() { *at = (done, total, name.to_string()); }
             });

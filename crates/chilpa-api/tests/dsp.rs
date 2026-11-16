@@ -31,6 +31,33 @@ fn packaged_dsp_loads_with_approval_and_keeps_presets_favorites_and_output_state
     let state = wait(&mut api, |s| s["available"] == true);
     assert!(api.call_plugin(id, "chilpa_dsp_presets", br#"{"protocol":999}"#).is_err());
     assert!(api.call_plugin(id, "chilpa_dsp_presets", b"not JSON").is_err());
+    api.dsp_action("search", r#"{"query":"","group":"all","offset":0}"#);
+    let page = wait(&mut api, |s| s["browser"]["loading"] == false && s["browser"]["total"].as_u64().unwrap_or(0) > 8000);
+    assert_eq!(page["browser"]["presets"].as_array().unwrap().len(), 32);
+    assert_eq!(page["browser"]["next"], 32);
+    let first_ids: Vec<_> = page["browser"]["presets"].as_array().unwrap().iter().map(|row| row["preset"]["id"].clone()).collect();
+    api.dsp_action("search", r#"{"query":"","group":"all","offset":32}"#);
+    let page = wait(&mut api, |s| s["browser"]["loading"] == false && s["browser"]["offset"] == 32);
+    assert!(page["browser"]["presets"].as_array().unwrap().iter().all(|row| !first_ids.contains(&row["preset"]["id"])));
+    api.dsp_action("search", r#"{"query":"WH1000XM4","group":"Headphones","offset":0}"#);
+    let page = wait(&mut api, |s| s["browser"]["loading"] == false && s["browser"]["query"] == "WH1000XM4");
+    let remote = page["browser"]["presets"].as_array().unwrap().iter().find(|row| row["preset"]["id"].as_str().unwrap().starts_with("autoeq-")).expect("measured variants must be searchable")["preset"].clone();
+    api.dsp_action("choose", &json!({"plugin":id,"preset":remote["id"]}).to_string());
+    api.dsp_action("close", "{}");
+    let closed: Value = serde_json::from_str(&api.dsp_json()).unwrap();
+    assert_eq!(closed["preset"]["id"], remote["id"]);
+    assert!(closed["browser"]["presets"].as_array().unwrap().is_empty());
+    assert_eq!(closed["selection"]["resolved"]["id"], remote["id"]);
+    api.revoke_plugin(id);
+    let disabled = wait(&mut api, |s| s["available"] == false);
+    assert!(disabled["browser"]["presets"].as_array().unwrap().is_empty());
+    api.approve_plugin(id);
+    let enabled = wait(&mut api, |s| s["available"] == true);
+    assert_eq!(enabled["preset"]["id"], remote["id"]);
+    // Reload the installed package while retaining its opaque selected identity.
+    api.load_plugins();
+    let reloaded = wait(&mut api, |s| s["available"] == true && s["loading"] == false);
+    assert_eq!(reloaded["preset"]["id"], remote["id"]);
     let presets = state["presets"].as_array().unwrap(); assert!(presets.len() >= 50);
     for p in presets {
         let preset: chilpa_core::dsp::Preset = serde_json::from_value(p["preset"].clone()).unwrap();

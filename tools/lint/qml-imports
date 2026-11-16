@@ -28,7 +28,7 @@ IMPORT = re.compile(r'^\s*import\s+"([^"]+)"', re.MULTILINE)
 MODULE = re.compile(r"^\s*import\s+([A-Za-z][\w.]*)", re.MULTILINE)
 USE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\s*\{")
 RUST_MODULE = "app.chilpa"
-# What a primitive may import: Qt only.
+# A primitive knows Qt and its own Qt-only native bootstrap, not facade state.
 QT_MODULES = re.compile(r"^(QtQuick|QtQml)(\.|$)")
 IN_GALLERY = ("Primitives", "Components", "Patterns")
 
@@ -36,6 +36,10 @@ IN_GALLERY = ("Primitives", "Components", "Patterns")
 def rank(layer):
     # The Gallery may use everything a window uses except the routes.
     return ORDER["Patterns"] + 0.5 if layer == GALLERY else ORDER[layer]
+
+
+def primitive_module_allowed(module):
+    return bool(QT_MODULES.match(module)) or module == "app.chilpa.kit.primitives"
 
 
 def main():
@@ -75,7 +79,9 @@ def main():
             elif ORDER[to] == rank(layer) and not (found[0] == KIT and tree_of(path) != KIT):
                 errors.append(f"{name}: a {layer} file cannot import {to}")
         for module in MODULE.findall(src):
-            if layer == "Primitives" and not QT_MODULES.match(module):
+            # The primitive layer's own bootstrap contains Qt-only native
+            # helpers. The facade-bearing kit module remains forbidden.
+            if layer == "Primitives" and not primitive_module_allowed(module):
                 errors.append(f"{name}: a primitive imports {module}; primitives only know Qt")
         for m in USE.finditer(code):
             used = m[1]

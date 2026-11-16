@@ -39,13 +39,25 @@ Item {
         border.width: Metrics.hairline
         border.color: Theme.color.strokeHairline
 
+        // Every field's name on one line, the chosen one in semibold: the
+        // design's width at least, wider for longer names.
+        LabelColumn {
+            id: fieldNames
+            fields: RefineText.order
+            rowsWide: box.width
+            glyph: Refine.pickFieldIcon + Refine.pickPad * 4 // derived: the row's inset, its padding, the glyph's gap and the column's own
+            least: Refine.pickFieldsWide
+            share: Refine.pickFieldsShare
+            weight: Type.semibold
+        }
         // As tall as the design's nine fields; the ones after them scroll.
         Flickable {
             id: fieldsView
+            objectName: "pickFields"
             visible: !picker.narrow
             x: Refine.pickPad
             y: Refine.pickPad
-            width: Refine.pickFieldsWide
+            width: fieldNames.wide
             height: Math.min(fields.implicitHeight, (Refine.pickFieldRow + Metrics.hairline) * Refine.pickFieldsShown)
             contentHeight: fields.implicitHeight
             clip: true
@@ -62,22 +74,17 @@ Item {
                         height: Refine.pickFieldRow
                         radius: Refine.pickFieldRound
                         color: modelData === picker.field ? Theme.color.stateSelected : fieldArea.containsMouse ? Theme.color.stateHover : "transparent"
-                        Row {
-                            x: Refine.pickPad
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: Refine.pickPad
-                            Icon { anchors.verticalCenter: parent.verticalCenter; glyph: RefineText.glyph(modelData); size: Refine.pickFieldIcon; color: Theme.color.textSecondary }
-                            Text { anchors.verticalCenter: parent.verticalCenter; text: RefineText.field(modelData); font.pointSize: Type.row; font.weight: modelData === picker.field ? Type.semibold : Type.regular; color: Theme.color.textPrimary }
-                        }
+                        Icon { id: fieldGlyph; x: Refine.pickPad; anchors.verticalCenter: parent.verticalCenter; glyph: RefineText.glyph(modelData); size: Refine.pickFieldIcon; color: Theme.color.textSecondary }
+                        Text { x: fieldGlyph.x + fieldGlyph.width + Refine.pickPad; width: parent.width - x - Refine.pickPad; anchors.verticalCenter: parent.verticalCenter; text: RefineText.field(modelData); font.pointSize: Type.row; font.weight: modelData === picker.field ? Type.semibold : Type.regular; color: Theme.color.textPrimary; elide: Text.ElideRight }
                         MouseArea { id: fieldArea; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: picker.fieldChosen(modelData) }
                     }
                 }
             }
         }
-        Rectangle { visible: !picker.narrow; x: Refine.pickPad + Refine.pickFieldsWide; y: Refine.pickPad; width: Metrics.hairline; height: box.height - Refine.pickPad * 2; color: Theme.color.strokeHairline } // derived: the divider between fields and values
+        Rectangle { visible: !picker.narrow; x: Refine.pickPad + fieldsView.width; y: Refine.pickPad; width: Metrics.hairline; height: box.height - Refine.pickPad * 2; color: Theme.color.strokeHairline } // derived: the divider between fields and values
         Column {
             id: side
-            x: picker.narrow ? Refine.pickPad : Refine.pickPad + Refine.pickFieldsWide + Refine.pickApart
+            x: picker.narrow ? Refine.pickPad : Refine.pickPad + fieldsView.width + Refine.pickApart
             y: Refine.pickPad
             width: box.width - x - Refine.pickPad
             spacing: Refine.footApart
@@ -133,7 +140,7 @@ Item {
             Loader {
                 width: parent.width
                 sourceComponent: picker.isList ? listBody : picker.field === "year" ? yearBody : picker.field === "rating" ? ratingBody
-                    : picker.field === "added" ? addedBody : picker.field === "plays" ? playsBody : picker.field === "type" || picker.field === "quality" ? choicesBody : wordsBody
+                    : picker.field === "added" ? addedBody : picker.field === "plays" ? playsBody : picker.field === "bits" ? bitsBody : picker.field === "rate" ? rateBody : picker.field === "type" || picker.field === "quality" ? choicesBody : wordsBody
             }
             Item {
                 width: parent.width
@@ -177,6 +184,8 @@ Item {
             onEdit: (change) => picker.edit(change)
         }
     }
+    Component { id: bitsBody; PickAudio { field: "bits"; held: picker.find("range"); onEdit: (change) => picker.edit(change) } }
+    Component { id: rateBody; PickAudio { field: "rate"; held: picker.find("range"); onEdit: (change) => picker.edit(change) } }
     Component {
         id: choicesBody
         Column {

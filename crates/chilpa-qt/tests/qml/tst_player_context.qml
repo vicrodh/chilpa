@@ -36,6 +36,21 @@ TestCase {
         compare(AudioOutput.shown,true); compare(AudioOutput.tab,"now")
         AudioOutput.close()
     }
+    function test_a_click_on_the_title_opens_the_track_information_once_it_is_closed_it_is_released() {
+        lcd.y = 0
+        const saved = Player.path
+        Player.path = "/music/a.flac"
+        const title = findChild(lcd, "playerTitleInfo").parent
+        const host = findChild(lcd, "trackInfoHost")
+        compare(host.active, false)
+        waitForRendering(title)
+        mouseClick(title, title.width / 2, title.height / 2)
+        tryCompare(host, "active", true)
+        tryCompare(host.item, "opened", true)
+        host.item.close()
+        tryCompare(host, "active", false)
+        Player.path = saved
+    }
     function test_the_cover_grows_on_hover_and_opens_now_playing_on_a_click() {
         lcd.width = 700
         lcd.y = 460

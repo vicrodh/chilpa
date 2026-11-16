@@ -29,16 +29,52 @@ fn on_path(program: &str) -> bool {
 }
 
 /// The five probes. Blocking: they run the stack's tools.
+///
+/// `systemctl`, `pgrep` and `aplay` answer for the host, and inside a
+/// Flatpak none of them can: the KDE 6.11 runtime ships no `systemctl` and
+/// no `aplay`, and its `pgrep` sees the sandbox's processes only. Asked
+/// alone, they made the wizard say WirePlumber was not running and ALSA
+/// had no `pipewire` PCM on a machine where both were there. So the graph's
+/// own account is read first, where WirePlumber is a client, and ALSA's own
+/// list of PCMs, which is what `aplay -L` prints.
 pub fn health() -> Health {
-    let wireplumber_active = run("systemctl", &["--user", "is-active", "wireplumber"]).is_some_and(|out| out.trim() == "active")
-        || run("pgrep", &["-x", "wireplumber"]).is_some();
+    let dump = run("pw-dump", &[]);
     Health {
-        wireplumber_active,
+        wireplumber_active: wireplumber_runs(dump.as_deref(), || {
+            run("systemctl", &["--user", "is-active", "wireplumber"]).is_some_and(|out| out.trim() == "active")
+                || run("pgrep", &["-x", "wireplumber"]).is_some()
+        }),
         has_pw_dump: on_path("pw-dump"),
-        alsa_sees_pipewire: run("aplay", &["-L"]).is_some_and(|out| out.lines().any(|line| line == "pipewire")),
+        alsa_sees_pipewire: alsa_lists_pipewire(
+            || chilpa_alsa::backends::lists_pcm("pipewire"),
+            || run("aplay", &["-L"]),
+        ),
         has_pactl: on_path("pactl"),
-        any_devices: run("pw-dump", &[]).is_some_and(|out| out.contains("Audio/Sink")),
+        any_devices: dump.as_deref().is_some_and(|out| out.contains("Audio/Sink")),
     }
+}
+
+/// Whether WirePlumber runs: one of its clients is in the graph, or the
+/// host says its service is active or its process is there.
+fn wireplumber_runs(dump: Option<&str>, host_says: impl FnOnce() -> bool) -> bool {
+    dump.is_some_and(wireplumber_in_dump) || host_says()
+}
+
+/// Whether a `pw-dump` holds a client that WirePlumber opened. It connects
+/// several, each with `application.process.binary` set to `wireplumber`
+/// (read off a running graph with WirePlumber 0.5.19). A Flatpak's program
+/// may read them: WirePlumber grants it `rx` on the graph's objects.
+fn wireplumber_in_dump(json: &str) -> bool {
+    let Ok(serde_json::Value::Array(objects)) = serde_json::from_str::<serde_json::Value>(json) else { return false };
+    objects.iter().any(|o| {
+        o["type"] == "PipeWire:Interface:Client" && o["info"]["props"]["application.process.binary"] == "wireplumber"
+    })
+}
+
+/// Whether ALSA lists the `pipewire` PCM: ALSA's own list, as this process
+/// reads it, and otherwise `aplay -L`, when there is one.
+fn alsa_lists_pipewire(alsa: impl FnOnce() -> bool, tool: impl FnOnce() -> Option<String>) -> bool {
+    alsa() || tool().is_some_and(|out| out.lines().any(|line| line == "pipewire"))
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -413,6 +449,40 @@ mod tests {
         assert_eq!(pcm_of_sink(listing,"selected"),Some(1));
         assert_eq!(pcm_of_sink(listing,"other"),Some(3));
         assert_eq!(pcm_of_sink(listing,"missing"),None);
+    }
+
+    /// A Flatpak's view of a running graph: WirePlumber's client, with the
+    /// properties `pw-dump` printed for it on the machine this was found on,
+    /// a sandboxed client and a sink.
+    const SANDBOXED_DUMP: &str = r#"[
+      {"id": 38, "type": "PipeWire:Interface:Client", "info": {"props": {"application.name": "WirePlumber",
+        "application.process.binary": "wireplumber", "pipewire.access": "unrestricted"}}},
+      {"id": 90, "type": "PipeWire:Interface:Client", "info": {"props": {"application.name": "Chilpa",
+        "application.process.binary": "chilpa-qt", "pipewire.access": "flatpak"}}},
+      {"id": 31, "type": "PipeWire:Interface:Node", "info": {"props": {"media.class": "Audio/Sink",
+        "node.name": "alsa_output.usb-Fosi-00.analog-stereo"}}}
+    ]"#;
+
+    #[test]
+    fn wireplumber_and_alsa_s_pipewire_pcm_are_found_without_the_host_s_tools() {
+        // The wizard inside a Flatpak: no systemctl, no aplay, a pgrep that
+        // sees only the sandbox. It said WirePlumber was not running and ALSA
+        // had no pipewire PCM, on a machine where both were.
+        let host_says_no = || false;
+        assert!(wireplumber_runs(Some(SANDBOXED_DUMP), host_says_no), "its client is in the graph");
+        assert!(alsa_lists_pipewire(|| true, || None), "ALSA lists it, and there is no aplay to ask");
+    }
+
+    #[test]
+    fn without_wireplumber_in_the_graph_the_host_decides() {
+        let alone = SANDBOXED_DUMP.replace("\"wireplumber\"", "\"other\"");
+        assert!(!wireplumber_in_dump(&alone));
+        assert!(!wireplumber_runs(Some(&alone), || false));
+        assert!(wireplumber_runs(Some(&alone), || true), "the host's service says it is active");
+        assert!(!wireplumber_runs(None, || false));
+        assert!(!wireplumber_in_dump("not json"));
+        assert!(alsa_lists_pipewire(|| false, || Some("default\npipewire\n".into())));
+        assert!(!alsa_lists_pipewire(|| false, || Some("default\npulse\n".into())));
     }
 
     #[test]

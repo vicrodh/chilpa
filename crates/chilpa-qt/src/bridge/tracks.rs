@@ -186,7 +186,7 @@ use std::rc::Rc;
 use chilpa_qt_kit::bridge::queue_activity;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent", "credits", "aiGenerated"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget", "explicitContent", "credits", "aiGenerated", "format", "qualityDetail", "bitDepth", "sampleRate"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -234,12 +234,7 @@ impl TrackListRust {
     fn at(&self, row: usize) -> Option<At<'_>> { self.rows.at(row) }
 
     /// Every track's file and id, in list order, when they are loaded.
-    fn loaded_tracks(&self) -> Vec<&TrackRow> {
-        match &self.rows {
-            Rows::Loaded(v) => v.iter().filter_map(|e| if let Entry::Track(t) = e { Some(t) } else { None }).collect(),
-            Rows::Snapshot { .. } => Vec::new(),
-        }
-    }
+    fn loaded_tracks(&self) -> Vec<&TrackRow> { self.rows.loaded_tracks() }
 
     fn track(&self, row: usize) -> Option<TrackRow> {
         match self.at(row)? {
@@ -300,6 +295,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
 }
 
 impl qobject::TrackListModel {
+    fn pending_collection(&self) -> bool { matches!(self.kind().to_string().as_str(), "discovery" | "source") && !*self.ready() }
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
         // A group's name is known without reading the row's page.
         let section = (role == USER_ROLE + 17).then(|| chilpa_api::section_at(&self.rust().sections, index.row().max(0) as usize)).flatten();
@@ -319,6 +315,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn play(self: Pin<&mut Self>, row: i32) {
+        if self.pending_collection() { return; }
         let row = row.max(0) as usize;
         if let Some(key) = self.rust().queue_keys.get(row) {
             app::with(|api| api.listen_row_action(key, "play", ""));
@@ -363,6 +360,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn group_action(self: Pin<&mut Self>, row: i32, action: &QString, label: &QString) {
+        if self.pending_collection() { return; }
         let paths = self.rust().group_paths(row.max(0) as usize);
         if paths.is_empty() {
             return;
@@ -379,6 +377,7 @@ impl qobject::TrackListModel {
     }
 
     fn with_all_paths(&self, then: impl FnOnce(&mut chilpa_api::Chilpa, &[String]) + Send + 'static) {
+        if self.pending_collection() { return; }
         let paths = match &self.rust().rows {
             Rows::Loaded(_) => queue_activity::QueuePaths::Known(self.rust().loaded_tracks().iter().map(|t| t.path.clone()).collect()),
             Rows::Snapshot { ids, .. } => queue_activity::QueuePaths::Ids(ids.ids.clone()),
@@ -387,6 +386,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn list_action(mut self: Pin<&mut Self>, action: &QString, row: i32, to: i32) {
+        if self.pending_collection() { return; }
         let action = action.to_string();
         if row < 0 && action.starts_with("buffer:") { self.with_all_paths(move |api, paths| api.listen_paths_action(&action, paths)); return; }
         if row < 0 || (action == "move" && to < 0) { return; }
@@ -428,6 +428,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn queue(self: Pin<&mut Self>, row: i32) {
+        if self.pending_collection() { return; }
         if !self.in_selection(row) {
             if let Some(track) = self.rust().track(row.max(0) as usize) {
                 app::with(|api| api.enqueue_here(&[track.path]));
@@ -438,6 +439,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn play_chosen(self: Pin<&mut Self>, row: i32) {
+        if self.pending_collection() { return; }
         if !self.rust().queue_keys.is_empty() || !self.in_selection(row) {
             self.play(row);
             return;
@@ -447,6 +449,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn play_next(self: Pin<&mut Self>, row: i32) {
+        if self.pending_collection() { return; }
         if !self.in_selection(row) {
             if let Some(track) = self.rust().track(row.max(0) as usize) {
                 app::with(|api| api.play_next_here(&[track.path]));
@@ -457,6 +460,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn play_later(self: Pin<&mut Self>, row: i32, label: &QString) {
+        if self.pending_collection() { return; }
         let mut label = label.to_string();
         if label.trim().is_empty() {
             label = self.rust().track(row.max(0) as usize).map(|track| track.album).unwrap_or_default();
@@ -498,6 +502,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn favorite_chosen(self: Pin<&mut Self>, row: i32, favorite: bool) {
+        if self.pending_collection() { return; }
         let ids = self.chosen_track_ids(row);
         app::with(|api| api.set_tracks_favorite(&ids, favorite));
     }
@@ -579,8 +584,10 @@ impl qobject::TrackListModel {
         if row < 0 { return QString::from(app::with(|api| api.collection_queue_menu()).to_string()); }
         let this = self.rust();
         let editable = this.kind.to_string() == "playlist" && this.playlist_editable;
+        let chosen = self.chosen_track_ids(row);
         let context = chilpa_api::TrackMenuContext {
-            count: if row < 0 { 0 } else { self.chosen_track_ids(row).len() },
+            count: if row < 0 { 0 } else { chosen.len() },
+            server_delete: chosen.len() == 1 && app::with(|api| api.server_media_info("track", chosen[0]) != "{}"),
             queued: !this.queue_keys.is_empty(),
             editable,
             move_up: editable && this.order.to_string() == "custom" && row > 0,
@@ -594,6 +601,7 @@ impl qobject::TrackListModel {
             // Over the whole selection it acts on, not the row clicked: one
             // that cannot play among several leaves only what removes it.
             unavailable: self.acts_on_unavailable(row),
+            about: this.track(row.max(0) as usize).filter(|_| chosen.len() == 1).map(|t| (t.path, t.title)),
         };
         let mut entries = app::with(|api| api.track_queue_menu(context));
         if let Some(key) = this.queue_keys.get(row.max(0) as usize) {
@@ -632,6 +640,7 @@ impl qobject::TrackListModel {
     /// The selected files, in list order -- which the selection does not
     /// keep -- handed to `then` on the window's thread.
     fn with_selection(&self, then: impl FnOnce(&mut chilpa_api::Chilpa, &[String]) + Send + 'static) {
+        if self.pending_collection() { return; }
         let this = self.rust();
         let paths = match &this.rows {
             Rows::Loaded(_) => queue_activity::QueuePaths::Known(this.loaded_tracks().iter().filter(|t| this.selected.contains(&t.id)).map(|t| t.path.clone()).collect()),
@@ -740,6 +749,7 @@ impl qobject::TrackListModel {
     /// Asks for a reload once this turn of the event loop is over, however
     /// many inputs changed in it.
     fn schedule(mut self: Pin<&mut Self>) {
+        if matches!(self.rust().kind.to_string().as_str(), "tracks" | "discovery" | "source") { self.as_mut().set_ready(false); }
         self.as_mut().rust_mut().asked = self.rust().asked.wrapping_add(1);
         if self.rust().pending {
             return;
@@ -780,22 +790,26 @@ impl qobject::TrackListModel {
             if let Some(rows) = cached { self.home_arrived(asked, rows); }
             return;
         }
-        if kind == "tracks" {
-            app::with(|api| api.prepare_track_libraries());
+        if matches!(kind.as_str(), "tracks" | "discovery") {
             // Found on the worker; what is shown stays until it is back.
-            let (query, extras) = (self.rust().key.to_string(), browse::read(|s| s.filter.clone()));
-            let asked = self.rust().asked + 1;
+            let query = self.rust().key.to_string();
+            let extras = browse::read(|s| s.filter.clone());
+            let asked = self.rust().asked.wrapping_add(1);
             self.as_mut().rust_mut().asked = asked;
             let thread = self.qt_thread();
-            worker::submit(move |reader| reader.tracks_progressive(&query, &extras, |found| {
+            let expected_kind = kind.clone();
+            chilpa_qt_kit::track_loading::submit_collection(kind, query, extras, move |found, timing| {
+                let expected_kind = expected_kind.clone();
                 let _ = thread.queue(move |mut model| {
-                    if model.rust().asked == asked {
+                    if model.rust().asked == asked && model.kind().to_string() == expected_kind {
+                        let timing = timing.next("delivery");
                         let ms = found.snapshot.totals.duration_ms;
                         (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
-                        model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
+                        model.as_mut().show(expected_kind, Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
+                        timing.published(*model.count());
                     }
                 });
-            }));
+            });
             return;
         }
         if kind == "album" && id != 0 {
@@ -889,11 +903,12 @@ impl qobject::TrackListModel {
                         self.as_mut().data_changed(&first, &last, &QVector::<i32>::default());
                     }
                     if let Some(ms) = length { let count = *self.count() as usize; self.as_mut().set_summary(QString::from(&format::track_summary(count, ms))); }
+                    self.as_mut().set_ready(true);
                     return;
                 }
             }
         }
-        if same && self.rust().queue_keys == keys && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { return; }
+        if same && self.rust().queue_keys == keys && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { self.as_mut().set_ready(true); return; }
         let plan = if same && self.rust().len() > 0 { match (&self.rust().rows, &rows) {
             (Rows::Loaded(old), Rows::Loaded(new)) => list_changes::tracks(old, new, &self.rust().queue_keys, &keys),
             _ => None,

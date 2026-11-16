@@ -125,6 +125,17 @@ TestCase {
         verify(!timer.running)
         panel.parent.visible = true
     }
+    function test_a_store_managed_copy_offers_no_check_and_names_its_store() {
+        Updates.snapshot = JSON.stringify({supported:true,can_install:false,can_check:false,kind:"flatpak",installation:"Flatpak",phase:"idle",current_version:"0.1.2",automatic:true})
+        wait(0)
+        verify(panel.visible)
+        verify(findChild(panel,"updateStatus").text.includes("Flatpak"))
+        verify(!findChild(panel,"checkUpdates").visible)
+        verify(!findChild(panel,"automaticUpdates").visible)
+        verify(!findChild(panel,"downloadUpdate").visible)
+        compare(findChild(panel,"currentVersion").text, "0.1.2")
+        compare(Updates.calls, [])
+    }
     function test_other_installations_hide_the_appimage_controls() {
         Updates.snapshot = JSON.stringify({supported:false,phase:"idle"})
         wait(0)

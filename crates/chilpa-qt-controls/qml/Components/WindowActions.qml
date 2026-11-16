@@ -8,11 +8,14 @@ QtObject {
     required property var commandBar
     required property var sheet
     required property var settings
+    // A key changed the volume: whoever draws the player shows the level.
+    signal volumeKeyed()
     readonly property var sidebarTurns: ({ open: "collapsed", collapsed: "closed", closed: "open" })
     function volume(by) {
         if (!Player.volumeLocked) {
             Player.chooseVolume(Math.max(0, Math.min(100, Player.volume + by)))
             Player.persistVolume()
+            volumeKeyed()
         }
     }
 
@@ -52,7 +55,7 @@ QtObject {
         case "playback.prev": Player.previous(); break
         case "playback.volumeUp": volume(5); break
         case "playback.volumeDown": volume(-5); break
-        case "playback.mute": if (!Player.volumeLocked) Player.chooseMuted(!Player.muted); break
+        case "playback.mute": if (!Player.volumeLocked) { Player.chooseMuted(!Player.muted); volumeKeyed() } break
         case "playback.shuffle": Player.toggleShuffle(); break
         case "playback.repeat": Player.cycleRepeat(); break
         case "playback.favorite": Hotkeys.likePlaying(); Ratings.refresh(); break

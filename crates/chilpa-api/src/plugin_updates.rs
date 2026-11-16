@@ -33,6 +33,8 @@ pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
     let (package_root, manifest) = crate::native_install::check(&package, &entry)?;
     if installed.is_some() && active.load(std::sync::atomic::Ordering::Acquire) { return Err("Waiting for playback to stop.".into()); }
     let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+    // Its permissions are not put to the user for a process that cannot start here.
+    runtime_available(&host, &manifest)?;
     let was_enabled = host.enabled(id);
     let needs_review = installed.is_some() && !host.covers_update(&manifest);
     let revision = {
@@ -43,7 +45,7 @@ pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
     if needs_review && !reviewed {
         if automatic { return Err("The plugin update needs permission review.".into()); }
         state["approval"] = json!({"id":id,"name":manifest.name,"description":manifest.description,"version":manifest.version,
-            "permissions":manifest.capabilities.iter().map(|cap|cap.describe()).collect::<Vec<_>>(),"revision":revision,
+            "permissions":manifest.permissions(),"revision":revision,
             "update":true,"repository":repo});
         return Ok(None);
     }
@@ -55,9 +57,17 @@ pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
     Ok(host.natives.is_native(id).then(|| id.to_string()))
 }
 
+/// A process plugin is refused, with the reason, where none can start; the
+/// installed version stays as it was.
+fn runtime_available(host: &Plugins, manifest: &chilpa_plugin::Manifest) -> Result<(), String> {
+    if manifest.runtime == chilpa_plugin::Runtime::Process { host.natives.availability()?; }
+    Ok(())
+}
+
 pub(crate) fn activate_native(root: &Path, host: &mut Plugins, package: &crate::StagedPackage,
     entry: &chilpa_plugin::catalog::CatalogEntry, repo: &str, grant: bool, was_enabled: bool) -> Result<(), String> {
     let (_, manifest) = crate::native_install::check(package, entry)?;
+    runtime_available(host, &manifest)?;
     let id = &entry.id;
     host.stop_for_update(id);
     let result = (|| {
@@ -113,7 +123,7 @@ mod tests {
             zip.start_file(name, zip::write::SimpleFileOptions::default()).unwrap(); zip.write_all(&bytes).unwrap();
         }
         let bytes = zip.finish().unwrap().into_inner();
-        let entry = chilpa_plugin::catalog::CatalogEntry {id:"app.test.update".into(),name:"Fixture".into(),version:version.into(),description:String::new(),category:String::new(),author:String::new(),repository:String::new(),package:"https://example.org/plugin.zip".into(),digest:chilpa_plugin::catalog::Digest {algorithm:"sha256".into(),value:format!("{:x}",Sha256::digest(&bytes))},adapter:"native".into(),problem:String::new()};
+        let entry = chilpa_plugin::catalog::CatalogEntry {id:"app.test.update".into(),name:"Fixture".into(),version:version.into(),description:String::new(),category:String::new(),author:String::new(),repository:String::new(),package:"https://example.org/plugin.zip".into(),digest:chilpa_plugin::catalog::Digest {algorithm:"sha256".into(),value:format!("{:x}",Sha256::digest(&bytes))},adapter:"native".into(),problem:String::new(),platform_build:false};
         (crate::StagedPackage::unpack(&root.join("staging"), &bytes, &entry.digest).unwrap(), entry)
     }
     #[test]
@@ -166,5 +176,30 @@ mod tests {
             ("1.0.0-beta.2", "1.0.0"), ("1.0.0+new", "1.0.0+old"), ("broken", "1.0.0")] {
             assert!(!newer(next, current), "{next} must not replace {current}");
         }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn a_process_plugin_is_not_installed_where_none_can_start() {
+        use sha2::{Digest, Sha256};
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().join("plugins");
+        let manifest = json!({"id":"app.test.process","name":"Process","version":"1.0.0","api_version":1,"kind":"source","runtime":"process",
+            "capabilities":[{"type":"register_source"}]});
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(Vec::new()));
+        for (name, bytes) in [("manifest.json", serde_json::to_vec(&manifest).unwrap()), ("plugin", b"never started".to_vec())] {
+            zip.start_file(name, zip::write::SimpleFileOptions::default()).unwrap(); zip.write_all(&bytes).unwrap();
+        }
+        let bytes = zip.finish().unwrap().into_inner();
+        let entry: chilpa_plugin::catalog::CatalogEntry = serde_json::from_value(json!({"id":"app.test.process","name":"Process",
+            "version":"1.0.0","description":"","author":"","repository":"","package":"https://example.org/plugin.zip",
+            "digest":{"algorithm":"sha256","value":format!("{:x}", Sha256::digest(&bytes))},"adapter":"native","problem":"","platform_build":true})).unwrap();
+        let package = crate::StagedPackage::unpack(&directory.path().join("staging"), &bytes, &entry.digest).unwrap();
+        let mut host = Plugins::new(root.clone()).unwrap();
+        crate::natives::tests::without_sandbox(&host.natives);
+        let reason = chilpa_i18n::t("Process plugins need the Flatpak portal, which is not available.");
+        assert_eq!(activate_native(&root, &mut host, &package, &entry, "native", true, true), Err(reason));
+        assert_eq!(crate::native_install::installed_version(&root, &entry.id), None, "nothing was put in the plugins folder");
+        assert!(host.list().is_empty());
     }
 }

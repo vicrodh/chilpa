@@ -46,8 +46,13 @@ fn leaf(field: Field, values: &Values, item: &SourceItem, stars: &Stars, now: i6
         (Field::Quality, Values::Any(want)) => want.iter().any(|w| match w.as_str() {
             "lossy" => folded.quality == 1, "cd" => folded.quality == 2, "hires" => folded.quality == 3, "dsd" => folded.quality == 4, _ => false,
         }),
-        (Field::Year | Field::Rating | Field::Added | Field::Plays, Values::Range(from, to)) => {
-            let value = match field { Field::Year => item.year.map(i64::from), Field::Rating => Some(record_stars), Field::Plays => item.plays, _ => Some(item.added_at) };
+        (Field::Bits, Values::Any(want)) => item.bits.is_some_and(|n| want.iter().any(|w| number(w) == Some(n))),
+        (Field::Rate, Values::Any(want)) => item.rate.is_some_and(|n| want.iter().any(|w| number(w) == Some(n))),
+        (Field::Year | Field::Rating | Field::Added | Field::Plays | Field::Bits | Field::Rate, Values::Range(from, to)) => {
+            let value = match field {
+                Field::Year => item.year.map(i64::from), Field::Rating => Some(record_stars), Field::Plays => item.plays,
+                Field::Bits => item.bits, Field::Rate => item.rate, _ => Some(item.added_at),
+            };
             value.is_some_and(|v| from.is_none_or(|from| v >= from) && to.is_none_or(|to| v <= to))
         }
         (Field::Added, Values::Within(seconds)) => item.added_at > 0 && item.added_at >= now - seconds,

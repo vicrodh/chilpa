@@ -106,7 +106,7 @@ Item {
             }
             Row {
                 spacing: Metrics.gap8
-                PillButton { text: I18n.tr("Apply", I18n.rev); kind: "primary"; onClicked: { genres.close(); Navigation.goKey("source", controls.about.plugin + " native:discover:" + controls.about.tab + ":" + controls.selectedGenres.join(",")) } }
+                PillButton { text: I18n.tr("Apply", I18n.rev); kind: "primary"; onClicked: { genres.close(); SettingsModel.keep("ui.source." + controls.about.plugin + ".discover." + controls.about.tab + ".genres", controls.selectedGenres.join(",")); Navigation.goKey("source", controls.about.plugin + " native:discover:" + controls.about.tab + ":" + controls.selectedGenres.join(",")) } }
                 PillButton { text: I18n.tr("Clear", I18n.rev); onClicked: controls.selectedGenres = [] }
             }
         }

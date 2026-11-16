@@ -243,7 +243,7 @@ pub struct PluginInfo {
     pub name: String,
     /// What it says it is, in its own words. Empty if it says nothing.
     pub description: String,
-    /// "awaiting approval", "fine", "stumbling" or "quarantined".
+    /// "awaiting approval", "fine", "stumbling", "quarantined" or "unavailable".
     pub state: String,
     /// Why it is in the corner, or empty.
     pub problem: String,
@@ -305,6 +305,8 @@ pub struct Plugins {
     root: PathBuf,
     private: Option<Arc<chilpa_secrets::PrivateStore>>,
     worker_launcher: Option<Arc<dyn chilpa_plugin::bridge::WorkerLauncher>>,
+    /// Why there is no compatibility worker, for the user, when there is none.
+    compatibility_unavailable: Option<String>,
     pub(crate) layouts: BTreeMap<String, crate::source_layout::Layout>,
     pub(crate) network_requests: crate::worker_services::NetworkRequests,
     /// Process plugins, reached outside this struct's lock.
@@ -332,11 +334,8 @@ impl Plugins {
             Arc::new(Mutex::new(ChilpaServices::new(root.clone(), secrets.clone())));
         let approvals = Approvals::load(&root);
         let private = secrets.clone().map(|secrets| Arc::new(chilpa_secrets::PrivateStore::new(root.join(".worker-private"), secrets)));
-        let worker_launcher: Option<Arc<dyn chilpa_plugin::bridge::WorkerLauncher>> = None;
-        #[cfg(target_os = "linux")]
-        let worker_launcher = chilpa_bwrap::RuntimePaths::installed(&root.join(".runtime"))
-            .map(|paths| Arc::new(paths) as Arc<dyn chilpa_plugin::bridge::WorkerLauncher>).or(worker_launcher);
-        Some(Self { host, registry: Registry::new(), services, approvals, secrets, root, private, worker_launcher,
+        let (worker_launcher, compatibility_unavailable) = crate::plugin_runtimes::compatibility(&root.join(".runtime"));
+        Some(Self { host, registry: Registry::new(), services, approvals, secrets, root, private, worker_launcher, compatibility_unavailable,
             layouts: BTreeMap::new(), network_requests: Arc::new(Mutex::new(BTreeMap::new())),
             natives: Arc::default(), revived: BTreeMap::new(), epochs: BTreeMap::new(), playlist_reads: BTreeMap::new() })
     }
@@ -345,9 +344,11 @@ impl Plugins {
     /// metadata never supplies executable paths or command-line arguments.
     pub fn set_worker_launcher(&mut self, launcher: Arc<dyn chilpa_plugin::bridge::WorkerLauncher>) {
         self.worker_launcher = Some(launcher);
+        self.compatibility_unavailable = None;
     }
 
     pub(crate) fn compatibility_launcher(&self) -> Option<Arc<dyn chilpa_plugin::bridge::WorkerLauncher>> { self.worker_launcher.clone() }
+    pub(crate) fn compatibility_unavailable(&self) -> Option<String> { self.compatibility_unavailable.clone() }
     pub(crate) fn reload_one(&mut self, id: &str) {
         if valid_id(id) { self.natives.stop(id); self.load_one(&self.root.join(id)); self.remember_auth(); }
     }
@@ -480,9 +481,10 @@ impl Plugins {
                         chilpa_plugin::State::Healthy => chilpa_i18n::mark("fine").into(),
                         chilpa_plugin::State::Stumbling { .. } => chilpa_i18n::mark("stumbling").into(),
                         chilpa_plugin::State::Quarantined { .. } => chilpa_i18n::mark("quarantined").into(),
+                        chilpa_plugin::State::Unavailable { .. } => chilpa_i18n::mark("unavailable").into(),
                     },
                     problem: match (&state, &i.problem) {
-                        (chilpa_plugin::State::Quarantined { reason }, _) => reason.clone(),
+                        (chilpa_plugin::State::Quarantined { reason } | chilpa_plugin::State::Unavailable { reason }, _) => reason.clone(),
                         (_, Some(p)) => p.clone(),
                         _ => String::new(),
                     },
@@ -600,6 +602,11 @@ impl Plugins {
     pub(crate) fn catalog_states(&self) -> Vec<(String, bool)> {
         self.registry.installed().filter(|plugin| plugin.manifest.is_some())
             .map(|plugin| (plugin.id.clone(), self.enabled(&plugin.id))).collect()
+    }
+
+    /// Each installed plugin's runtime, from the manifest it was read with.
+    pub(crate) fn runtimes(&self) -> std::collections::HashMap<String, chilpa_plugin::Runtime> {
+        self.registry.installed().filter_map(|plugin| Some((plugin.id.clone(), plugin.manifest.as_ref()?.runtime))).collect()
     }
 
     pub fn approve(&mut self, id: &str) -> Result<(), String> {

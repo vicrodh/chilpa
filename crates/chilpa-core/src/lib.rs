@@ -13,6 +13,8 @@ pub mod cd_playback;
 pub mod dsd_playback;
 pub mod playback;
 pub mod backends;
+pub mod attempts;
+pub mod launch;
 pub mod player;
 pub mod output_evidence;
 pub mod settings;

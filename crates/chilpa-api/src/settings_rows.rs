@@ -140,7 +140,7 @@ impl Chilpa {
         if let Some(said) = self.library_maintenance(key) {
             return Some(said);
         }
-        self.lyrics_maintenance(key).or_else(|| self.updates_maintenance(key)).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(||self.discogs_maintenance(key))
+        self.beets_maintenance(key).or_else(|| self.lyrics_maintenance(key)).or_else(|| self.updates_maintenance(key)).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(||self.discogs_maintenance(key))
     }
 
     /// A setting's new value, for the feature it belongs to. Like
@@ -148,7 +148,7 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
-        if self.discogs_setting(key,value) || self.updates_setting(key,value) {return true;}
+        if self.beets_setting(key,value) || self.discogs_setting(key,value) || self.updates_setting(key,value) {return true;}
         if key == "storage.remoteLimitMb" {
             if !crate::storage_cache::set_limit(value) { return false }
             self.remember_preference(key, value);
@@ -167,12 +167,12 @@ impl Chilpa {
             self.set_musicbrainz_enabled(value == "true");
             return true;
         }
-        if matches!(key, "integrations.offline" | "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" | "integrations.lyrics.translate")
+        if matches!(key, "integrations.offline" | "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" | "integrations.lyrics.translate" | "integrations.lyrics.romanize")
             || key.starts_with("integrations.lyrics.provider.") {
             self.remember_preference(key, value);
             return true;
         }
-        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.device_sync_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value)
+        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.device_sync_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value) || self.back_button_setting(key, value) || self.device_lock_setting(key, value) || self.offline_limit_setting(key, value) || self.rating_switch_setting(key, value) || self.server_ratings_setting(key, value) || self.server_favorites_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -183,6 +183,7 @@ impl Chilpa {
     /// The rows of one section, with what each says now, and whether the
     /// section has nothing built yet.
     pub fn settings_rows(&mut self, section: &str, notes: &RowNotes) -> (Vec<SettingsRow>, bool) {
+        self.advance_beets_runtime();
         if section == "storage" && !crate::storage_cache::usage().ready {
             crate::storage_cache::request_scan();
         }
@@ -248,8 +249,8 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
-        if self.discogs_row(row) || self.updates_settings_row(row) {return;}
-        if self.graphics_row(row) || self.normalization_row(row) || self.wizard_row(row) || self.theme_row(row) {
+        if self.beets_settings_row(row) || self.discogs_row(row) || self.updates_settings_row(row) || self.discord_row(row) || self.rating_switch_row(row) {return;}
+        if self.offline_limit_row(row) || self.graphics_row(row) || self.normalization_row(row) || self.back_button_row(row) || self.favorites_sync_row(row) || self.device_lock_row(row) || self.wizard_row(row) || self.theme_row(row) {
             return;
         }
         match row.key.as_str() {
@@ -495,7 +496,7 @@ impl Chilpa {
             }
             "integrations.lastfm.enabled" => row.value = self.lastfm().enabled.to_string(),
             "integrations.musicbrainz.enabled" => row.value = self.musicbrainz_enabled().to_string(),
-            "integrations.offline" | crate::discord::ENABLED => row.value = self.pref_on(&row.key, false),
+            "integrations.offline" => row.value = self.pref_on(&row.key, false),
             "integrations.proxy.enabled" | "integrations.lyrics.enabled" | "integrations.lyrics.service" => row.value = self.pref_on(&row.key, true),
             "integrations.lyrics.translate" => {
                 row.value = self.pref_on(&row.key, true);
@@ -503,6 +504,7 @@ impl Chilpa {
                     row.control = "fixed".into();
                 }
             }
+            "integrations.lyrics.romanize" => row.value = self.pref_on(&row.key, false),
             key if key.starts_with("integrations.lyrics.provider.") => {
                 row.value = self.pref_on(&row.key, true);
                 if self.preference("integrations.lyrics.service").as_deref() == Some("false") {
@@ -595,6 +597,7 @@ impl Chilpa {
             "fine" => (chilpa_i18n::t("Active"), "positive"),
             "awaiting approval" => (chilpa_i18n::t("Awaiting approval"), "warning"),
             "stumbling" => (chilpa_i18n::t("Stumbling"), "warning"),
+            "unavailable" => (chilpa_i18n::t("Unavailable"), "warning"),
             _ => (chilpa_i18n::t("Quarantined"), "negative"),
         };
         let mut row = Row { kind: 1, key, title: plugin.name.clone(), description: details.join(" "), control: "status".into(), action: word, marks: vec![light.into()], ..Row::default() };

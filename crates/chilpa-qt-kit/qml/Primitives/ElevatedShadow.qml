@@ -16,7 +16,7 @@ Item {
     width: target.width
     height: target.height
 
-    RectangularShadow {
+    Shadow {
         visible: !shadows.subtle
         anchors.fill: parent
         radius: shadows.radius
@@ -24,7 +24,7 @@ Item {
         blur: Metrics.shadowElevatedBlur
         color: Theme.color.shadowElevated
     }
-    RectangularShadow {
+    Shadow {
         anchors.fill: parent
         radius: shadows.radius
         offset.y: shadows.subtle ? Metrics.shadowSubtleY : Metrics.shadowKeyY
