@@ -2,7 +2,7 @@
 
 /// The extensions Chilpa knows how to open today.
 const EXTENSIONS: &[&str] =
-    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "aac", "mp3", "ogg", "oga", "dsf", "dff", "iso"];
+    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "aac", "mp3", "ogg", "oga", "opus", "dsf", "dff", "iso"];
 
 /// A folder's audio files, its subfolders' included, in order.
 ///

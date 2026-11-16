@@ -36,7 +36,7 @@ pub fn file(
     let codec = codec_name(track.codec_params.codec).to_string();
     let start = track.codec_params.start_ts;
     let time_base = track.codec_params.time_base;
-    let mut decoder = symphonia::default::get_codecs()
+    let mut decoder = codecs::registry()
         .make(&track.codec_params, &DecoderOptions { verify: true })
         .map_err(|error| DecodeError::Unsupported(error.to_string()))?;
     let mut frames = 0u64;

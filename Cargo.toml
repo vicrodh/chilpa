@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-exclude = ["vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
+exclude = ["vendor/symphonia-format-ogg", "vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
 members = [
     "crates/chilpa-models",
     "crates/chilpa-sync",
@@ -134,4 +134,6 @@ chilpa-qt-metadata = { path = "crates/chilpa-qt-metadata" }
 chilpa-plugin-api = { path = "vendor/chilpa-plugin-api" }
 
 [patch.crates-io]
+# Preserve Opus pre-skip on short EOS pages and all six frame-count bits.
+symphonia-format-ogg = { path = "vendor/symphonia-format-ogg" }
 qt-build-utils = { path = "crates/chilpa-qt-kit/vendor/qt-build-utils" }

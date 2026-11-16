@@ -7,6 +7,8 @@
 //! uses floats when the source really is float. Vorbis has a fixed signed
 //! 32-bit PCM output reference; its conversion boundary is in `vorbis`.
 
+mod codecs;
+mod opus;
 mod vorbis;
 pub mod verification;
 
@@ -229,7 +231,7 @@ fn codec_name(codec: symphonia::core::codecs::CodecType) -> &'static str {
         CODEC_TYPE_VORBIS => "vorbis",
         CODEC_TYPE_OPUS => "opus",
         CODEC_TYPE_WAVPACK => "wavpack",
-        other => match symphonia::default::get_codecs().get_codec(other) {
+        other => match codecs::registry().get_codec(other) {
             Some(known) if known.short_name.starts_with("pcm") => "pcm",
             _ => "",
         },
@@ -357,7 +359,7 @@ impl Decoded {
             17..=24 => SampleFormat::S24In32,
             _ => SampleFormat::S32,
         };
-        let mut decoder = symphonia::default::get_codecs()
+        let mut decoder = codecs::registry()
             .make(params, &DecoderOptions::default())
             .map_err(|e| DecodeError::Unsupported(e.to_string()))?;
         let delay = u64::from(params.delay.unwrap_or(0));
@@ -427,7 +429,14 @@ impl Decoded {
     /// earlier, and those frames are decoded and dropped.
     pub fn seek_to_frame(&mut self, frame: u64) -> Result<chilpa_audio::seek::SeekPlan, DecodeError> {
         self.pending = None;
-        let ts = if self.codec == "vorbis" { frame.saturating_sub(vorbis::SEEK_WINDOW) } else { frame };
+        // The queue requests audible frames. Ogg Opus timestamps include the
+        // encoder pre-skip, which the initial outer trim already consumed.
+        let frame = if self.codec == "opus" { frame.saturating_add(self.delay) } else { frame };
+        let ts = match self.codec {
+            "vorbis" => frame.saturating_sub(vorbis::SEEK_WINDOW),
+            "opus" => frame.saturating_sub(opus::SEEK_WINDOW),
+            _ => frame,
+        };
         let to = SeekTo::TimeStamp { ts, track_id: self.track_id };
         let landed = self
             .format

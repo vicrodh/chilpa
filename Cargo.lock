@@ -601,6 +601,7 @@ dependencies = [
  "chilpa-audio",
  "chilpa-i18n",
  "chilpa-stream",
+ "opusic-sys",
  "symphonia",
  "tempfile",
 ]
@@ -3435,6 +3436,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "opusic-sys"
+version = "0.7.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "986d749e9dc12035f11bf3ecc83a2a696ff7534d4143be9469a4a0faa25b9fd1"
+dependencies = [
+ "cmake",
+]
+
+[[package]]
 name = "ordered-stream"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4376,8 +4386,6 @@ dependencies = [
 [[package]]
 name = "symphonia-format-ogg"
 version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b4955c67c1ed3aa8ae8428d04ca8397fbef6a19b2b051e73b5da8b1435639cb"
 dependencies = [
  "log",
  "symphonia-core",

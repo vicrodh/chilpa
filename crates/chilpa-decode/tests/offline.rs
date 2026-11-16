@@ -15,6 +15,7 @@ fn complete_originals_verify_across_supported_lossless_and_lossy_formats() {
         ("silence.mp3", "mp3", "mp3"),
         ("silence-vbr.mp3", "mp3", "mp3"),
         ("silence.ogg", "ogg", "vorbis"),
+        ("silence.opus", "opus", "opus"),
     ] {
         let file = std::fs::File::open(root.join(name)).unwrap();
         let result = chilpa_decode::verification::file(file, Some(extension), || false);
@@ -39,6 +40,7 @@ fn truncated_originals_never_become_verified_copies() {
         ("silence.mp3", "mp3"),
         ("silence-vbr.mp3", "mp3"),
         ("silence.ogg", "ogg"),
+        ("silence.opus", "opus"),
     ] {
         let mut bytes = std::fs::read(root.join(name)).unwrap();
         bytes.truncate(bytes.len() - 32.max(bytes.len() / 10));

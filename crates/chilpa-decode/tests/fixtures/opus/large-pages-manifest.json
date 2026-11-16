@@ -1,0 +1,14 @@
+{
+  "source": "Deterministic LCG float samples encoded by FFmpeg libopus at CBR512kbps, six channels, 1.5seconds; FFmpeg float reference first/last1024frames",
+  "frames": 72000,
+  "channels": 6,
+  "audio_page_bytes": [
+    54807,
+    42983
+  ],
+  "sha256": {
+    "large-pages.opus": "51baaad00e404c0674816c3428c2568cab229dd2145310b86c0c745a6ae5de79",
+    "large-pages-ends.f32": "148eba50b83546c1dc1d65d6f045ef461c27e2b78b0247720f393f116f1136ce"
+  },
+  "reference_decoder": "FFmpeg -c:a libopus before input (explicit reference decoder)"
+}

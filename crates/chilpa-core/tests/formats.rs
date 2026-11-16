@@ -211,13 +211,12 @@ fn lossy_formats_decode_in_blocks() {
     let wav = d.join("ref-lossy.wav");
     write_wav(&wav, 16);
 
-    // Opus does not make it: the decoder we use does not carry it yet. It
-    // stays a known gap, and the test below pins it.
     for (name, args) in [
         ("aac.m4a", ["-c:a", "aac"]),
         ("adts.aac", ["-c:a", "aac"]),
         ("mp3.mp3", ["-c:a", "mp3"]),
         ("vorbis.ogg", ["-c:a", "libvorbis"]),
+        ("opus.opus", ["-c:a", "libopus"]),
     ] {
         let target = d.join(name);
         if !convert(&wav, &target, &args) {
@@ -306,31 +305,6 @@ fn float_codecs_announce_their_samples_and_vorbis_announces_its_pcm_reference() 
         );
         let _ = std::fs::remove_file(target);
     }
-    let _ = std::fs::remove_file(wav);
-}
-
-#[test]
-fn opus_is_not_supported_yet_and_says_so_plainly() {
-    if !have_ffmpeg() {
-        eprintln!("no ffmpeg: skipped");
-        return;
-    }
-    let d = dir();
-    let wav = d.join("ref-opus.wav");
-    write_wav(&wav, 16);
-    let target = d.join("test.opus");
-    if !convert(&wav, &target, &["-c:a", "libopus"]) {
-        eprintln!("no opus encoder: skipped");
-        return;
-    }
-    match Decoded::open(&target) {
-        Err(e) => {
-            let text = e.to_string();
-            assert!(text.contains("not supported"), "the error must say what happened: {text}");
-        }
-        Ok(_) => panic!("opus can be opened now: drop this test and add it to the matrix"),
-    }
-    let _ = std::fs::remove_file(target);
     let _ = std::fs::remove_file(wav);
 }
 

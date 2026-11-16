@@ -598,6 +598,13 @@ impl FrameSource for TrackFrames<'_> {
             if let Some(frame) = asked {
                 match self.decoded.seek_to_frame(frame) {
                     Ok(plan) => {
+                        if self.decoded.codec() == "opus" {
+                            // Seeking discards raw pre-skip itself. Retire any
+                            // held samples from the old position without
+                            // applying the initial leading trim a second time.
+                            self.trimmer = Trimmer::new(0, self.decoded.encoder_padding(), self.channels as u16);
+                            self.float_trimmer = Trimmer::new(0, self.decoded.encoder_padding(), self.channels as u16);
+                        }
                         self.discard = plan.discard;
                         self.moved = true;
                         self.level.moved();

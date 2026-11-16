@@ -123,6 +123,15 @@ struct Frames<'a> {
     spread: bool,
     /// The first packing error, to report it instead of swallowing it.
     error: Option<PackError>,
+    opus_trim: Option<chilpa_audio::gapless::Trimmer<f32>>,
+}
+
+impl<'a> Frames<'a> {
+    fn new(decoded: &'a mut Decoded, delivery: &Delivery) -> Self {
+        let opus_trim = (decoded.codec() == "opus").then(||
+            chilpa_audio::gapless::Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), decoded.stream_format().channels));
+        Self { decoded, opened: delivery.opened, spread: delivery.duplicates_mono(), error: None, opus_trim }
+    }
 }
 
 pub(crate) fn negotiate_decoded(decoded: &Decoded, caps: &chilpa_audio::negotiate::DeviceCaps, policy: Policy) -> Result<Delivery, NegotiationError> {
@@ -154,6 +163,10 @@ impl FrameSource for Frames<'_> {
                 Ok(Some(b)) => b,
                 Ok(None) => return Ok(None),
                 Err(e) => return Err(e.to_string()),
+            };
+            let block = match (block, self.opus_trim.as_mut()) {
+                (Block::Float(data), Some(trim)) => Block::Float(trim.push(&data)),
+                (block, _) => block,
             };
             let block = match block {
                 Block::Int { data, bits } if self.spread => Block::Int { data: duplicate_mono(&data), bits },
@@ -239,12 +252,7 @@ where
     on_delivery(&delivery, signal_bits(&decoded, &delivery));
     let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(PlayError::Sink)?, report.clone());
     sink.begin_attempt(1, None);
-    let mut frames = Frames {
-        decoded: &mut decoded,
-        opened: delivery.opened,
-        spread: delivery.duplicates_mono(),
-        error: None,
-    };
+    let mut frames = Frames::new(&mut decoded, &delivery);
     let outcome =
         chilpa_audio::render::render_processed(&mut frames, &mut sink, stop, pause, dsp, on_progress);
     sink.end(match &outcome {
@@ -311,12 +319,7 @@ where
     let delivery =
         negotiate_decoded(&decoded, caps, policy).map_err(PlayError::Negotiation)?;
     let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
-    let mut frames = Frames {
-        decoded: &mut decoded,
-        opened: delivery.opened,
-        spread: delivery.duplicates_mono(),
-        error: None,
-    };
+    let mut frames = Frames::new(&mut decoded, &delivery);
     let outcome = chilpa_audio::render::render_with(&mut frames, &mut sink, stop, on_progress);
     if let Some(e) = frames.error {
         return Err(PlayError::Pack(e));

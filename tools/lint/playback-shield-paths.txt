@@ -18,3 +18,4 @@ crates/chilpa-sacd/
 crates/chilpa-decode/
 crates/chilpa-stream/
 crates/chilpa-cd/
+vendor/symphonia-format-ogg/
