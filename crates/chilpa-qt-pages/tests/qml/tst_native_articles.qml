@@ -112,6 +112,23 @@ TestCase {
         compare(projection.rows[2].text,"<b>First</b>");compare(projection.rows[2].marker,"1.")
         compare(projection.rows[3].marker,"2.")
     }
+    function test_activation_waits_for_the_native_active_binding_on_first_open_and_return() {
+        const page=createTemporaryObject(pageFactory,test,{visible:false})
+        const model=findChild(page,"nativeArticleModel")
+        // A native property can receive its binding after the page's visibility signal.
+        model.active=false
+        Qt.callLater(() => { model.active=true })
+        page.visible=true
+        tryCompare(page,"count",2)
+        compare(model.openCount,1)
+        page.visible=false
+        tryCompare(page,"count",0)
+        model.active=false
+        Qt.callLater(() => { model.active=true })
+        page.visible=true
+        tryCompare(page,"count",2)
+        compare(model.openCount,2)
+    }
     function test_context_invalidation_clears_text_and_image_demands() {
         const page=createTemporaryObject(pageFactory,test)
         const model=findChild(page,"nativeArticleModel")

@@ -9,6 +9,7 @@ import "../../qml/Patterns"
 import "../../qml" as PageHosts
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as KitUi
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns" as KitPatterns
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives" as KitPrimitives
 
 TestCase {
     id: test
@@ -140,6 +141,39 @@ TestCase {
         Sources.pages={"fixture native:saved:all":document({loading:true,updating:true,request_pending:true,refresh_after_ms:250})}
         const page=createTemporaryObject(collectionFactory,test)
         wait(350);compare(NativePages.revalidations.length,0)
+    }
+    function test_a_new_collection_shows_its_header_and_filters_above_the_first_row() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:100,filters:{membership:"all"},filter_controls:[
+            {key:"membership",type:"choice",label:"Membership",options:[{value:"all",label:"All"},{value:"saved",label:"Saved"}]}
+        ]})}
+        const router=createTemporaryObject(routedHostFactory,test,{route:"fixture\u001fsource\u001f0\u001ffresh-collection-header"})
+        tryCompare(router,"phase","content")
+        tryVerify(()=>router.item?.item?.count === 100)
+        const page=router.item.item
+        tryCompare(page,"restorePending",false)
+        wait(80)
+        verify(page.headerItem.mapToItem(page,0,0).y>=0,"a fresh collection must show its title and filters before its first row")
+    }
+    function test_a_saved_offset_in_the_first_row_survives_collection_activation() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:100})}
+        const route="fixture\u001fsource\u001f0\u001ffirst-row-saved-offset"
+        KitPrimitives.Visit.keep(route,40)
+        const router=createTemporaryObject(routedHostFactory,test,{route:route})
+        tryCompare(router,"phase","content")
+        tryVerify(()=>router.item?.item?.count === 100)
+        const page=router.item.item
+        wait(80)
+        verify(Math.abs(page.contentY-page.originY+page.topMargin-40)<1,"restoring the first row must preserve the router's saved pixel offset")
+    }
+    function test_empty_collections_keep_their_header_and_filters_visible() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:0,items:[],filters:{text:"no match"},filter_controls:[{key:"text",type:"search",label:"Search"}]})}
+        const router=createTemporaryObject(routedHostFactory,test,{route:"fixture\u001fsource\u001f0\u001fempty-collection-header"})
+        tryCompare(router,"phase","content")
+        tryVerify(()=>router.item?.item !== null)
+        const page=router.item.item
+        wait(80)
+        compare(page.count,0)
+        verify(page.headerItem.mapToItem(page,0,0).y>=0)
     }
     function test_million_row_grid_creates_only_viewport_delegates() {
         Sources.pages={"fixture native:saved:all":document({knownCount:1000000})}

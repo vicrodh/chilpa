@@ -490,3 +490,60 @@ fn chosen_art_survives_detach_and_enable_without_retaining_card_payloads() {
     maintain(&catalog, root.path());
     assert_eq!(catalog.card(first).unwrap().art, "chosen-cover.png");
 }
+
+#[test]
+fn typed_article_navigation_does_not_decode_a_disabled_sources_cold_archive() {
+    let root = tempfile::tempdir().unwrap();
+    let (catalog, _, _, _) = fixture();
+    catalog.set_source_states([("fixture".into(), false)]);
+    maintain(&catalog, root.path());
+    let resumed = restart(&catalog);
+    std::fs::write(archive_path(root.path(), "fixture"), b"must remain unread for an article").unwrap();
+    resumed.set_source_states([("fixture".into(), false)]);
+    resumed.protect_navigation(&[crate::navigation::Route {
+        screen: crate::navigation::Screen::Source,
+        id: 0,
+        key: crate::native_page_request::route("fixture", "opaque:article", json!({}), "article"),
+    }]);
+    maintain(&resumed, root.path());
+    let inner = resumed.lock();
+    assert!(inner.residency.retry_after.is_none(), "article navigation must not attempt to parse a cold music archive");
+    assert!(inner.store.cold_sources.contains_key("fixture"));
+    assert!(inner.store.cards.values().all(|card| card.plugin != "fixture"));
+    assert!(inner.store.cards.values().any(|card| card.plugin == "unknown"));
+}
+
+#[test]
+fn typed_article_navigation_leaves_valid_cold_music_unwritten_and_unindexed() {
+    let root = tempfile::tempdir().unwrap();
+    let (catalog, _, _, _) = fixture();
+    catalog.set_source_states([("fixture".into(), false)]);
+    maintain(&catalog, root.path());
+    let resumed = restart(&catalog);
+    resumed.set_source_states([("fixture".into(), false)]);
+    let before = resumed.revisions();
+    let (cards, tracks, shelves, index_epoch) = {
+        let inner = resumed.lock();
+        (inner.store.cards.generation(), inner.store.tracks.generation(),
+            inner.store.shelves.generation(), inner.index_epoch)
+    };
+    resumed.protect_navigation(&[crate::navigation::Route {
+        screen: crate::navigation::Screen::Source,
+        id: 0,
+        key: crate::native_page_request::route("fixture", "opaque:article", json!({}), "article"),
+    }]);
+    let mut writes = 0;
+    resumed.maintain_residency_with(root.path(), |root, plugin, source| {
+        writes += 1;
+        write(root, plugin, source)
+    });
+    assert_eq!(writes, 0, "article navigation must not hydrate and rewrite the cold music archive");
+    assert_eq!(resumed.revisions(), before);
+    let inner = resumed.lock();
+    assert_eq!(inner.index_epoch, index_epoch, "article navigation must not retire the integrated music index");
+    assert!(inner.store.cards.matches_generation(&cards));
+    assert!(inner.store.tracks.matches_generation(&tracks));
+    assert!(inner.store.shelves.matches_generation(&shelves));
+    assert!(inner.store.cold_sources.contains_key("fixture"));
+    assert!(inner.store.cards.values().all(|card| card.plugin != "fixture"));
+}

@@ -88,7 +88,9 @@ GridView {
         seenGeneration=generation
         if (!restorePending) return
         restorePending=false
-        positionViewAtIndex(Math.max(0,Math.min(state.anchorIndex || 0,collection.count-1)),GridView.Beginning)
+        const anchor=Math.max(0,Math.min(state.anchorIndex || 0,collection.count-1))
+        // The router owns pixel restoration at the beginning, including the header.
+        if(anchor > 0)positionViewAtIndex(anchor,GridView.Beginning)
         Qt.callLater(seekViewport)
     }
     Connections { target:Sources; function onRevisionChanged() { page.catalogChanged() } }

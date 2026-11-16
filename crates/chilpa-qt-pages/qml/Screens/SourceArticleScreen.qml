@@ -33,10 +33,10 @@ ListView {
         Qt.callLater(() => { if(page.activePage && page.document.article)page.contentY=page.headerItem.y-page.topMargin })
     }
     onDocumentChanged:if(completed && activePage && document.article)Qt.callLater(showStart)
-    onSourceChanged:if(completed && activePage)articleModel.open(source)
-    onActivePageChanged:if(completed)activate()
+    onSourceChanged:if(completed && activePage)Qt.callLater(activate)
+    onActivePageChanged:if(completed) { activePage ? Qt.callLater(activate) : activate() }
     onVisibleChanged:if(completed && !visible)articleModel.close()
-    Component.onCompleted: { completed=true;activate() }
+    Component.onCompleted: { completed=true;activePage ? Qt.callLater(activate) : activate() }
     Component.onDestruction:articleModel.close()
     NativeArticleModel { id:articleModel;objectName:"nativeArticleModel";active:page.activePage }
     // Idle polling reads only runtime/settings stamps, never the article body.

@@ -38,7 +38,7 @@ Item {
         id:image
         objectName:"articleImage"
         anchors.fill:parent
-        source:picture.pageVisible && picture.inViewport && String(picture.cachedImage).startsWith("file:") ? "image://contained/"+picture.decode+"/"+encodeURIComponent(String(picture.cachedImage)) : ""
+        source:picture.pageVisible && picture.inViewport && String(picture.cachedImage).startsWith("file:") ? "image://cover/"+picture.decode+"/"+encodeURIComponent(String(picture.cachedImage)) : ""
         sourceSize:Qt.size(picture.decode,picture.decode)
         asynchronous:true
         cache:false
