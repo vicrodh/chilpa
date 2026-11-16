@@ -19,11 +19,11 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::OnceLock;
 
 /// The languages that ship, by the index stored in [`CURRENT`].
-const LANGUAGES: [&str; 9] = ["en", "es", "de", "fr", "pt", "ru", "ja", "nl","zh_TW"];
+const LANGUAGES: [&str; 9] = ["en", "es", "de", "fr", "pt", "ru", "ja", "nl", "zh_TW"];
 
 /// The catalogs, owned by this crate. Keeping them here and not next to a
 /// frontend means replacing the window cannot break the translations.
-const PO: [&str; 9] = [
+const PO: [&str; LANGUAGES.len()] = [
     include_str!("../translations/en/LC_MESSAGES/chilpa.po"),
     include_str!("../translations/es/LC_MESSAGES/chilpa.po"),
     include_str!("../translations/de/LC_MESSAGES/chilpa.po"),
@@ -36,7 +36,7 @@ const PO: [&str; 9] = [
 ];
 
 static CURRENT: AtomicU8 = AtomicU8::new(0);
-static CATALOGS: [OnceLock<Catalog>; 8] = [const { OnceLock::new() }; 8];
+static CATALOGS: [OnceLock<Catalog>; LANGUAGES.len()] = [const { OnceLock::new() }; LANGUAGES.len()];
 
 fn index_of(language: &str) -> Option<u8> {
     LANGUAGES.iter().position(|l| *l == language).map(|i| i as u8)
@@ -75,9 +75,18 @@ pub fn from_environment() -> &'static str {
         .iter()
         .find_map(|k| std::env::var(k).ok().filter(|v| !v.is_empty()))
         .unwrap_or_default();
-    let prefix: String =
-        raw.chars().take_while(char::is_ascii_alphabetic).collect::<String>().to_lowercase();
-    match index_of(&prefix) {
+    language_from_locale(&raw)
+}
+
+fn language_from_locale(raw: &str) -> &'static str {
+    let locale = raw.split(['.', '@']).next().unwrap_or_default().replace('-', "_").to_ascii_lowercase();
+    if let Some(language) = LANGUAGES.iter().find(|language| language.eq_ignore_ascii_case(&locale)) {
+        return language;
+    }
+    if matches!(locale.as_str(), "zh_hant" | "zh_hant_tw" | "zh_hk" | "zh_mo" | "zh_hant_hk" | "zh_hant_mo") {
+        return "zh_TW";
+    }
+    match index_of(locale.split('_').next().unwrap_or_default()) {
         Some(i) => LANGUAGES[usize::from(i)],
         None => "en",
     }
@@ -253,6 +262,30 @@ mod tests {
         assert_eq!(from_environment(), "en", "an unknown one is English");
         std::env::remove_var("LC_ALL");
         std::env::remove_var("LANG");
+    }
+
+    #[test]
+    fn traditional_chinese_keeps_its_region_and_script() {
+        for locale in ["zh_TW.UTF-8", "zh-TW", "zh_Hant", "zh-Hant-TW", "zh_HK.UTF-8", "zh_MO"] {
+            assert_eq!(language_from_locale(locale), "zh_TW", "{locale}");
+        }
+        for locale in ["zh_CN.UTF-8", "zh-Hans", "zh", "C", ""] {
+            assert_eq!(language_from_locale(locale), "en", "{locale}");
+        }
+        assert_eq!(language_from_locale("es_MX.UTF-8"), "es");
+        assert_eq!(language_from_locale("de_DE@euro"), "de");
+    }
+
+    #[test]
+    fn traditional_chinese_loads_the_last_catalog_and_uses_one_plural_form() {
+        let _speaking = SPEAKING.lock();
+        set_language("zh_TW");
+        assert_eq!(current_language(), "zh_TW");
+        assert_eq!(t("Search"), "搜尋");
+        for n in [0, 1, 2, 100] {
+            assert_eq!(catalog(index_of("zh_TW").unwrap()).plural_rule().index(n), 0);
+        }
+        set_language("en");
     }
 
     #[test]
