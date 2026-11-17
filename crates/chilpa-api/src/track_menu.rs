@@ -32,6 +32,11 @@ fn about_entry(context: &TrackMenuContext) -> Option<Value> {
 }
 
 pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
+    track_menu_with(context, crate::library_protection::Protection::kept())
+}
+
+/// The menu under a given protection: what it refuses stays, greyed out.
+pub(crate) fn track_menu_with(context: TrackMenuContext, protection: crate::library_protection::Protection) -> Vec<Value> {
     if context.count == 0 {
         return Vec::new();
     }
@@ -80,7 +85,11 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
                     navigation.push(json!({"act": format!("artist:{place}"), "text": i18n::t_args(i18n::mark("Go to {}"), &[name])}));
                 }
             } else {
-                navigation.push(item(act, label));
+                let mut entry = item(act, label);
+                if act == "metadata" && !protection.sidecar_refused().is_empty() {
+                    entry["enabled"] = json!(false);
+                }
+                navigation.push(entry);
             }
         }
         navigation.extend(about_entry(&context));
@@ -103,7 +112,11 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
     }
     if context.count == 1 && context.server_delete {
         entries.push(json!({"separator": true}));
-        entries.push(item("server_delete", i18n::mark("Delete from server…")));
+        let mut entry = item("server_delete", i18n::mark("Delete from server…"));
+        if protection.on {
+            entry["enabled"] = json!(false);
+        }
+        entries.push(entry);
     }
     entries
 }
@@ -111,6 +124,19 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::library_protection::Protection;
+
+    #[test]
+    fn a_protected_library_disables_edits_and_server_deletion() {
+        let context = || TrackMenuContext { count: 1, metadata: true, server_delete: true, ..Default::default() };
+        let state = |menu: &[Value], act: &str| menu.iter().find(|entry| entry["act"] == act).map(|entry| entry["enabled"] != false);
+        let open = track_menu_with(context(), Protection::default());
+        assert_eq!((state(&open, "metadata"), state(&open, "server_delete")), (Some(true), Some(true)));
+        let shut = track_menu_with(context(), Protection { on: true, sidecars: false });
+        assert_eq!((state(&shut, "metadata"), state(&shut, "server_delete")), (Some(false), Some(false)), "visible, greyed out");
+        let sidecars = track_menu_with(context(), Protection { on: true, sidecars: true });
+        assert_eq!((state(&sidecars, "metadata"), state(&sidecars, "server_delete")), (Some(true), Some(false)));
+    }
 
     #[test]
     fn every_track_and_selection_offers_all_three_queue_placements() {
