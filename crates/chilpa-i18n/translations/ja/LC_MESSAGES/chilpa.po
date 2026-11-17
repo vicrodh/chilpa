@@ -2007,6 +2007,9 @@ msgstr "貢献者"
 msgid "Convert to PCM"
 msgstr "PCMに変換"
 
+msgid "Convert to stereo"
+msgstr ""
+
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "変換可能なシステム入力。物理DACの対応能力は不明です"
 
@@ -3945,6 +3948,9 @@ msgstr "元のキューを残す"
 msgid "Keep the current one"
 msgstr "現在のものを残す"
 
+msgid "Keep the original channels for multichannel output, or mix decoded audio to stereo. DSD passthrough keeps its original channels."
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr "セッション間でキューを保持"
 
@@ -4424,6 +4430,9 @@ msgstr "見つかりません"
 
 msgid "Mixed"
 msgstr "混在"
+
+msgid "Mixed from {} to {} channels"
+msgstr ""
 
 msgid "Mixed output"
 msgstr "ミックス出力"
@@ -5367,6 +5376,9 @@ msgstr "元のバイト列"
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "元のバイト列 · Chilpaによるトランスコードなし · レシーバー側の処理は不明"
 
+msgid "Original channels"
+msgstr ""
+
 msgid "Original music files"
 msgstr "元の音楽ファイル"
 
@@ -5407,6 +5419,9 @@ msgid "Output identity could not be saved."
 msgstr "出力の識別情報を保存できませんでした。"
 
 msgid "Overview"
+msgstr ""
+
+msgid "PCM channels"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"

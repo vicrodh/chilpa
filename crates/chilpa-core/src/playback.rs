@@ -135,14 +135,22 @@ impl<'a> Frames<'a> {
 }
 
 pub(crate) fn negotiate_decoded(decoded: &Decoded, caps: &chilpa_audio::negotiate::DeviceCaps, policy: Policy) -> Result<Delivery, NegotiationError> {
-    match negotiate(decoded.stream_format(), caps, policy) {
+    let mut delivery = match negotiate(decoded.stream_format(), caps, policy) {
         Err(NegotiationError::Unsupported { .. }) if decoded.codec() == "vorbis" && policy == Policy::BitPerfect => {
             // A narrow or float-only output still plays, with its conversion
             // recorded against the fixed signed 32-bit decoder reference.
             negotiate(decoded.stream_format(), caps, Policy::AllowAnything)
         }
         other => other,
+    }?;
+    let source = decoded.source_stream_format();
+    if source.channels != decoded.stream_format().channels {
+        delivery.requested = source;
+        delivery.transforms.insert(0, chilpa_audio::negotiate::Transform::Downmixed {
+            from_channels: source.channels, to_channels: decoded.stream_format().channels,
+        });
     }
+    Ok(delivery)
 }
 
 pub(crate) fn pack_decoded(decoded: &Decoded, samples: &Samples<'_>, to: chilpa_audio::format::SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
@@ -222,7 +230,7 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_stream_told(stream, caps, policy, stop, pause, dsp, crate::playback_events::Report::default(), open_sink,
+    play_stream_told(stream, caps, policy, stop, pause, false, dsp, crate::playback_events::Report::default(), open_sink,
         &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, _, _)| played)
 }
 
@@ -233,6 +241,7 @@ pub(crate) fn play_stream_told<F, K>(
     policy: Policy,
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
+    stereo: bool,
     dsp: Option<chilpa_audio::dsp::Control>,
     report: crate::playback_events::Report,
     open_sink: F,
@@ -244,6 +253,7 @@ where
     K: AudioSink,
 {
     let mut decoded = Decoded::open_stream(stream).map_err(PlayError::Decode)?;
+    if stereo { decoded.downmix_to_stereo().map_err(PlayError::Decode)?; }
     let mut delivery =
         negotiate_decoded(&decoded, caps, policy).map_err(PlayError::Negotiation)?;
     if dsp.as_ref().is_some_and(|control| control.requested()) {

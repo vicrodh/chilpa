@@ -1,0 +1,45 @@
+# Vendored from https://github.com/OxideAV/oxideav-core at 8557e1cbc1cefa1165f8b490768402ccb501de1b.
+[package]
+name = "oxideav-core"
+version = "0.1.43"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+authors = ["Mark Karpeles"]
+description = "Core types and registries for oxideav — timestamps, packets, frames, codec/container/source/filter registries (pure Rust, no C deps)"
+repository = "https://github.com/OxideAV/oxideav-core"
+homepage = "https://github.com/OxideAV/oxideav-core"
+readme = "README.md"
+keywords = ["multimedia", "audio", "video", "codec", "pure-rust"]
+categories = ["multimedia", "encoding"]
+
+[features]
+default = []
+# Retained as a no-op alias for back-compat — `serde_json` is now a
+# hard dep of `oxideav-core` (the FilterFactory signature uses
+# `serde_json::Value`). Consumers that previously gated on this can
+# drop the feature flag entirely.
+json-options = []
+
+[dependencies]
+thiserror = "2"
+serde_json = "1"
+# Used for the `Zeroable` marker trait that bounds `Arena::alloc<T>`
+# — guarantees that an all-zero bit pattern is a valid value for T,
+# which is required because pool buffers are zero-filled at allocation
+# time and `alloc<T>` returns a `&mut [T]` pointing at those bytes
+# (reading any other type, e.g. `NonZeroU8`, would be UB). bytemuck is
+# a zero-overhead, no-deps marker-trait crate.
+bytemuck = "1"
+
+[dev-dependencies]
+# Criterion drives the `primitives` bench harness (bit-I/O + rescale +
+# Rational hot paths) so optimisation rounds can A/B-test against a
+# stable, fixture-free baseline. Same 0.5 line the sibling crates'
+# bench harnesses pin. Run with:
+#     cargo bench -p oxideav-core --bench primitives
+criterion = "0.5"
+
+[[bench]]
+name = "primitives"
+harness = false

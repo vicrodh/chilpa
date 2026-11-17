@@ -1,0 +1,33 @@
+{
+  "source": "Synthetic identical-channel sine controls from the vendored MIT encoder; FFmpeg remuxes only. No recorded audio.",
+  "generator": "CHILPA_A52_FIXTURE_DIR=<directory> cargo run -p chilpa-decode --example a52_drc_fixtures",
+  "rate": 48000,
+  "channels": 2,
+  "coupling": "forced, begin0/end15",
+  "drc_words": {
+    "unity": "0x00",
+    "half": "0xe0"
+  },
+  "tones_hz": {
+    "low": 500,
+    "high": 8000
+  },
+  "files": [
+    {
+      "file": "coupled-high-half.m4a",
+      "sha256": "976e137129e270699884207d38a0742cf85e7b0521cb683aea354dbce80f2cc7"
+    },
+    {
+      "file": "coupled-high-unity.m4a",
+      "sha256": "df591265cdfd6c64826e824a0401d668c2d3e233ac43da039fd0048131de8116"
+    },
+    {
+      "file": "coupled-low-half.m4a",
+      "sha256": "7358428effe609c3a7348d69ffba4879749d9a3f2bf3c9777c7244529804747b"
+    },
+    {
+      "file": "coupled-low-unity.m4a",
+      "sha256": "47d79397a3a19eed279b2817862a6ab354c8e66d4c298b18a13b8441dd74a99b"
+    }
+  ]
+}

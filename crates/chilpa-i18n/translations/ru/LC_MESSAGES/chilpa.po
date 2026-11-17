@@ -2011,6 +2011,9 @@ msgstr "Участники"
 msgid "Convert to PCM"
 msgstr "Преобразовывать в PCM"
 
+msgid "Convert to stereo"
+msgstr ""
+
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "Преобразуемый системный вход; физические возможности ЦАП неизвестны"
 
@@ -3955,6 +3958,9 @@ msgstr "Сохранить исходные очереди"
 msgid "Keep the current one"
 msgstr "Оставить текущую"
 
+msgid "Keep the original channels for multichannel output, or mix decoded audio to stereo. DSD passthrough keeps its original channels."
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr "Сохранять очередь между сеансами"
 
@@ -4434,6 +4440,9 @@ msgstr "Отсутствует"
 
 msgid "Mixed"
 msgstr "Разные"
+
+msgid "Mixed from {} to {} channels"
+msgstr ""
 
 msgid "Mixed output"
 msgstr "Смешанный выход"
@@ -5377,6 +5386,9 @@ msgstr "Исходные байты"
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "Исходные байты · Chilpa не перекодирует · обработка в ресивере неизвестна"
 
+msgid "Original channels"
+msgstr ""
+
 msgid "Original music files"
 msgstr "Исходные музыкальные файлы"
 
@@ -5417,6 +5429,9 @@ msgid "Output identity could not be saved."
 msgstr "Не удалось сохранить идентификатор выхода."
 
 msgid "Overview"
+msgstr ""
+
+msgid "PCM channels"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"

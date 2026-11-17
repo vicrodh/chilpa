@@ -2009,6 +2009,9 @@ msgstr "Contributors"
 msgid "Convert to PCM"
 msgstr ""
 
+msgid "Convert to stereo"
+msgstr ""
+
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr ""
 
@@ -3950,6 +3953,9 @@ msgstr ""
 msgid "Keep the current one"
 msgstr ""
 
+msgid "Keep the original channels for multichannel output, or mix decoded audio to stereo. DSD passthrough keeps its original channels."
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr ""
 
@@ -4429,6 +4435,9 @@ msgstr ""
 
 msgid "Mixed"
 msgstr "Mixed"
+
+msgid "Mixed from {} to {} channels"
+msgstr ""
 
 msgid "Mixed output"
 msgstr ""
@@ -5372,6 +5381,9 @@ msgstr ""
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr ""
 
+msgid "Original channels"
+msgstr ""
+
 msgid "Original music files"
 msgstr "Original music files"
 
@@ -5412,6 +5424,9 @@ msgid "Output identity could not be saved."
 msgstr "Output identity could not be saved."
 
 msgid "Overview"
+msgstr ""
+
+msgid "PCM channels"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"

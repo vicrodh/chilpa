@@ -1076,3 +1076,33 @@ chinese
 opusic
 multistream
 preroll
+
+# A/52 codec fields, MP4 atom names and external OxideAV/Symphonia APIs.
+acmod
+audblk
+bsi
+centre
+chanmap
+crc
+eac
+indep
+isomp
+lfe
+lfeon
+mdhd
+nchans
+oxideav
+snr
+stts
+syncinfo
+# AC-3 codec identifier stem.
+ac
+
+# External A/52 frame fields and presentation timestamp; PCM channel processing.
+ahte
+audfrm
+bsid
+cplinu
+downmixed
+pts
+spxattene

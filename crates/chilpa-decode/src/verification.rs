@@ -33,12 +33,13 @@ pub fn file(
         .or(track.codec_params.n_frames)
         .filter(|frames| *frames > 0)
         .ok_or_else(|| invalid("the audio length cannot be verified"))?;
-    let codec = codec_name(track.codec_params.codec).to_string();
+    let codec = codec_name(track.codec_params.codec);
     let start = track.codec_params.start_ts;
     let time_base = track.codec_params.time_base;
-    let mut decoder = codecs::registry()
-        .make(&track.codec_params, &DecoderOptions { verify: true })
+    let mut decoder = codecs::Engine::new(&track.codec_params, &DecoderOptions { verify: true })
         .map_err(|error| DecodeError::Unsupported(error.to_string()))?;
+    let codec = decoder.name(codec).to_string();
+    let mut packets = packets::Packets::default();
     let mut frames = 0u64;
     let mut end = start;
     let mut sample_rate = 0;
@@ -47,7 +48,7 @@ pub fn file(
         if cancelled() {
             return Err(invalid("verification cancelled"));
         }
-        let packet = match format.next_packet() {
+        let packet = match packets.next(&mut *format, id, decoder.lookahead()) {
             Ok(packet) => packet,
             Err(SymphoniaError::IoError(error))
                 if error.kind() == std::io::ErrorKind::UnexpectedEof =>
@@ -60,7 +61,7 @@ pub fn file(
             continue;
         }
         let block = decoder
-            .decode(&packet)
+            .decode(&packet, packets.lookahead())
             .map_err(|error| invalid(&error.to_string()))?;
         // Lossy blocks may include priming and final padding. Their packet
         // durations describe the audible timeline after container trimming.

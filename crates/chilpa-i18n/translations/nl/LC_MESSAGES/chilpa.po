@@ -2009,6 +2009,9 @@ msgstr "Bijdragers"
 msgid "Convert to PCM"
 msgstr "Naar PCM converteren"
 
+msgid "Convert to stereo"
+msgstr ""
+
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "Converteerbare systeeminvoer; fysieke DAC-mogelijkheden zijn onbekend"
 
@@ -3950,6 +3953,9 @@ msgstr "Originele wachtrijen behouden"
 msgid "Keep the current one"
 msgstr "De huidige behouden"
 
+msgid "Keep the original channels for multichannel output, or mix decoded audio to stereo. DSD passthrough keeps its original channels."
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr "De wachtrij tussen sessies bewaren"
 
@@ -4429,6 +4435,9 @@ msgstr "Ontbreekt"
 
 msgid "Mixed"
 msgstr "Gemengd"
+
+msgid "Mixed from {} to {} channels"
+msgstr ""
 
 msgid "Mixed output"
 msgstr "Gemengde uitvoer"
@@ -5372,6 +5381,9 @@ msgstr "Originele bytes"
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "Originele bytes · geen transcodering door Chilpa · verwerking door ontvanger onbekend"
 
+msgid "Original channels"
+msgstr ""
+
 msgid "Original music files"
 msgstr "Originele muziekbestanden"
 
@@ -5412,6 +5424,9 @@ msgid "Output identity could not be saved."
 msgstr "De uitvoeridentiteit kon niet worden opgeslagen."
 
 msgid "Overview"
+msgstr ""
+
+msgid "PCM channels"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"

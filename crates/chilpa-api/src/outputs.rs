@@ -14,6 +14,7 @@ pub(crate) const FORCE_RATE: &str = "audio.forceRate";
 pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
 
 pub(crate) mod device_lock;
+pub(crate) mod channel_mode;
 #[cfg(target_os = "linux")]
 mod hifi_wizard;
 mod listing;

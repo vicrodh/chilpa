@@ -73,12 +73,20 @@ pub(crate) struct Opened {
 /// queue of DSF files played its first file and stopped, because nothing
 /// took the queue on from there. It goes through the queue like any track
 /// now, as DoP only on an eligible direct route and as PCM everywhere else.
+#[cfg(test)]
 pub(crate) fn open_track(
     path: &Path,
     caps: &DeviceCaps,
     policy: Policy,
     dsd_mode: DsdMode,
     direct_dsd: Option<&DeviceCaps>,
+) -> Result<Opened, PlayError> {
+    open_track_with_channels(path, caps, policy, dsd_mode, direct_dsd, false)
+}
+
+pub(crate) fn open_track_with_channels(
+    path: &Path, caps: &DeviceCaps, policy: Policy, dsd_mode: DsdMode,
+    direct_dsd: Option<&DeviceCaps>, stereo: bool,
 ) -> Result<Opened, PlayError> {
     let unreadable = PlayError::Unreadable;
     if let Some((image, number)) = crate::sacd_tracks::parse(path) {
@@ -95,7 +103,7 @@ pub(crate) fn open_track(
     }
     // A track on a server: the original bytes, read by windows, decoded
     // here like a file on disk (ADR-017).
-    let (decoded, observer, normalization, mut about) = match crate::remote::entry(path) {
+    let (mut decoded, observer, normalization, mut about) = match crate::remote::entry(path) {
         Some(entry) => {
             let (decoded, observer, normalization) = crate::remote::open(path, &entry).map_err(unreadable)?;
             (decoded, observer, normalization, TrackAbout::default())
@@ -107,6 +115,7 @@ pub(crate) fn open_track(
             (decoded, None, None, about)
         }
     };
+    if stereo { decoded.downmix_to_stereo().map_err(PlayError::Decode)?; }
     let delivery = crate::playback::negotiate_decoded(&decoded, caps, policy).map_err(PlayError::Negotiation)?;
     about.bits = crate::playback::signal_bits(&decoded, &delivery);
     Ok(Opened { source: Source::Pcm(decoded, observer, normalization), delivery, about })
@@ -370,6 +379,8 @@ pub struct Controls {
     pub volume: Level,
     /// The user's explicit DSD delivery choice.
     pub dsd_mode: DsdModeChoice,
+    /// Explicit stereo conversion; false preserves every source channel.
+    pub stereo_downmix: Switch,
     /// Whether the selected route can take one-bit audio untouched.
     pub direct_dsd: Switch,
     /// What reaches that route's wire untouched, when it is narrower than
@@ -441,6 +452,7 @@ impl Default for Controls {
             exclusive: Switch::new(false),
             volume: Level::new(1.0),
             dsd_mode: DsdModeChoice::default(),
+            stereo_downmix: Switch::new(false),
             direct_dsd: Switch::new(false),
             direct_caps: std::sync::Arc::new(std::sync::Mutex::new(None)),
             handoff: Switch::new(false),
@@ -897,7 +909,7 @@ where
         if stop.is_stopped() { break; }
         let source_started = std::time::Instant::now();
         let ahead = prepared.is_some();
-        let ready = prepared.unwrap_or_else(|| open_track(path, caps, policy, controls.dsd_mode.get(), controls.dsd_direct(caps).as_ref()));
+        let ready = prepared.unwrap_or_else(|| open_track_with_channels(path, caps, policy, controls.dsd_mode.get(), controls.dsd_direct(caps).as_ref(), controls.stereo_downmix.get()));
         let Opened { mut source, mut delivery, about } = match ready {
             Ok(opened) => opened,
             Err(error) if error.is_track() || crate::remote::entry(path).is_some() => {
@@ -1096,11 +1108,11 @@ where
                         _ => None,
                     };
                     let at = crate::preload::at(crate::remote::entry(&path).is_some(), delivery.opened.sample_rate_hz, length);
-                    let (caps, dsd_mode, direct) = (caps.clone(), controls.dsd_mode.get(), controls.dsd_direct(caps));
+                    let (caps, dsd_mode, direct, stereo) = (caps.clone(), controls.dsd_mode.get(), controls.dsd_direct(caps), controls.stereo_downmix.get());
                     // Opened on a thread of its own; what comes of it is
                     // taken by this loop, as it reaches the track, or by
                     // nobody.
-                    preload.request_at(path, at, move |path| open_track(path, &caps, policy, dsd_mode, direct.as_ref()));
+                    preload.request_at(path, at, move |path| open_track_with_channels(path, &caps, policy, dsd_mode, direct.as_ref(), stereo));
                 }
             }
         }

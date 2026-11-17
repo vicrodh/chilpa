@@ -6,6 +6,7 @@ La lista permitida vive en este archivo, a propósito: cambiarla se ve en el
 diff y obliga a tocar el ADR en el mismo commit.
 """
 import re
+import hashlib
 import subprocess
 import sys
 import tomllib
@@ -206,6 +207,22 @@ MAX_LOC_SHELL_QML = 13_800
 
 CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
 
+# Fixed third-party source files above the project's per-file limit.
+# Each exception is locked to its reviewed bytes; changes fail closed.
+UPSTREAM_LOC_HASHES = {
+    'vendor/oxideav-ac3/src/audblk.rs': 'a0afa9939aa9f9a4f3c53a65b0582b1ea53f012b1fa2c14066423c52cd8c908b',
+    'vendor/oxideav-ac3/src/bsi.rs': 'a8d53b4a9a3defb20bb0c3b2c3ca90c647cd29038fa3bc48900ff86e516958dc',
+    'vendor/oxideav-ac3/src/decoder.rs': '9a69ce532f0f1d61031e7c3a51815ee2635128a4ca35f992c4e3aba52f7437cb',
+    'vendor/oxideav-ac3/src/eac3/bsi.rs': 'cce7d8a11c07c2647a98d939329c8266cb8fede45b4dd158be760f846316fed6',
+    'vendor/oxideav-ac3/src/eac3/dsp.rs': '3662beb2a02f34b87ac5acc06f11c049afd04e8e4d19779661b083759a06aae7',
+    'vendor/oxideav-ac3/src/eac3/ecpl.rs': 'a874f8b8f49607548ffb1f541c24bf6f64a5d036584117dfe7ec29dc9f09a92e',
+    'vendor/oxideav-ac3/src/eac3/encoder.rs': '0ed984d20cd574c7f0a9a0388bdffeb0edd81c3fecf121b934515c8f0894cb06',
+    'vendor/oxideav-ac3/src/encoder.rs': 'c7efdc5856ce6b142bea275ff953d631a58a61a9fee1ae7098f61edeffb57371',
+    'vendor/oxideav-core/src/format.rs': '964154f1092be99ac0c7159f5447aa584ed0ae5a246b055dc5b9a751bd1951d2',
+    'vendor/oxideav-core/src/frame.rs': 'f4539f994249a6e361a157564aafb534e72468268d0035af61b906fe5a24b17d',
+    'vendor/oxideav-core/src/registry/codec.rs': '28f29db28c9084713651d9176b8e7cc0aa0ba5ec5957d209537b3dae2331a65a',
+}
+
 
 def tracked_files():
     out = subprocess.run(["git", "-C", str(ROOT), "ls-files"], capture_output=True, text=True, check=True)
@@ -277,6 +294,11 @@ def check_loc(errors):
     shell_qml = {}
     for path in tracked_files():
         if path.suffix not in CODE_SUFFIXES or not path.exists():
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        if relative in UPSTREAM_LOC_HASHES:
+            if hashlib.sha256(path.read_bytes()).hexdigest() != UPSTREAM_LOC_HASHES[relative]:
+                errors.append(f"{relative}: pinned upstream source changed; review its size exception")
             continue
         loc = len(path.read_text(errors="replace").splitlines())
         if loc > MAX_LOC_FILE:

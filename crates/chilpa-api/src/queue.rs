@@ -279,6 +279,7 @@ impl Chilpa {
         let (gapless, normalize, exclusive) = (self.gapless(), self.normalize(), self.exclusive());
         let (target, prevent_clipping) = (self.normalize_target(), self.prevent_clipping());
         let dsd_mode = self.dsd_mode();
+        let stereo_downmix = self.stereo_downmix_enabled();
         let volume = self.software_gain();
         let dsp = self.dsp_configuration(device);
         let removed = self.removed_for_player();
@@ -294,6 +295,7 @@ impl Chilpa {
         player.set_normalization(target, prevent_clipping);
         player.set_exclusive(exclusive);
         player.set_dsd_mode(dsd_mode);
+        player.set_stereo_downmix(stereo_downmix);
         player.set_volume(volume);
         let _ = player.dsp().set(dsp);
         // Moving output is the same track going on somewhere else, so what
@@ -867,11 +869,13 @@ impl Chilpa {
     /// Hands the player the switches as they stand.
     pub(crate) fn apply_playback_options(&mut self, _legacy_bit_perfect: bool) {
         let dsd_mode = self.dsd_mode();
+        let stereo_downmix = self.stereo_downmix_enabled();
         if let Some(p) = &self.player {
             p.set_gapless(self.gapless());
             p.set_normalize(self.normalize());
             p.set_normalization(self.normalize_target(), self.prevent_clipping());
             p.set_dsd_mode(dsd_mode);
+            p.set_stereo_downmix(stereo_downmix);
         }
         self.apply_volume();
     }

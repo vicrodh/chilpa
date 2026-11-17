@@ -492,6 +492,11 @@ impl Player {
         self.controls.dsd_mode.set(mode);
     }
 
+    /// Preserves all channels unless stereo conversion was explicitly selected.
+    /// Selects the channel policy for subsequent opens. Relaunch the current
+    /// queue to apply it immediately and retire any already-preloaded track.
+    pub fn set_stereo_downmix(&self, on: bool) { self.controls.stereo_downmix.set(on); }
+
     pub fn repeat(&self) -> crate::queue_playback::Repeat {
         self.controls.repeat.get()
     }
@@ -674,7 +679,7 @@ fn play(
     let start = crate::queue_playback::first_live(queue, controls, named_start);
     if let Some((index, first)) = &start {
         if is_url(first) {
-            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp);
+            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp, controls.stereo_downmix.get());
         }
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, controls, open, drive, events);
@@ -860,6 +865,7 @@ fn play_stream(
     index: usize,
     queue_len: usize,
     dsp: &chilpa_audio::dsp::Control,
+    stereo: bool,
 ) -> Result<Outcome, PlayError> {
     dsp.begin_stream();
     let exact_path = crate::path_is_exact(device, exclusive);
@@ -888,6 +894,7 @@ fn play_stream(
         policy,
         stop,
         pause,
+        stereo,
         Some(dsp.clone()),
         owed.report.clone(),
         |format| open(device, format, exclusive),

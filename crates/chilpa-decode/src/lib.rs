@@ -7,7 +7,10 @@
 //! uses floats when the source really is float. Vorbis has a fixed signed
 //! 32-bit PCM output reference; its conversion boundary is in `vorbis`.
 
+mod a52;
 mod codecs;
+mod packets;
+mod stereo;
 mod opus;
 mod vorbis;
 pub mod verification;
@@ -16,7 +19,7 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use std::fs::File;
 use std::path::Path;
 use symphonia::core::audio::{AudioBufferRef, Signal};
-use symphonia::core::codecs::{Decoder, DecoderOptions};
+use symphonia::core::codecs::DecoderOptions;
 use symphonia::core::errors::Error as SymphoniaError;
 use symphonia::core::formats::{FormatOptions, FormatReader, SeekMode, SeekTo};
 use symphonia::core::io::MediaSourceStream;
@@ -199,9 +202,14 @@ impl Block {
 /// An open file, ready to hand over blocks.
 pub struct Decoded {
     format: Box<dyn FormatReader>,
-    decoder: Box<dyn Decoder>,
+    decoder: codecs::Engine,
+    packets: packets::Packets,
+    a52_clock: Option<a52::Clock>,
     track_id: u32,
     stream: StreamFormat,
+    original: StreamFormat,
+    layout: Option<symphonia::core::audio::Channels>,
+    stereo: Option<Box<stereo::Stereo>>,
     delay: u64,
     padding: u32,
     frames: Option<u64>,
@@ -335,7 +343,10 @@ impl Decoded {
         // An MP4 does not always declare channels or rate in the container:
         // the first decoded block carries them. So when they are missing, one
         // block is decoded up front and kept to hand over later.
-        let declared = (params.sample_rate, params.channels.map(|c| c.count() as u16));
+        let declared = if params.codec == symphonia::core::codecs::CODEC_TYPE_EAC3 {
+            // The sample entry may declare stereo for a multichannel program.
+            (None, None)
+        } else { (params.sample_rate, params.channels.map(|c| c.count() as u16)) };
         // What the file says it carries. `bits_per_sample` is empty for ALAC
         // -- symphonia leaves it unset and the depth lives in the magic
         // cookie -- which is the whole reason `alac_bit_depth` exists.
@@ -359,12 +370,12 @@ impl Decoded {
             17..=24 => SampleFormat::S24In32,
             _ => SampleFormat::S32,
         };
-        let mut decoder = codecs::registry()
-            .make(params, &DecoderOptions::default())
+        let mut decoder = codecs::Engine::new(params, &DecoderOptions::default())
             .map_err(|e| DecodeError::Unsupported(e.to_string()))?;
         let delay = u64::from(params.delay.unwrap_or(0));
         let padding = params.padding.unwrap_or(0);
         let frames = params.n_frames;
+        let time_base = params.time_base;
         let mut format = format;
         // One block is decoded up front and kept to hand over later. It says
         // what the container may not -- an MP4 does not always declare rate
@@ -374,10 +385,13 @@ impl Decoded {
         // integers: negotiation opened a 16 bit word with nothing to report,
         // the packing scaled the floats into it, and the verdict called an
         // MP3 bit-perfect.
-        let first = first_block(&mut *format, &mut *decoder, track_id, declared_bits, codec);
+        let codec = decoder.name(codec);
+        let mut packets = packets::Packets::default();
+        let first = first_block(&mut *format, &mut decoder, &mut packets, track_id, declared_bits, codec);
+        let layout = first.as_ref().ok().map(|(_, layout, _)| *layout);
         let (sample_rate_hz, channels, pending) = match (declared, first) {
             ((Some(rate), Some(channels)), Ok((_, _, block))) => (rate, channels, Some(block)),
-            (_, Ok((rate, channels, block))) => (rate, channels, Some(block)),
+            (_, Ok((rate, channels, block))) => (rate, channels.count() as u16, Some(block)),
             // Nothing decodable, but the container says what it would be: it
             // opens and plays nothing, as it always did.
             ((Some(rate), Some(channels)), Err(_)) => (rate, channels, None),
@@ -388,12 +402,21 @@ impl Decoded {
             Some(Block::Float(_)) => SampleFormat::F32,
             _ => integers,
         };
+        let a52_clock = if decoder.lookahead() {
+            Some(a52::Clock::new(sample_rate_hz, time_base).map_err(|error| DecodeError::Corrupt(error.to_string()))?)
+        } else { None };
+        let frames = frames.map(|frames| a52_clock.map_or(frames, |clock| clock.to_samples(frames)));
         Ok(Self {
             _lease:None,
             format,
             decoder,
+            packets,
+            a52_clock,
             track_id,
             stream: StreamFormat::new(sample_format, sample_rate_hz, channels),
+            original: StreamFormat::new(sample_format, sample_rate_hz, channels),
+            layout,
+            stereo: None,
             delay,
             padding,
             frames,
@@ -435,8 +458,10 @@ impl Decoded {
         let ts = match self.codec {
             "vorbis" => frame.saturating_sub(vorbis::SEEK_WINDOW),
             "opus" => frame.saturating_sub(opus::SEEK_WINDOW),
+            "ac3" | "eac3" => frame.saturating_sub(a52::SEEK_WINDOW),
             _ => frame,
         };
+        let ts = self.a52_clock.map_or(ts, |clock| clock.to_ticks(ts));
         let to = SeekTo::TimeStamp { ts, track_id: self.track_id };
         let landed = self
             .format
@@ -444,9 +469,10 @@ impl Decoded {
             .map_err(|e| DecodeError::Corrupt(e.to_string()))?;
         // The decoder carries state from where it was.
         self.decoder.reset();
+        self.packets.clear();
         let actual = if self.codec == "vorbis" {
-            vorbis::prime_after_seek(&mut *self.format, &mut *self.decoder, self.track_id)?
-        } else { landed.actual_ts };
+            vorbis::prime_after_seek(&mut *self.format, self.decoder.symphonia(), self.track_id)?
+        } else { self.a52_clock.map_or(landed.actual_ts, |clock| clock.to_samples(landed.actual_ts)) };
         Ok(chilpa_audio::seek::SeekPlan::after_landing(frame, actual))
     }
 
@@ -455,13 +481,30 @@ impl Decoded {
         self.stream
     }
 
+    /// The decoded source format before an explicit channel conversion.
+    pub fn source_stream_format(&self) -> StreamFormat { self.original }
+
+    /// Mix a known multichannel layout only after stereo was explicitly selected.
+    /// Original channels remain the default, including 5.1 and 7.1.
+    pub fn downmix_to_stereo(&mut self) -> Result<(), DecodeError> {
+        if self.original.channels <= 2 || self.stereo.is_some() { return Ok(()); }
+        let layout = self.layout.filter(|layout| layout.count() == usize::from(self.original.channels))
+            .ok_or_else(|| DecodeError::Unsupported("stereo: the source speaker layout is unknown".into()))?;
+        let matrix = stereo::Stereo::new(layout)?;
+        self.pending = self.pending.take().map(|block| matrix.convert(block));
+        self.stereo = Some(Box::new(matrix));
+        self.stream.channels = 2;
+        self.stream.sample_format = SampleFormat::F32;
+        Ok(())
+    }
+
     /// The next block. `None` when the file is done.
     pub fn next_block(&mut self) -> Result<Option<Block>, DecodeError> {
         if let Some(block) = self.pending.take() {
             return Ok(Some(block));
         }
         loop {
-            let packet = match self.format.next_packet() {
+            let packet = match self.packets.next(&mut *self.format, self.track_id, self.decoder.lookahead()) {
                 Ok(p) => p,
                 Err(SymphoniaError::IoError(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
                     return Ok(None)
@@ -472,8 +515,11 @@ impl Decoded {
             if packet.track_id() != self.track_id {
                 continue;
             }
-            match self.decoder.decode(&packet) {
-                Ok(buffer) => return Ok(Some(interleave(&buffer, self.declared_bits, self.codec))),
+            match self.decoder.decode(&packet, self.packets.lookahead()) {
+                Ok(buffer) => {
+                    let block = interleave(&buffer, self.declared_bits, self.codec);
+                    return Ok(Some(match &self.stereo { Some(matrix) => matrix.convert(block), None => block }));
+                }
                 // A damaged packet does not bring the track down: it is skipped.
                 Err(SymphoniaError::DecodeError(_)) => continue,
                 Err(e) => return Err(DecodeError::Corrupt(e.to_string())),
@@ -498,25 +544,26 @@ fn alac_bit_depth(params: &symphonia::core::codecs::CodecParameters) -> Option<u
 /// that block, for containers that do not declare them.
 fn first_block(
     format: &mut dyn FormatReader,
-    decoder: &mut dyn Decoder,
+    decoder: &mut codecs::Engine,
+    packets: &mut packets::Packets,
     track_id: u32,
     declared_bits: Option<u8>,
     codec: &str,
-) -> Result<(u32, u16, Block), DecodeError> {
+) -> Result<(u32, symphonia::core::audio::Channels, Block), DecodeError> {
     loop {
-        let packet = match format.next_packet() {
+        let packet = match packets.next(format, track_id, decoder.lookahead()) {
             Ok(p) => p,
             Err(e) => return Err(DecodeError::Unsupported(format!("no readable audio: {e}"))),
         };
         if packet.track_id() != track_id {
             continue;
         }
-        match decoder.decode(&packet) {
+        match decoder.decode(&packet, packets.lookahead()) {
             Ok(buffer) => {
                 let spec = *buffer.spec();
                 return Ok((
                     spec.rate,
-                    spec.channels.count() as u16,
+                    spec.channels,
                     interleave(&buffer, declared_bits, codec),
                 ));
             }

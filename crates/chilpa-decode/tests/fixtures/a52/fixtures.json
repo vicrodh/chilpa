@@ -1,0 +1,37 @@
+{
+  "source": "Generated six-channel markers; no recorded or third-party audio. FFmpeg is only a fixture/reference tool.",
+  "rate": 48000,
+  "layout": "5.1(side)",
+  "bitrate": "448k",
+  "dialnorm": -31,
+  "fixtures": [
+    {
+      "file": "ac3-six-channel.f32",
+      "sha256": "84f28e4d7facb4345b9e8ced846173fe893114f5b996e672cfaf344e5a90d55d"
+    },
+    {
+      "file": "ac3-six-channel.m4a",
+      "sha256": "e57d0e8ce1fecca6ac1346cce3bac6167078125cafa7734065c8d74749f3a5a5"
+    },
+    {
+      "file": "crc-valid-invalid-audio.m4a",
+      "sha256": "4bc3cbb720c3512ffea9373f37d89ea099f41ce22964e65864ebb615685108bd"
+    },
+    {
+      "file": "eac3-six-channel.f32",
+      "sha256": "b991454ec128cc8fb97ac0db98fd33429356046b836339138c504069fc5654e4"
+    },
+    {
+      "file": "eac3-six-channel.m4a",
+      "sha256": "0e9479e3c260e4792a478db7a49907f1245af38c91749d6f5b61e72734229d38"
+    },
+    {
+      "file": "half-rate-10.ac3",
+      "sha256": "591ecdeb10ab753d602f8d055533a4edb79f1205e57e7e44b579714e8855ee9d"
+    },
+    {
+      "file": "half-rate-9.ac3",
+      "sha256": "84eb2f4ca81df6714e2432978558c147b774cb07526cd67ff6173311040e387a"
+    }
+  ]
+}

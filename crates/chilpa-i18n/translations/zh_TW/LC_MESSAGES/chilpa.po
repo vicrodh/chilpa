@@ -2015,6 +2015,9 @@ msgstr ""
 msgid "Convert to PCM"
 msgstr "轉換為 PCM"
 
+msgid "Convert to stereo"
+msgstr ""
+
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "可轉換的系統輸入；實體 DAC 能力未知"
 
@@ -3953,6 +3956,9 @@ msgstr "保留原始佇列"
 msgid "Keep the current one"
 msgstr "保留目前的設定"
 
+msgid "Keep the original channels for multichannel output, or mix decoded audio to stereo. DSD passthrough keeps its original channels."
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr "在不同作業階段間保留播放佇列"
 
@@ -4432,6 +4438,9 @@ msgstr "遺失"
 
 msgid "Mixed"
 msgstr "混合"
+
+msgid "Mixed from {} to {} channels"
+msgstr ""
 
 msgid "Mixed output"
 msgstr "混合輸出"
@@ -5375,6 +5384,9 @@ msgstr "原始位元組"
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "原始位元組 · Chilpa 未轉碼 · 接收端處理未知"
 
+msgid "Original channels"
+msgstr ""
+
 msgid "Original music files"
 msgstr "原始音樂檔案"
 
@@ -5415,6 +5427,9 @@ msgid "Output identity could not be saved."
 msgstr "無法儲存輸出識別。"
 
 msgid "Overview"
+msgstr ""
+
+msgid "PCM channels"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"

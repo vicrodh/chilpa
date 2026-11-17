@@ -71,6 +71,8 @@ pub enum Transform {
     /// A mono track sent to both channels of a device that takes two. Each
     /// sample goes out twice and unchanged, which is why it keeps the verdict.
     Duplicated,
+    /// Multichannel PCM was explicitly mixed into stereo.
+    Downmixed { from_channels: u16, to_channels: u16 },
     /// It was mixed with other applications.
     Mixed,
     /// Software volume was applied to it.

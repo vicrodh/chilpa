@@ -132,6 +132,7 @@ fn transform(t: engine::Transform) -> String {
     match t { Widened { from_bits,to_bits } => chilpa_i18n::t_args("Word widened from {} to {} bits without sample loss",&[&from_bits.to_string(),&to_bits.to_string()]),
         Narrowed { from_bits,to_bits } => chilpa_i18n::t_args("Resolution reduced from {} to {} bits",&[&from_bits.to_string(),&to_bits.to_string()]),
         Quantized { to_bits } => chilpa_i18n::t_args("Decoded floating samples quantized to {} bits",&[&to_bits.to_string()]),
+        Downmixed { from_channels, to_channels } => chilpa_i18n::t_args("Mixed from {} to {} channels", &[&from_channels.to_string(), &to_channels.to_string()]),
         Duplicated => chilpa_i18n::t("Mono duplicated without changing sample values"),Floated => chilpa_i18n::t("Samples converted to floating point"),
         Mixed => chilpa_i18n::t("Mixed output"),DsdToPcm => chilpa_i18n::t("DSD converted to PCM"),
         VolumeApplied | DspApplied => String::new() }

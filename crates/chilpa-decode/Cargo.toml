@@ -12,6 +12,8 @@ chilpa-audio.workspace = true
 chilpa-stream.workspace = true
 symphonia = { version = "0.5", features = ["all"] }
 opusic-sys = "=0.7.7"
+oxideav-ac3 = { path = "../../vendor/oxideav-ac3" }
 
 [dev-dependencies]
+oxideav-core = { path = "../../vendor/oxideav-core" }
 tempfile = "3"
