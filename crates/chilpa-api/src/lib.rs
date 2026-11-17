@@ -76,7 +76,7 @@ mod privacy;
 pub use privacy::network_allowed;
 mod play_indicator;
 mod rating_switch;
-pub mod library_protection;
+mod library_protection;
 mod playlist_sources;
 mod plugin_broker;
 mod plugin_display;
