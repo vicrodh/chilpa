@@ -5780,8 +5780,8 @@ msgstr "Tasten drücken…"
 msgid "Prevent clipping"
 msgstr "Übersteuerung vermeiden"
 
-msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
-msgstr "Verhindert Unfälle: Chilpa ändert weder deine Musikdateien noch deine Server. Keine Änderungen an Tags oder Covern, kein Löschen, keine Änderungen an Playlists auf dem Server. Favoriten, Bewertungen und das Hinzufügen von Quellen funktionieren weiter."
+msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists, no sync to a device whose folder is part of your library. Favorites, ratings and adding sources keep working."
+msgstr "Verhindert Unfälle: Chilpa ändert weder deine Musikdateien noch deine Server. Keine Änderungen an Tags oder Covern, kein Löschen, keine Änderungen an Playlists auf dem Server, keine Synchronisierung auf ein Gerät, dessen Ordner zu deiner Bibliothek gehört. Favoriten, Bewertungen und das Hinzufügen von Quellen funktionieren weiter."
 
 msgid "Preview changes"
 msgstr ""

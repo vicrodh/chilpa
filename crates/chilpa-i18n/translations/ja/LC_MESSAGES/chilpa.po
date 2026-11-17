@@ -5775,8 +5775,8 @@ msgstr "キーを押してください…"
 msgid "Prevent clipping"
 msgstr "クリッピングを防止"
 
-msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
-msgstr "事故を防ぎます。Chilpaは音楽ファイルもサーバーも変更しません。タグやカバーの編集、削除、サーバー上のプレイリストの変更はできません。お気に入り、評価、ソースの追加は引き続き使えます。"
+msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists, no sync to a device whose folder is part of your library. Favorites, ratings and adding sources keep working."
+msgstr "事故を防ぎます。Chilpaは音楽ファイルもサーバーも変更しません。タグやカバーの編集、削除、サーバー上のプレイリストの変更、ライブラリに含まれるデバイスのフォルダーへの同期はできません。お気に入り、評価、ソースの追加は引き続き使えます。"
 
 msgid "Preview changes"
 msgstr ""
