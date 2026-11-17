@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
 
 TestCase {
@@ -10,6 +11,7 @@ TestCase {
     visible: true
     width: 1000; height: 500
     Component { id: listing; SourceListing { width: test.width; height: test.height; source: "fixture native:folder" } }
+    PageLifetime { id: lifetime }
     property var page
     property var grid
     function findItem(root, matches) {
@@ -75,6 +77,20 @@ TestCase {
         grid.model.expanded = 0
         tryVerify(() => loader.item !== null)
         compare(loader.item.version, card.albumId)
+    }
+    function test_retired_quick_view_cannot_reload_when_its_grid_becomes_visible() {
+        grid.model.expanded = 0
+        const loader = findChild(grid, "albumQuickLoader")
+        tryVerify(() => loader.item !== null)
+        lifetime.cancel(loader)
+        tryCompare(loader, "item", null)
+        page.visible = false
+        compare(loader.requested, false)
+        page.visible = true
+        compare(loader.requested, true)
+        compare(grid.model.expanded, 0)
+        compare(loader.active, false, "retiring a loader prevents its preview from being rebuilt")
+        compare(loader.item, null)
     }
     function test_hidden_list_releases_track_bodies_and_distant_quality_reads() {
         const list = findItem(page, item => item.viTrackList === true)

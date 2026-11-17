@@ -58,12 +58,14 @@ Item {
         readonly property bool requested: expanded && row.owner.visible
         property var suspended: null
         readonly property real panelHeight: suspended && (!item || item.albumId === suspended.album && !item.populated) ? suspended.height : height
-        active: false
+        // Page retirement severs this binding after cancelling creation.
+        property bool loadRequested: false
+        active: loadRequested
         onExpandedIndexChanged: suspended = null
         onRequestedChanged: {
             if (!requested && expanded && item)
                 suspended = { album: item.albumId, version: item.selectedVersion || item.version, height: panelHeight }
-            active = requested
+            loadRequested = requested
         }
         sourceComponent: row.quickDelegate
     }
