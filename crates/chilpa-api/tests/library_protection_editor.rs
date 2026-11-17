@@ -78,7 +78,17 @@ fn a_protected_library_keeps_every_file_and_allows_only_permitted_sidecars() {
     let album = album_titled(&mut chilpa, "A record");
     assert_ne!(album, 0);
     let before = audio(&music);
+
+    // Files chosen while unprotected, then protection turned on: the save is refused.
+    assert!(chilpa.metadata_open(album, 0));
+    until(&mut chilpa, "ready");
+    assert!(chilpa.metadata_set_mode("files"));
+    assert!(chilpa.metadata_set_album("title", "X"));
     assert!(chilpa.adjust("library.protect", "true"));
+    assert!(!chilpa.metadata_save());
+    assert!(chilpa.metadata_view().error.contains("Protect my library"), "{}", chilpa.metadata_view().error);
+    assert_eq!(audio(&music), before, "the files are untouched");
+    chilpa.metadata_close();
 
     // Protected, no sidecars: nothing can be saved.
     assert!(chilpa.metadata_open(album, 0));
