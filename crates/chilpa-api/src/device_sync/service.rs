@@ -504,9 +504,9 @@ impl Service {
         Ok(())
     }
     /// Protect my library refuses a device folder that is part of the library.
-    fn protected(&self, profile: &Profile) -> Result<(), UiError> {
-        let super::catalog::Root::Mounted { path } = &profile.root else { return Ok(()) };
-        if crate::library_protection::Protection::kept().on && inside_library(&self.library, path) {
+    fn protected(&self, profile: &Profile, destination: &str) -> Result<(), UiError> {
+        let Some(path) = work::local_target_of(&profile.root, destination) else { return Ok(()) };
+        if crate::library_protection::Protection::kept().on && inside_library(&self.library, &path) {
             return Err(failure(chilpa_i18n::mark("Protect my library is on, and this device folder is part of your library."), ""));
         }
         Ok(())
@@ -517,7 +517,7 @@ impl Service {
             .profile()
             .cloned()
             .ok_or_else(|| failure(chilpa_i18n::mark("Choose a saved device profile."), ""))?;
-        self.protected(&profile)?;
+        self.protected(&profile, &self.status.destination)?;
         let destination = self.status.destination.clone();
         let picks = self.selected();
         let remove = self.status.remove_unselected;
@@ -552,7 +552,7 @@ impl Service {
                 "",
             ));
         }
-        self.protected(&ready.profile)?;
+        self.protected(&ready.profile, &ready.destination)?;
         self.close_browser();
         let ready = self.ready.take().unwrap();
         let total = ready.plan.actions().len();

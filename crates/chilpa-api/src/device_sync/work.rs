@@ -44,6 +44,25 @@ pub(crate) struct Ready {
     pub _episode_files: Option<tempfile::TempDir>,
 }
 
+/// The local folder a sync to this destination writes into, or `None` for a
+/// device that has no local path. `volume` is the resolved `volume:` destination.
+pub(crate) fn local_target(root: &Root, destination: &str, volume: Option<&chilpa_devices::volumes::Volume>) -> Option<PathBuf> {
+    if destination.starts_with("volume:") {
+        let volume = volume?;
+        return Some(volume.path.join(discovery::folder(root, Some(volume))));
+    }
+    match root {
+        Root::Mounted { path } if destination == "mounted" => Some(path.clone()),
+        _ => None,
+    }
+}
+
+/// `local_target` for a destination id, resolving a removable volume.
+pub(crate) fn local_target_of(root: &Root, destination: &str) -> Option<PathBuf> {
+    let volume = if destination.starts_with("volume:") { chilpa_devices::volumes::Volume::resolve(destination).ok() } else { None };
+    local_target(root, destination, volume.as_ref())
+}
+
 fn transport(root: &Root, destination: &str, create: bool, cancel: &Cancellation) -> Result<Box<dyn Transport>, UiError> {
     cancel.check().map_err(UiError::from)?;
     if destination.starts_with("volume:") {
@@ -324,4 +343,30 @@ pub(crate) fn rows(plan: &Plan) -> Vec<ChangeRow> {
 }
 pub(crate) fn default_library() -> PathBuf {
     chilpa_library::Library::default_path()
+}
+
+#[cfg(test)]
+mod local_target_tests {
+    use super::*;
+    use chilpa_devices::volumes::Volume;
+
+    fn volume(path: &str) -> Volume {
+        Volume { id: "volume:x".into(), name: "card".into(), path: path.into(), available: 0, capacity: 0, writable: true }
+    }
+
+    #[test]
+    fn a_removable_volume_resolves_to_its_path_joined_with_the_profile_folder() {
+        let root = Root::Mtp { folder: "Music/Sync".into() };
+        let target = local_target(&root, "volume:x", Some(&volume("/media/card")));
+        assert_eq!(target, Some(PathBuf::from("/media/card/Music/Sync")));
+        assert_eq!(local_target(&root, "volume:x", None), None, "an unresolved volume has no path");
+    }
+
+    #[test]
+    fn a_mounted_destination_resolves_to_its_folder_and_a_usb_device_to_none() {
+        let mounted = Root::Mounted { path: "/mnt/player".into() };
+        assert_eq!(local_target(&mounted, "mounted", None), Some(PathBuf::from("/mnt/player")));
+        let usb = Root::Mtp { folder: "Music".into() };
+        assert_eq!(local_target(&usb, "1/2", None), None);
+    }
 }
