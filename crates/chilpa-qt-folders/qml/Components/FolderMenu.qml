@@ -26,7 +26,7 @@ Menu {
         { act: "later", text: I18n.tr("Play later", I18n.rev), glyph: Lucide.listPlus, family: Lucide.font },
         { act: "queue", text: I18n.tr("Add to queue", I18n.rev), glyph: Lucide.listEnd, family: Lucide.font },
         { separator:true },
-        { act:"metadata",text:I18n.tr("Edit metadata",I18n.rev),glyph:Icons.pencil }
+        { act:"metadata",text:I18n.tr("Edit metadata",I18n.rev),glyph:Icons.pencil,enabled:!Prefs.protectLibrary }
     ]
     onChosen: index => entries[index].act === "metadata" ? Navigation.goKey("folderMetadata",JSON.stringify([path])) : folder.act(path,entries[index].act)
 }

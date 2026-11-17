@@ -155,4 +155,15 @@ TestCase {
         compare(findChild(page,"batchProgressTitle").text,"Operation cancelled")
         compare(model.saves,0)
     }
+
+    function test_a_protected_library_cannot_write_the_batch() {
+        const page=createTemporaryObject(maker,this,{routeKey:'["/music"]'})
+        const model=findChild(page,"folderMetadataModel")
+        model.publish({session:1,state:"ready",busy:false,dirty:true,protected:true,beets:{ready:true},counts:{files:1,groups:1,selected:1},summary:{changed:1},fields:[]})
+        tryCompare(findChild(page,"batchProtected"),"visible",true)
+        verify(!findChild(page,"batchSave").enabled)
+        model.publish({session:1,state:"ready",busy:false,dirty:true,protected:false,beets:{ready:true},counts:{files:1,groups:1,selected:1},summary:{changed:1},fields:[]})
+        tryCompare(findChild(page,"batchSave"),"enabled",true)
+        verify(!findChild(page,"batchProtected").visible)
+    }
 }

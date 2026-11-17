@@ -26,7 +26,8 @@ Item {
     // listener when the server cannot take it.
     readonly property bool hosted: save.hosted === true
     readonly property var server: save.server || ({})
-    readonly property string hostedLine: save.mode === "server"
+    readonly property string hostedLine: save.sidecar_allowed === false ? server.refused || ""
+        : save.mode === "server"
         ? I18n.trArgs("Saved to {} and read back from it.", [server.name || ""], I18n.rev)
         : save.mode === "sidecar"
           ? I18n.tr("Kept on this device, over what the server says, until you take it off.", I18n.rev)
@@ -86,9 +87,10 @@ Item {
         }
         PillButton { text: I18n.tr("Close", I18n.rev); enabled: root.doc.state !== "saving"; onClicked: root.closeAsked() }
         PillButton {
+            objectName: "metadataSave"
             kind: "primary"
             text: I18n.tr("Save", I18n.rev)
-            enabled: root.doc.dirty === true && root.doc.state === "ready"
+            enabled: root.doc.dirty === true && root.doc.state === "ready" && root.save.sidecar_allowed !== false
             onClicked: root.saveAsked()
         }
     }
@@ -110,8 +112,11 @@ Item {
             objectName: "metadataSaveTo"
             visible: !root.hosted
             options: root.save.xml_allowed
-                     ? [{ text: I18n.tr("Sidecar", I18n.rev) }, { text: I18n.tr("Files", I18n.rev) }, { text: I18n.tr("SACD XML", I18n.rev) }]
-                     : [{ text: I18n.tr("Sidecar", I18n.rev) }, { text: I18n.tr("Files", I18n.rev) }]
+                     ? [{ text: I18n.tr("Sidecar", I18n.rev), disabled: root.save.sidecar_allowed === false },
+                        { text: I18n.tr("Files", I18n.rev), disabled: root.save.protected === true, tip: root.save.files_refused || "" },
+                        { text: I18n.tr("SACD XML", I18n.rev), disabled: root.save.protected === true, tip: root.save.xml_refused || "" }]
+                     : [{ text: I18n.tr("Sidecar", I18n.rev), disabled: root.save.sidecar_allowed === false },
+                        { text: I18n.tr("Files", I18n.rev), disabled: root.save.protected === true, tip: root.save.files_refused || "" }]
             current: root.xml ? 2 : root.files ? 1 : 0
             onActivated: (index) => MetadataEditor.setMode(index === 2 ? "xml" : index === 1 ? "files" : "sidecar")
         }
@@ -119,7 +124,7 @@ Item {
             objectName: "metadataSaveToServer"
             visible: root.hosted
             options: [{ text: I18n.tr("Server", I18n.rev), disabled: root.server.allowed !== true, tip: root.server.refused || "" },
-                      { text: I18n.tr("Sidecar", I18n.rev) }]
+                      { text: I18n.tr("Sidecar", I18n.rev), disabled: root.save.sidecar_allowed === false }]
             current: root.save.mode === "server" ? 0 : root.save.mode === "sidecar" ? 1 : -1
             onActivated: (index) => MetadataEditor.setMode(index === 0 ? "server" : "sidecar")
         }

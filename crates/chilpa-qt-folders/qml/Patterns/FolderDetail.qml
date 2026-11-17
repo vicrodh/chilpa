@@ -115,6 +115,7 @@ Item {
             id:edit
             anchors.right:tools.left; anchors.rightMargin:Metrics.gap8; anchors.verticalCenter:parent.verticalCenter
             tip:I18n.tr("Edit metadata",I18n.rev); glyph:Icons.pencil
+            enabled:!Prefs.protectLibrary
             onClicked:Navigation.goKey("folderMetadata",JSON.stringify([detail.folder.path]))
         }
     }

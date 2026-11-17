@@ -50,14 +50,14 @@ CascadingMenu {
             { text: I18n.tr("Open in new tab", I18n.rev), act: "tab", when: one },
             { text: I18n.tr("Quick view", I18n.rev), act: "quick", when: one && canExpand, at: index },
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist", when: one && name !== "" && name !== artistPage, artist: name },
-            { text: I18n.tr("Edit metadata…", I18n.rev), act: "metadata", when: one && id > 0 },
+            { text: I18n.tr("Edit metadata…", I18n.rev), act: "metadata", when: one && id > 0, enabled: !Prefs.protectLibrary || Prefs.protectedSidecars },
             { text: apart === 1 ? I18n.tr("Group with other versions", I18n.rev) : I18n.tr("Don't group with other versions", I18n.rev),
               act: "apart", when: apart >= 0, keepApart: apart === 0 },
             { separator: true, when: one && id > 0 },
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
               act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.favorite_supported !== false && nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
         ]
-        if (deletable) all.push({separator:true}, {text:I18n.tr("Delete from server…", I18n.rev),act:"server_delete",glyph:Icons.trash})
+        if (deletable) all.push({separator:true}, {text:I18n.tr("Delete from server…", I18n.rev),act:"server_delete",glyph:Icons.trash,enabled:!Prefs.protectLibrary})
         const offline = one && id > 0 ? JSON.parse(Offline.menu("album", JSON.stringify([id]))) : []
         if (offline.length > 0) all.push({separator:true}, ...offline)
         // The extra queues come from the facade, as they do for a track.
