@@ -5780,8 +5780,8 @@ msgstr "Druk op toetsen…"
 msgid "Prevent clipping"
 msgstr "Clipping voorkomen"
 
-msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists, no sync to a device whose folder is part of your library. Favorites, ratings and adding sources keep working."
-msgstr "Voorkomt ongelukken: Chilpa wijzigt je muziekbestanden en je servers niet. Geen bewerkingen van tags of hoezen, geen verwijderingen, geen wijzigingen aan afspeellijsten op de server, geen synchronisatie naar een apparaat waarvan de map deel uitmaakt van je bibliotheek. Favorieten, waarderingen en het toevoegen van bronnen blijven werken."
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpa wijzigt je bibliotheek nooit uit zichzelf: elke wijziging gaat via jou. Wil je bewerkingen en alles wat niet ongedaan kan worden uitsluiten, zet dit dan aan. Het blokkeert het bewerken van tags en hoezen, verwijderingen, wijzigingen aan afspeellijsten op de server en synchronisatie naar een apparaat waarvan de map in je bibliotheek staat. Favorieten, waarderingen en het toevoegen van bronnen blijven werken."
 
 msgid "Preview changes"
 msgstr ""

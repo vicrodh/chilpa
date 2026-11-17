@@ -5780,8 +5780,8 @@ msgstr "Presiona las teclas…"
 msgid "Prevent clipping"
 msgstr "Evitar saturación"
 
-msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists, no sync to a device whose folder is part of your library. Favorites, ratings and adding sources keep working."
-msgstr "Evita accidentes: Chilpa no cambia tus archivos de música ni tus servidores. Nada de editar tags o portadas, borrar, cambiar playlists del servidor ni sincronizar un dispositivo cuya carpeta es parte de tu biblioteca. Favoritos, calificaciones y agregar fuentes siguen funcionando."
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpa nunca cambia tu biblioteca por su cuenta: todo cambio pasa por ti. Si quieres descartar ediciones y cambios que no se pueden deshacer, enciende esta opción. Bloquea la edición de tags y portadas, los borrados, los cambios a playlists del servidor y la sincronización a un dispositivo cuya carpeta está en tu biblioteca. Favoritos, calificaciones y agregar fuentes siguen funcionando."
 
 msgid "Preview changes"
 msgstr "Ver los cambios propuestos"

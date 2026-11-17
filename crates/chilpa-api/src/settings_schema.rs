@@ -253,7 +253,7 @@ pub const SECTIONS: &[Section] = &[
             Group {
                 title: Chilpa::mark("Protection"),
                 settings: &[
-                    setting(crate::library_protection::ENABLED, Chilpa::mark("Protect my library"), Chilpa::mark("Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists, no sync to a device whose folder is part of your library. Favorites, ratings and adding sources keep working."), Control::Toggle),
+                    setting(crate::library_protection::ENABLED, Chilpa::mark("Protect my library"), Chilpa::mark("Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."), Control::Toggle),
                     setting(crate::library_protection::SIDECARS, Chilpa::mark("Allow metadata sidecars"), Chilpa::mark("Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."), Control::Toggle),
                 ],
             },

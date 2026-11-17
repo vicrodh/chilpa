@@ -5783,8 +5783,8 @@ msgstr "請按下按鍵…"
 msgid "Prevent clipping"
 msgstr "防止削波（Clipping）"
 
-msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists, no sync to a device whose folder is part of your library. Favorites, ratings and adding sources keep working."
-msgstr "避免意外：Chilpa 不會更動你的音樂檔案或伺服器。不能編輯標籤或封面、不能刪除、不能變更伺服器上的播放清單，也不能同步到資料夾屬於音樂庫的裝置。我的最愛、評分與新增來源仍可使用。"
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpa 從不自行更動你的音樂庫：每項變更都由你決定。若要完全排除編輯與無法復原的變更，請開啟此選項。它會封鎖標籤與封面的編輯、刪除、伺服器播放清單的變更，以及同步到資料夾位於音樂庫中的裝置。我的最愛、評分與新增來源仍可使用。"
 
 msgid "Preview changes"
 msgstr ""
