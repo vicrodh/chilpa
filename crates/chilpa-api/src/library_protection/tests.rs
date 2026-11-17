@@ -53,3 +53,14 @@ fn both_start_off_and_the_child_waits_for_its_parent() {
     assert!(api.adjust(ENABLED, "false"));
     assert!(Protection::kept().writes_refused().is_empty());
 }
+
+#[test]
+fn a_protected_library_refuses_the_folder_batch_even_with_sidecars() {
+    if !isolated("library_protection::tests::a_protected_library_refuses_the_folder_batch_even_with_sidecars") { return; }
+    let mut api = Chilpa::new();
+    assert!(api.adjust(ENABLED, "true"));
+    assert!(api.adjust(SIDECARS, "true"));
+    assert!(!api.metadata_batch_save());
+    assert_eq!(api.metadata_batch_view()["error"], Protection::kept().writes_refused());
+    assert_eq!(api.metadata_batch_view()["protected"], true);
+}
