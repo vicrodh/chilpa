@@ -906,12 +906,15 @@ impl Service {
 }
 
 /// Whether `target` is inside one of the library's folders or holds one: a
-/// sync copies and removes files there.
+/// sync copies and removes files there. A library that cannot be read counts
+/// as one the folder is in.
 fn inside_library(library: &Path, target: &Path) -> bool {
     let real = |path: &Path| std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
     let target = real(target);
-    chilpa_library::Library::open_read_only(library).ok().and_then(|lib| lib.roots().ok()).unwrap_or_default()
-        .iter().map(|root| real(&root.path)).any(|root| target.starts_with(&root) || root.starts_with(&target))
+    let Some(roots) = chilpa_library::Library::open_read_only(library).ok().and_then(|lib| lib.roots().ok()) else {
+        return true;
+    };
+    roots.iter().map(|root| real(&root.path)).any(|root| target.starts_with(&root) || root.starts_with(&target))
 }
 
 #[cfg(test)]
@@ -932,6 +935,12 @@ mod tests {
         assert!(inside_library(&db, &music.join("player")), "inside a library folder");
         assert!(inside_library(&db, dir.path()), "around one");
         assert!(!inside_library(&db, &dir.path().join("elsewhere")));
+    }
+
+    #[test]
+    fn a_library_that_cannot_be_read_counts_as_inside() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(inside_library(&dir.path().join("missing.db"), &dir.path().join("device")));
     }
 
     #[test]
