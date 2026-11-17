@@ -2459,9 +2459,6 @@ msgstr "裝置同步已取消。進度已儲存以供復原。"
 msgid "Devices"
 msgstr "裝置"
 
-msgid "Devices in the sidebar"
-msgstr "側邊欄中的裝置"
-
 msgid "Diagnose"
 msgstr "診斷"
 
@@ -7030,9 +7027,6 @@ msgstr "預設在「首頁」顯示來源推薦"
 msgid "Show the query as console text"
 msgstr "將查詢顯示為主控台文字"
 
-msgid "Show the shortcut for syncing players and memory cards."
-msgstr "顯示同步播放器與記憶卡的捷徑。"
-
 msgid "Show the sidebar"
 msgstr "顯示側邊欄"
 
@@ -7074,6 +7068,9 @@ msgstr "並列條件，必須全部符合"
 
 msgid "Sidebar"
 msgstr "側邊欄"
+
+msgid "Sidebar entries"
+msgstr "側邊欄項目"
 
 msgid "Sidecar"
 msgstr "附屬檔案（Sidecar）"
@@ -8602,6 +8599,9 @@ msgstr "隧道（Tunnel）"
 
 msgid "Tunnel Flow"
 msgstr "隧道流（Tunnel Flow）"
+
+msgid "Turn entries on or off and change their order. At least one stays on."
+msgstr "開啟或關閉項目並變更其順序。至少要保留一個開啟。"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "請啟用網路以變更伺服器上的播放清單。"

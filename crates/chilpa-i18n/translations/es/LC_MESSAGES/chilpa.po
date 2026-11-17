@@ -2453,9 +2453,6 @@ msgstr "Cancelé la sincronización. Conservé su avance para poder recuperarla.
 msgid "Devices"
 msgstr "Dispositivos"
 
-msgid "Devices in the sidebar"
-msgstr "Dispositivos en la barra lateral"
-
 msgid "Diagnose"
 msgstr "Diagnosticar"
 
@@ -7029,9 +7026,6 @@ msgstr "Mostrar las recomendaciones de esta fuente por defecto en Inicio"
 msgid "Show the query as console text"
 msgstr "Mostrar la consulta como texto de consola"
 
-msgid "Show the shortcut for syncing players and memory cards."
-msgstr "Muestra el acceso para sincronizar reproductores y tarjetas de memoria."
-
 msgid "Show the sidebar"
 msgstr "Mostrar la barra lateral"
 
@@ -7073,6 +7067,9 @@ msgstr "Lado a lado, todas tienen que cumplirse"
 
 msgid "Sidebar"
 msgstr "Barra lateral"
+
+msgid "Sidebar entries"
+msgstr "Entradas de la barra lateral"
 
 msgid "Sidecar"
 msgstr "Sidecar"
@@ -8605,6 +8602,9 @@ msgstr "Túnel"
 
 msgid "Tunnel Flow"
 msgstr "Flujo de túnel"
+
+msgid "Turn entries on or off and change their order. At least one stays on."
+msgstr "Activa o desactiva las entradas y cambia su orden. Al menos una queda activa."
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Activa la red para cambiar una playlist de un servidor."

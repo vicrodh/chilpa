@@ -42,6 +42,9 @@ pub enum Control {
     Theme,
     /// A line of text, kept when Enter is pressed or the field is left.
     Text,
+    /// A list of entries, each with a switch and a place: the sidebar's
+    /// destinations. Its value is the facade's normalized layout.
+    Entries,
 }
 
 impl Control {
@@ -61,6 +64,7 @@ impl Control {
             Control::File => "file",
             Control::Theme => "theme",
             Control::Text => "text",
+            Control::Entries => "entries",
         }
     }
 }
@@ -206,7 +210,7 @@ pub const SECTIONS: &[Section] = &[
         groups: &[
             Group {
                 title: Chilpa::mark("Sidebar"),
-                settings: &[setting(crate::device_sync::SHOW_IN_SIDEBAR, Chilpa::mark("Devices in the sidebar"), Chilpa::mark("Show the shortcut for syncing players and memory cards."), Control::Toggle)],
+                settings: &[setting(crate::sidebar_entries::KEY, Chilpa::mark("Sidebar entries"), Chilpa::mark("Turn entries on or off and change their order. At least one stays on."), Control::Entries)],
             },
             Group {
                 title: Chilpa::mark("Tabs"),

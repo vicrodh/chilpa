@@ -173,7 +173,7 @@ impl Chilpa {
             self.remember_preference(key, value);
             return true;
         }
-        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.device_sync_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value) || self.back_button_setting(key, value) || self.device_lock_setting(key, value) || self.offline_limit_setting(key, value) || self.rating_switch_setting(key, value) || self.server_ratings_setting(key, value) || self.server_favorites_setting(key, value)
+        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.sidebar_entries_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value) || self.back_button_setting(key, value) || self.device_lock_setting(key, value) || self.offline_limit_setting(key, value) || self.rating_switch_setting(key, value) || self.server_ratings_setting(key, value) || self.server_favorites_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -250,7 +250,7 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
-        if self.beets_settings_row(row) || self.discogs_row(row) || self.updates_settings_row(row) || self.discord_row(row) || self.rating_switch_row(row) {return;}
+        if self.beets_settings_row(row) || self.discogs_row(row) || self.updates_settings_row(row) || self.discord_row(row) || self.rating_switch_row(row) || self.sidebar_entries_row(row) {return;}
         if self.offline_limit_row(row) || self.graphics_row(row) || self.normalization_row(row) || self.back_button_row(row) || self.favorites_sync_row(row) || self.device_lock_row(row) || self.wizard_row(row) || self.theme_row(row) {
             return;
         }
@@ -478,7 +478,6 @@ impl Chilpa {
             "navigation.restoreTabs" => row.value = self.pref_on("navigation.restoreTabs", true),
             crate::source_integration::GROUP_PLAYLISTS => row.value = self.pref_on(&row.key, false),
             crate::search::SEARCH_PREVIEW => row.value = self.pref_on(&row.key, true),
-            crate::device_sync::SHOW_IN_SIDEBAR => row.value = self.pref_on(&row.key, true),
             "navigation.folderColors" => row.value = self.pref_on("navigation.folderColors", false),
             "integrations.listenbrainz.enabled" => row.value = self.listenbrainz().enabled.to_string(),
             "integrations.lastfm.account" => {

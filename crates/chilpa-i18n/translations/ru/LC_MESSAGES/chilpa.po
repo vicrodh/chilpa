@@ -2455,9 +2455,6 @@ msgstr ""
 msgid "Devices"
 msgstr ""
 
-msgid "Devices in the sidebar"
-msgstr ""
-
 msgid "Diagnose"
 msgstr "Диагностировать"
 
@@ -7036,9 +7033,6 @@ msgstr "Показывать рекомендации источников на 
 msgid "Show the query as console text"
 msgstr "Показать запрос как текст консоли"
 
-msgid "Show the shortcut for syncing players and memory cards."
-msgstr ""
-
 msgid "Show the sidebar"
 msgstr "Показать боковую панель"
 
@@ -7079,6 +7073,9 @@ msgid "Side by side, all must hold"
 msgstr "Рядом стоящие условия должны выполняться все"
 
 msgid "Sidebar"
+msgstr ""
+
+msgid "Sidebar entries"
 msgstr ""
 
 msgid "Sidecar"
@@ -8616,6 +8613,9 @@ msgstr "Tunnel"
 
 msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
+
+msgid "Turn entries on or off and change their order. At least one stays on."
+msgstr ""
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Включите сеть, чтобы изменить плейлист на сервере."

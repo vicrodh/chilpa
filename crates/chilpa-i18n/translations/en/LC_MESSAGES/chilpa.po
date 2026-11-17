@@ -2453,9 +2453,6 @@ msgstr "Device sync was cancelled. Its progress is saved for recovery."
 msgid "Devices"
 msgstr "Devices"
 
-msgid "Devices in the sidebar"
-msgstr "Devices in the sidebar"
-
 msgid "Diagnose"
 msgstr ""
 
@@ -7029,9 +7026,6 @@ msgstr ""
 msgid "Show the query as console text"
 msgstr ""
 
-msgid "Show the shortcut for syncing players and memory cards."
-msgstr "Show the shortcut for syncing players and memory cards."
-
 msgid "Show the sidebar"
 msgstr ""
 
@@ -7073,6 +7067,9 @@ msgstr ""
 
 msgid "Sidebar"
 msgstr "Sidebar"
+
+msgid "Sidebar entries"
+msgstr "Sidebar entries"
 
 msgid "Sidecar"
 msgstr ""
@@ -8605,6 +8602,9 @@ msgstr ""
 
 msgid "Tunnel Flow"
 msgstr ""
+
+msgid "Turn entries on or off and change their order. At least one stays on."
+msgstr "Turn entries on or off and change their order. At least one stays on."
 
 msgid "Turn the network on to change a server's playlist."
 msgstr ""
