@@ -7069,7 +7069,7 @@ msgid "Sidebar"
 msgstr ""
 
 msgid "Sidebar entries"
-msgstr ""
+msgstr "Entrées de la barre latérale"
 
 msgid "Sidecar"
 msgstr "Fichier annexe"
@@ -8604,7 +8604,7 @@ msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
 msgid "Turn entries on or off and change their order. At least one stays on."
-msgstr ""
+msgstr "Active ou désactive des entrées et change leur ordre. Au moins une reste activée."
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Activez le réseau pour modifier une playlist d'un serveur."

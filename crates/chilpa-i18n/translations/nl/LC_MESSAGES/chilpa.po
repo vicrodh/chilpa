@@ -7069,7 +7069,7 @@ msgid "Sidebar"
 msgstr ""
 
 msgid "Sidebar entries"
-msgstr ""
+msgstr "Items in de zijbalk"
 
 msgid "Sidecar"
 msgstr "Sidecar"
@@ -8604,7 +8604,7 @@ msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
 msgid "Turn entries on or off and change their order. At least one stays on."
-msgstr ""
+msgstr "Zet items aan of uit en wijzig hun volgorde. Minstens één blijft aan."
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Zet het netwerk aan om een afspeellijst van een server te wijzigen."

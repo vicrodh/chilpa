@@ -7076,7 +7076,7 @@ msgid "Sidebar"
 msgstr ""
 
 msgid "Sidebar entries"
-msgstr ""
+msgstr "Пункты боковой панели"
 
 msgid "Sidecar"
 msgstr "Вспомогательный файл"
@@ -8615,7 +8615,7 @@ msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
 msgid "Turn entries on or off and change their order. At least one stays on."
-msgstr ""
+msgstr "Включайте и отключайте пункты и меняйте их порядок. Хотя бы один пункт остаётся включённым."
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Включите сеть, чтобы изменить плейлист на сервере."

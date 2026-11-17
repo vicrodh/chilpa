@@ -8604,7 +8604,7 @@ msgid "Tunnel Flow"
 msgstr "Flujo de túnel"
 
 msgid "Turn entries on or off and change their order. At least one stays on."
-msgstr "Activa o desactiva las entradas y cambia su orden. Al menos una queda activa."
+msgstr "Enciende, apaga u ordena las entradas. Al menos una queda encendida."
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "Activa la red para cambiar una playlist de un servidor."

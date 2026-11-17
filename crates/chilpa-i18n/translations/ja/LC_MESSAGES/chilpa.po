@@ -7062,7 +7062,7 @@ msgid "Sidebar"
 msgstr ""
 
 msgid "Sidebar entries"
-msgstr ""
+msgstr "サイドバーの項目"
 
 msgid "Sidecar"
 msgstr "サイドカー"
@@ -8593,7 +8593,7 @@ msgid "Tunnel Flow"
 msgstr "Tunnel Flow"
 
 msgid "Turn entries on or off and change their order. At least one stays on."
-msgstr ""
+msgstr "項目のオン・オフと並べ替えができます。少なくとも1つはオンのままになります。"
 
 msgid "Turn the network on to change a server's playlist."
 msgstr "サーバーのプレイリストを変更するには、ネットワークをオンにしてください。"
