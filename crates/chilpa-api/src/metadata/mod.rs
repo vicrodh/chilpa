@@ -362,6 +362,11 @@ impl Chilpa {
             "server" => Mode::Server,
             _ => return false,
         };
+        let protection = crate::library_protection::Protection::kept();
+        let blocked = if mode == Mode::Sidecar { protection.sidecar_refused() } else { protection.writes_refused() };
+        if !blocked.is_empty() {
+            return editor.refuse(blocked);
+        }
         if mode == Mode::Server {
             let state = editor.server.clone().unwrap_or_default();
             if !state.writable {
@@ -437,11 +442,15 @@ impl Chilpa {
                 editor.focus = draft.row(editor.focus_track).map_or(-1, |row| row as i32);
                 // A record on a server saves to the server when it takes the
                 // changes; when it does not, nothing is chosen for the
-                // listener: a sidecar is made only when asked for.
+                // listener: a sidecar is made only when asked for. A
+                // protected library sends nothing to the server, and keeps
+                // a local record's edits in a sidecar only when allowed.
+                let protection = crate::library_protection::Protection::kept();
                 editor.mode = match &server {
-                    Some(state) if state.writable => Mode::Server,
+                    Some(state) if state.writable && !protection.on => Mode::Server,
                     Some(_) => Mode::Undecided,
-                    None => Mode::Sidecar,
+                    None if protection.sidecar_refused().is_empty() => Mode::Sidecar,
+                    None => Mode::Undecided,
                 };
                 editor.server = server;
                 editor.draft = Some(draft);

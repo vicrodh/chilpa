@@ -94,6 +94,13 @@ pub struct SaveView {
     pub files_refused: String,
     pub xml_allowed: bool,
     pub xml_refused: String,
+    /// Protect my library is on: files, the SACD XML and the server are
+    /// refused, and `files_refused`, `xml_refused` and `server.refused`
+    /// say so.
+    pub protected: bool,
+    /// False only when the library is protected without sidecars: then
+    /// nothing can be saved.
+    pub sidecar_allowed: bool,
     /// "2.4" | "2.3"
     pub id3: &'static str,
     pub secondary_layers: bool,
@@ -289,13 +296,18 @@ impl Editor {
                 })
                 .collect();
             let refused = files_refused(draft, &self.layers);
+            let protection = crate::library_protection::Protection::kept();
+            let blocked = protection.writes_refused();
+            let refused = if blocked.is_empty() { refused } else { blocked.clone() };
             view.save = SaveView {
                 mode: self.mode.name(),
                 hosted: draft.rows.iter().any(Row::hosted),
                 server: ServerView {
                     name: state.name.clone(),
-                    allowed: state.writable,
-                    refused: if state.writable || self.server.is_none() {
+                    allowed: state.writable && blocked.is_empty(),
+                    refused: if !blocked.is_empty() {
+                        blocked.clone()
+                    } else if state.writable || self.server.is_none() {
                         String::new()
                     } else if state.why.is_empty() {
                         chilpa_i18n::t("Chilpa cannot change this server's metadata")
@@ -305,8 +317,10 @@ impl Editor {
                 },
                 files_allowed: refused.is_empty(),
                 files_refused: refused,
-                xml_allowed: xml_refused(draft).is_empty(),
-                xml_refused: xml_refused(draft),
+                xml_allowed: xml_refused(draft).is_empty() && blocked.is_empty(),
+                xml_refused: if blocked.is_empty() { xml_refused(draft) } else { blocked.clone() },
+                protected: protection.on,
+                sidecar_allowed: protection.sidecar_refused().is_empty(),
                 id3: if self.id3 == Id3Version::V23 { "2.3" } else { "2.4" },
                 secondary_layers: self.secondary_layers,
                 done: self.progress.0,
