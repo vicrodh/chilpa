@@ -100,6 +100,13 @@ mod tests {
     }
 
     #[test]
+    fn every_entry_is_a_screen_the_navigation_knows() {
+        for id in ENTRIES {
+            assert!(crate::navigation::Screen::from_name(id).is_some(), "{id} is not a navigation screen");
+        }
+    }
+
+    #[test]
     fn nothing_kept_is_every_entry_in_order_and_shown() {
         assert_eq!(normalized(""), ENTRIES.iter().map(|id| (*id, true)).collect::<Vec<_>>());
     }
