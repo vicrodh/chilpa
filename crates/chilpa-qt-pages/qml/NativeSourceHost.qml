@@ -9,6 +9,7 @@ Loader {
     id: page
     required property string source
     property bool leaving: false
+    property var scrollMemory: null
     readonly property var scrollView: item?.contentY !== undefined ? item : item?.scrollView || null
     property var presentation: ({})
     property var about: ({})
@@ -24,7 +25,7 @@ Loader {
         return about.shelves !== undefined ? home : about.albumsOnly === false ? listing : albums
     }
     Component { id:article; SourceArticleScreen { source:page.source } }
-    Component { id:collection; SourceCollectionScreen { source:page.source } }
+    Component { id:collection; SourceCollectionScreen { source:page.source; scrollMemory:page.scrollMemory } }
     Component { id:artist; ArtistPage { key:page.source } }
     Component { id:home; SourceHome { key:page.source } }
     Component { id:listing; SourceListing { source:page.source } }

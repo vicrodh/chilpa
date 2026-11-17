@@ -17,6 +17,7 @@ Item {
     id: page
     required property string source
     property bool leaving: false
+    property var scrollMemory: null
     property bool completed: false
     readonly property alias scrollView: grid.scrollView
     readonly property bool activePage: visible && !leaving
@@ -161,7 +162,8 @@ Item {
         if (!restorePending) return
         restorePending=false
         const anchor=Math.max(0,Math.min(state.anchorIndex || 0,collection.count-1))
-        if (anchor > 0) scrollView.positionViewAtIndex(Math.floor(anchor/grid.columns),ListView.Beginning)
+        if (scrollMemory) scrollMemory.restore()
+        else if (anchor > 0) scrollView.positionViewAtIndex(Math.floor(anchor/grid.columns),ListView.Beginning)
         Qt.callLater(seekViewport)
     }
 }
