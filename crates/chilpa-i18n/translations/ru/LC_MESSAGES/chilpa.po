@@ -9595,6 +9595,9 @@ msgstr "встроенный"
 msgid "internal"
 msgstr "внутренний"
 
+msgid "invalid DSDIFF chunk bounds"
+msgstr ""
+
 msgid "invalid table of contents: {}"
 msgstr "недопустимое оглавление: {}"
 

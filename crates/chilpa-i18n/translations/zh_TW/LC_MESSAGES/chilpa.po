@@ -9579,6 +9579,9 @@ msgstr "整合"
 msgid "internal"
 msgstr "內部"
 
+msgid "invalid DSDIFF chunk bounds"
+msgstr ""
+
 msgid "invalid table of contents: {}"
 msgstr "無效的目錄表格 (TOC)：{}"
 

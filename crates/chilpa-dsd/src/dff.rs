@@ -36,60 +36,77 @@ impl DffReader {
         if &read_id(&mut file)? != b"FRM8" {
             return Err(DsdError::Corrupt(chilpa_i18n::mark("it does not start with the FRM8 chunk").into()));
         }
-        let _form_len = read_u64(&mut file)?;
+        let form_len = read_u64(&mut file)?;
+        let form_end = 12u64.checked_add(form_len).filter(|_| form_len >= 4).ok_or_else(invalid_chunk)?;
+        let file_len = file.get_ref().metadata()?.len();
         if &read_id(&mut file)? != b"DSD " {
             return Err(DsdError::Corrupt(chilpa_i18n::mark("the FRM8 chunk does not hold DSD").into()));
         }
 
         let (mut rate, mut channels, mut data) = (None, None, None);
-        loop {
-            let mut id = [0u8; 4];
-            match file.read_exact(&mut id) {
-                Ok(()) => {}
-                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => break,
-                Err(e) => return Err(e.into()),
+        while let Some(chunk) = next_chunk(&mut file, form_end)? {
+            if &chunk.id != b"DSD " && chunk.next > file_len {
+                return Err(invalid_chunk());
             }
-            let len = read_u64(&mut file)?;
-            let start = file.stream_position()?;
-            match &id {
+            match &chunk.id {
                 b"PROP" => {
+                    if chunk.len < 4 {
+                        return Err(invalid_chunk());
+                    }
                     if &read_id(&mut file)? != b"SND " {
                         return Err(DsdError::Corrupt(chilpa_i18n::mark("the PROP chunk is not of sound").into()));
                     }
-                    let end = start + len;
-                    while file.stream_position()? + 12 <= end {
-                        let sub = read_id(&mut file)?;
-                        let sub_len = read_u64(&mut file)?;
-                        let sub_start = file.stream_position()?;
-                        match &sub {
-                            b"FS  " => rate = Some(read_u32(&mut file)?),
-                            b"CHNL" => channels = Some(read_u16(&mut file)?),
-                            b"CMPR" => match &read_id(&mut file)? {
-                                b"DSD " => {}
-                                b"DST " => {
-                                    return Err(DsdError::Unsupported(
-                                        chilpa_i18n::mark("DSDIFF compressed with DST").into(),
-                                    ))
+                    while let Some(sub) = next_chunk(&mut file, chunk.end)? {
+                        match &sub.id {
+                            b"FS  " => {
+                                if sub.len < 4 {
+                                    return Err(invalid_chunk());
                                 }
-                                other => {
-                                    return Err(DsdError::Unsupported(format!(
-                                        "DSDIFF compression {}",
-                                        String::from_utf8_lossy(other)
-                                    )))
+                                rate = Some(read_u32(&mut file)?);
+                            }
+                            b"CHNL" => {
+                                if sub.len < 2 {
+                                    return Err(invalid_chunk());
                                 }
-                            },
+                                channels = Some(read_u16(&mut file)?);
+                            }
+                            b"CMPR" => {
+                                if sub.len < 4 {
+                                    return Err(invalid_chunk());
+                                }
+                                match &read_id(&mut file)? {
+                                    b"DSD " => {}
+                                    b"DST " => {
+                                        return Err(DsdError::Unsupported(
+                                            chilpa_i18n::mark("DSDIFF compressed with DST").into(),
+                                        ))
+                                    }
+                                    other => {
+                                        return Err(DsdError::Unsupported(format!(
+                                            "DSDIFF compression {}",
+                                            String::from_utf8_lossy(other)
+                                        )))
+                                    }
+                                }
+                            }
                             _ => {}
                         }
-                        file.seek(SeekFrom::Start(sub_start + sub_len + (sub_len & 1)))?;
+                        file.seek(SeekFrom::Start(sub.next))?;
                     }
                 }
-                b"DSD " => data = Some((start, len)),
+                b"DSD " => {
+                    data = Some((chunk.start, chunk.len));
+                    // Keep missing audio as a next_block error, not an open error.
+                    if chunk.next > file_len {
+                        break;
+                    }
+                }
                 b"DST " => {
                     return Err(DsdError::Unsupported(chilpa_i18n::mark("DSDIFF compressed with DST").into()))
                 }
                 _ => {}
             }
-            file.seek(SeekFrom::Start(start + len + (len & 1)))?;
+            file.seek(SeekFrom::Start(chunk.next))?;
         }
 
         let rate = rate.ok_or_else(|| DsdError::Corrupt(chilpa_i18n::mark("the FS chunk is missing").into()))?;
@@ -106,10 +123,11 @@ impl DffReader {
         // Whole rounds of one byte per channel; a stray byte at the end is
         // not a sample of every channel.
         let data_len = data_len - data_len % u64::from(channels);
+        let samples = (data_len / u64::from(channels)).checked_mul(8).ok_or_else(invalid_chunk)?;
         file.seek(SeekFrom::Start(data_start))?;
         Ok(Self {
             file,
-            info: DsdInfo { dsd_rate_hz: rate, channels, samples: data_len / u64::from(channels) * 8 },
+            info: DsdInfo { dsd_rate_hz: rate, channels, samples },
             data_start,
             data_len,
             remaining: data_len,
@@ -151,6 +169,35 @@ impl DsdSource for DffReader {
         self.remaining = self.data_len - byte * channels;
         Ok(Some(byte * 8))
     }
+}
+
+struct Chunk {
+    id: [u8; 4],
+    len: u64,
+    start: u64,
+    end: u64,
+    next: u64,
+}
+
+fn invalid_chunk() -> DsdError {
+    DsdError::Corrupt(chilpa_i18n::mark("invalid DSDIFF chunk bounds").into())
+}
+
+/// Read a complete header and bound its payload and padding to its container.
+fn next_chunk(file: &mut BufReader<std::fs::File>, limit: u64) -> Result<Option<Chunk>, DsdError> {
+    let position = file.stream_position()?;
+    if position == limit {
+        return Ok(None);
+    }
+    let start = position.checked_add(12).filter(|end| *end <= limit).ok_or_else(invalid_chunk)?;
+    let mut head = [0u8; 12];
+    file.read_exact(&mut head)?;
+    let id = head[..4].try_into().unwrap();
+    let len = u64::from_be_bytes(head[4..].try_into().unwrap());
+    let end = start.checked_add(len).ok_or_else(invalid_chunk)?;
+    let next = end.checked_add(len & 1).filter(|end| *end <= limit && *end > position)
+        .ok_or_else(invalid_chunk)?;
+    Ok(Some(Chunk { id, len, start, end, next }))
 }
 
 fn read_id(f: &mut impl Read) -> Result<[u8; 4], DsdError> {

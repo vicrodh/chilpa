@@ -9583,6 +9583,9 @@ msgstr "integrada"
 msgid "internal"
 msgstr "interno"
 
+msgid "invalid DSDIFF chunk bounds"
+msgstr "los límites de un bloque DSDIFF no son válidos"
+
 msgid "invalid table of contents: {}"
 msgstr "tabla de contenido inválida: {}"
 
