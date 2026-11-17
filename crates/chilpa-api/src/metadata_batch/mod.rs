@@ -354,6 +354,7 @@ impl Chilpa {
         view["fields"] = json!(fields::definitions());
         view["beets"] = self.metadata_batch_beets_status();
         view["busy"] = json!(self.metadata_batch.busy() || self.beets_runtime_busy());
+        view["protected"] = json!(crate::library_protection::Protection::kept().on);
         view["hardlinkPolicy"] = json!(chilpa_i18n::t(
             "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
         ));
@@ -361,6 +362,12 @@ impl Chilpa {
     }
 
     pub fn metadata_batch_save(&mut self) -> bool {
+        // It writes tags and sidecars in one pass; sending the tags to a
+        // sidecar is another change, so a protected library refuses it whole.
+        let blocked = crate::library_protection::Protection::kept().writes_refused();
+        if !blocked.is_empty() {
+            return self.metadata_batch.refuse(blocked);
+        }
         if !self.metadata_batch.view["dirty"].as_bool().unwrap_or(false) {
             return self
                 .metadata_batch

@@ -500,6 +500,10 @@ impl Chilpa {
     /// playlist is still on its way.
     /// Nothing is kept to send later: the server is the source of truth.
     pub(crate) fn ask_server_change(&mut self, write: writing::Write) -> Result<(), String> {
+        let blocked = crate::library_protection::Protection::kept().writes_refused();
+        if !blocked.is_empty() {
+            return Err(blocked);
+        }
         if matches!(&write.change, writing::Change::DeleteMedia { .. }) {
             return Err(chilpa_i18n::t("That change is not a playlist edit."));
         }
@@ -848,6 +852,37 @@ fn plain_and_outside(address: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// True in the child that runs the test in a profile of its own: the
+    /// protection is a preference, and another test must not read it on.
+    fn protected_child(name: &str) -> bool {
+        const CHILD: &str = "CHILPA_SERVER_PROTECTION_TEST";
+        if std::env::var(CHILD).as_deref() == Ok(name) {
+            return true;
+        }
+        let profile = tempfile::tempdir().unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture"]).env(CHILD, name)
+            .envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
+        assert!(output.status.success(), "{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+        false
+    }
+
+    #[test]
+    fn a_protected_library_sends_no_playlist_change() {
+        if !protected_child("servers::tests::a_protected_library_sends_no_playlist_change") { return; }
+        let mut api = crate::Chilpa::new();
+        assert!(api.adjust(crate::library_protection::ENABLED, "true"));
+        let server = chilpa_library::StoredServer {
+            source_id: 1, provider: "fixture".into(), instance: String::new(), label: "Fixture".into(),
+            reachable: true, enabled: true, address: String::new(), account: String::new(), identity: String::new(),
+            product: String::new(), libraries: String::new(), details: String::new(), offline_folder: String::new(),
+            added_at: 0, session_revision: 0, synced_at: None, tracks: 0, albums: 0,
+        };
+        let write = writing::Write { session: session::Scope::of(&server), source: 1, playlist: 7, request: String::new(), change: writing::Change::Delete };
+        assert_eq!(api.ask_server_change(write), Err(crate::library_protection::Protection::kept().writes_refused()));
+    }
 
     #[test]
     fn changing_accounts_preserves_the_old_mirror_and_uses_a_new_instance() {

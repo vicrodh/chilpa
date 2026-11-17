@@ -77,8 +77,9 @@ impl Chilpa {
     /// Whether a change of that server playlist can be sent now: the
     /// account may change it, the network is on, the server answers, it is
     /// not in its first sync and no other change of it is on its way.
-    pub(crate) fn server_playlist_open(&mut self, playlist: &crate::Playlist) -> bool {
-        if !playlist.writable || self.offline() || self.server_change_pending(playlist.id) {
+    /// The protection is passed in, read once by a caller that loops.
+    pub(crate) fn server_playlist_open(&mut self, playlist: &crate::Playlist, protection: crate::library_protection::Protection) -> bool {
+        if !playlist.writable || protection.on || self.offline() || self.server_change_pending(playlist.id) {
             return false;
         }
         let Some(server) = self.library().and_then(|lib| lib.server(playlist.source_id).ok().flatten()) else { return false };
@@ -97,7 +98,9 @@ impl Chilpa {
         let describable = chilpa_servers::Kind::from_provider(&stored.provider).is_some_and(chilpa_servers::playlist_describable);
         let server = self.library().and_then(|lib| lib.server(stored.source_id).ok().flatten());
         // One made here and not sent yet changes here: nothing holds it.
-        let held = if !stored.unsent && server.is_some_and(|server| self.first_sync(&server)) { super::first_sync_said(&origin.name) } else { String::new() };
+        let blocked = crate::library_protection::Protection::kept().writes_refused();
+        let held = if !blocked.is_empty() && !stored.unsent { blocked }
+            else if !stored.unsent && server.is_some_and(|server| self.first_sync(&server)) { super::first_sync_said(&origin.name) } else { String::new() };
         serde_json::json!({"server": origin.name, "icon": origin.icon, "writable": stored.writable, "pending": pending, "held": held, "left_out": stored.left_out, "describable": describable, "unsent": stored.unsent})
             .to_string()
     }
@@ -231,6 +234,11 @@ impl Chilpa {
     /// the network nor a first sync holds it.
     pub(crate) fn create_server_playlist(&mut self, source: &str, name: &str, description: &str, track_ids: &[i64], request: &str) -> Option<bool> {
         let origin = self.server_origins().into_iter().find(|origin| origin.key == source)?;
+        let blocked = crate::library_protection::Protection::kept().writes_refused();
+        if !blocked.is_empty() {
+            self.now.error = blocked;
+            return Some(false);
+        }
         let name = name.trim();
         if origin.kind.is_some_and(|kind| !kind.has_playlists()) {
             self.now.error = chilpa_i18n::t_args("{} keeps no playlists; make this one in Chilpa.", &[&origin.name]);

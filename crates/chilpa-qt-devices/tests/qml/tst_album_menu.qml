@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.devices
+import app.chilpa.kit
 import "../../../chilpa-qt/qml/Components"
 
 TestCase {
@@ -30,6 +31,8 @@ TestCase {
         Library.apart = ({})
         Library.keptApart = []
         menu.canExpand = false
+        Prefs.protectLibrary = false
+        Prefs.protectedSidecars = false
         quickSpy.clear()
     }
 
@@ -95,5 +98,17 @@ TestCase {
         compare(quickSpy.signalArguments[0][0], 4)
         menu.actionChosen(menu.entries.find(item => item.act === "artist"))
         compare(Navigation.went, ["artist","Artist"])
+    }
+
+    function test_a_protected_library_greys_out_edit_metadata() {
+        Prefs.protectLibrary = true
+        menu.show(7, "Record", "Artist", 0, 100, 100)
+        tryCompare(menu, "opened", true)
+        compare(entry("metadata").enabled, false)
+        menu.close()
+        Prefs.protectedSidecars = true
+        menu.show(7, "Record", "Artist", 0, 100, 100)
+        tryCompare(menu, "opened", true)
+        compare(entry("metadata").enabled, true, "sidecars are allowed")
     }
 }

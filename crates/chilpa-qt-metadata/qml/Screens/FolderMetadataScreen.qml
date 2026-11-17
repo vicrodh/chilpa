@@ -65,10 +65,11 @@ Item {
             progress: { try { return JSON.parse(batch.progress || "{}") } catch (_) { return {} } }
         }
         Text { width:parent.width; visible:(page.doc.summary?.changed || 0) > 0; text:I18n.trCount("{} file has pending changes","{} files have pending changes",page.doc.summary?.changed || 0,I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.meta; wrapMode:Text.Wrap }
+        Text { objectName:"batchProtected"; width:parent.width; visible:page.doc.protected === true; text:I18n.tr("Protect my library is on. Turn it off in Settings > Library to change your files or servers.", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.meta; wrapMode:Text.Wrap }
         Flow {
             width:parent.width; spacing:Metrics.gap8
-            PillButton { objectName:"batchSave"; text:I18n.tr("Write reviewed changes", I18n.rev); kind:"primary"; enabled:page.ready && !batch.busy && (page.doc.summary?.changed || 0) > 0; onClicked:write.open() }
-            PillButton { text:I18n.tr("Retry pending files", I18n.rev); visible:(page.doc.summary?.failed || 0) > 0; enabled:!batch.busy; onClicked:batch.retry() }
+            PillButton { objectName:"batchSave"; text:I18n.tr("Write reviewed changes", I18n.rev); kind:"primary"; enabled:page.ready && !batch.busy && (page.doc.summary?.changed || 0) > 0 && page.doc.protected !== true; onClicked:write.open() }
+            PillButton { objectName:"batchRetry"; text:I18n.tr("Retry pending files", I18n.rev); visible:(page.doc.summary?.failed || 0) > 0; enabled:!batch.busy && page.doc.protected !== true; onClicked:batch.retry() }
             PillButton { text:I18n.tr("Cancel", I18n.rev); visible:batch.busy; onClicked:batch.cancel() }
             PillButton { text:I18n.tr("Close", I18n.rev); onClicked:page.askClose() }
             PillButton { objectName:"batchReopen";text:I18n.tr("Open the selection again",I18n.rev);visible:["unavailable","failed","closed"].includes(page.doc.state);enabled:!batch.busy;onClicked:batch.openPaths(page.routeKey) }

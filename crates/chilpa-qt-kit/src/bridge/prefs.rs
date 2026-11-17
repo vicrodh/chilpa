@@ -35,6 +35,10 @@ pub mod qobject {
         #[qproperty(bool, ratings)]
         /// The sidebar's destinations: ids in order, "-" on one that is off.
         #[qproperty(QString, sidebar)]
+        /// Protect my library is on: what writes files or servers is greyed out.
+        #[qproperty(bool, protect_library)]
+        /// While it is on, metadata may still go to sidecars.
+        #[qproperty(bool, protected_sidecars)]
         type Prefs = super::PrefsRust;
 
         /// A control shows `value` for `key` before keeping it. Empty
@@ -60,6 +64,8 @@ pub struct PrefsRust {
     track_composers: bool,
     ratings: bool,
     sidebar: QString,
+    protect_library: bool,
+    protected_sidecars: bool,
 }
 
 impl qobject::Prefs {
@@ -76,6 +82,8 @@ impl cxx_qt::Initialize for qobject::Prefs {
         self.as_mut().set_track_composers(crate::app::with(|api| api.track_composers_shown()));
         self.as_mut().set_ratings(crate::app::with(|api| api.ratings_shown()));
         self.as_mut().set_sidebar(QString::from(crate::app::with(|api| api.sidebar_layout()).as_str()));
+        self.as_mut().set_protect_library(crate::app::with(|api| api.library_protected()));
+        self.as_mut().set_protected_sidecars(crate::app::with(|api| api.protected_sidecars()));
         let thread = self.qt_thread();
         THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
     }
@@ -98,6 +106,8 @@ pub fn changed() {
                 prefs.as_mut().set_track_composers(crate::app::with(|api| api.track_composers_shown()));
                 prefs.as_mut().set_ratings(crate::app::with(|api| api.ratings_shown()));
                 prefs.as_mut().set_sidebar(QString::from(crate::app::with(|api| api.sidebar_layout()).as_str()));
+                prefs.as_mut().set_protect_library(crate::app::with(|api| api.library_protected()));
+                prefs.as_mut().set_protected_sidecars(crate::app::with(|api| api.protected_sidecars()));
             });
         }
     });

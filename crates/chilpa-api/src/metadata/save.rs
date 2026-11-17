@@ -446,6 +446,16 @@ impl Chilpa {
         // Saving the current form supersedes an outstanding proposal. Stop
         // its child before the shared metadata worker reaches the save job.
         if self.metadata.beets.busy() { self.metadata_cancel_lookup(); }
+        let protection = crate::library_protection::Protection::kept();
+        let blocked = match self.metadata.mode {
+            Mode::Sidecar => protection.sidecar_refused(),
+            // Nothing is chosen yet: a protected library says why, not the server.
+            Mode::Undecided => protection.writes_refused(),
+            Mode::Files | Mode::Xml | Mode::Server => protection.writes_refused(),
+        };
+        if !blocked.is_empty() {
+            return self.metadata.refuse(blocked);
+        }
         match self.metadata.mode {
             Mode::Undecided => return self.metadata.refuse(chilpa_i18n::t("choose where to save the changes: the server cannot take them, the sidecar keeps them on this device")),
             Mode::Server => {

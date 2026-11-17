@@ -588,6 +588,9 @@ msgstr "Geef Chilpa toestemming op Discogs en plak de code hieronder."
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Sta Chilpa toe op Last.fm; dit wordt vanzelf bijgewerkt."
 
+msgid "Allow metadata sidecars"
+msgstr "Sidecars voor metadata toestaan"
+
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "Sta optionele metadata, biografieën, podcastontdekking en Last.fm-verzoeken toe via de proxy van Chilpa. Geen telemetrie. Verzoeken worden op de achtergrond uitgevoerd."
 
@@ -2737,6 +2740,9 @@ msgstr "Metadata bewerken…"
 
 msgid "Edit playlist"
 msgstr "Afspeellijst bewerken"
+
+msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
+msgstr "Wijzigingen worden bewaard in een .chilpa.json-bestand naast de muziek, of in de eigen kopie van Chilpa voor items van een server. Je audiobestanden worden niet aangeraakt."
 
 msgid "Edit…"
 msgstr "Bewerken…"
@@ -5774,6 +5780,9 @@ msgstr "Druk op toetsen…"
 msgid "Prevent clipping"
 msgstr "Clipping voorkomen"
 
+msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
+msgstr "Voorkomt ongelukken: Chilpa wijzigt je muziekbestanden en je servers niet. Geen bewerkingen van tags of hoezen, geen verwijderingen, geen wijzigingen aan afspeellijsten op de server. Favorieten, waarderingen en het toevoegen van bronnen blijven werken."
+
 msgid "Preview changes"
 msgstr ""
 
@@ -5851,6 +5860,18 @@ msgstr ""
 
 msgid "Proposed"
 msgstr ""
+
+msgid "Protect my library"
+msgstr "Mijn bibliotheek beschermen"
+
+msgid "Protect my library is on, and this device folder is part of your library."
+msgstr "Bibliotheekbescherming staat aan, en deze apparaatmap maakt deel uit van je bibliotheek."
+
+msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
+msgstr "Bibliotheekbescherming staat aan. Zet haar uit bij Instellingen > Bibliotheek om je bestanden of servers te wijzigen."
+
+msgid "Protection"
+msgstr "Bescherming"
 
 msgid "Provider identifiers"
 msgstr "Aanbiederscodes"

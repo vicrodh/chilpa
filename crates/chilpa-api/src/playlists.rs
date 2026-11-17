@@ -428,8 +428,9 @@ impl Chilpa {
         let native = self.native_playlist_rows();
         let hidden = self.disabled_server_sources();
         // A server's playlist takes tracks only while a change can reach it.
+        let protection = crate::library_protection::Protection::kept();
         let open: std::collections::HashSet<i64> =
-            self.cached_playlists().into_iter().filter(|p| p.source_id > 0 && !p.mixed && p.writable).filter(|p| self.server_playlist_open(p)).map(|p| p.id).collect();
+            self.cached_playlists().into_iter().filter(|p| p.source_id > 0 && !p.mixed && p.writable).filter(|p| self.server_playlist_open(p, protection)).map(|p| p.id).collect();
         let Some(lib) = self.library() else { return Vec::new() };
         let local = lib.source_id("local", "default").ok();
         let homes = homes_of(&entries);

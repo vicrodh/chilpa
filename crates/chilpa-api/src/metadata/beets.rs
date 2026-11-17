@@ -169,6 +169,10 @@ impl Chilpa {
     }
     pub(crate) fn metadata_preference_changed(&mut self, key: &str) {
         if key == "library.metaSrc" && self.metadata_lookups_off() { self.metadata_beets_network_changed(); }
+        if matches!(key, crate::library_protection::ENABLED | crate::library_protection::SIDECARS) {
+            self.metadata.protection = crate::library_protection::Protection::kept();
+            self.metadata.refresh();
+        }
         if key == crate::beets_runtime::ENGINE {
             let enabled = self.preference(key).as_deref() == Some("beets");
             if enabled != self.metadata.beets.enabled {

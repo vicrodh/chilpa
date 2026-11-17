@@ -71,4 +71,40 @@ TestCase {
         compare(findChild(header, "metadataSaveToServer").current, 1)
         compare(findChild(header, "metadataSaveToSays").text, "Kept on this device, over what the server says, until you take it off.")
     }
+
+    function test_a_protected_library_greys_out_what_it_refuses() {
+        const doc = JSON.parse(JSON.stringify(test.files))
+        doc.dirty = true
+        doc.save = { mode: "", hosted: false, files_allowed: false, files_refused: "Protect my library is on.", xml_allowed: false,
+                     protected: true, sidecar_allowed: false }
+        header.doc = doc
+        const where = findChild(header, "metadataSaveTo")
+        compare(where.options[0].disabled, true, "no sidecar without the child")
+        compare(where.options[1].disabled, true, "no files")
+        compare(findChild(header, "metadataSave").enabled, false)
+        doc.save.sidecar_allowed = true
+        header.doc = JSON.parse(JSON.stringify(doc))
+        compare(findChild(header, "metadataSaveTo").options[0].disabled, false)
+        compare(findChild(header, "metadataSave").enabled, true)
+    }
+
+    function test_a_protected_record_with_an_xml_still_shows_it_disabled() {
+        const doc = JSON.parse(JSON.stringify(test.files))
+        doc.save = { mode: "", hosted: false, files_allowed: false, files_refused: "Protect my library is on.", xml_allowed: true,
+                     xml_refused: "Protect my library is on.", protected: true, sidecar_allowed: true }
+        header.doc = doc
+        const options = findChild(header, "metadataSaveTo").options
+        compare(options.length, 3, "the XML option is shown")
+        compare(options[2].disabled, true, "and greyed")
+        compare(options[2].tip, "Protect my library is on.")
+    }
+
+    function test_a_protected_server_record_says_only_the_protection_when_sidecars_are_allowed() {
+        const doc = test.hosted("", true, "Protect my library is on.")
+        doc.save.protected = true
+        doc.save.sidecar_allowed = true
+        header.doc = doc
+        compare(findChild(header, "metadataSaveToSays").text, "Protect my library is on.")
+        compare(findChild(header, "metadataSaveToServer").options[1].disabled, false, "the sidecar stays open")
+    }
 }

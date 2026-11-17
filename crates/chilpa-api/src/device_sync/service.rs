@@ -13,7 +13,7 @@ mod connections;
 use serde::Serialize;
 use std::{
     collections::{HashSet, VecDeque},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         mpsc::{sync_channel, Receiver, TryRecvError},
         Arc, Mutex,
@@ -503,12 +503,21 @@ impl Service {
         self.revision += 1;
         Ok(())
     }
+    /// Protect my library refuses a device folder that is part of the library.
+    fn protected(&self, profile: &Profile, destination: &str) -> Result<(), UiError> {
+        let Some(path) = work::local_target_of(&profile.root, destination) else { return Ok(()) };
+        if crate::library_protection::Protection::kept().on && inside_library(&self.library, &path) {
+            return Err(failure(chilpa_i18n::mark("Protect my library is on, and this device folder is part of your library."), ""));
+        }
+        Ok(())
+    }
     pub fn preview(&mut self, recover: bool) -> Result<(), UiError> {
         self.idle()?;
         let profile = self
             .profile()
             .cloned()
             .ok_or_else(|| failure(chilpa_i18n::mark("Choose a saved device profile."), ""))?;
+        self.protected(&profile, &self.status.destination)?;
         let destination = self.status.destination.clone();
         let picks = self.selected();
         let remove = self.status.remove_unselected;
@@ -543,6 +552,7 @@ impl Service {
                 "",
             ));
         }
+        self.protected(&ready.profile, &ready.destination)?;
         self.close_browser();
         let ready = self.ready.take().unwrap();
         let total = ready.plan.actions().len();
@@ -895,9 +905,43 @@ impl Service {
     }
 }
 
+/// Whether `target` is inside one of the library's folders or holds one: a
+/// sync copies and removes files there. A library that cannot be read counts
+/// as one the folder is in.
+fn inside_library(library: &Path, target: &Path) -> bool {
+    let real = |path: &Path| std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let target = real(target);
+    let Some(roots) = chilpa_library::Library::open_read_only(library).ok().and_then(|lib| lib.roots().ok()) else {
+        return true;
+    };
+    roots.iter().map(|root| real(&root.path)).any(|root| target.starts_with(&root) || root.starts_with(&target))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_device_folder_inside_or_around_a_library_folder_is_found() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = dir.path().join("library.db");
+        let music = dir.path().join("music");
+        std::fs::create_dir_all(music.join("player")).unwrap();
+        std::fs::create_dir_all(dir.path().join("elsewhere")).unwrap();
+        let lib = chilpa_library::Library::open(&db).unwrap();
+        let local = lib.source_id("local", "default").unwrap();
+        lib.root_id(local, &music).unwrap();
+        drop(lib);
+        assert!(inside_library(&db, &music.join("player")), "inside a library folder");
+        assert!(inside_library(&db, dir.path()), "around one");
+        assert!(!inside_library(&db, &dir.path().join("elsewhere")));
+    }
+
+    #[test]
+    fn a_library_that_cannot_be_read_counts_as_inside() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(inside_library(&dir.path().join("missing.db"), &dir.path().join("device")));
+    }
 
     #[test]
     fn review_progress_reports_the_latest_real_stage_without_retaining_a_history() {

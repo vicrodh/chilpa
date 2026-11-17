@@ -587,6 +587,9 @@ msgstr "DiscogsでChilpaを許可し、以下にコードを貼り付けてく�
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Last.fmでChilpaを許可してください。この表示は自動で更新されます。"
 
+msgid "Allow metadata sidecars"
+msgstr "メタデータのサイドカーを許可"
+
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "任意のメタデータ、アーティストの紹介文、ポッドキャストの検索、Last.fmへのリクエストを、Chilpaのプロキシ経由で許可します。テレメトリーはありません。リクエストはバックグラウンドで実行されます。"
 
@@ -2735,6 +2738,9 @@ msgstr "メタデータを編集…"
 
 msgid "Edit playlist"
 msgstr "プレイリストを編集"
+
+msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
+msgstr "編集内容は、音楽ファイルと同じ場所の .chilpa.json ファイルに保存されます。サーバーのアイテムはChilpa自身のコピーに保存されます。オーディオファイルには変更を加えません。"
 
 msgid "Edit…"
 msgstr "編集…"
@@ -5769,6 +5775,9 @@ msgstr "キーを押してください…"
 msgid "Prevent clipping"
 msgstr "クリッピングを防止"
 
+msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
+msgstr "事故を防ぎます。Chilpaは音楽ファイルもサーバーも変更しません。タグやカバーの編集、削除、サーバー上のプレイリストの変更はできません。お気に入り、評価、ソースの追加は引き続き使えます。"
+
 msgid "Preview changes"
 msgstr ""
 
@@ -5846,6 +5855,18 @@ msgstr ""
 
 msgid "Proposed"
 msgstr ""
+
+msgid "Protect my library"
+msgstr "ライブラリを保護"
+
+msgid "Protect my library is on, and this device folder is part of your library."
+msgstr "ライブラリの保護がオンです。このデバイスのフォルダーはライブラリに含まれています。"
+
+msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
+msgstr "ライブラリの保護がオンです。ファイルやサーバーを変更するには、「設定」>「ライブラリ」でオフにしてください。"
+
+msgid "Protection"
+msgstr "保護"
 
 msgid "Provider identifiers"
 msgstr "プロバイダー識別子"

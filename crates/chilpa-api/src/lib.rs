@@ -77,6 +77,7 @@ pub use privacy::network_allowed;
 mod play_indicator;
 mod rating_switch;
 mod sidebar_entries;
+mod library_protection;
 mod playlist_sources;
 mod plugin_broker;
 mod plugin_display;
