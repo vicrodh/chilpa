@@ -6,6 +6,13 @@ QtObject {
     property bool shown: false
     property int reads: 0
     property var commands: []
+    property string channelDocument: "{}"
+    property bool channelValid: true
+    property var channelAnswers: []
+    signal channelOfferChanged()
+    function channelOffer() { return channelDocument }
+    function channelCurrent(token) { return channelValid && JSON.parse(channelDocument).token === token }
+    function channelAnswer(token,accept,remember) { channelAnswers=channelAnswers.concat([[token,accept,remember]]);channelDocument="{}";channelOfferChanged();return true }
     signal outputSelected()
     signal outputsListed()
     property bool watching: false

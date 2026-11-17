@@ -1583,6 +1583,9 @@ msgstr "Elige un álbum y busca su metadata. Elegir un resultado prepara una pro
 msgid "Choose an assignment scope."
 msgstr "Selecciona el alcance de la asignación."
 
+msgid "Choose an audio output before remembering stereo conversion."
+msgstr "Elige una salida de audio antes de recordar la conversión a estéreo."
+
 msgid "Choose an autosave policy."
 msgstr "Selecciona una política de guardado automático."
 
@@ -4433,6 +4436,9 @@ msgstr "Minimizar"
 msgid "Missing"
 msgstr "No está"
 
+msgid "Mix to stereo only when this output cannot keep the original channels. Turn this off to ask again."
+msgstr "Mezclar a estéreo solo cuando esta salida no admita los canales originales. Desactívalo para volver a preguntar."
+
 msgid "Mixed"
 msgstr "Varios valores"
 
@@ -5594,6 +5600,12 @@ msgstr "Reproducir pista del cursor"
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 msgstr "Reproduce desde los servidores que administras y agrega fuentes y funciones con plugins del catálogo oficial o del de terceros."
 
+msgid "Play in stereo"
+msgstr "Reproducir en estéreo"
+
+msgid "Play in stereo?"
+msgstr "¿Reproducir en estéreo?"
+
 msgid "Play indicator animation"
 msgstr "Animación del indicador de reproducción"
 
@@ -6220,6 +6232,12 @@ msgstr "Recargar"
 
 msgid "Remember"
 msgstr "Recordar"
+
+msgid "Remember for this output"
+msgstr "Recordar para esta salida"
+
+msgid "Remember stereo conversion for this output"
+msgstr "Recordar conversión a estéreo para esta salida"
 
 msgid "Remote artwork"
 msgstr "Portadas remotas"
@@ -7304,6 +7322,9 @@ msgstr "Estéreo y crossfeed"
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "Los controles estéreo se aplican a PCM de dos canales. El EQ y la compresión enlazada se aplican a todos los canales."
 
+msgid "Stereo conversion is not available for this output."
+msgstr "La conversión a estéreo no está disponible para esta salida."
+
 msgid "Stereo width · 0–100%"
 msgstr "Anchura estéreo · 0–100%"
 
@@ -7354,6 +7375,9 @@ msgstr "Almacenamiento"
 
 msgid "Storage limit"
 msgstr "Límite de almacenamiento"
+
+msgid "Stored stereo conversion choices could not be read."
+msgstr "No se pudieron leer las preferencias de conversión a estéreo."
 
 msgid "Stream address"
 msgstr "Dirección de stream"
@@ -8423,6 +8447,9 @@ msgstr "Esta pista no tiene un álbum que abrir"
 msgid "This track has no verified offline copy. Download it while connected."
 msgstr "Esta pista no tiene una copia sin conexión verificada. Descárgala mientras tengas conexión."
 
+msgid "This track has {} channels. Play it in stereo on {}?"
+msgstr "Esta pista tiene {} canales. ¿Reproducirla en estéreo con {}?"
+
 msgid "This transcript format is not supported."
 msgstr "Este formato de transcripción no es compatible."
 
@@ -8506,6 +8533,9 @@ msgstr "Tono activado"
 
 msgid "Too many device storage locations were reported."
 msgstr "El dispositivo informó demasiadas ubicaciones de almacenamiento."
+
+msgid "Too many outputs have remembered stereo conversion. Forget one in Audio settings."
+msgstr "Se alcanzó el límite de salidas con conversión a estéreo guardada. Olvida una en los ajustes de audio."
 
 msgid "Tools"
 msgstr "Herramientas"

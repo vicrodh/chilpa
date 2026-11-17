@@ -20,6 +20,10 @@ pub mod qobject {
         #[qinvokable] fn command(self: Pin<&mut AudioOutput>, action: &QString, argument: &QString);
         #[qinvokable] fn take_request(self: Pin<&mut AudioOutput>);
         #[qinvokable] fn signal_path(self: &AudioOutput) -> QString;
+        #[qinvokable] fn channel_offer(self: &AudioOutput) -> QString;
+        #[qinvokable] fn channel_current(self: &AudioOutput, token: &QString) -> bool;
+        #[qinvokable] fn channel_answer(self: Pin<&mut AudioOutput>, token: &QString, accept: bool, remember: bool) -> bool;
+        #[qsignal] fn channel_offer_changed(self: Pin<&mut AudioOutput>);
         /// The audio settings are shown, or no longer: the listing keeps
         /// itself current while they are.
         #[qinvokable] fn watch_outputs(self: Pin<&mut AudioOutput>, shown: bool);
@@ -40,7 +44,11 @@ static LISTED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(
 /// The facade's outputs revision, published from the transport heartbeat
 /// like the queue's activity. True when it moved, and the panel then tells
 /// whoever draws the lists; the window never polls the lists themselves.
-pub fn publish(revision: u64) -> bool {
+static CHANNEL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+pub fn publish(revision: u64, channel: u64) -> bool {
+    if CHANNEL.swap(channel,std::sync::atomic::Ordering::Relaxed)!=channel {
+        if let Some(thread)=THREAD.get() { let _=thread.queue(|panel|panel.channel_offer_changed()); }
+    }
     if LISTED.swap(revision, std::sync::atomic::Ordering::Relaxed) == revision { return false; }
     if let Some(thread) = THREAD.get() { let _ = thread.queue(|panel| panel.outputs_listed()); }
     true
@@ -51,6 +59,13 @@ impl cxx_qt::Initialize for qobject::AudioOutput {
 #[derive(Default)]
 pub struct AudioOutputRust { snapshot:QString,tab:QString,shown:bool,revision:u64 }
 impl qobject::AudioOutput {
+    pub fn channel_offer(&self)->QString { QString::from(&chilpa_qt_kit::app::with(|api|api.channel_offer_doc())) }
+    pub fn channel_current(&self,token:&QString)->bool { chilpa_qt_kit::app::with(|api|api.channel_offer_current(&token.to_string())) }
+    pub fn channel_answer(mut self:Pin<&mut Self>,token:&QString,accept:bool,remember:bool)->bool {
+        let accepted=chilpa_qt_kit::app::with(|api|api.answer_channel_offer(&token.to_string(),accept,remember));
+        if accepted { chilpa_qt_kit::bridge::prefs::changed(); }
+        self.as_mut().channel_offer_changed();accepted
+    }
     pub fn signal_path(&self) -> QString {
         QString::from(&chilpa_qt_kit::app::with(|api| api.audio_signal_path()))
     }

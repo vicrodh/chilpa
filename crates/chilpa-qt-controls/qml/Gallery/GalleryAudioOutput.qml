@@ -56,6 +56,17 @@ TitledFlow {
         }
     }
     // Not seen: it only tells the listing while the audio settings are.
+    QtObject {
+        id: conversion
+        property string document: "{}"
+        signal channelOfferChanged()
+        function channelOffer() { return document }
+        function channelCurrent(token) { return JSON.parse(document).token === token }
+        function channelAnswer(token,accept,remember) { document="{}";channelOfferChanged();return true }
+        function present() { document=JSON.stringify({token:"preview",message:"This track has six channels. Play it in stereo on Example DAC?"});channelOfferChanged() }
+    }
+    ChannelOffer { controller:conversion }
+    PillButton { text:"Preview stereo conversion";onClicked:conversion.present() }
     AudioSettingsWatch { rows: ({refresh: function() {}}) }
     PillButton { objectName: "audioGalleryPreview"; text: "Preview output details"; onClicked: panel.present() }
     AudioOutputPanel {

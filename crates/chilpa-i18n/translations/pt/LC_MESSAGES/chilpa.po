@@ -1583,6 +1583,9 @@ msgstr ""
 msgid "Choose an assignment scope."
 msgstr ""
 
+msgid "Choose an audio output before remembering stereo conversion."
+msgstr ""
+
 msgid "Choose an autosave policy."
 msgstr ""
 
@@ -4433,6 +4436,9 @@ msgstr "Minimizar"
 msgid "Missing"
 msgstr "Ausente"
 
+msgid "Mix to stereo only when this output cannot keep the original channels. Turn this off to ask again."
+msgstr ""
+
 msgid "Mixed"
 msgstr "Misto"
 
@@ -5594,6 +5600,12 @@ msgstr "Reproduzir a faixa sob o cursor"
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 msgstr "Reproduza dos servidores que você mantém e adicione fontes e recursos com plugins do catálogo oficial ou do catálogo de terceiros."
 
+msgid "Play in stereo"
+msgstr ""
+
+msgid "Play in stereo?"
+msgstr ""
+
 msgid "Play indicator animation"
 msgstr "Animação do indicador de reprodução"
 
@@ -6220,6 +6232,12 @@ msgstr ""
 
 msgid "Remember"
 msgstr "Lembrar"
+
+msgid "Remember for this output"
+msgstr ""
+
+msgid "Remember stereo conversion for this output"
+msgstr ""
 
 msgid "Remote artwork"
 msgstr "Capas remotas"
@@ -7304,6 +7322,9 @@ msgstr ""
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "Os controles estéreo valem para PCM de dois canais. O EQ e a compressão vinculada valem para todos os canais."
 
+msgid "Stereo conversion is not available for this output."
+msgstr ""
+
 msgid "Stereo width · 0–100%"
 msgstr "Largura estéreo · 0–100%"
 
@@ -7354,6 +7375,9 @@ msgstr "Armazenamento"
 
 msgid "Storage limit"
 msgstr "Limite de armazenamento"
+
+msgid "Stored stereo conversion choices could not be read."
+msgstr ""
 
 msgid "Stream address"
 msgstr "Endereço do stream"
@@ -8423,6 +8447,9 @@ msgstr "Esta faixa não tem álbum para abrir"
 msgid "This track has no verified offline copy. Download it while connected."
 msgstr "Esta faixa não tem uma cópia offline verificada. Baixe-a enquanto estiver conectado."
 
+msgid "This track has {} channels. Play it in stereo on {}?"
+msgstr ""
+
 msgid "This transcript format is not supported."
 msgstr "Este formato de transcrição não é compatível."
 
@@ -8505,6 +8532,9 @@ msgid "Tone enabled"
 msgstr ""
 
 msgid "Too many device storage locations were reported."
+msgstr ""
+
+msgid "Too many outputs have remembered stereo conversion. Forget one in Audio settings."
 msgstr ""
 
 msgid "Tools"

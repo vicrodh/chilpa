@@ -1583,6 +1583,9 @@ msgstr ""
 msgid "Choose an assignment scope."
 msgstr ""
 
+msgid "Choose an audio output before remembering stereo conversion."
+msgstr ""
+
 msgid "Choose an autosave policy."
 msgstr ""
 
@@ -4433,6 +4436,9 @@ msgstr ""
 msgid "Missing"
 msgstr ""
 
+msgid "Mix to stereo only when this output cannot keep the original channels. Turn this off to ask again."
+msgstr ""
+
 msgid "Mixed"
 msgstr "Mixed"
 
@@ -5594,6 +5600,12 @@ msgstr "Play selected track"
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 msgstr "Play audio from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 
+msgid "Play in stereo"
+msgstr ""
+
+msgid "Play in stereo?"
+msgstr ""
+
 msgid "Play indicator animation"
 msgstr ""
 
@@ -6219,6 +6231,12 @@ msgid "Reload"
 msgstr ""
 
 msgid "Remember"
+msgstr ""
+
+msgid "Remember for this output"
+msgstr ""
+
+msgid "Remember stereo conversion for this output"
 msgstr ""
 
 msgid "Remote artwork"
@@ -7304,6 +7322,9 @@ msgstr ""
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr ""
 
+msgid "Stereo conversion is not available for this output."
+msgstr ""
+
 msgid "Stereo width · 0–100%"
 msgstr ""
 
@@ -7353,6 +7374,9 @@ msgid "Storage"
 msgstr ""
 
 msgid "Storage limit"
+msgstr ""
+
+msgid "Stored stereo conversion choices could not be read."
 msgstr ""
 
 msgid "Stream address"
@@ -8423,6 +8447,9 @@ msgstr ""
 msgid "This track has no verified offline copy. Download it while connected."
 msgstr "This track has no verified offline copy. Download it while connected."
 
+msgid "This track has {} channels. Play it in stereo on {}?"
+msgstr ""
+
 msgid "This transcript format is not supported."
 msgstr ""
 
@@ -8506,6 +8533,9 @@ msgstr ""
 
 msgid "Too many device storage locations were reported."
 msgstr "Too many device storage locations were reported."
+
+msgid "Too many outputs have remembered stereo conversion. Forget one in Audio settings."
+msgstr ""
 
 msgid "Tools"
 msgstr "Tools"

@@ -16,6 +16,7 @@ use std::path::Path;
 pub enum PlayError {
     Decode(DecodeError),
     Negotiation(NegotiationError),
+    ChannelOutput { path: std::path::PathBuf, index: usize, requested: u16, offered: Vec<u16> },
     Pack(PackError),
     Sink(SinkError),
     /// The track's own data would not read: a one-bit file, a disc image or
@@ -24,6 +25,13 @@ pub enum PlayError {
 }
 
 impl PlayError {
+    pub(crate) fn at_entry(self, path: &Path, index: usize) -> Self {
+        match self {
+            Self::Negotiation(NegotiationError::Channels { requested, offered }) if (3..=8).contains(&requested) && offered.contains(&2) =>
+                Self::ChannelOutput { path:path.to_path_buf(),index,requested,offered },
+            other => other,
+        }
+    }
     /// The track is at fault, not the output: a queue passes over it instead
     /// of ending. Negotiation, packing and the device are the output's.
     pub fn is_track(&self) -> bool {
@@ -48,6 +56,7 @@ impl std::fmt::Display for PlayError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PlayError::Decode(e) => write!(f, "{e}"),
+            PlayError::ChannelOutput { requested, offered, .. } => write!(f, "{}", channels_refused(*requested,offered)),
             PlayError::Negotiation(NegotiationError::CapsNotProbed) => write!(
                 f,
                 "{}",
@@ -132,6 +141,14 @@ impl<'a> Frames<'a> {
             chilpa_audio::gapless::Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), decoded.stream_format().channels));
         Self { decoded, opened: delivery.opened, spread: delivery.duplicates_mono(), error: None, opus_trim }
     }
+}
+
+pub(crate) fn prepare_channels(decoded: &mut Decoded, caps: &chilpa_audio::negotiate::DeviceCaps, stereo: bool, fallback: bool) -> Result<(),PlayError> {
+    let channels=decoded.stream_format().channels;
+    if stereo || (fallback && channels > 2 && !caps.channels.contains(&channels) && caps.channels.contains(&2)) {
+        decoded.downmix_to_stereo().map_err(PlayError::Decode)?;
+    }
+    Ok(())
 }
 
 pub(crate) fn negotiate_decoded(decoded: &Decoded, caps: &chilpa_audio::negotiate::DeviceCaps, policy: Policy) -> Result<Delivery, NegotiationError> {
@@ -230,7 +247,7 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_stream_told(stream, caps, policy, stop, pause, false, dsp, crate::playback_events::Report::default(), open_sink,
+    play_stream_told(stream, caps, policy, stop, pause, false, false, dsp, crate::playback_events::Report::default(), open_sink,
         &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, _, _)| played)
 }
 
@@ -242,6 +259,7 @@ pub(crate) fn play_stream_told<F, K>(
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
     stereo: bool,
+    fallback: bool,
     dsp: Option<chilpa_audio::dsp::Control>,
     report: crate::playback_events::Report,
     open_sink: F,
@@ -253,7 +271,7 @@ where
     K: AudioSink,
 {
     let mut decoded = Decoded::open_stream(stream).map_err(PlayError::Decode)?;
-    if stereo { decoded.downmix_to_stereo().map_err(PlayError::Decode)?; }
+    prepare_channels(&mut decoded,caps,stereo,fallback)?;
     let mut delivery =
         negotiate_decoded(&decoded, caps, policy).map_err(PlayError::Negotiation)?;
     if dsp.as_ref().is_some_and(|control| control.requested()) {

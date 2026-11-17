@@ -1581,6 +1581,9 @@ msgstr ""
 msgid "Choose an assignment scope."
 msgstr ""
 
+msgid "Choose an audio output before remembering stereo conversion."
+msgstr ""
+
 msgid "Choose an autosave policy."
 msgstr ""
 
@@ -4428,6 +4431,9 @@ msgstr "最小化"
 msgid "Missing"
 msgstr "見つかりません"
 
+msgid "Mix to stereo only when this output cannot keep the original channels. Turn this off to ask again."
+msgstr ""
+
 msgid "Mixed"
 msgstr "混在"
 
@@ -5589,6 +5595,12 @@ msgstr "カーソル位置のトラックを再生"
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 msgstr "自分で運用するサーバーから再生し、公式カタログやサードパーティ製カタログのプラグインでソースや機能を追加できます。"
 
+msgid "Play in stereo"
+msgstr ""
+
+msgid "Play in stereo?"
+msgstr ""
+
 msgid "Play indicator animation"
 msgstr "再生インジケーターのアニメーション"
 
@@ -6215,6 +6227,12 @@ msgstr ""
 
 msgid "Remember"
 msgstr "前回のまま"
+
+msgid "Remember for this output"
+msgstr ""
+
+msgid "Remember stereo conversion for this output"
+msgstr ""
 
 msgid "Remote artwork"
 msgstr "リモートのアートワーク"
@@ -7296,6 +7314,9 @@ msgstr ""
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "ステレオ設定は2チャンネルのPCMに適用されます。EQとリンクしたコンプレッションはすべてのチャンネルに適用されます。"
 
+msgid "Stereo conversion is not available for this output."
+msgstr ""
+
 msgid "Stereo width · 0–100%"
 msgstr "ステレオ幅 · 0–100%"
 
@@ -7346,6 +7367,9 @@ msgstr "ストレージ"
 
 msgid "Storage limit"
 msgstr "保存容量の上限"
+
+msgid "Stored stereo conversion choices could not be read."
+msgstr ""
 
 msgid "Stream address"
 msgstr "ストリームアドレス"
@@ -8412,6 +8436,9 @@ msgstr "このトラックには開けるアルバムがありません"
 msgid "This track has no verified offline copy. Download it while connected."
 msgstr "この曲には検証済みのオフラインコピーがありません。接続中にダウンロードしてください。"
 
+msgid "This track has {} channels. Play it in stereo on {}?"
+msgstr ""
+
 msgid "This transcript format is not supported."
 msgstr "この文字起こし形式には対応していません。"
 
@@ -8494,6 +8521,9 @@ msgid "Tone enabled"
 msgstr ""
 
 msgid "Too many device storage locations were reported."
+msgstr ""
+
+msgid "Too many outputs have remembered stereo conversion. Forget one in Audio settings."
 msgstr ""
 
 msgid "Tools"

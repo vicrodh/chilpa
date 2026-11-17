@@ -1583,6 +1583,9 @@ msgstr ""
 msgid "Choose an assignment scope."
 msgstr ""
 
+msgid "Choose an audio output before remembering stereo conversion."
+msgstr ""
+
 msgid "Choose an autosave policy."
 msgstr ""
 
@@ -4433,6 +4436,9 @@ msgstr "Minimaliseren"
 msgid "Missing"
 msgstr "Ontbreekt"
 
+msgid "Mix to stereo only when this output cannot keep the original channels. Turn this off to ask again."
+msgstr ""
+
 msgid "Mixed"
 msgstr "Gemengd"
 
@@ -5594,6 +5600,12 @@ msgstr "Nummer onder cursor afspelen"
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 msgstr "Speel af vanaf de servers die je zelf draait en voeg bronnen en functies toe met plug-ins uit de officiële catalogus of die van derden."
 
+msgid "Play in stereo"
+msgstr ""
+
+msgid "Play in stereo?"
+msgstr ""
+
 msgid "Play indicator animation"
 msgstr "Animatie van afspeelindicator"
 
@@ -6220,6 +6232,12 @@ msgstr ""
 
 msgid "Remember"
 msgstr "Onthouden"
+
+msgid "Remember for this output"
+msgstr ""
+
+msgid "Remember stereo conversion for this output"
+msgstr ""
 
 msgid "Remote artwork"
 msgstr "Externe albumhoezen"
@@ -7304,6 +7322,9 @@ msgstr ""
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "Stereoregelaars gelden voor tweekanaals PCM. EQ en gekoppelde compressie gelden voor alle kanalen."
 
+msgid "Stereo conversion is not available for this output."
+msgstr ""
+
 msgid "Stereo width · 0–100%"
 msgstr "Stereobreedte · 0–100%"
 
@@ -7354,6 +7375,9 @@ msgstr "Opslag"
 
 msgid "Storage limit"
 msgstr "Opslaglimiet"
+
+msgid "Stored stereo conversion choices could not be read."
+msgstr ""
 
 msgid "Stream address"
 msgstr "Streamadres"
@@ -8423,6 +8447,9 @@ msgstr "Dit nummer heeft geen album om te openen"
 msgid "This track has no verified offline copy. Download it while connected."
 msgstr "Dit nummer heeft geen geverifieerde offlinekopie. Download het terwijl je verbonden bent."
 
+msgid "This track has {} channels. Play it in stereo on {}?"
+msgstr ""
+
 msgid "This transcript format is not supported."
 msgstr "Dit transcriptieformaat wordt niet ondersteund."
 
@@ -8505,6 +8532,9 @@ msgid "Tone enabled"
 msgstr ""
 
 msgid "Too many device storage locations were reported."
+msgstr ""
+
+msgid "Too many outputs have remembered stereo conversion. Forget one in Audio settings."
 msgstr ""
 
 msgid "Tools"

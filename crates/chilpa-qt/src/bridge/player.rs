@@ -367,14 +367,14 @@ impl qobject::Player {
     fn tick(mut self: Pin<&mut Self>) {
         let lyrics_shown = self.rust().lyrics_shown;
         let origin_seen = &self.rust().origin_seen;
-        let (now, origin, changed, casting, remote, queue_busy, outputs_rev) = app::with(|api| {
+        let (now, origin, changed, casting, remote, queue_busy, outputs_rev, channel_rev) = app::with(|api| {
             let now = chilpa_api::playback_view::PlaybackView::read(api.poll(), lyrics_shown);
             let origin = (api.playing_origin() != origin_seen.as_ref())
                 .then(|| (api.playing_origin().cloned(), api.playing_origin_json()));
-            (now, origin, api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy(), api.outputs_revision())
+            (now, origin, api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy(), api.outputs_revision(), api.channel_offer_revision())
         });
         // The stacks answered, or a card came or went: the route follows, and the panel tells the lists.
-        if chilpa_qt_controls::bridge::audio_output::publish(outputs_rev) { self.as_mut().read_route(); }
+        if chilpa_qt_controls::bridge::audio_output::publish(outputs_rev, channel_rev) { self.as_mut().read_route(); }
         if let Some((seen, json)) = origin {
             self.as_mut().rust_mut().origin_seen = seen;
             self.as_mut().set_origin(QString::from(&json));

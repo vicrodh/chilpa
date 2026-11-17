@@ -46,13 +46,15 @@ fn original_is_default_and_explicit_stereo_also_applies_to_the_preloaded_next_tr
     for (name, path) in chilpa_dirs::profile_environment(profile.path()) {
         std::env::set_var(name, path);
     }
-    for stereo in [false, true] {
+    for (stereo,fallback,supported) in [(false,false,true),(true,false,true),(false,true,true),(false,true,false)] {
+        let mixed=stereo || !supported;
         let controls = Controls::default();
         assert!(
             !controls.stereo_downmix.get(),
             "default must preserve multichannel output"
         );
         controls.stereo_downmix.set(stereo);
+        controls.stereo_fallback.set(fallback);
         let queue = SharedQueue::new(vec![fixture(6, ".wav"), fixture(8, ".wav")]);
         let shared = Rc::new(RefCell::new(Captured::default()));
         let captured = shared.clone();
@@ -60,7 +62,7 @@ fn original_is_default_and_explicit_stereo_also_applies_to_the_preloaded_next_tr
         let caps = DeviceCaps {
             sample_rates: vec![48000],
             formats: vec![SampleFormat::S16, SampleFormat::F32],
-            channels: vec![2, 6, 8],
+            channels: if supported { vec![2,6,8] } else { vec![2] },
             probed: true,
         };
         let results = play_queue_with(
@@ -83,18 +85,18 @@ fn original_is_default_and_explicit_stereo_also_applies_to_the_preloaded_next_tr
         assert_eq!(deliveries.len(), 2);
         for (delivery, source) in deliveries.iter().zip([6, 8]) {
             assert_eq!(delivery.requested.channels, source);
-            assert_eq!(delivery.opened.channels, if stereo { 2 } else { source });
-            assert_eq!(delivery.nothing_was_converted(), !stereo);
+            assert_eq!(delivery.opened.channels, if mixed { 2 } else { source });
+            assert_eq!(delivery.nothing_was_converted(), !mixed);
             assert_eq!(
                 delivery.transforms.contains(&Transform::Downmixed {
                     from_channels: source,
                     to_channels: 2
                 }),
-                stereo
+                mixed
             );
         }
         let log = shared.borrow();
-        if stereo {
+        if mixed {
             assert_eq!(
                 log.formats.len(),
                 1,

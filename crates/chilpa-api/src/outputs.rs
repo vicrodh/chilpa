@@ -15,6 +15,7 @@ pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
 
 pub(crate) mod device_lock;
 pub(crate) mod channel_mode;
+pub(crate) mod channel_offer;
 #[cfg(target_os = "linux")]
 mod hifi_wizard;
 mod listing;

@@ -279,7 +279,9 @@ impl Chilpa {
         let (gapless, normalize, exclusive) = (self.gapless(), self.normalize(), self.exclusive());
         let (target, prevent_clipping) = (self.normalize_target(), self.prevent_clipping());
         let dsd_mode = self.dsd_mode();
+        self.prepare_channel_output(device);
         let stereo_downmix = self.stereo_downmix_enabled();
+        let stereo_fallback = self.stereo_fallback_enabled(device);
         let volume = self.software_gain();
         let dsp = self.dsp_configuration(device);
         let removed = self.removed_for_player();
@@ -296,6 +298,7 @@ impl Chilpa {
         player.set_exclusive(exclusive);
         player.set_dsd_mode(dsd_mode);
         player.set_stereo_downmix(stereo_downmix);
+        player.set_stereo_fallback(stereo_fallback);
         player.set_volume(volume);
         let _ = player.dsp().set(dsp);
         // Moving output is the same track going on somewhere else, so what
