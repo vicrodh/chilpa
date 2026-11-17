@@ -589,7 +589,7 @@ msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
 
 msgid "Allow metadata sidecars"
-msgstr "Permitir sidecars de metadata"
+msgstr "Permitir sidecars de metadatos"
 
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "Permite consultas opcionales de metadatos, biografías, podcasts y Last.fm mediante el proxy de Chilpa. Sin telemetría. Las consultas se ejecutan en segundo plano."
