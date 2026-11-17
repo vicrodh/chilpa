@@ -5870,6 +5870,9 @@ msgstr ""
 msgid "Protect my library"
 msgstr ""
 
+msgid "Protect my library is on, and this device folder is part of your library."
+msgstr ""
+
 msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
 msgstr ""
 
