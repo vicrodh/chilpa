@@ -7,6 +7,7 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 Item {
     id: context
     property string key: ""
+    property alias viewport: grid.viewport
     implicitHeight: grid.implicitHeight
     AlbumGridModel {
         id: record

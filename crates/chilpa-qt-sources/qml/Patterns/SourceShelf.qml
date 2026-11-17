@@ -69,7 +69,7 @@ Column {
         width: parent.width
         active: !!shelf.section.header
         sourceComponent: shelf.section.header?.kind === "album" ? albumContext : otherContext
-        Component { id: albumContext; SourceContextCard { objectName: "sourceContextCard"; key: shelf.section.header_key || "" } }
+        Component { id: albumContext; SourceContextCard { objectName: "sourceContextCard"; viewport: shelf.viewport; key: shelf.section.header_key || "" } }
         Component { id: otherContext; SourcePageHeader { info: shelf.section.header || ({}) } }
     }
     Flow {

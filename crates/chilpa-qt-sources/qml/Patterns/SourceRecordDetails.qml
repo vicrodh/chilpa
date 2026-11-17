@@ -17,7 +17,7 @@ Column {
     signal selectToggle()
     signal context(real left, real top)
     property var record
-    readonly property var info: cardId < 0 ? JSON.parse(Sources.card(cardId, Library.remoteRev) || "{}") : ({})
+    readonly property var info: cardId < 0 ? JSON.parse(Sources.cardPage(cardId, Library.remoteRev) || "{}") : ({})
     readonly property bool canFavorite: /^(album|playlist|artist):/.test(info.ref || "") && info.editable !== true
     readonly property bool playlist: info.kind === "playlist" || /^playlist:/.test(info.ref || "")
     // The header's text is white over the cover's darkened field. On the

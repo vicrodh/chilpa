@@ -75,7 +75,7 @@ fn read(root: &Path, plugin: &str) -> std::io::Result<Store> {
         || source.names.keys().chain(source.drawn.keys()).any(|id| id != plugin) || !source.cold_sources.is_empty() {
         return Err(std::io::Error::other("Archived catalog contains another source"));
     }
-    source.index();
+    source.restore_index();
     Ok(source)
 }
 
@@ -158,6 +158,10 @@ impl Catalog {
             }
         }
         let cancelled: HashSet<_> = inner.queue.queued.iter().filter(|job| blocked(&inner, job)).cloned().collect();
+        if cancelled.iter().any(|job| inner.collection_job(job)) {
+            inner.collection_ephemeral.released = true;
+            inner.residency.changed();
+        }
         inner.queue.urgent.retain(|job| !cancelled.contains(job));
         inner.queue.later.retain(|job| !cancelled.contains(job));
         inner.queue.queued.retain(|job| !cancelled.contains(job));
@@ -179,6 +183,7 @@ impl Catalog {
             let mut inner = self.lock();
             if !inner.loaded || !inner.residency.pending || inner.residency.retry_after.is_some_and(|after| after > Instant::now()) { return; }
             inner.residency.pending = false;
+            if inner.collection_ephemeral.released && inner.reap_collection_actions() { self.changed(); }
             inner.residency.sources.keys().chain(inner.store.cold_sources.keys()).cloned().collect()
         };
         for plugin in plugins {
@@ -192,7 +197,7 @@ impl Catalog {
     }
 
     fn maintain_source(&self, root: &Path, plugin: &str, save: &mut impl FnMut(&Path, &str, &Store) -> std::io::Result<()>) -> std::io::Result<()> {
-        let (resident, revision, enabled, archived, hydrate) = {
+        let (resident, mut complete, revision, enabled, archived, hydrate) = {
             let mut inner = self.lock();
             let enabled = inner.residency.sources.get(plugin).copied();
             let archived = inner.store.cold_sources.contains_key(plugin);
@@ -216,9 +221,10 @@ impl Catalog {
                 if kept.same_source(&resident, plugin) { return Ok(()); }
             }
             if !archived && resident.cards.is_empty() && resident.tracks.is_empty() && resident.shelves.is_empty() { return Ok(()); }
-            (resident, inner.residency.revision, enabled, archived, hydrate)
+            let mut complete = resident.snapshot();
+            inner.omit_transient_entities(&mut complete);
+            (resident, complete, inner.residency.revision, enabled, archived, hydrate)
         };
-        let mut complete = resident.snapshot();
         if archived {
             match read(root, plugin) {
                 Ok(source) => complete.merge_source(&source)?,

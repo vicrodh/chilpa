@@ -247,6 +247,22 @@ fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut V
 /// "Load more" (QBZ's library tab).
 const LIBRARY_PREVIEW: usize = 10;
 
+impl Catalog {
+    fn card_summary(&self, id: i64) -> Option<Value> {
+        let inner = self.lock();
+        let card = inner.store.cards.get(&id)?;
+        let data = &card.metadata;
+        let kind = data["kind"].as_str().unwrap_or_default();
+        let membership = inner.store.shelves.get(&format!("{} section:{kind}s", card.plugin))
+            .and_then(|shelf| shelf.membership.get(&id));
+        let favorite = data["favorite"].as_bool().or_else(|| membership.map(|value| value.split(',').any(|key| key == "favorites")));
+        let date = data["release_date"].as_str().map(crate::album_versions::release_label).filter(|label| !label.is_empty())
+            .or_else(|| card.year.map(|year| year.to_string())).unwrap_or_default();
+        Some(json!({"plugin":card.plugin,"kind":kind,"ref":card.identity,"favorite_supported":data["favorite_supported"],
+            "favorite":favorite,"genre":inner.genres.of_card(card,now()).first(),"released":date}))
+    }
+}
+
 impl crate::Chilpa {
     pub(crate) fn append_native_section(&self, key: &str) {
         let (plugin, reference) = super::split(key);
@@ -271,6 +287,13 @@ impl crate::Chilpa {
         if !self.natives.is_native(plugin) { return String::new(); }
         self.catalog.want_image(plugin, image);
         crate::pictures::kept(image).unwrap_or_default()
+    }
+
+    /// A hover, menu or identity check reads only the resident card.
+    pub fn native_card_summary(&self, id: i64) -> String {
+        let Some(summary) = self.catalog.card_summary(id) else { return "{}".into(); };
+        if !self.natives.has_pages(summary["plugin"].as_str().unwrap_or_default()) { return "{}".into(); }
+        summary.to_string()
     }
 
     pub fn native_card_info(&mut self, id: i64) -> String {
@@ -448,6 +471,40 @@ mod tests {
             assert!(!page["error"].as_str().unwrap().is_empty());
             assert!(page.get("web").is_none() && page.get("layout").is_none());
         }
+    }
+
+    #[test]
+    fn a_card_summary_reads_identity_favorite_and_caption_without_requesting_a_page() {
+        let catalog = super::super::collection_window::ready_test_catalog();
+        let id = catalog.lock().store.take_item("fixture", &json!({"kind":"album","ref":"opaque:1","title":"Record",
+            "genre":"Rock","release_date":"1981-04-26","favorite_supported":true}),1).unwrap();
+        let before = catalog.revisions();
+        let summary = catalog.card_summary(id).unwrap();
+        assert_eq!(summary["ref"],"opaque:1");
+        assert_eq!(summary["favorite_supported"],true);
+        assert!(summary["favorite"].is_null());
+        assert_eq!(summary["genre"],"Rock");
+        assert_eq!(summary["released"],"April 26, 1981");
+        {
+            let inner = catalog.lock();
+            assert!(inner.store.shelves.is_empty() && inner.queue.queued.is_empty() && inner.queue.covers.is_empty());
+        }
+        catalog.lock().store.shelves.insert("fixture section:albums".into(), Shelf {
+            cards:vec![id],membership:[(id,"favorites".into())].into(),..Default::default()
+        });
+        assert_eq!(catalog.card_summary(id).unwrap()["favorite"],true);
+        catalog.lock().store.cards.get_mut(&id).unwrap().metadata["favorite"]=false.into();
+        assert_eq!(catalog.card_summary(id).unwrap()["favorite"],false);
+        {
+            let mut inner = catalog.lock();
+            let card = inner.store.cards.get_mut(&id).unwrap();
+            card.metadata["genre"] = Value::Null;
+            card.metadata["upc"] = json!("0012345678905");
+            card.genre.clear();
+            inner.genres = super::super::genres::State::fixture("fixture", "0012345678905", vec!["Ambient".into()], now());
+        }
+        assert_eq!(catalog.card_summary(id).unwrap()["genre"], "Ambient");
+        assert_eq!(catalog.revisions(),before);
     }
 
     #[test]

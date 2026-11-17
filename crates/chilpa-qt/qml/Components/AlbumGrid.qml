@@ -12,7 +12,6 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 // while the width is unknown it is zero and nothing is laid out.
 Item {
     id: grid
-
     property var model
     readonly property alias scrollView: view
     property alias header: view.header
@@ -22,7 +21,10 @@ Item {
     // A bounded window can provide a count without allocating a row model.
     property int windowCount: -1
     property Component cardDelegate: null
-    readonly property int detailsRev: model ? model.rev : 0
+    property int detailsRev: 0
+    readonly property int modelRev: model ? model.rev : 0
+    onModelRevChanged: if (visible) detailsRev = modelRev
+    onVisibleChanged: if (visible) detailsRev = modelRev
     readonly property bool shelf: !!model && model.maxRows === 1
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
@@ -35,9 +37,6 @@ Item {
     property bool round: false
     property var roundIds: []
     function isRound(albumId) { return round || roundIds.includes(albumId) }
-    // The sources a card wears: a source's record its own, the library's
-    // the logo where sources mix in, and any copy grouped with it its
-    // source too.
     // Room below the last row, for what floats over the grid.
     property int bottomInset: 0
     // The artist whose page holds the grid: its menu does not lead there.
@@ -122,27 +121,24 @@ Item {
             group: grid.windowCount >= 0 ? "" : model.group
             listDelegate: Component {
                 AlbumRow {
-                    readonly property bool shown: true
-
-                    visible: shown
                     width: parent.width
                     technical: grid.technical
                     technicalColumns: grid.technicalColumns
                     rev: grid.detailsRev
-                    albumId: shown ? grid.model.albumId(row.first, row.revision) : 0
-                    title: shown ? grid.model.title(row.first, row.revision) : ""
-                    explicitContent: shown && grid.model.explicitContent(row.first, row.revision)
-                    aiGenerated: shown && grid.model.aiGenerated(row.first, row.revision)
-                    subtitle: shown ? grid.model.subtitle(row.first, row.revision) : ""
-                    year: shown ? grid.model.year(row.first, row.revision) : ""
-                    art: shown && !grid.technical ? grid.model.art(row.first, row.revision, row.onScreen) : ""
+                    albumId: grid.model.albumId(row.first, row.cardRevision)
+                    title: grid.model.title(row.first, row.cardRevision)
+                    explicitContent: grid.model.explicitContent(row.first, row.cardRevision)
+                    aiGenerated: grid.model.aiGenerated(row.first, row.cardRevision)
+                    subtitle: grid.model.subtitle(row.first, row.cardRevision)
+                    year: grid.model.year(row.first, row.cardRevision)
+                    art: !grid.technical ? grid.model.art(row.first, row.cardRevision, row.onScreen) : ""
                     columns: grid.listColumns
-                    sources: shown && !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
+                    sources: !grid.technical && grid.listColumns.indexOf("source") >= 0 ? interaction.badges(albumId, rev) : []
                     mixed: !!grid.model && grid.model.mixed
                     tint: row.first
-                    selected: shown && AlbumActions.selected(albumId, AlbumActions.rev)
-                    expanded: shown && grid.model.expanded === row.first
-                    available: !shown || AlbumActions.available(albumId, rev)
+                    selected: AlbumActions.selected(albumId, AlbumActions.rev)
+                    expanded: grid.model.expanded === row.first
+                    available: AlbumActions.available(albumId, rev)
                     onClicked: (modifiers) => interaction.clicked(row.first, albumId, title, modifiers, available)
                     onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
                     onQuick: interaction.toggleQuick(row.first)
@@ -153,9 +149,7 @@ Item {
                         albumMenu.show(albumId, title, subtitle, row.first, p.x, p.y)
                     }
                 }
-
             }
-
             cardDelegate: grid.cardDelegate || standardCard
             Component {
                 id: standardCard
@@ -163,12 +157,13 @@ Item {
                     required property int index
                     readonly property bool occupied: index < row.span
                     readonly property int at: row.first + index
-                    readonly property int rev: row.revision
+                    readonly property int rev: row.cardRevision
                     x: Metrics.cardRing + index * (grid.cardWidth + Metrics.gridGap)
                     y: row.lead
                     width: grid.cardWidth
                     visible: occupied
                     albumId: occupied ? grid.model.albumId(at, rev) : 0
+                    // Show the sources of this record and its grouped copies.
                     sources: occupied ? interaction.badges(albumId, grid.detailsRev) : []
                     title: occupied ? grid.model.title(at, rev) : ""
                     explicitContent: occupied && grid.model.explicitContent(at, rev)
@@ -198,7 +193,9 @@ Item {
             }
             quickDelegate: Component {
                 AlbumQuickView {
+                    viewport: grid.viewport || (grid.fitContent ? null : view)
                     albumId: grid.model.albumId(grid.model.expanded, grid.model.rev)
+                    version: parent?.suspended?.album === albumId && parent.suspended.version ? parent.suspended.version : albumId
                     notchX: grid.list ? Metrics.button32 / 2
                           : Math.max(Metrics.gap16, Math.min(width - Metrics.gap16, (grid.model.expanded - row.first + 0.5) * (grid.cardWidth + Metrics.gridGap) - Metrics.gridGap / 2 - grid.viewportX))
                     onClose: grid.model.expanded = -1

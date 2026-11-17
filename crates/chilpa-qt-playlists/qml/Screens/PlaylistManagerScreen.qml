@@ -227,7 +227,7 @@ Item {
         manager: playlistManager
         onEditFolder: (id, name, color) => folderDialog.show(id, name, color)
         onEditPlaylist: (id) => playlistEdit.show(id)
-        onEditSource: (id) => sourceEditor.begin(JSON.parse(Sources.card(id, Library.remoteRev) || "{}"), "update")
+        onEditSource: (id) => sourceEditor.begin(JSON.parse(Sources.cardPage(id, Library.remoteRev) || "{}"), "update")
     }
     SourcePlaylistEditor { id: sourceEditor; objectName: "sourcePlaylistEditor" }
 

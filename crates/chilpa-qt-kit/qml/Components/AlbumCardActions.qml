@@ -35,8 +35,8 @@ Rectangle {
     property bool selectionVisible: true
     readonly property var nativeInfo: albumId < 0 ? JSON.parse(Sources.card(albumId, Library.remoteRev) || "{}") : ({})
     readonly property bool favoriteSupported: favoriteAction ? fallbackFavoriteSupported : albumId > 0 || nativeInfo.favorite_supported !== false && !!nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")
-    readonly property bool favorite: nativeInfo.plugin ? nativeInfo.favorite === true : favoriteAction ? fallbackFavorite : Ratings.favorite("album", albumId, Ratings.rev)
-    readonly property var information: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
+    readonly property bool favorite: typeof nativeInfo.favorite === "boolean" ? nativeInfo.favorite : favoriteAction ? fallbackFavorite : !nativeInfo.plugin && Ratings.favorite("album", albumId, Ratings.rev)
+    readonly property var information: nativeInfo.plugin || albumId === 0 ? nativeInfo : JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
     readonly property string genre: (Array.isArray(information.genres) && typeof information.genres[0] === "string"
         ? information.genres[0] : information.genre || "").split(/[,;]+/)[0].trim()
     // "April 26, 1981" when the record's files or its source say the day.

@@ -16,6 +16,10 @@ impl Reader {
     /// I resolve the preferred edition and every part of its page together.
     /// A filtered grid can explicitly retain the edition that was clicked.
     pub fn album_page(&self, album: i64, retain_edition: bool) -> Option<AlbumPage> {
+        self.album_page_with_credits(album, retain_edition, true)
+    }
+
+    pub fn album_page_with_credits(&self, album: i64, retain_edition: bool, credits: bool) -> Option<AlbumPage> {
         if album <= 0 { return None; }
         self.lib.read_snapshot(|| {
             let id = if retain_edition { album } else { self.lib.selected_album(album) };
@@ -27,14 +31,17 @@ impl Reader {
             let detail = detail(album, genre, label, &rows, None);
             let heading = crate::album_versions::heading(&detail, &crate::format::span(detail.duration_ms),
                 self.lib.album_release_date(id).ok().flatten(), chilpa_i18n::t("Album").to_uppercase(), chilpa_i18n::t("Info: Embedded tags"));
-            let info = serde_json::json!({"track_credits": rows.iter().map(|row| serde_json::json!({"artist":row.artist})).collect::<Vec<_>>()});
-            let artist_information = crate::album_information::artist_document(&detail.album.artist, &info, &rows,
-                |credit| self.lib.credit_names(credit).unwrap_or_else(|_| vec![credit.to_string()]),
-                |path| self.catalog.as_ref().and_then(|catalog| catalog.track_by_path(path)).map(|(track, _)| track.metadata).unwrap_or(serde_json::Value::Null)).to_string();
+            let (artist_information, genre_links) = if credits {
+                let info = serde_json::json!({"track_credits": rows.iter().map(|row| serde_json::json!({"artist":row.artist})).collect::<Vec<_>>()});
+                let artists = crate::album_information::artist_document(&detail.album.artist, &info, &rows,
+                    |credit| self.lib.credit_names(credit).unwrap_or_else(|_| vec![credit.to_string()]),
+                    |path| self.catalog.as_ref().and_then(|catalog| catalog.track_by_path(path)).map(|(track, _)| track.metadata).unwrap_or(serde_json::Value::Null));
+                (artists.to_string(), self.album_genre_links(id).to_string())
+            } else { Default::default() };
             let versions = crate::album_versions::version_labels(self.lib.version_catalog().ok()?.choices(id));
             let discs = if crate::discs::several(&rows) { self.lib.album_discs(id).ok()? } else { Vec::new() };
             let entries = entries(rows, discs, |name| self.lib.has_artist(name).unwrap_or(false));
-            Some(AlbumPage { detail, heading, versions, entries, artist_information, genre_links:self.album_genre_links(id).to_string() })
+            Some(AlbumPage { detail, heading, versions, entries, artist_information, genre_links })
         }).map_err(|error| eprintln!("chilpa-queries: album page failed: {error}")).ok().flatten()
     }
 
@@ -48,6 +55,10 @@ impl Reader {
 impl Chilpa {
     /// Source cards already live in the shared in-memory catalog.
     pub fn cached_album_page(&mut self, id: i64) -> Option<AlbumPage> {
+        self.cached_album_page_with_credits(id, true)
+    }
+
+    pub fn cached_album_page_with_credits(&mut self, id: i64, credits: bool) -> Option<AlbumPage> {
         if id >= 0 { return None; }
         let card = self.catalog.card(id)?;
         let rows = self.source_album_rows(id);
@@ -55,13 +66,15 @@ impl Chilpa {
             card.format.as_ref().map(|format| format.quality()));
         let heading = self.album_heading(&detail, &crate::format::span(detail.duration_ms));
         let versions = self.source_album_versions_for(&detail);
-        let mut info = card.metadata.clone();
-        if !info.is_object() { info = serde_json::json!({}); }
-        info["plugin"] = serde_json::json!(card.plugin);
-        if info["track_credits"].as_array().is_none_or(Vec::is_empty) {
-            info["track_credits"] = serde_json::json!(rows.iter().map(|row| serde_json::json!({"artist":row.artist})).collect::<Vec<_>>());
-        }
-        let artist_information = self.album_artist_document(&detail.album.artist, &info, &rows).to_string();
+        let artist_information = if credits {
+            let mut info = card.metadata;
+            if !info.is_object() { info = serde_json::json!({}); }
+            info["plugin"] = serde_json::json!(card.plugin);
+            if info["track_credits"].as_array().is_none_or(Vec::is_empty) {
+                info["track_credits"] = serde_json::json!(rows.iter().map(|row| serde_json::json!({"artist":row.artist})).collect::<Vec<_>>());
+            }
+            self.album_artist_document(&detail.album.artist, &info, &rows).to_string()
+        } else { String::new() };
         Some(AlbumPage { detail, heading, versions, artist_information, genre_links:String::new(), entries: entries(rows, Vec::new(), |_| false) })
     }
 }

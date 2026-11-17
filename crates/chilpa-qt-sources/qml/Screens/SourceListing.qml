@@ -11,12 +11,9 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 import "../Patterns"
 
-// A folder of a source that holds more than records: the folders under it,
-// its records on the grid every record has, and its tracks on the list
-// every track has.
+// The source folder, album grid and track list share one scrolling page.
 Flickable {
     id: page
-
     property string source
     readonly property var about: JSON.parse(Sources.page(source, Library.remoteRev) || "{}")
 
@@ -90,6 +87,7 @@ Flickable {
             height: implicitHeight
             visible: cards.albums > 0
             fitContent: true
+            viewport: page
             round: page.about.round === true
             roundIds: page.about.artist_cards || []
             model: cards
@@ -106,6 +104,7 @@ Flickable {
             height: implicitHeight
             visible: tracks.count > 0
             fitContent: true
+            viewport: page
             model: tracks
         }
 

@@ -148,25 +148,28 @@ pub(super) fn validate(value: &Value) -> Result<(), String> {
         .map_err(|_| "The collection page exceeds 4 MiB".to_string())
 }
 
-pub(super) fn ingest(store: &mut Store, plugin: &str, shelf: &mut Shelf, stamp: u64) {
-    let Some(items) = shelf.document["items"].as_array_mut() else {
-        return;
-    };
-    for item in items {
-        let kind = item["kind"].as_str().unwrap_or_default();
-        let identity = item["ref"].as_str().unwrap_or_default().to_owned();
-        let mut host = json!({"key":identity,"card_id":0,"track_row":-1});
-        if kind == "track" {
-            if let Some(id) = store.take_item_track(plugin, item, None, stamp) {
-                host["track_row"] = json!(shelf.tracks.len());
-                shelf.tracks.push(id);
-            }
-        } else if let Some(id) = store.take_item(plugin, item, stamp) {
-            shelf.cards.push(id);
-            host["card_id"] = id.into();
+pub(super) fn adopt(store: &mut Store, plugin: &str, shelf: &mut Shelf, item: &Value, stamp: u64) -> (i64, i64) {
+    if item["kind"] == "track" {
+        if let Some(id) = store.take_item_track(plugin, item, None, stamp) {
+            let row = shelf.tracks.len() as i64;
+            shelf.tracks.push(id);
+            return (0, row);
         }
-        item["_host"] = host;
+    } else if let Some(id) = store.take_item(plugin, item, stamp) {
+        shelf.cards.push(id);
+        return (id, -1);
     }
+    (0, -1)
+}
+
+pub(super) fn ingest(store: &mut Store, plugin: &str, shelf: &mut Shelf, stamp: u64) {
+    let Some(items) = shelf.document["items"].as_array_mut() else { return; };
+    let mut items = std::mem::take(items);
+    for item in &mut items {
+        let (card, track) = adopt(store, plugin, shelf, item, stamp);
+        item["_host"] = json!({"key":item["ref"],"card_id":card,"track_row":track});
+    }
+    shelf.document["items"] = Value::Array(items);
 }
 
 #[cfg(test)]

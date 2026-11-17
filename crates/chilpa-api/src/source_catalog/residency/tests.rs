@@ -547,3 +547,45 @@ fn typed_article_navigation_leaves_valid_cold_music_unwritten_and_unindexed() {
     assert!(inner.store.cold_sources.contains_key("fixture"));
     assert!(inner.store.cards.values().all(|card| card.plugin != "fixture"));
 }
+
+
+#[test]
+fn disabling_during_a_preview_keeps_it_live_without_archiving_its_temporary_entities() {
+    let root = tempfile::tempdir().unwrap();
+    let (catalog, existing, _, _) = fixture();
+    let page = json!({"layout":"collection","items":[{"kind":"album","ref":"album:preview","title":"Preview"}]});
+    let (lease, action) = catalog.collection_action("fixture", &page, 0, 1).unwrap();
+    let id = action["cardId"].as_i64().unwrap();
+    catalog.set_source_states([("fixture".into(), false)]);
+    maintain(&catalog, root.path());
+    let archived = read(root.path(), "fixture").unwrap();
+    assert!(archived.cards.contains_key(&existing));
+    assert!(!archived.cards.contains_key(&id));
+    assert!(!archived.shelves.contains_key(action["key"].as_str().unwrap()));
+    assert!(catalog.lock().store.cards.contains_key(&id), "the open view retains its own card");
+    drop(lease);
+    catalog.reap_collection_actions();
+    catalog.set_source_states([("fixture".into(), true)]);
+    maintain(&catalog, root.path());
+    let inner = catalog.lock();
+    assert!(inner.store.cards.contains_key(&existing));
+    assert!(!inner.store.cards.contains_key(&id));
+}
+
+#[test]
+fn cancelling_a_queued_read_reclaims_a_closed_preview_before_archiving() {
+    let root = tempfile::tempdir().unwrap();
+    let (catalog, _, _, _) = fixture();
+    let page = json!({"layout":"collection","items":[{"kind":"album","ref":"album:preview","title":"Preview"}]});
+    let (lease, action) = catalog.collection_action("fixture", &page, 0, 1).unwrap();
+    let id = action["cardId"].as_i64().unwrap();
+    let job = Job::Tracks(id);
+    catalog.queue(&mut catalog.lock(), job.clone(), true);
+    drop(lease);
+    catalog.reap_collection_actions();
+    assert!(catalog.lock().queue.queued.contains(&job));
+    catalog.set_source_states([("fixture".into(), false)]);
+    maintain(&catalog, root.path());
+    assert!(!catalog.lock().store.cards.contains_key(&id));
+    assert!(!read(root.path(), "fixture").unwrap().cards.contains_key(&id));
+}

@@ -64,7 +64,15 @@ Item {
         if (manualRefreshPending) { manualRefreshPending=false;window.refresh(true) }
         else refreshIfNeeded()
     }
-    TrackListModel { id:tracks; objectName:"collectionTracks"; kind:actions.activePage && !!actions.prepared.key ? "source" : ""; key:actions.prepared.key || ""; limit:100; playingPath:Player.path; onReadyChanged:Qt.callLater(actions.performAction) }
+    TrackListModel {
+        id: tracks
+        objectName: "collectionTracks"
+        kind: key ? "source" : ""
+        key: actions.activePage && actions.prepared.kind === "track" ? actions.prepared.key || "" : ""
+        limit: 100
+        playingPath: Player.path
+        onReadyChanged: Qt.callLater(actions.performAction)
+    }
     AlbumMenu { id:albumsMenu; objectName:"collectionAlbumMenu"; canExpand:true; onQuick:at=>actions.pinQuick(actions.prepared,at); onClosed:Qt.callLater(actions.releaseAction) }
     TrackMenu { id:tracksMenu; objectName:"collectionTrackMenu"; model:tracks; onClosed:Qt.callLater(actions.releaseAction) }
     SourcePlaylistEditor { id:playlistEditor }

@@ -341,6 +341,42 @@ TestCase {
         refresh.clicked()
         compare(collection(page).calls.filter(call=>call[0] === "refresh" && call[1] === true).length,1)
     }
+    function test_quick_view_builds_only_the_visible_track_bodies_and_keeps_the_scroll_range() {
+        const page=createTemporaryObject(collectionFactory,test)
+        const tile=()=>findItem(page,item=>item.entry?.rowToken === "row:0" && item.expandable === true)
+        tryVerify(()=>tile() !== null)
+        tile().quickRequested()
+        tryCompare(actions(page),"quickIndex",0)
+        const preview=findChild(page,"albumQuickLoader").item
+        const list=findItem(preview,item=>item.viTrackList === true)
+        verify(list !== null)
+        compare(list.viewport,page.scrollView)
+        compare(list.model.kind,"album")
+        const control=findChild(page,"collectionTracks")
+        compare(control.kind,"")
+        compare(control.key,"")
+        const rows=list.model
+        for (let at=0;at<100;at++) {
+            rows.append({trackId:at+1,rowKind:0,number:at+1,title:"Track "+at,artist:"Band",album:"Record",
+                duration:"3:00",plays:0,quality:"",tier:0,playing:false,selected:false,headerLabel:"",headerMeta:"",art:"",available:true})
+        }
+        tryVerify(()=>list.rows.itemAtIndex(50) !== null && page.scrollView.contentHeight > page.scrollView.height * 3)
+        const slot=list.rows.itemAtIndex(50)
+        compare(slot.creditedTitle,null)
+        const fullHeight=list.height
+        const top=page.scrollView.contentY
+        const center=slot.mapToItem(page.scrollView,0,0).y-page.scrollView.height/2
+        page.scrollView.contentY=top+center
+        tryVerify(()=>slot.creditedTitle !== null)
+        compare(list.rows.itemAtIndex(50),slot)
+        compare(list.height,fullHeight)
+        page.scrollView.contentY=top
+        tryCompare(slot,"creditedTitle",null)
+        compare(list.rows.itemAtIndex(50),slot)
+        preview.close()
+        tryCompare(actions(page),"quickIndex",-1)
+    }
+
     function test_standard_quick_view_pins_the_album_and_releases_on_close_and_leave() {
         const page=createTemporaryObject(collectionFactory,test)
         const window=collection(page),control=actions(page)

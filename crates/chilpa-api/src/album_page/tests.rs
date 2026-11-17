@@ -40,6 +40,12 @@ fn page_matches_the_existing_header_versions_and_disc_rows() {
     assert_eq!(page.heading.summary, heading.summary);
     assert_eq!(page.entries, entries);
     assert_eq!(page.artist_information, artist_information);
+    let preview = reader.album_page_with_credits(first, false, false).unwrap();
+    assert_eq!(preview.detail, page.detail);
+    assert_eq!(preview.entries, page.entries);
+    assert_eq!(preview.versions, page.versions);
+    assert!(preview.artist_information.is_empty() && preview.genre_links.is_empty());
+
     assert_eq!(serde_json::to_value(page.versions).unwrap(), serde_json::to_value(versions).unwrap());
     assert_eq!(page.entries.iter().filter(|entry| matches!(entry, TrackEntry::Header(_))).count(), 2);
     assert_eq!(reader.album_page(first, true).unwrap().detail.album.id, first, "a filtered grid keeps the clicked edition");

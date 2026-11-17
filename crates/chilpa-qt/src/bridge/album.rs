@@ -14,6 +14,7 @@ pub mod qobject {
         #[qml_element]
         #[qproperty(i64, album_id)]
         #[qproperty(i64, selected_id)]
+        #[qproperty(bool, preview)]
         #[qproperty(i32, content_rev)]
         #[qproperty(i32, remote_rev)]
         #[qproperty(i32, tracks_rev)]
@@ -55,6 +56,7 @@ use std::pin::Pin;
 pub struct AlbumDetailRust {
     album_id: i64,
     selected_id: i64,
+    preview: bool,
     content_rev: i32,
     remote_rev: i32,
     source_revision: Option<(i32, i32)>,
@@ -98,12 +100,13 @@ impl qobject::AlbumDetailModel {
             return;
         }
         let album = version;
+        let credits = !self.rust().preview;
         let ticket = self.rust().generation.next();
         let thread = self.qt_thread();
         worker::submit_album(move |reader| {
             // Explicit choices persist even if a refresh or navigation cancels presentation.
             let accepted = reader.select_album_version(album, version);
-            let page = (accepted && ticket.current()).then(|| reader.album_page(version, true)).flatten();
+            let page = (accepted && ticket.current()).then(|| reader.album_page_with_credits(version, true, credits)).flatten();
             let _ = thread.queue(move |mut model| {
                 if !ticket.current() { return; }
                 model.as_mut().rust_mut().requested_id = 0;
@@ -128,12 +131,13 @@ impl qobject::AlbumDetailModel {
         let id = if selected != 0 { selected } else { original };
         let retain = crate::browse::read(|state| state.filter.extra_filtered() && state.snapshot.album_ids.contains(&original));
         let ticket = self.rust().generation.next();
+        let credits = !self.rust().preview;
         if id <= 0 {
-            let (revision, page) = app::with(|api| (api.source_entity_revision(id), api.cached_album_page(id)));
+            let (revision, page) = app::with(|api| (api.source_entity_revision(id), api.cached_album_page_with_credits(id, credits)));
             self.as_mut().rust_mut().source_revision = Some(revision);
             self.as_mut().apply(page);
             let selected = *self.selected_id();
-            if selected < 0 {
+            if credits && selected < 0 {
                 let thread = self.qt_thread();
                 worker::submit_album(move |reader| {
                     if !ticket.current() { return; }
@@ -148,7 +152,7 @@ impl qobject::AlbumDetailModel {
         let thread = self.qt_thread();
         worker::submit_album(move |reader| {
             if !ticket.current() { return; }
-            let page = reader.album_page(id, retain);
+            let page = reader.album_page_with_credits(id, retain, credits);
             let _ = thread.queue(move |model| { if ticket.current() { model.apply(page); } });
         });
     }
@@ -197,6 +201,7 @@ impl cxx_qt::Initialize for qobject::AlbumDetailModel {
             model.as_mut().set_genre_links(QString::from("{}"));
             model.schedule();
         }).release();
+        self.as_mut().on_preview_changed(|model| model.schedule()).release();
         self.as_mut().on_content_rev_changed(|model| model.schedule()).release();
         self.as_mut().on_remote_rev_changed(|model| {
             // The copy shown, which a grouped record may have chosen among sources.
