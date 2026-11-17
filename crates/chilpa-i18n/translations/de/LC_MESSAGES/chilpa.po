@@ -589,7 +589,7 @@ msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Chilpa bei Last.fm zulassen; das wird automatisch aktualisiert."
 
 msgid "Allow metadata sidecars"
-msgstr ""
+msgstr "Begleitdateien für Metadaten erlauben"
 
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "Optionale Metadaten, Biografien, Podcast-Entdeckung und Last.fm-Anfragen über Chilpas Proxy zulassen. Keine Telemetrie. Anfragen laufen im Hintergrund."
@@ -2745,7 +2745,7 @@ msgid "Edit playlist"
 msgstr "Playlist bearbeiten"
 
 msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
-msgstr ""
+msgstr "Änderungen werden in einer .chilpa.json-Datei neben der Musik gespeichert, bei Einträgen von einem Server in Chilpas eigener Kopie. Deine Audiodateien bleiben unverändert."
 
 msgid "Edit…"
 msgstr "Bearbeiten…"
@@ -5784,7 +5784,7 @@ msgid "Prevent clipping"
 msgstr "Übersteuerung vermeiden"
 
 msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
-msgstr ""
+msgstr "Verhindert Unfälle: Chilpa ändert weder deine Musikdateien noch deine Server. Keine Änderungen an Tags oder Covern, kein Löschen, keine Änderungen an Playlists auf dem Server. Favoriten, Bewertungen und das Hinzufügen von Quellen funktionieren weiter."
 
 msgid "Preview changes"
 msgstr ""
@@ -5865,16 +5865,16 @@ msgid "Proposed"
 msgstr ""
 
 msgid "Protect my library"
-msgstr ""
+msgstr "Meine Bibliothek schützen"
 
 msgid "Protect my library is on, and this device folder is part of your library."
-msgstr ""
+msgstr "Bibliotheksschutz ist aktiv, und dieser Geräteordner gehört zu deiner Bibliothek."
 
 msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
-msgstr ""
+msgstr "Bibliotheksschutz ist aktiv. Schalte ihn unter Einstellungen > Bibliothek aus, um deine Dateien oder Server zu ändern."
 
 msgid "Protection"
-msgstr ""
+msgstr "Schutz"
 
 msgid "Provider identifiers"
 msgstr "Anbieter-Kennungen"

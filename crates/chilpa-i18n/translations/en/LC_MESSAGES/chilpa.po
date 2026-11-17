@@ -589,7 +589,7 @@ msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr ""
 
 msgid "Allow metadata sidecars"
-msgstr ""
+msgstr "Allow metadata sidecars"
 
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr ""
@@ -2745,7 +2745,7 @@ msgid "Edit playlist"
 msgstr ""
 
 msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
-msgstr ""
+msgstr "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
 
 msgid "Edit…"
 msgstr ""
@@ -5784,7 +5784,7 @@ msgid "Prevent clipping"
 msgstr ""
 
 msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
-msgstr ""
+msgstr "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
 
 msgid "Preview changes"
 msgstr ""
@@ -5865,16 +5865,16 @@ msgid "Proposed"
 msgstr ""
 
 msgid "Protect my library"
-msgstr ""
+msgstr "Protect my library"
 
 msgid "Protect my library is on, and this device folder is part of your library."
-msgstr ""
+msgstr "Protect my library is on, and this device folder is part of your library."
 
 msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
-msgstr ""
+msgstr "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
 
 msgid "Protection"
-msgstr ""
+msgstr "Protection"
 
 msgid "Provider identifiers"
 msgstr ""

@@ -596,7 +596,7 @@ msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "在 Last.fm 允許 Chilpa；此項目會自動更新。"
 
 msgid "Allow metadata sidecars"
-msgstr ""
+msgstr "允許中繼資料附屬檔案"
 
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "允許透過 Chilpa 代理取得選用中繼資料、簡介、Podcast 探索與 Last.fm 請求。無遙測。請求在背景執行。"
@@ -2751,7 +2751,7 @@ msgid "Edit playlist"
 msgstr "編輯播放清單"
 
 msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
-msgstr ""
+msgstr "編輯內容會儲存在音樂旁的 .chilpa.json 檔案中；伺服器上的項目則儲存在 Chilpa 自己的副本中。你的音訊檔案不會被更動。"
 
 msgid "Edit…"
 msgstr "編輯…"
@@ -5787,7 +5787,7 @@ msgid "Prevent clipping"
 msgstr "防止削波（Clipping）"
 
 msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
-msgstr ""
+msgstr "避免意外：Chilpa 不會更動你的音樂檔案或伺服器。不能編輯標籤或封面、不能刪除，也不能變更伺服器上的播放清單。我的最愛、評分與新增來源仍可使用。"
 
 msgid "Preview changes"
 msgstr ""
@@ -5868,16 +5868,16 @@ msgid "Proposed"
 msgstr ""
 
 msgid "Protect my library"
-msgstr ""
+msgstr "保護我的音樂庫"
 
 msgid "Protect my library is on, and this device folder is part of your library."
-msgstr ""
+msgstr "音樂庫保護已開啟，且此裝置資料夾屬於你的音樂庫。"
 
 msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
-msgstr ""
+msgstr "音樂庫保護已開啟。若要變更檔案或伺服器，請在「設定 > 音樂庫」中關閉。"
 
 msgid "Protection"
-msgstr ""
+msgstr "保護"
 
 msgid "Provider identifiers"
 msgstr "提供者識別碼"

@@ -590,7 +590,7 @@ msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Разрешите доступ Chilpa на сайте Last.fm; статус обновится автоматически."
 
 msgid "Allow metadata sidecars"
-msgstr ""
+msgstr "Разрешить вспомогательные файлы метаданных"
 
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "Разрешить необязательные метаданные, биографии, поиск подкастов и запросы к Last.fm через прокси Chilpa. Без телеметрии. Запросы выполняются в фоновом режиме."
@@ -2747,7 +2747,7 @@ msgid "Edit playlist"
 msgstr "Изменить плейлист"
 
 msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
-msgstr ""
+msgstr "Правки сохраняются в файле .chilpa.json рядом с музыкой или, для записей с сервера, в собственной копии Chilpa. Ваши аудиофайлы не изменяются."
 
 msgid "Edit…"
 msgstr "Изменить…"
@@ -5789,7 +5789,7 @@ msgid "Prevent clipping"
 msgstr "Не допускать клиппинга"
 
 msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
-msgstr ""
+msgstr "Защита от случайных действий: Chilpa не изменяет ваши музыкальные файлы и серверы. Нельзя редактировать теги и обложки, удалять и менять плейлисты на сервере. Избранное, оценки и добавление источников продолжают работать."
 
 msgid "Preview changes"
 msgstr ""
@@ -5870,16 +5870,16 @@ msgid "Proposed"
 msgstr ""
 
 msgid "Protect my library"
-msgstr ""
+msgstr "Защитить мою библиотеку"
 
 msgid "Protect my library is on, and this device folder is part of your library."
-msgstr ""
+msgstr "Защита библиотеки включена, и эта папка устройства входит в вашу библиотеку."
 
 msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
-msgstr ""
+msgstr "Защита библиотеки включена. Чтобы изменить файлы или серверы, отключите её в разделе Настройки > Библиотека."
 
 msgid "Protection"
-msgstr ""
+msgstr "Защита"
 
 msgid "Provider identifiers"
 msgstr "Идентификаторы поставщиков"

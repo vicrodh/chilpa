@@ -589,7 +589,7 @@ msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Autoriser Chilpa sur Last.fm ; cela se met à jour tout seul."
 
 msgid "Allow metadata sidecars"
-msgstr ""
+msgstr "Autoriser les fichiers annexes de métadonnées"
 
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "Autorise les métadonnées facultatives, les biographies, la découverte de podcasts et les requêtes Last.fm via le proxy de Chilpa. Aucune télémétrie. Les requêtes s'exécutent en arrière-plan."
@@ -2745,7 +2745,7 @@ msgid "Edit playlist"
 msgstr "Modifier la playlist"
 
 msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
-msgstr ""
+msgstr "Vos modifications sont conservées dans un fichier .chilpa.json à côté de la musique, ou dans la copie propre à Chilpa pour les éléments d'un serveur. Vos fichiers audio ne sont pas touchés."
 
 msgid "Edit…"
 msgstr "Modifier…"
@@ -5784,7 +5784,7 @@ msgid "Prevent clipping"
 msgstr "Éviter l'écrêtage"
 
 msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
-msgstr ""
+msgstr "Évite les accidents : Chilpa ne modifie ni vos fichiers de musique ni vos serveurs. Pas de modification des tags ou des pochettes, pas de suppression, pas de changement des playlists du serveur. Les favoris, les notes et l'ajout de sources continuent de fonctionner."
 
 msgid "Preview changes"
 msgstr ""
@@ -5865,16 +5865,16 @@ msgid "Proposed"
 msgstr ""
 
 msgid "Protect my library"
-msgstr ""
+msgstr "Protéger ma bibliothèque"
 
 msgid "Protect my library is on, and this device folder is part of your library."
-msgstr ""
+msgstr "La protection de la bibliothèque est activée, et ce dossier de l'appareil fait partie de votre bibliothèque."
 
 msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
-msgstr ""
+msgstr "La protection de la bibliothèque est activée. Désactivez-la dans Paramètres > Bibliothèque pour modifier vos fichiers ou vos serveurs."
 
 msgid "Protection"
-msgstr ""
+msgstr "Protection"
 
 msgid "Provider identifiers"
 msgstr "Identifiants des fournisseurs"

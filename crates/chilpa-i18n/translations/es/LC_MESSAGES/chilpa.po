@@ -589,7 +589,7 @@ msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
 
 msgid "Allow metadata sidecars"
-msgstr ""
+msgstr "Permitir sidecars de metadata"
 
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "Permite consultas opcionales de metadatos, biografías, podcasts y Last.fm mediante el proxy de Chilpa. Sin telemetría. Las consultas se ejecutan en segundo plano."
@@ -2745,7 +2745,7 @@ msgid "Edit playlist"
 msgstr "Editar playlist"
 
 msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
-msgstr ""
+msgstr "Lo que edites se guarda en un archivo .chilpa.json junto a la música, o en la copia propia de Chilpa para discos de un servidor. Tus archivos de audio no se tocan."
 
 msgid "Edit…"
 msgstr "Editar…"
@@ -5784,7 +5784,7 @@ msgid "Prevent clipping"
 msgstr "Evitar saturación"
 
 msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
-msgstr ""
+msgstr "Evita accidentes: Chilpa no cambia tus archivos de música ni tus servidores. Nada de editar tags o portadas, borrar ni cambiar playlists del servidor. Favoritos, calificaciones y agregar fuentes siguen funcionando."
 
 msgid "Preview changes"
 msgstr "Ver los cambios propuestos"
@@ -5865,16 +5865,16 @@ msgid "Proposed"
 msgstr "Propuesto"
 
 msgid "Protect my library"
-msgstr ""
+msgstr "Proteger mi biblioteca"
 
 msgid "Protect my library is on, and this device folder is part of your library."
-msgstr ""
+msgstr "Proteger mi biblioteca está activo, y esta carpeta del dispositivo es parte de tu biblioteca."
 
 msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
-msgstr ""
+msgstr "Proteger mi biblioteca está activo. Desactívalo en Ajustes > Biblioteca para cambiar tus archivos o servidores."
 
 msgid "Protection"
-msgstr ""
+msgstr "Protección"
 
 msgid "Provider identifiers"
 msgstr "Identificadores de proveedores"
