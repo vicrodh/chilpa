@@ -11,6 +11,7 @@ TestCase {
     height: 600
     visible: true
     property string sent: ""
+    LibraryDestinations { id: destinations }
     SidebarEntryChoices { id: choices; width: 400; onChanged: (value) => sent = value }
 
     function init() {
@@ -31,7 +32,13 @@ TestCase {
     function test_the_last_entry_shown_cannot_be_turned_off() {
         choices.value = "-home,-library,-artists,-albums,tracks,-genres,-composers,-compositions,-folders,-openMedia,-deviceSync"
         compare(findChild(choices, "sidebarEntryToggle-tracks").enabled, false)
+        verify(findChild(choices, "sidebarEntryToggle-tracks").opacity < 1)
         compare(findChild(choices, "sidebarEntryToggle-home").enabled, true)
+    }
+
+    // Must match ENTRIES in crates/chilpa-api/src/sidebar_entries.rs.
+    function test_the_ids_match_the_facade_entries() {
+        compare(destinations.all.map(e => e.screen).join(","), "home,library,artists,albums,tracks,genres,composers,compositions,folders,openMedia,deviceSync")
     }
 
     function test_the_ends_cannot_move_past_the_edge() {

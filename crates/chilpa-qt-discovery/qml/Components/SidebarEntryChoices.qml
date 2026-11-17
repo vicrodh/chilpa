@@ -81,6 +81,8 @@ Column {
                 anchors.verticalCenter: parent.verticalCenter
                 checked: entry.modelData.on
                 enabled: !entry.modelData.on || choices.shown > 1
+                opacity: enabled ? 1 : Metrics.disabledOpacity
+                Accessible.name: entry.modelData.text
                 onToggled: (on) => choices.toggle(entry.index, on)
             }
         }
