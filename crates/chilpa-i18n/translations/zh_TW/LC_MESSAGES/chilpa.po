@@ -595,6 +595,9 @@ msgstr "在 Discogs 允許 Chilpa，然後貼上下方的代碼。"
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "在 Last.fm 允許 Chilpa；此項目會自動更新。"
 
+msgid "Allow metadata sidecars"
+msgstr ""
+
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr "允許透過 Chilpa 代理取得選用中繼資料、簡介、Podcast 探索與 Last.fm 請求。無遙測。請求在背景執行。"
 
@@ -2746,6 +2749,9 @@ msgstr "編輯中繼資料…"
 
 msgid "Edit playlist"
 msgstr "編輯播放清單"
+
+msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
+msgstr ""
 
 msgid "Edit…"
 msgstr "編輯…"
@@ -5780,6 +5786,9 @@ msgstr "請按下按鍵…"
 msgid "Prevent clipping"
 msgstr "防止削波（Clipping）"
 
+msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
+msgstr ""
+
 msgid "Preview changes"
 msgstr ""
 
@@ -5856,6 +5865,15 @@ msgid "Proposal"
 msgstr ""
 
 msgid "Proposed"
+msgstr ""
+
+msgid "Protect my library"
+msgstr ""
+
+msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
+msgstr ""
+
+msgid "Protection"
 msgstr ""
 
 msgid "Provider identifiers"

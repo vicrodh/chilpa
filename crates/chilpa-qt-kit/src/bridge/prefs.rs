@@ -33,6 +33,10 @@ pub mod qobject {
         /// Whether star ratings show anywhere: off, every surface leaves
         /// them out.
         #[qproperty(bool, ratings)]
+        /// Protect my library is on: what writes files or servers is greyed out.
+        #[qproperty(bool, protect_library)]
+        /// While it is on, metadata may still go to sidecars.
+        #[qproperty(bool, protected_sidecars)]
         type Prefs = super::PrefsRust;
 
         /// A control shows `value` for `key` before keeping it. Empty
@@ -57,6 +61,8 @@ pub struct PrefsRust {
     animated_indicator: bool,
     track_composers: bool,
     ratings: bool,
+    protect_library: bool,
+    protected_sidecars: bool,
 }
 
 impl qobject::Prefs {
@@ -72,6 +78,8 @@ impl cxx_qt::Initialize for qobject::Prefs {
         self.as_mut().set_animated_indicator(animated);
         self.as_mut().set_track_composers(crate::app::with(|api| api.track_composers_shown()));
         self.as_mut().set_ratings(crate::app::with(|api| api.ratings_shown()));
+        self.as_mut().set_protect_library(crate::app::with(|api| api.library_protected()));
+        self.as_mut().set_protected_sidecars(crate::app::with(|api| api.protected_sidecars()));
         let thread = self.qt_thread();
         THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
     }
@@ -93,6 +101,8 @@ pub fn changed() {
                 prefs.as_mut().set_animated_indicator(animated);
                 prefs.as_mut().set_track_composers(crate::app::with(|api| api.track_composers_shown()));
                 prefs.as_mut().set_ratings(crate::app::with(|api| api.ratings_shown()));
+                prefs.as_mut().set_protect_library(crate::app::with(|api| api.library_protected()));
+                prefs.as_mut().set_protected_sidecars(crate::app::with(|api| api.protected_sidecars()));
             });
         }
     });

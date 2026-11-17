@@ -8,6 +8,8 @@ QtObject {
     property bool animatedIndicator: false
     property bool trackComposers: false
     property bool ratings: true
+    property bool protectLibrary: false
+    property bool protectedSidecars: false
     function preview(key, value) { previewKey = key; previewValue = value }
     function changed() { rev += 1 }
 }

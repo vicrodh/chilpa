@@ -588,6 +588,9 @@ msgstr "Allow Chilpa on Discogs, then paste the code below."
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr ""
 
+msgid "Allow metadata sidecars"
+msgstr ""
+
 msgid "Allow optional metadata, biographies, podcast discovery and Last.fm requests through Chilpa's proxy. No telemetry. Requests run in the background."
 msgstr ""
 
@@ -2739,6 +2742,9 @@ msgid "Edit metadata…"
 msgstr ""
 
 msgid "Edit playlist"
+msgstr ""
+
+msgid "Edits are kept in a .chilpa.json file next to the music, or in Chilpa's own copy for records on a server. Your audio files are not touched."
 msgstr ""
 
 msgid "Edit…"
@@ -5777,6 +5783,9 @@ msgstr ""
 msgid "Prevent clipping"
 msgstr ""
 
+msgid "Prevents accidents: Chilpa won't change your music files or your servers. No tag or cover edits, no deletions, no changes to server playlists. Favorites, ratings and adding sources keep working."
+msgstr ""
+
 msgid "Preview changes"
 msgstr ""
 
@@ -5853,6 +5862,15 @@ msgid "Proposal"
 msgstr ""
 
 msgid "Proposed"
+msgstr ""
+
+msgid "Protect my library"
+msgstr ""
+
+msgid "Protect my library is on. Turn it off in Settings > Library to change your files or servers."
+msgstr ""
+
+msgid "Protection"
 msgstr ""
 
 msgid "Provider identifiers"
