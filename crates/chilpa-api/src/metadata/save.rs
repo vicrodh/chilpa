@@ -448,7 +448,9 @@ impl Chilpa {
         if self.metadata.beets.busy() { self.metadata_cancel_lookup(); }
         let protection = crate::library_protection::Protection::kept();
         let blocked = match self.metadata.mode {
-            Mode::Sidecar | Mode::Undecided => protection.sidecar_refused(),
+            Mode::Sidecar => protection.sidecar_refused(),
+            // Nothing is chosen yet: a protected library says why, not the server.
+            Mode::Undecided => protection.writes_refused(),
             Mode::Files | Mode::Xml | Mode::Server => protection.writes_refused(),
         };
         if !blocked.is_empty() {

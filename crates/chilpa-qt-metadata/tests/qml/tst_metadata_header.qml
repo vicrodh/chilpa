@@ -87,4 +87,24 @@ TestCase {
         compare(findChild(header, "metadataSaveTo").options[0].disabled, false)
         compare(findChild(header, "metadataSave").enabled, true)
     }
+
+    function test_a_protected_record_with_an_xml_still_shows_it_disabled() {
+        const doc = JSON.parse(JSON.stringify(test.files))
+        doc.save = { mode: "", hosted: false, files_allowed: false, files_refused: "Protect my library is on.", xml_allowed: true,
+                     xml_refused: "Protect my library is on.", protected: true, sidecar_allowed: true }
+        header.doc = doc
+        const options = findChild(header, "metadataSaveTo").options
+        compare(options.length, 3, "the XML option is shown")
+        compare(options[2].disabled, true, "and greyed")
+        compare(options[2].tip, "Protect my library is on.")
+    }
+
+    function test_a_protected_server_record_says_only_the_protection_when_sidecars_are_allowed() {
+        const doc = test.hosted("", true, "Protect my library is on.")
+        doc.save.protected = true
+        doc.save.sidecar_allowed = true
+        header.doc = doc
+        compare(findChild(header, "metadataSaveToSays").text, "Protect my library is on.")
+        compare(findChild(header, "metadataSaveToServer").options[1].disabled, false, "the sidecar stays open")
+    }
 }

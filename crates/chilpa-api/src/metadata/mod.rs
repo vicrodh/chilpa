@@ -91,6 +91,9 @@ pub(crate) struct Editor {
     draft: Option<Draft>,
     layers: Layers,
     mode: Mode,
+    /// Protect my library as of the last open or change of the setting, so a
+    /// refresh does not read the settings file. Saves read the stored value.
+    protection: crate::library_protection::Protection,
     id3: Id3Version,
     secondary_layers: bool,
     provider: Provider,
@@ -141,6 +144,7 @@ impl Default for Editor {
             draft: None,
             layers: Layers::default(),
             mode: Mode::Sidecar,
+            protection: Default::default(),
             id3: Id3Version::V24,
             secondary_layers: false,
             provider: Provider::MusicBrainz,
@@ -446,6 +450,7 @@ impl Chilpa {
                 // protected library sends nothing to the server, and keeps
                 // a local record's edits in a sidecar only when allowed.
                 let protection = crate::library_protection::Protection::kept();
+                editor.protection = protection;
                 editor.mode = match &server {
                     Some(state) if state.writable && !protection.on => Mode::Server,
                     Some(_) => Mode::Undecided,

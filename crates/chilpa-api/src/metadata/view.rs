@@ -296,7 +296,7 @@ impl Editor {
                 })
                 .collect();
             let refused = files_refused(draft, &self.layers);
-            let protection = crate::library_protection::Protection::kept();
+            let protection = self.protection;
             let blocked = protection.writes_refused();
             let refused = if blocked.is_empty() { refused } else { blocked.clone() };
             view.save = SaveView {
@@ -317,7 +317,7 @@ impl Editor {
                 },
                 files_allowed: refused.is_empty(),
                 files_refused: refused,
-                xml_allowed: xml_refused(draft).is_empty() && blocked.is_empty(),
+                xml_allowed: xml_refused(draft).is_empty(),
                 xml_refused: if blocked.is_empty() { xml_refused(draft) } else { blocked.clone() },
                 protected: protection.on,
                 sidecar_allowed: protection.sidecar_refused().is_empty(),

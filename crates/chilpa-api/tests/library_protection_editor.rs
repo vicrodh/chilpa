@@ -84,7 +84,9 @@ fn a_protected_library_keeps_every_file_and_allows_only_permitted_sidecars() {
     until(&mut chilpa, "ready");
     assert!(chilpa.metadata_set_mode("files"));
     assert!(chilpa.metadata_set_album("title", "X"));
+    assert!(!chilpa.metadata_view().save.protected);
     assert!(chilpa.adjust("library.protect", "true"));
+    assert!(chilpa.metadata_view().save.protected, "an open editor follows the setting");
     assert!(!chilpa.metadata_save());
     assert!(chilpa.metadata_view().error.contains("Protect my library"), "{}", chilpa.metadata_view().error);
     assert_eq!(audio(&music), before, "the files are untouched");

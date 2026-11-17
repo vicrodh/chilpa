@@ -26,7 +26,7 @@ Item {
     // listener when the server cannot take it.
     readonly property bool hosted: save.hosted === true
     readonly property var server: save.server || ({})
-    readonly property string hostedLine: save.sidecar_allowed === false ? server.refused || ""
+    readonly property string hostedLine: save.protected === true ? server.refused || ""
         : save.mode === "server"
         ? I18n.trArgs("Saved to {} and read back from it.", [server.name || ""], I18n.rev)
         : save.mode === "sidecar"
