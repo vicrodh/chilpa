@@ -71,14 +71,14 @@ Item {
             check(navigationStep === 1 || !!entry, "device shortcut missing")
             if (navigationStep === 0) {
                 check(entry.visible, "device shortcut should default on")
-                navigationSettings.set("navigation.devices", "false")
+                navigationSettings.set("navigation.sidebar", "home,library,artists,albums,tracks,genres,composers,compositions,folders,openMedia,-deviceSync")
                 navigationStep = 1
                 return
             }
             if (navigationStep === 1) {
                 const hidden = find(mainWindow.contentItem, item => item.objectName === "deviceNavigation")
                 check(!hidden || !hidden.visible, "device shortcut did not respect the opt-out")
-                navigationSettings.set("navigation.devices", "true")
+                navigationSettings.set("navigation.sidebar", "home,library,artists,albums,tracks,genres,composers,compositions,folders,openMedia,deviceSync")
                 navigationStep = 2
                 return
             }
