@@ -70,7 +70,15 @@ font.generate(sys.argv[2])
         "QtObject {\n"
         "    readonly property FontLoader iconFont: FontLoader { source: \"../../assets/icons/lucide.ttf\" }\n"
         "    readonly property string font: iconFont.name\n\n"
-        f"{properties}\n}}\n"
+        f"{properties}\n"
+        "    function imageFallback(name) {\n"
+        "        switch (name) {\n"
+        "        case \"user-star\": return userStar\n"
+        "        case \"disc\": return disc\n"
+        "        case \"award\": return award\n"
+        "        default: return \"\"\n"
+        "        }\n"
+        "    }\n}\n"
     )
     shutil.copyfile(package / "LICENSE", ROOT / "licenses/lucide-icons.txt")
     print(f"subset-lucide: {len(wanted)} glyphs")

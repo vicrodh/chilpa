@@ -1,0 +1,18 @@
+# Vendored from https://github.com/OxideAV/oxideav-ac3 at af514e7a8c089a4d0581bd0347353d6d79f9d6d5.
+[package]
+name = "oxideav-ac3"
+version = "0.0.12"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+repository = "https://github.com/OxideAV/oxideav-ac3"
+authors = ["Mark Karpeles"]
+description = "Pure-Rust AC-3 (Dolby Digital) audio decoder"
+
+readme = "README.md"
+homepage = "https://github.com/OxideAV/oxideav-ac3"
+keywords = ["multimedia", "audio", "ac3", "dolby", "codec"]
+categories = ["multimedia::encoding", "multimedia::audio"]
+
+[dependencies]
+oxideav-core = "0.1"

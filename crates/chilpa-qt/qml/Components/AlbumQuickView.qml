@@ -5,17 +5,15 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
-// A record opened under its row without leaving the grid (design/03
-// AlbumQuickView): cover, kind and year, title, artist, the line of facts
-// and its buttons on the left, its tracks on the right. A notch points at
-// the card it came from.
+// The inline record shares its track list and scrolls with its grid.
 Item {
     id: quick
-
     property int albumId
-    // The center of the card it belongs to, from the left edge.
+    property double version: albumId
+    readonly property double selectedVersion: detail.selectedId
+    readonly property bool populated: detail.selectedId !== 0 && tracks.ready
+    property Flickable viewport: null
     property real notchX
-
     signal close()
 
     readonly property real notchHalf: Metrics.quickNotch * Math.SQRT2 / 2 // derived: half the turned square's diagonal
@@ -24,7 +22,8 @@ Item {
 
     AlbumDetailModel {
         id: detail
-        albumId: quick.albumId
+        preview: true
+        albumId: quick.version
         contentRev: Library.contentRev + I18n.rev
         remoteRev: Library.remoteRev + Library.remoteArtRev
     }
@@ -182,6 +181,8 @@ Item {
                 width: parent.width
                 height: implicitHeight
                 fitContent: true
+                viewport: quick.viewport
+                prefetch: false
                 showArtist: false
                 showAlbum: false
                 showArt: false

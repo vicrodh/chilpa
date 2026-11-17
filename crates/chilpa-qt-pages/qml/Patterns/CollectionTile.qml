@@ -12,6 +12,10 @@ Item {
     required property var entry
     required property string plugin
     property bool active: true
+    property bool expanded: false
+    property int cardId: 0
+    readonly property bool expandable: ["album", "playlist"].includes(entry.kind)
+    signal quickRequested()
     property bool favorites: false
     property bool playable: false
     property bool favoriteBusy: false
@@ -23,15 +27,23 @@ Item {
     AlbumCard {
         id: card
         width: parent.width
-        albumId: tile.entry._host?.card_id || 0
+        albumId: tile.cardId
         title: tile.entry.title || ""
         subtitle: tile.entry.artist || tile.entry.subtitle || tile.entry.label || ""
-        art: tile.active ? (NativePages.coverOverride(tile.entry._host?.card_id || 0, Library.remoteArtRev) || Sources.art(tile.plugin, tile.entry.image || "", Library.remoteArtRev)) : ""
+        art: tile.active ? (NativePages.referenceCoverOverride(tile.plugin, tile.entry.ref || "", Library.remoteArtRev) || Sources.art(tile.plugin, tile.entry.image || "", Library.remoteArtRev)) : ""
         round: tile.entry.kind === "artist"
         available: tile.entry.available !== false
-        purchaseMode: true
+        imageFallback: tile.entry.image_fallback || ""
+        year: String(tile.entry.year || "")
+        expanded: tile.expanded
+        purchaseMode: !tile.expandable
+        playAction: () => tile.playRequested()
+        selectionVisible: false
+        favoriteState: ({supported:tile.favorites,checked:tile.entry.favorite === true,
+            busy:tile.favoriteBusy,toggle:on=>tile.favoriteRequested(on)})
         contextMenuEnabled: tile.entry.kind !== "article"
-        canExpand: false
+        canExpand: tile.expandable
+        onQuick: tile.quickRequested()
         containArt: tile.entry.art_fit === "contain"
         onClicked: tile.opened()
         onMenu: (x,y) => tile.menuRequested(x,y)
@@ -41,7 +53,7 @@ Item {
         objectName: "collectionFavorite"
         anchors.top: parent.top; anchors.right: parent.right
         anchors.margins: Metrics.gap8
-        visible: tile.favorites && (pointer.hovered || checked)
+        visible: !tile.expandable && tile.favorites && (pointer.hovered || checked)
         checked: tile.entry.favorite === true
         filled: checked
         glyph: checked ? Icons.heartFilled : Icons.heart
@@ -55,7 +67,7 @@ Item {
         anchors.right: parent.right
         y: tile.width - height - Metrics.gap8
         anchors.rightMargin: Metrics.gap8
-        visible: pointer.hovered && tile.playable && tile.entry.available !== false
+        visible: !tile.expandable && pointer.hovered && tile.playable && tile.entry.available !== false
         glyph: Icons.playerPlayFilled; filled:true; round:true; tone:"solid"
         tip: I18n.tr("Play now", I18n.rev)
         onClicked: tile.playRequested()

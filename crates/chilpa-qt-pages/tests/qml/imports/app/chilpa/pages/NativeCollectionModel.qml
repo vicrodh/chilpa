@@ -18,6 +18,8 @@ QtObject {
     property var resolved:({})
     property int closes:0
     property int released:0
+    property string preview:"{}"
+    property int previewsReleased:0
     property int syntheticCount:0
     function open(route) {
         if (!active) return false
@@ -40,13 +42,19 @@ QtObject {
     function entry(index,rev) { return JSON.stringify(held[index] || {}) }
     function refresh(manual) { calls=calls.concat([["refresh",manual]]);NativePages.revalidate(key,manual);if(simulateAsync)busy=true }
     function prepareAction(token) {
+        releaseAction()
         calls=calls.concat([["action",token]])
         const at=Number(token.split(":")[1]),item=originals[at] || {kind:"track",title:"Song "+at}
         const result=resolved[token] || {lease:1,key:"fixture frozen:"+Math.floor(at/100)+"|tracks",kind:item.kind,trackRow:item._host?.track_row ?? at%100,cardId:item._host?.card_id || 0,navigationKey:"fixture native:"+item.ref,ref:item.ref,title:item.title,artist:item.artist,available:item.available}
         action=JSON.stringify(result);return true
     }
+    function pinAction() {
+        if (!active || !JSON.parse(action).lease) return false
+        preview=action;calls=calls.concat([["pin",JSON.parse(action).ref]]);return true
+    }
+    function releasePreview() { if(preview !== "{}")previewsReleased++;preview="{}" }
     function releaseAction() { if (action !== "{}") released++;action="{}" }
-    function retire() { closes++;key="";busy=false;releaseAction() }
+    function retire() { closes++;key="";busy=false;releaseAction();releasePreview() }
     function close() { retire();held={};count=0;document="{}" }
     function poll() {}
 }

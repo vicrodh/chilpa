@@ -3,6 +3,8 @@ use super::{Catalog, Job, SelectionHold, store::Shelf};
 use serde_json::{Value, json};
 use std::{collections::VecDeque, sync::Arc, time::Duration};
 
+pub(super) fn action_shelf(key: &str) -> bool { super::split(key).1.starts_with("_collection-action:") }
+
 pub(crate) fn validate(value: &Value) -> Result<(), String> {
     if !super::collection_page::collection(value) {
         return Err("The source did not return a collection.".into());
@@ -15,30 +17,18 @@ pub(crate) struct Lease {
     catalog: Arc<Catalog>,
     key: String,
     hold: Option<SelectionHold>,
-    created_cards: Vec<i64>,
-    created_tracks: Vec<i64>,
 }
 
 impl Drop for Lease {
     fn drop(&mut self) {
-        {
-            let mut inner = self.catalog.lock();
-            inner.store.shelves.remove(&self.key);
-            inner.published.shelves.remove(&self.key);
-            inner.dirty = true;
-        }
+        // The shelf keeps the entities rooted until the selection has gone.
         self.hold.take();
-        {
-            let mut inner = self.catalog.lock();
-            inner
-                .collection_ephemeral
-                .cards
-                .extend(self.created_cards.drain(..));
-            inner
-                .collection_ephemeral
-                .tracks
-                .extend(self.created_tracks.drain(..));
-        }
+        let mut inner = self.catalog.lock();
+        inner.collection_ephemeral.released = true;
+        inner.store.shelves.remove(&self.key);
+        inner.published.shelves.remove(&self.key);
+        inner.dirty = true;
+        drop(inner);
         self.catalog.changed();
     }
 }
@@ -143,9 +133,9 @@ impl Catalog {
             .get(local)
             .ok_or("The selected item is no longer available.")?;
         let key = format!("{plugin} _collection-action:{lease}");
+        let stamp = super::now();
         let mut shelf = Shelf {
-            document: page.clone(),
-            read_at: super::now(),
+            read_at: stamp,
             epoch: 1,
             ..Default::default()
         };
@@ -154,12 +144,20 @@ impl Catalog {
             return Err("The source library is still loading. Please try again.".into());
         }
         let before = inner.store.allocation_watermarks();
-        super::collection_page::ingest(&mut inner.store, plugin, &mut shelf, super::now());
+        let (card_id, track_row) = if item["kind"] == "track" {
+            // Menus and playback need the identities and track order of this page.
+            let mut selected = (0, -1);
+            for (at, row) in page["items"].as_array().expect("validated page").iter().enumerate() {
+                let adopted = super::collection_page::adopt(&mut inner.store, plugin, &mut shelf, row, stamp);
+                if at == local { selected = adopted; }
+            }
+            selected
+        } else {
+            super::collection_page::adopt(&mut inner.store, plugin, &mut shelf, item, stamp)
+        };
         let after = inner.store.allocation_watermarks();
-        let created_cards = (after.0..before.0).collect();
-        let created_tracks = (after.1..before.1).collect();
-        let host = &shelf.document["items"][local]["_host"];
-        let response = json!({"lease":lease,"key":key,"trackRow":host["track_row"],"cardId":host["card_id"],
+        inner.collection_ephemeral.own_allocations(before, after);
+        let response = json!({"lease":lease,"key":key,"trackRow":track_row,"cardId":card_id,
             "kind":item["kind"],"ref":item["ref"],"navigationKey":format!("{plugin} native:{}",item["ref"].as_str().unwrap_or_default())});
         let cards = shelf
             .cards
@@ -180,7 +178,6 @@ impl Catalog {
             .expect("new action roots")
             .shelves
             .insert(key.clone());
-        shelf.document = Value::Null;
         inner.store.shelves.insert(key.clone(), shelf);
         inner.dirty = true;
         drop(inner);
@@ -191,8 +188,6 @@ impl Catalog {
                 catalog: self.clone(),
                 key,
                 hold: Some(hold),
-                created_cards,
-                created_tracks,
             },
             response,
         ))
@@ -252,4 +247,16 @@ mod tests {
         epochs.invalidate("first", false);
         assert_ne!(epochs.read("first").0, personal.0);
     }
+    #[test]
+    fn chosen_reference_cover_does_not_adopt_a_card_or_load_an_index() {
+        let catalog=super::ready_test_catalog();
+        catalog.choose_art(std::collections::HashMap::from([(("fixture".into(),"label:one".into()),"/tmp/chosen-cover.png".into())]));
+        assert_eq!(catalog.chosen_art_reference("fixture","label:one").as_deref(),Some("/tmp/chosen-cover.png"));
+        assert!(catalog.chosen_art_reference("fixture","label:other").is_none());
+        let inner=catalog.lock();
+        assert!(inner.store.cards.is_empty());
+        assert!(inner.store.tracks.is_empty());
+        assert!(inner.store.shelves.is_empty());
+    }
+
 }

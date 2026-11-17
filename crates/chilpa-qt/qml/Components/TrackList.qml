@@ -43,7 +43,7 @@ Item {
     // A page keeps row slots at full height and builds only nearby contents.
     property Flickable viewport: null
     property bool prefetch: true
-    readonly property real visibleTop: viewport ? viewport.contentY - parent.mapToItem(viewport.contentItem, 0, y + view.y).y : view.contentY
+    readonly property real visibleTop: view.visibleContentTop
     // Room below the last row, for what floats over the list.
     property int bottomInset: 0
     // Titles that reorder the list, and the order in use.
@@ -173,19 +173,19 @@ Item {
             headerLabel: list.snapshotRows ? "" : model.headerLabel || ""
             headerMeta: list.snapshotRows ? "" : model.headerMeta || ""
             immediate: visible && y + height > list.visibleTop && y < list.visibleTop + (list.viewport ? list.viewport.height : view.height)
-            inViewport: !list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2
+            inViewport: visible && (!list.viewport || immediate || list.prefetch && y + height >= list.visibleTop - list.viewport.height && y < list.visibleTop + list.viewport.height * 2)
             sourceName: columns.sourceShown ? model.sourceName || "" : ""
             composer: Prefs.trackComposers ? model.composer || "" : ""
             bitDepth: columns.bitsShown ? model.bitDepth || 0 : 0
             sampleRate: columns.rateShown ? model.sampleRate || 0 : 0
             format: columns.formatShown ? model.format || "" : ""
-            quality: columns.qualityShown ? model.quality || "" : ""
+            quality: inViewport && columns.qualityShown ? model.quality || "" : ""
             tier: columns.qualityShown ? model.tier || 0 : 0
             qualityDetail: columns.sheet && columns.qualityShown ? model.qualityDetail || "" : ""
             duration: columns.timeShown ? model.duration || "" : ""
             plays: columns.playsShown ? model.plays || 0 : 0
             art: rowKind !== 0 || columns.artShown ? model.art || "" : ""
-            credits: JSON.parse(model.credits || "{}")
+            credits: inViewport ? JSON.parse(model.credits || "{}") : ({})
             explicitContent: model.explicitContent === true
             aiGenerated: model.aiGenerated === true
             headerGlyph: list.model && list.model.kind === "listenlist" ? (headerLabel === I18n.tr("History", I18n.rev) ? Lucide.rotateCcwClock : headerLabel === I18n.tr("Up next", I18n.rev) ? Lucide.listVideo : "") : ""

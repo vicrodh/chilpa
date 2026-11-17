@@ -8,7 +8,6 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
-import "../Patterns"
 
 // Albums (design/06): every record in the library, as cards or as rows,
 // through the sources and qualities chosen, and grouped or not. It scrolls
@@ -39,13 +38,20 @@ Item {
         columns: grid.columns
     }
 
+    SourceEntityHeader {
+        id: entityHead
+        pageInset: true
+        currentPage: page.visible && !!page.source
+        info: page.about.header || ({})
+    }
+
     ScreenHead {
         id: head
         objectName: "albumsPageHeading"
         x: Metrics.contentX
-        y: Metrics.contentTop
+        y: entityHead.active ? entityHead.y + entityHead.height + Metrics.gap16 : Metrics.contentTop
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
-        title: page.source ? page.about.title || page.about.name || "" : I18n.tr("Albums", I18n.rev)
+        title: entityHead.active ? "" : page.source ? page.about.title || page.about.name || "" : I18n.tr("Albums", I18n.rev)
         count: !all.ready || all.error !== "" ? "" : page.about.entity === "playlist" ? I18n.trCount("{} playlist", "{} playlists", all.albums, I18n.rev)
             : page.about.entity === "label" ? I18n.trCount("{} label", "{} labels", all.albums, I18n.rev)
             : page.about.entity === "artist" ? I18n.trCount("{} artist", "{} artists", all.albums, I18n.rev) : I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)

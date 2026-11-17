@@ -51,3 +51,7 @@ cable
 blocks
 palette
 cloud-upload
+
+user-star
+disc
+award

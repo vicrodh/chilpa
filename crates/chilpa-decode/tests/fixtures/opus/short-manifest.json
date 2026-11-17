@@ -1,0 +1,11 @@
+{
+  "source": "deterministic low-level LCG samples; FFmpeg libopus encoder; reference libopus repacketizer for 32/48 frames of 2.5 ms; FFmpeg float decoder reference",
+  "sha256": {
+    "short-stereo.opus": "07977a2824e0a80cd993ba602357525a6a248bf7e301feab51c058d2d156149f",
+    "short-stereo.f32": "6a4cfe4c90949eba02e523f9ae816677924ff174934540901e87d6cc14d39528",
+    "code3-32.opus": "f69fc8f0b3b3bb5707f50cd0b82a1bd8e56edc4e661c8be63a6ccc3c4dbe483b",
+    "code3-32.f32": "b52976b5be92cc1bea3c1fe32664caa10581943d0b56f7a92602c71c53e71863",
+    "code3-48.opus": "f1a9483ceec93afe0949d62844b0750f2691a27c31c79ae229a131ca95d77857",
+    "code3-48.f32": "976fe1a5f5e8de824c8c89f131aec1c57e606d849ab5e8280501485984c76981"
+  }
+}

@@ -1592,6 +1592,9 @@ msgstr ""
 msgid "Choose an assignment scope."
 msgstr ""
 
+msgid "Choose an audio output before remembering stereo conversion."
+msgstr ""
+
 msgid "Choose an autosave policy."
 msgstr ""
 
@@ -2017,6 +2020,9 @@ msgstr ""
 
 msgid "Convert to PCM"
 msgstr "轉換為 PCM"
+
+msgid "Convert to stereo"
+msgstr ""
 
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "可轉換的系統輸入；實體 DAC 能力未知"
@@ -3956,6 +3962,9 @@ msgstr "保留原始佇列"
 msgid "Keep the current one"
 msgstr "保留目前的設定"
 
+msgid "Keep the original channels for multichannel output, or mix decoded audio to stereo. DSD passthrough keeps its original channels."
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr "在不同作業階段間保留播放佇列"
 
@@ -4433,8 +4442,14 @@ msgstr "最小化"
 msgid "Missing"
 msgstr "遺失"
 
+msgid "Mix to stereo only when this output cannot keep the original channels. Turn this off to ask again."
+msgstr ""
+
 msgid "Mixed"
 msgstr "混合"
+
+msgid "Mixed from {} to {} channels"
+msgstr ""
 
 msgid "Mixed output"
 msgstr "混合輸出"
@@ -5378,6 +5393,9 @@ msgstr "原始位元組"
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "原始位元組 · Chilpa 未轉碼 · 接收端處理未知"
 
+msgid "Original channels"
+msgstr ""
+
 msgid "Original music files"
 msgstr "原始音樂檔案"
 
@@ -5418,6 +5436,9 @@ msgid "Output identity could not be saved."
 msgstr "無法儲存輸出識別。"
 
 msgid "Overview"
+msgstr ""
+
+msgid "PCM channels"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"
@@ -5584,6 +5605,12 @@ msgstr "播放游標所在曲目"
 
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 msgstr "播放自架伺服器上的內容，並可透過官方或第三方目錄的外掛新增來源與功能。"
+
+msgid "Play in stereo"
+msgstr ""
+
+msgid "Play in stereo?"
+msgstr ""
 
 msgid "Play indicator animation"
 msgstr "播放指示器動畫"
@@ -6226,6 +6253,12 @@ msgstr ""
 
 msgid "Remember"
 msgstr "記住設定"
+
+msgid "Remember for this output"
+msgstr ""
+
+msgid "Remember stereo conversion for this output"
+msgstr ""
 
 msgid "Remote artwork"
 msgstr "遠端封面"
@@ -7307,6 +7340,9 @@ msgstr ""
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "立體聲控制項套用於雙聲道 PCM。EQ 與連動壓縮套用於所有聲道。"
 
+msgid "Stereo conversion is not available for this output."
+msgstr ""
+
 msgid "Stereo width · 0–100%"
 msgstr "立體聲寬度 · 0–100%"
 
@@ -7356,6 +7392,9 @@ msgid "Storage"
 msgstr "儲存空間"
 
 msgid "Storage limit"
+msgstr ""
+
+msgid "Stored stereo conversion choices could not be read."
 msgstr ""
 
 msgid "Stream address"
@@ -8423,6 +8462,9 @@ msgstr "此曲目沒有可開啟的專輯"
 msgid "This track has no verified offline copy. Download it while connected."
 msgstr ""
 
+msgid "This track has {} channels. Play it in stereo on {}?"
+msgstr ""
+
 msgid "This transcript format is not supported."
 msgstr "不支援此逐字稿格式。"
 
@@ -8506,6 +8548,9 @@ msgstr ""
 
 msgid "Too many device storage locations were reported."
 msgstr "回報了過多的裝置儲存位置。"
+
+msgid "Too many outputs have remembered stereo conversion. Forget one in Audio settings."
+msgstr ""
 
 msgid "Tools"
 msgstr "工具"
@@ -9554,6 +9599,9 @@ msgstr "整合"
 
 msgid "internal"
 msgstr "內部"
+
+msgid "invalid DSDIFF chunk bounds"
+msgstr ""
 
 msgid "invalid table of contents: {}"
 msgstr "無效的目錄表格 (TOC)：{}"

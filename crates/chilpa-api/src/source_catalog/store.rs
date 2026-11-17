@@ -289,6 +289,13 @@ impl Store {
         self.cold_sources.remove(plugin);
     }
 
+    /// Old files could contain the shelf of a lease which ended with its process.
+    /// Their entity IDs have no saved provenance and keep normal retention.
+    pub(super) fn restore_index(&mut self) {
+        self.shelves.retain(|key, _| !super::collection_window::action_shelf(key));
+        self.index();
+    }
+
     /// Rebuilds what is not written down: the indexes by identity.
     pub fn index(&mut self) {
         self.card_ids = self.cards.values().map(|c| ((c.plugin.clone(), c.identity.clone()), c.id)).collect();

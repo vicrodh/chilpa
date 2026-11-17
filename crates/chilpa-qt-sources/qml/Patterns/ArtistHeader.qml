@@ -1,6 +1,5 @@
 import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/TextLinks.js" as TextLinks
-import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
@@ -54,6 +53,8 @@ Item {
     ArtistPortrait {
         id: portrait
         objectName: "artistPortrait"
+        fallbackGlyph: Lucide.imageFallback(header.info.image_fallback || "user-star")
+        fallbackFamily: Lucide.font
         width: Math.min(Metrics.artistPortrait, header.width / 3); height: width // derived: room for the text on narrow windows
         radius: width / 2 // derived: a circle
         // A picture the listener chose is shown whole, not cropped to the circle.
@@ -94,12 +95,6 @@ Item {
         } }
     }
     Loader { id: lightbox; active: false; sourceComponent: Component { CoverLightbox {} } }
-    Icon {
-        anchors.centerIn: portrait
-        visible: !portrait.ready
-        glyph: SourceGlyphs.musicArtist; iconFamily: SourceGlyphs.font
-        size: Metrics.iconPlay; color: Theme.color.textSecondary
-    }
     // At the top right, level with the source's name; the name and the
     // roles beside it leave it room.
     readonly property int switchesRoom: switches.visible ? switches.width + Metrics.gap16 : 0

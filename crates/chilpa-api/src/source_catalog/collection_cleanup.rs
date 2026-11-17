@@ -1,12 +1,49 @@
 //! Reclaim only IDs allocated by an action, after its temporary roots close.
-//! Runs on the collection worker, including after close with no UI polling.
-use super::{Catalog, Inner, Job};
+//! Runs on the collection and catalog workers when their owners release them.
+use super::{Catalog, Inner, Job, collection_window::action_shelf, store::Store};
 use std::collections::HashSet;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(super) struct Candidates {
     pub cards: HashSet<i64>,
     pub tracks: HashSet<i64>,
+    pub(super) released: bool,
+}
+
+// Only allocations made by collection actions and their own hydration are candidates.
+enum Entity { Card(i64), Track(i64) }
+
+impl Candidates {
+    pub(super) fn own_allocations(&mut self, before: (i64, i64), after: (i64, i64)) {
+        self.cards.extend(after.0..before.0);
+        self.tracks.extend(after.1..before.1);
+    }
+
+    fn is_empty(&self) -> bool { self.cards.is_empty() && self.tracks.is_empty() }
+
+    // Move the reachable candidates into their owner's set. Albums and tracks can
+    // refer to each other; only an edge from a live owner starts a traversal.
+    fn claim(&mut self, store: &Store, mut roots: Vec<Entity>) -> Self {
+        let mut reached = Self::default();
+        while let Some(root) = roots.pop() {
+            match root {
+                Entity::Card(id) if self.cards.remove(&id) => {
+                    if let Some(card) = store.cards.get(&id) {
+                        reached.cards.insert(id);
+                        roots.extend(card.tracks.iter().flatten().copied().map(Entity::Track));
+                    }
+                }
+                Entity::Track(id) if self.tracks.remove(&id) => {
+                    if let Some(track) = store.tracks.get(&id) {
+                        reached.tracks.insert(id);
+                        roots.push(Entity::Card(track.album_id));
+                    }
+                }
+                _ => {}
+            }
+        }
+        reached
+    }
 }
 
 fn track_rooted(inner: &Inner, id: i64) -> bool {
@@ -22,12 +59,8 @@ fn track_rooted(inner: &Inner, id: i64) -> bool {
         || inner
             .selections
             .values()
-            .any(|roots| roots.tracks.contains(&track.path))
-        || inner
-            .running
-            .iter()
-            .chain(&inner.queue.queued)
-            .any(|job| matches!(job, Job::Track(path) if *path == track.path))
+            .any(|roots| !roots.shelves.iter().any(|key| action_shelf(key)) && roots.tracks.contains(&track.path))
+
 }
 
 fn card_rooted(inner: &Inner, id: i64) -> bool {
@@ -42,63 +75,98 @@ fn card_rooted(inner: &Inner, id: i64) -> bool {
         || inner
             .selections
             .values()
-            .any(|roots| roots.cards.iter().any(same))
+            .any(|roots| !roots.shelves.iter().any(|key| action_shelf(key)) && roots.cards.iter().any(same))
         || inner
             .deferred
             .iter()
             .any(|action| action.albums.contains(&id))
-        || inner
-            .running
-            .iter()
-            .chain(&inner.queue.queued)
-            .any(|job| matches!(job, Job::Tracks(asked) if *asked == id))
+
+}
+
+impl Inner {
+    pub(super) fn collection_job(&self, job: &Job) -> bool {
+        match job {
+            Job::Tracks(id) => self.collection_ephemeral.cards.contains(id),
+            Job::Track(path) => self.store.track_by_path(path).is_some_and(|track| self.collection_ephemeral.tracks.contains(&track.id)),
+            _ => false,
+        }
+    }
+
+    fn keep_durable_entities(&self, owned: &mut Candidates) {
+        let mut durable = Vec::new();
+        for (_, shelf) in self.store.shelves.iter().filter(|(key, _)| !action_shelf(key)) {
+            durable.extend(shelf.cards.iter().chain(shelf.membership.keys()).filter(|id| owned.cards.contains(id)).copied().map(Entity::Card));
+            durable.extend(shelf.tracks.iter().filter(|id| owned.tracks.contains(id)).copied().map(Entity::Track));
+        }
+        durable.extend(owned.cards.iter().copied().filter(|id| card_rooted(self, *id)).map(Entity::Card));
+        durable.extend(owned.tracks.iter().copied().filter(|id| track_rooted(self, *id)).map(Entity::Track));
+        for (id, card) in &self.store.cards {
+            if !owned.cards.contains(id) {
+                durable.extend(card.tracks.iter().flatten().filter(|id| owned.tracks.contains(id)).copied().map(Entity::Track));
+            }
+        }
+        for (id, track) in &self.store.tracks {
+            if !owned.tracks.contains(id) && owned.cards.contains(&track.album_id) {
+                durable.push(Entity::Card(track.album_id));
+            }
+        }
+        // Queues, navigation, pickers, existing entities and durable shelves
+        // transfer their reachable entities to ordinary catalog ownership.
+        owned.claim(&self.store, durable);
+    }
+
+    pub(super) fn omit_transient_entities(&self, snapshot: &mut Store) {
+        snapshot.shelves.retain(|key, _| !action_shelf(key));
+        if !self.collection_ephemeral.is_empty() {
+            let mut temporary = self.collection_ephemeral.clone();
+            self.keep_durable_entities(&mut temporary);
+            snapshot.remove_action_orphans(&temporary.cards, &temporary.tracks);
+        }
+    }
+
+    pub(super) fn reap_collection_actions(&mut self) -> bool {
+        let mut owned = std::mem::take(&mut self.collection_ephemeral);
+        if owned.is_empty() { return false; }
+        let mut temporary = Vec::new();
+        for (_, shelf) in self.store.shelves.iter().filter(|(key, _)| action_shelf(key)) {
+            temporary.extend(shelf.cards.iter().copied().map(Entity::Card));
+            temporary.extend(shelf.tracks.iter().copied().map(Entity::Track));
+        }
+        for job in self.running.iter().chain(&self.queue.queued) {
+            match job {
+                Job::Tracks(id) => temporary.push(Entity::Card(*id)),
+                Job::Track(path) => {
+                    if let Some(track) = self.store.track_by_path(path) { temporary.push(Entity::Track(track.id)); }
+                }
+                _ => {}
+            }
+        }
+        // A second lease or an in-flight read can outlive the first lease.
+        // Keep this provenance until those owners close or the read finishes.
+        self.collection_ephemeral = owned.claim(&self.store, temporary);
+        if owned.is_empty() { return false; }
+        self.keep_durable_entities(&mut owned);
+        if owned.is_empty() { return false; }
+        self.store.remove_action_orphans(&owned.cards, &owned.tracks);
+        for id in &owned.cards {
+            self.published.cards.remove(id);
+            self.card_errors.remove(id);
+            self.card_retry_at.remove(id);
+            self.entity_revisions.remove(id);
+        }
+        for id in &owned.tracks { self.published.tracks.remove(id); }
+        self.dirty = true;
+        true
+    }
 }
 
 impl Catalog {
     pub(crate) fn reap_collection_actions(&self) {
         let mut inner = self.lock();
-        let mut candidates = std::mem::take(&mut inner.collection_ephemeral);
-        if candidates.cards.is_empty() && candidates.tracks.is_empty() {
-            return;
-        }
-        candidates.cards.retain(|id| !card_rooted(&inner, *id));
-        candidates.tracks.retain(|id| !track_rooted(&inner, *id));
-        // Membership is preserved even for a shelf which is currently hidden.
-        // The integrated source index derives its entities from these shelves.
-        for shelf in inner.store.shelves.values() {
-            for id in shelf.cards.iter().chain(shelf.membership.keys()) {
-                candidates.cards.remove(id);
-            }
-            for id in &shelf.tracks {
-                candidates.tracks.remove(id);
-            }
-        }
-        for card in inner.store.cards.values() {
-            for id in card.tracks.iter().flatten() {
-                candidates.tracks.remove(id);
-            }
-        }
-        // A queued, selected, indexed, or pre-existing track keeps its album.
-        for (id, track) in &inner.store.tracks {
-            if !candidates.tracks.contains(id) {
-                candidates.cards.remove(&track.album_id);
-            }
-        }
-        inner
-            .store
-            .remove_action_orphans(&candidates.cards, &candidates.tracks);
-        for id in &candidates.cards {
-            inner.published.cards.remove(id);
-            inner.card_errors.remove(id);
-            inner.card_retry_at.remove(id);
-            inner.entity_revisions.remove(id);
-        }
-        for id in &candidates.tracks {
-            inner.published.tracks.remove(id);
-        }
-        inner.dirty = true;
+        if !inner.collection_ephemeral.released { return; }
+        let removed = inner.reap_collection_actions();
         drop(inner);
-        self.publish(true);
+        if removed { self.publish(true); }
     }
 }
 
@@ -141,7 +209,7 @@ mod tests {
             {"kind":"track","ref":"track:picker","title":"Picker"},
             {"kind":"track","ref":"track:index","title":"Index"},
             {"kind":"album","ref":"album:open","title":"Open"}]});
-        let (lease, _) = catalog.collection_action("fixture", &wire, 0, 1).unwrap();
+        let (lease, _) = catalog.collection_action("fixture", &wire, 1, 1).unwrap();
         let path = |reference| crate::source_opener::entry_of("fixture", reference);
         catalog.protect_tracks([path("track:queue")].into());
         let picker = catalog.hold([], [path("track:picker")]);

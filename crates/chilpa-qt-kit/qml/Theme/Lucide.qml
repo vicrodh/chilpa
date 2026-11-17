@@ -9,6 +9,7 @@ QtObject {
     readonly property string arrowRight: "\ue049"
     readonly property string audioLines: "\ue55a"
     readonly property string audioLinesOff: "\ue737"
+    readonly property string award: "\ue04f"
     readonly property string blocks: "\ue4fa"
     readonly property string bookOpen: "\ue05f"
     readonly property string bug: "\ue20c"
@@ -23,6 +24,7 @@ QtObject {
     readonly property string cloudUpload: "\ue091"
     readonly property string copy: "\ue09e"
     readonly property string database: "\ue0ad"
+    readonly property string disc: "\ue0af"
     readonly property string eject: "\ue733"
     readonly property string ellipsis: "\ue0b6"
     readonly property string externalLink: "\ue0b9"
@@ -57,5 +59,14 @@ QtObject {
     readonly property string slidersVertical: "\ue162"
     readonly property string squarePlay: "\ue481"
     readonly property string undo2: "\ue2a1"
+    readonly property string userStar: "\ue687"
     readonly property string x: "\ue1b2"
+    function imageFallback(name) {
+        switch (name) {
+        case "user-star": return userStar
+        case "disc": return disc
+        case "award": return award
+        default: return ""
+        }
+    }
 }

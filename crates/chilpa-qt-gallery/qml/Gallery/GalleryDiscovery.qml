@@ -2,6 +2,7 @@ import "qrc:/qt/qml/app/chilpa/pages/qml/Components"
 import "qrc:/qt/qml/app/chilpa/pages/qml/Patterns"
 import QtQuick
 import app.chilpa
+import app.chilpa.pages
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
@@ -23,7 +24,27 @@ TitledFlow {
     QtObject { id:sampleNavigation; property var expandedSources:({}); property var sourceView:({}) }
     SourceNavigationTree { width:Metrics.sidebarWidth; pluginId:"fixture"; controller:sampleNavigation; entries:[{id:"collection",title:"Collection",children:[{id:"all",title:"All"}]}] }
     CollectionControls { width:Metrics.settingsMaxWidth; source:""; about:({filters:{},filter_controls:[{key:"search",type:"search",label:"Search collection"},{key:"hidden",type:"toggle",label:"Hide purchases"}]}) }
-    CollectionTile { width:CardLayout.cardWidth; plugin:"fixture"; entry:({kind:"artist",ref:"artist:1",title:"Artist",subtitle:"Collection"}) }
+    SourceEntityHeader { width:Metrics.settingsMaxWidth; currentPage:true; info:({kind:"award",title:"Award",image_fallback:"award"}) }
+    NativeCollectionModel { id:collectionWindow; active:false }
+    CollectionActions { window:collectionWindow; about:({}); activePage:false }
+    AlbumGridRow {
+        first:0; span:3; revision:0; group:""
+        owner:({visible:true,width:Metrics.settingsMaxWidth,cardWidth:CardLayout.cardWidth,
+            rowHeight:CardLayout.cardWidth+Metrics.cardTextGap+Metrics.cardTextHeight,
+            visibleTop:0,viewport:null,shelf:false,list:false,technical:false,
+            layoutWidth:Metrics.settingsMaxWidth,columns:3,scrollView:{height:Metrics.queueMin},
+            model:{expanded:-1},viewportWidth:Metrics.settingsMaxWidth,viewportX:0})
+        cardDelegate: Component {
+            CollectionTile {
+                required property int index
+                width:CardLayout.cardWidth
+                x:index*(width+Metrics.gridGap)
+                plugin:"fixture"
+                entry:({kind:["artist","label","award"][index],ref:"fixture:"+index,
+                    title:["Artist","Label","Award"][index],image_fallback:["user-star","disc","award"][index]})
+            }
+        }
+    }
     ArtistContext { width: Metrics.settingsMaxWidth; info: ({title:"Artist",genres:["Jazz","Soul Jazz"],compositions:8}) }
     DiscoveryEntry { width: Metrics.discoveryEntryWidth; entry: ({kind:"genre",name:"Jazz",art:{key:"jazz"}}); detail:"Explore styles in your library" }
     DiscoveryEntry { width: Metrics.sceneCardWidth; activeImages:false; entry: ({kind:"composer",name:"Composer"}); detail:"3 albums" }

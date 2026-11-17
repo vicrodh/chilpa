@@ -12,7 +12,7 @@ use crate::scan::{Containers, ScanControl};
 use std::path::{Path, PathBuf};
 
 const EXTENSIONS: &[&str] =
-    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "aac", "mp3", "ogg", "oga", "dsf", "dff"];
+    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "aac", "mp3", "ogg", "oga", "opus", "dsf", "dff"];
 
 /// Every audio file under a root in name order, and the subfolders that
 /// could not be opened, links that did not resolve among them.
@@ -167,6 +167,17 @@ mod tests {
         }
         assert_eq!(listing.blocked, [closed]);
         assert_eq!(listing.files.len(), 3);
+    }
+
+    #[test]
+    fn the_walk_includes_opus_files_in_both_extension_cases() {
+        let directory = tempfile::tempdir().unwrap();
+        for name in ["one.opus", "two.OPUS", "notes.txt"] {
+            std::fs::write(directory.path().join(name), b"fixture").unwrap();
+        }
+        let listing = walk(directory.path(), &NoContainers);
+        let names: Vec<_> = listing.files.iter().map(|path| path.file_name().unwrap().to_string_lossy()).collect();
+        assert_eq!(names, ["one.opus", "two.OPUS"]);
     }
 
     #[test]

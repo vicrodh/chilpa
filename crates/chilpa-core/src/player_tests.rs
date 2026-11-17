@@ -348,9 +348,9 @@ fn a_missing_file_is_reported_and_the_player_stays_alive() {
 
 #[test]
 fn an_output_that_refused_the_play_is_how_it_ends_whatever_the_queue_returned() {
-    let refused = ending_event(Some("no DSD here".into()), Ok(Outcome::Stopped { frames: 0 }));
+    let refused = ending_event(Some("no DSD here".into()), Ok(Outcome::Stopped { frames: 0 }), "fake");
     assert_eq!(refused, PlayerEvent::Failed { message: "no DSD here".into() }, "one ending, and it is the refusal");
-    assert_eq!(ending_event(None, Ok(Outcome::Stopped { frames: 4 })), PlayerEvent::Stopped { frames: 4 });
+    assert_eq!(ending_event(None, Ok(Outcome::Stopped { frames: 4 }), "fake"), PlayerEvent::Stopped { frames: 4 });
 }
 
 /// Two tracks of 100 sectors of silence; sector 75 will not read.

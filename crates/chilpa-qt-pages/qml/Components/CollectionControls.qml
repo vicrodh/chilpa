@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.pages
@@ -10,6 +11,11 @@ Flow {
     id: controls
     required property var about
     required property string source
+    property bool busy: false
+    property bool silentWork: false
+    property bool active: true
+    signal refreshRequested()
+    signal createPlaylistRequested()
     spacing: Metrics.gap8
     function applyField(key, value, excludes) {
         const fields = Object.assign({}, about.filters || {})
@@ -67,6 +73,29 @@ Flow {
                 }
             }
         }
+    }
+    PillButton {
+        objectName: "collectionRefresh"
+        text: I18n.tr("Refresh", I18n.rev)
+        glyph: Icons.refresh
+        enabled: !controls.busy || controls.silentWork
+        onClicked: controls.refreshRequested()
+    }
+    PillButton {
+        visible: controls.about.playlist_edit === true
+        text: I18n.tr("New playlist", I18n.rev)
+        onClicked: controls.createPlaylistRequested()
+    }
+    BusyIndicator {
+        objectName: "collectionLoadingFeedback"
+        width: Metrics.button28; height: width
+        visible: controls.busy && !controls.silentWork || controls.about.updating === true
+        running: visible && controls.active
+    }
+    Text {
+        visible: controls.about.sync_loaded !== undefined && controls.about.sync_loaded !== null
+        text: I18n.trCount("{} item", "{} items", controls.about.sync_loaded || 0, I18n.rev)
+        color: Theme.color.textSecondary; font.pointSize: Type.small
     }
     SortButton {
         objectName: "collectionOrder"

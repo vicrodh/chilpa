@@ -24,7 +24,7 @@ fn file() -> std::path::PathBuf {
 
 fn load() -> Store {
     let mut store: Store = std::fs::File::open(file()).ok().and_then(|file| serde_json::from_reader(std::io::BufReader::new(file)).ok()).unwrap_or_default();
-    store.index();
+    store.restore_index();
     store
 }
 
@@ -66,7 +66,8 @@ pub(super) fn persist(catalog: &Catalog, write: impl FnOnce(&Store) -> std::io::
         let live_shelves: std::collections::HashSet<_> = inner.store.shelves.keys().cloned().collect();
         inner.published.tracks.retain(|id, _| live_tracks.contains(id));
         inner.published.shelves.retain(|key, _| live_shelves.contains(key));
-        let snapshot = inner.store.snapshot();
+        let mut snapshot = inner.store.snapshot();
+        inner.omit_transient_entities(&mut snapshot);
         inner.dirty = false;
         snapshot
     };
@@ -230,6 +231,7 @@ pub(super) fn finish(catalog: &Catalog, job: &Job, outcome: Result<(), String>) 
         (Job::Track(path), Err(_)) => { inner.track_failed_at.insert(path.clone(), Instant::now()); }
         _ => {}
     }
+    if inner.collection_job(job) { inner.reap_collection_actions(); }
     drop(inner);
     // I settle foreground loading and failures; quiet success publishes only changed content.
     catalog.publish(!quiet || failed);

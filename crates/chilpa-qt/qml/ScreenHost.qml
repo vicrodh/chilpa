@@ -111,7 +111,7 @@ PageTransition {
     Component { id: source; SourceScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: mediaSource; MediaSourceScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: mediaDetail; MediaDetailScreen { key: host.routeKeyOf(parent) } }
-    Component { id: nativeSource; NativeSourceHost { source: host.routeKeyOf(parent); presentation: host.music } }
+    Component { id: nativeSource; NativeSourceHost { source: host.routeKeyOf(parent); presentation: host.music; scrollMemory: parent?.scroll || null } }
     Component { id: sourceEntry; SourceEntryScreen { key: host.routeKeyOf(parent) } }
     Component { id: pending; PendingScreen {} }
 

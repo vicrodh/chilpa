@@ -308,6 +308,16 @@ impl Chilpa {
         }
     }
 
+    /// One confirmation-time look, never a network request or a heartbeat poll.
+    pub(crate) fn channel_target_available(&self,index:usize)->bool {
+        let Some(path)=self.queue.get(index) else { return false };
+        match look(path) {
+            Look::Available=>true,
+            Look::Unavailable(_)=>false,
+            Look::Unknown=>chilpa_models::RemoteEntry::is_remote(path) || path.contains("://") || path.starts_with("cdda:"),
+        }
+    }
+
     /// Whether a position of the queue was found unavailable this run.
     pub(crate) fn marked_at(&self, index: usize) -> bool {
         self.queue.get(index).is_some_and(|path| self.unavailable.marked.contains_key(path))

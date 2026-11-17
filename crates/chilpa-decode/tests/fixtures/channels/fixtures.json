@@ -1,0 +1,23 @@
+{
+  "source": "Generated PCM markers, ramps and correlated full-scale controls; no recorded audio.",
+  "frames": 4096,
+  "rate": 48000,
+  "files": [
+    {
+      "file": "layout-6.wav",
+      "sha256": "3c02176bfe50eff05409107ae940e3b6317c50459cf934eeaa4deab5ab7ee77c"
+    },
+    {
+      "file": "layout-6-stereo.f32",
+      "sha256": "d78a0ddcc67f4eadb8143ede4199e1f5285ff98796cb3008bbe864a104e4a802"
+    },
+    {
+      "file": "layout-8.wav",
+      "sha256": "b2a728b9823d9be8a165a2b6a400976226a1f6a49d2e8c2fae4c2339f825e65e"
+    },
+    {
+      "file": "layout-8-stereo.f32",
+      "sha256": "cddcaa8579ac11789896a8771c97215a32eab688a86062e9b7f99914722bb3c1"
+    }
+  ]
+}

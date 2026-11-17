@@ -1584,6 +1584,9 @@ msgstr ""
 msgid "Choose an assignment scope."
 msgstr ""
 
+msgid "Choose an audio output before remembering stereo conversion."
+msgstr ""
+
 msgid "Choose an autosave policy."
 msgstr ""
 
@@ -2009,6 +2012,9 @@ msgstr "貢献者"
 
 msgid "Convert to PCM"
 msgstr "PCMに変換"
+
+msgid "Convert to stereo"
+msgstr ""
 
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "変換可能なシステム入力。物理DACの対応能力は不明です"
@@ -3948,6 +3954,9 @@ msgstr "元のキューを残す"
 msgid "Keep the current one"
 msgstr "現在のものを残す"
 
+msgid "Keep the original channels for multichannel output, or mix decoded audio to stereo. DSD passthrough keeps its original channels."
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr "セッション間でキューを保持"
 
@@ -4425,8 +4434,14 @@ msgstr "最小化"
 msgid "Missing"
 msgstr "見つかりません"
 
+msgid "Mix to stereo only when this output cannot keep the original channels. Turn this off to ask again."
+msgstr ""
+
 msgid "Mixed"
 msgstr "混在"
+
+msgid "Mixed from {} to {} channels"
+msgstr ""
 
 msgid "Mixed output"
 msgstr "ミックス出力"
@@ -5370,6 +5385,9 @@ msgstr "元のバイト列"
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "元のバイト列 · Chilpaによるトランスコードなし · レシーバー側の処理は不明"
 
+msgid "Original channels"
+msgstr ""
+
 msgid "Original music files"
 msgstr "元の音楽ファイル"
 
@@ -5410,6 +5428,9 @@ msgid "Output identity could not be saved."
 msgstr "出力の識別情報を保存できませんでした。"
 
 msgid "Overview"
+msgstr ""
+
+msgid "PCM channels"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"
@@ -5576,6 +5597,12 @@ msgstr "カーソル位置のトラックを再生"
 
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 msgstr "自分で運用するサーバーから再生し、公式カタログやサードパーティ製カタログのプラグインでソースや機能を追加できます。"
+
+msgid "Play in stereo"
+msgstr ""
+
+msgid "Play in stereo?"
+msgstr ""
 
 msgid "Play indicator animation"
 msgstr "再生インジケーターのアニメーション"
@@ -6218,6 +6245,12 @@ msgstr ""
 
 msgid "Remember"
 msgstr "前回のまま"
+
+msgid "Remember for this output"
+msgstr ""
+
+msgid "Remember stereo conversion for this output"
+msgstr ""
 
 msgid "Remote artwork"
 msgstr "リモートのアートワーク"
@@ -7299,6 +7332,9 @@ msgstr ""
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "ステレオ設定は2チャンネルのPCMに適用されます。EQとリンクしたコンプレッションはすべてのチャンネルに適用されます。"
 
+msgid "Stereo conversion is not available for this output."
+msgstr ""
+
 msgid "Stereo width · 0–100%"
 msgstr "ステレオ幅 · 0–100%"
 
@@ -7349,6 +7385,9 @@ msgstr "ストレージ"
 
 msgid "Storage limit"
 msgstr "保存容量の上限"
+
+msgid "Stored stereo conversion choices could not be read."
+msgstr ""
 
 msgid "Stream address"
 msgstr "ストリームアドレス"
@@ -8415,6 +8454,9 @@ msgstr "このトラックには開けるアルバムがありません"
 msgid "This track has no verified offline copy. Download it while connected."
 msgstr "この曲には検証済みのオフラインコピーがありません。接続中にダウンロードしてください。"
 
+msgid "This track has {} channels. Play it in stereo on {}?"
+msgstr ""
+
 msgid "This transcript format is not supported."
 msgstr "この文字起こし形式には対応していません。"
 
@@ -8497,6 +8539,9 @@ msgid "Tone enabled"
 msgstr ""
 
 msgid "Too many device storage locations were reported."
+msgstr ""
+
+msgid "Too many outputs have remembered stereo conversion. Forget one in Audio settings."
 msgstr ""
 
 msgid "Tools"
@@ -9546,6 +9591,9 @@ msgstr "内蔵"
 
 msgid "internal"
 msgstr "内部"
+
+msgid "invalid DSDIFF chunk bounds"
+msgstr ""
 
 msgid "invalid table of contents: {}"
 msgstr "目次が無効です: {}"

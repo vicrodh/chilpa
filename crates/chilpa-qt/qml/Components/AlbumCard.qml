@@ -27,6 +27,10 @@ Item {
     property string artistName: subtitle
     property var artistDestination: ({})
     property string year
+    property string imageFallback
+    property var playAction: null
+    property bool selectionVisible: true
+    property var favoriteState: null
     property url art
     property var artColors: []
     property int tint: 0
@@ -60,13 +64,15 @@ Item {
         width: card.width; height: card.width
         radius: card.round ? width / 2 : Metrics.radiusCard // derived: a circle
         source: card.art
+        fallbackGlyph: Lucide.imageFallback(card.imageFallback)
+        fallbackFamily: Lucide.font
         contain: card.containArt || card.sourceInfo.contain_art === true
         tint: card.tint
     }
     AnimatedCover {
         objectName: "albumAnimatedCover"
         anchors.fill: cover
-        visible: !cover.ready && card.artColors.length >= 3
+        visible: !cover.ready && cover.fallbackGlyph === "" && card.artColors.length >= 3
         colors: card.artColors
         label: card.title
     }
@@ -108,6 +114,12 @@ Item {
             selected: card.selected
             expanded: card.expanded
             canExpand: card.canExpand
+            playAction: card.playAction
+            selectionVisible: card.selectionVisible
+            favoriteAction: card.favoriteState?.toggle || null
+            fallbackFavoriteSupported: card.favoriteState?.supported === true
+            fallbackFavorite: card.favoriteState?.checked === true
+            fallbackFavoriteBusy: card.favoriteState?.busy === true
             onSelect: card.clicked(1)
             onQuick: card.quick()
             onMenu: (x, y) => card.menu(x, y)

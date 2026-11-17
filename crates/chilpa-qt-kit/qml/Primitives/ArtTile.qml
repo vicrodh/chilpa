@@ -28,6 +28,8 @@ Item {
     // Which placeholder color, so a grid of empty covers is not one block.
     property int tint: 0
     property bool contain: false
+    property string fallbackGlyph
+    property string fallbackFamily
 
     // True once there is a picture to draw, so whoever uses the tile can
     // put something of its own over the placeholder.
@@ -75,6 +77,18 @@ Item {
         property vector4d corners: root.corners
         vertexShader: "../../assets/shaders/rounded.vert.qsb"
         fragmentShader: "../../assets/shaders/rounded.frag.qsb"
+    }
+
+    Loader {
+        anchors.centerIn: parent
+        active: !root.ready && root.fallbackGlyph !== ""
+        sourceComponent: Icon {
+            objectName: "artFallback"
+            glyph: root.fallbackGlyph
+            iconFamily: root.fallbackFamily
+            size: Math.min(Metrics.iconPlay, root.width / 2, root.height / 2)
+            color: Theme.color.textSecondary
+        }
     }
 
     // Over the cover and over the placeholder alike, as the design's inset

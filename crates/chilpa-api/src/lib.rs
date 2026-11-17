@@ -976,6 +976,7 @@ impl Chilpa {
     /// Remembers the chosen output. The retired boolean is ignored for source
     /// compatibility with callers that have not migrated yet.
     pub fn remember(&mut self, output: &str, _legacy_bit_perfect: bool) {
+        if self.chosen_output().0!=output { self.reset_channel_consent(); }
         let mut s = chilpa_core::settings::load();
         s.output = output.to_string();
         // If it cannot be saved, the session carries on: it is a
@@ -1237,6 +1238,7 @@ impl Chilpa {
 
     /// Stops whatever is playing.
     pub fn stop(&mut self) {
+        self.reset_channel_consent();
         self.listen.pending = None;
         self.casting.local_start = None;
         if self.casting.active() { self.cast_stop(); return; }

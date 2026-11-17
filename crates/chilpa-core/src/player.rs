@@ -61,6 +61,8 @@ pub enum PlayerEvent {
     Stopped { frames: u64 },
     /// Something failed, in text the interface can show.
     Failed { message: String },
+    /// The exact entry and output that need explicit stereo conversion consent.
+    ChannelConversionRequired { output: String, path: PathBuf, index: usize, requested: u16, offered: Vec<u16> },
     /// A queue entry was passed over and the queue went on: it would not
     /// open, or it broke partway. `attempt` is its turn in the play, the one
     /// its `Closed` names when it had started; `index` is its place in the
@@ -248,7 +250,7 @@ impl Player {
                                 "play_returned",
                                 format_args!("after={:?} result={result:?}", started.elapsed()),
                             );
-                            let event = ending_event(launch.take_verdict(), result);
+                            let event = ending_event(launch.take_verdict(), result, &run.device);
                             run.settle(event);
                         }
                     }
@@ -492,6 +494,12 @@ impl Player {
         self.controls.dsd_mode.set(mode);
     }
 
+    /// Preserves all channels unless stereo conversion was explicitly selected.
+    /// Selects the channel policy for subsequent opens. Relaunch the current
+    /// queue to apply it immediately and retire any already-preloaded track.
+    pub fn set_stereo_downmix(&self, on: bool) { self.controls.stereo_downmix.set(on); }
+    pub fn set_stereo_fallback(&self, on: bool) { self.controls.stereo_fallback.set(on); }
+
     pub fn repeat(&self) -> crate::queue_playback::Repeat {
         self.controls.repeat.get()
     }
@@ -572,7 +580,7 @@ impl Drop for Player {
 
 /// The one event a play ends with. An output that refused it said why
 /// before it stopped, and that is how it ended, whatever the queue returned.
-fn ending_event(verdict: Option<String>, result: Result<Outcome, PlayError>) -> PlayerEvent {
+fn ending_event(verdict: Option<String>, result: Result<Outcome, PlayError>, output: &str) -> PlayerEvent {
     match (verdict, result) {
         (Some(message), _) => PlayerEvent::Failed { message },
         (None, Ok(Outcome::Finished { frames })) => PlayerEvent::Finished { frames },
@@ -581,6 +589,7 @@ fn ending_event(verdict: Option<String>, result: Result<Outcome, PlayError>) -> 
             message: chilpa_i18n::t_args("the device failed after {} frames: {}", &[&frames.to_string(), &error.to_string()]),
         },
         (None, Ok(Outcome::Unreadable { reason, .. })) => PlayerEvent::Failed { message: reason },
+        (None, Err(PlayError::ChannelOutput { path,index,requested,offered })) => PlayerEvent::ChannelConversionRequired { output:output.into(),path,index,requested,offered },
         (None, Err(e)) => PlayerEvent::Failed { message: e.to_string() },
     }
 }
@@ -674,7 +683,7 @@ fn play(
     let start = crate::queue_playback::first_live(queue, controls, named_start);
     if let Some((index, first)) = &start {
         if is_url(first) {
-            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp);
+            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp, controls.stereo_downmix.get(), controls.stereo_fallback.get()).map_err(|error|error.at_entry(first,*index));
         }
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, controls, open, drive, events);
@@ -860,6 +869,8 @@ fn play_stream(
     index: usize,
     queue_len: usize,
     dsp: &chilpa_audio::dsp::Control,
+    stereo: bool,
+    fallback: bool,
 ) -> Result<Outcome, PlayError> {
     dsp.begin_stream();
     let exact_path = crate::path_is_exact(device, exclusive);
@@ -888,6 +899,8 @@ fn play_stream(
         policy,
         stop,
         pause,
+        stereo,
+        fallback,
         Some(dsp.clone()),
         owed.report.clone(),
         |format| open(device, format, exclusive),

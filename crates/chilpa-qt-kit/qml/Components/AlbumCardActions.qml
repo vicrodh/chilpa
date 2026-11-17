@@ -20,6 +20,10 @@ Rectangle {
     // Alternate presentations can keep the shared UI while owning disc loading.
     property var playAction: null
     property bool playEnabled: true
+    property var favoriteAction: null
+    property bool fallbackFavoriteSupported: false
+    property bool fallbackFavorite: false
+    property bool fallbackFavoriteBusy: false
     property Item dragTarget: null
     property bool dismissOnBackground: false
     signal dismissed()
@@ -30,9 +34,9 @@ Rectangle {
     property string quickGlyph: Icons.layoutBottombarExpand
     property bool selectionVisible: true
     readonly property var nativeInfo: albumId < 0 ? JSON.parse(Sources.card(albumId, Library.remoteRev) || "{}") : ({})
-    readonly property bool favoriteSupported: albumId > 0 || nativeInfo.favorite_supported !== false && !!nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")
-    readonly property bool favorite: nativeInfo.plugin ? nativeInfo.favorite === true : Ratings.favorite("album", albumId, Ratings.rev)
-    readonly property var information: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
+    readonly property bool favoriteSupported: favoriteAction ? fallbackFavoriteSupported : albumId > 0 || nativeInfo.favorite_supported !== false && !!nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")
+    readonly property bool favorite: typeof nativeInfo.favorite === "boolean" ? nativeInfo.favorite : favoriteAction ? fallbackFavorite : !nativeInfo.plugin && Ratings.favorite("album", albumId, Ratings.rev)
+    readonly property var information: nativeInfo.plugin || albumId === 0 ? nativeInfo : JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
     readonly property string genre: (Array.isArray(information.genres) && typeof information.genres[0] === "string"
         ? information.genres[0] : information.genre || "").split(/[,;]+/)[0].trim()
     // "April 26, 1981" when the record's files or its source say the day.
@@ -172,12 +176,13 @@ Rectangle {
                 tone: "overlay"
                 checked: overlay.favorite
                 heart: true
-                busy: !!overlay.nativeInfo.plugin && Sources.favoritePending(overlay.nativeInfo.plugin, overlay.nativeInfo.ref || "", Sources.revision)
+                busy: overlay.favoriteAction ? overlay.fallbackFavoriteBusy : !!overlay.nativeInfo.plugin && Sources.favoritePending(overlay.nativeInfo.plugin, overlay.nativeInfo.ref || "", Sources.revision)
                 glyph: overlay.favorite ? Icons.heartFilled : Icons.heart
                 filled: overlay.favorite
                 tip: overlay.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
                 onClicked: {
-                    if (overlay.nativeInfo.plugin)
+                    if (overlay.favoriteAction) overlay.favoriteAction(!overlay.favorite)
+                    else if (overlay.nativeInfo.plugin)
                         Sources.command("native", overlay.nativeInfo.plugin, JSON.stringify({action:"favorite",ref:overlay.nativeInfo.ref,on:!overlay.favorite}))
                     else
                         Ratings.setFavorite("album", overlay.albumId, !overlay.favorite)

@@ -1588,6 +1588,9 @@ msgstr ""
 msgid "Choose an assignment scope."
 msgstr ""
 
+msgid "Choose an audio output before remembering stereo conversion."
+msgstr ""
+
 msgid "Choose an autosave policy."
 msgstr ""
 
@@ -2013,6 +2016,9 @@ msgstr "Участники"
 
 msgid "Convert to PCM"
 msgstr "Преобразовывать в PCM"
+
+msgid "Convert to stereo"
+msgstr ""
 
 msgid "Convertible system input; physical DAC capabilities are unknown"
 msgstr "Преобразуемый системный вход; физические возможности ЦАП неизвестны"
@@ -3958,6 +3964,9 @@ msgstr "Сохранить исходные очереди"
 msgid "Keep the current one"
 msgstr "Оставить текущую"
 
+msgid "Keep the original channels for multichannel output, or mix decoded audio to stereo. DSD passthrough keeps its original channels."
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr "Сохранять очередь между сеансами"
 
@@ -4435,8 +4444,14 @@ msgstr "Свернуть"
 msgid "Missing"
 msgstr "Отсутствует"
 
+msgid "Mix to stereo only when this output cannot keep the original channels. Turn this off to ask again."
+msgstr ""
+
 msgid "Mixed"
 msgstr "Разные"
+
+msgid "Mixed from {} to {} channels"
+msgstr ""
 
 msgid "Mixed output"
 msgstr "Смешанный выход"
@@ -5380,6 +5395,9 @@ msgstr "Исходные байты"
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "Исходные байты · Chilpa не перекодирует · обработка в ресивере неизвестна"
 
+msgid "Original channels"
+msgstr ""
+
 msgid "Original music files"
 msgstr "Исходные музыкальные файлы"
 
@@ -5420,6 +5438,9 @@ msgid "Output identity could not be saved."
 msgstr "Не удалось сохранить идентификатор выхода."
 
 msgid "Overview"
+msgstr ""
+
+msgid "PCM channels"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"
@@ -5586,6 +5607,12 @@ msgstr "Воспроизвести трек под курсором"
 
 msgid "Play from the servers you run, and add sources and features with plugins from the official catalog or the third-party one."
 msgstr "Воспроизводите музыку с собственных серверов и добавляйте источники и функции плагинами из официального или стороннего каталога."
+
+msgid "Play in stereo"
+msgstr ""
+
+msgid "Play in stereo?"
+msgstr ""
 
 msgid "Play indicator animation"
 msgstr "Анимация индикатора воспроизведения"
@@ -6228,6 +6255,12 @@ msgstr ""
 
 msgid "Remember"
 msgstr "Запомнить"
+
+msgid "Remember for this output"
+msgstr ""
+
+msgid "Remember stereo conversion for this output"
+msgstr ""
 
 msgid "Remote artwork"
 msgstr "Удалённые обложки"
@@ -7315,6 +7348,9 @@ msgstr ""
 msgid "Stereo controls apply to two-channel PCM. EQ and linked compression apply to all channels."
 msgstr "Стереонастройки действуют на двухканальный PCM. EQ и связанная компрессия действуют на все каналы."
 
+msgid "Stereo conversion is not available for this output."
+msgstr ""
+
 msgid "Stereo width · 0–100%"
 msgstr "Ширина стерео · 0–100%"
 
@@ -7365,6 +7401,9 @@ msgstr "Хранилище"
 
 msgid "Storage limit"
 msgstr "Лимит хранилища"
+
+msgid "Stored stereo conversion choices could not be read."
+msgstr ""
 
 msgid "Stream address"
 msgstr "Адрес потока"
@@ -8437,6 +8476,9 @@ msgstr "У этого трека нет альбома, который можн�
 msgid "This track has no verified offline copy. Download it while connected."
 msgstr "У этого трека нет проверенной офлайн-копии. Загрузите его при наличии подключения."
 
+msgid "This track has {} channels. Play it in stereo on {}?"
+msgstr ""
+
 msgid "This transcript format is not supported."
 msgstr "Этот формат расшифровки не поддерживается."
 
@@ -8519,6 +8561,9 @@ msgid "Tone enabled"
 msgstr ""
 
 msgid "Too many device storage locations were reported."
+msgstr ""
+
+msgid "Too many outputs have remembered stereo conversion. Forget one in Audio settings."
 msgstr ""
 
 msgid "Tools"
@@ -9570,6 +9615,9 @@ msgstr "встроенный"
 
 msgid "internal"
 msgstr "внутренний"
+
+msgid "invalid DSDIFF chunk bounds"
+msgstr ""
 
 msgid "invalid table of contents: {}"
 msgstr "недопустимое оглавление: {}"

@@ -172,7 +172,9 @@ fn byte_short_chunks_keep_absolute_offsets_and_every_row() {
         assert_eq!(value["page"]["nextOffset"], first + count);
         assert!(value.to_string().len() <= CHUNK_BYTES);
         for row in value["page"]["rows"].as_array().unwrap() {
-            assert!(row.get("private").is_none() && row.get("ref").is_none());
+            // Artwork identity is bounded display metadata; actions still require the fingerprint token.
+            assert!(row.get("private").is_none());
+            assert!(row["ref"].as_str().is_some_and(crate::native_page_request::valid_reference));
             let token = row["rowToken"].as_str().unwrap();
             assert!(token.len() <= 512 && tokens.insert(token.to_string()));
         }
@@ -613,4 +615,78 @@ fn cached_projections_are_lru_and_error_envelopes_keep_the_same_byte_bound() {
     assert!(projected.to_string().len() <= CHUNK_BYTES);
     assert!(projected["page"]["count"].as_u64().unwrap() < 100);
     assert_eq!(projected["page"]["nextOffset"], projected["page"]["count"]);
+}
+
+#[test]
+fn collection_tabs_use_validated_host_routes_and_keep_queries_opaque() {
+    let page = json!({"title":"Library","show_tabs":true,"tabs":[
+        {"title":"All","ref":"opaque:all","active":true},
+        {"title":"Records","ref":"opaque:records"}]});
+    let header = projection::header(&page, &query()).unwrap();
+    assert_eq!(header["show_tabs"], true);
+    assert_eq!(header["tabs"][0]["active"], true);
+    assert_eq!(header["tabs"][1]["key"], crate::native_page_request::route("fixture", "opaque:records", json!({}), "collection"));
+    for invalid in [json!(true), json!([{"title":"All","ref":"bad ref"}]),
+        json!([{"title":"All","ref":"valid"},{"title":"Again","ref":"valid"}]),
+        json!([{"title":"bad\ntitle","ref":"valid"}]),
+        json!([{"title":"x".repeat(257),"ref":"valid"}]),
+        json!(vec![json!({"title":"All","ref":"valid"});33])] {
+        let mut malformed = page.clone(); malformed["tabs"] = invalid;
+        assert!(projection::header(&malformed, &query()).is_err());
+    }
+    let mut hidden = page; hidden["show_tabs"] = json!(false);
+    assert_eq!(projection::header(&hidden, &query()).unwrap()["show_tabs"], false);
+    hidden["show_tabs"] = json!("true");
+    assert_eq!(projection::header(&hidden, &query()).unwrap()["show_tabs"], false);
+}
+
+#[test]
+fn fallback_metadata_is_finite_and_preserves_real_image_addresses() {
+    for glyph in [json!("user-star"), json!("disc"), json!("award"), json!("http://invalid"), json!({"name":"disc"}), json!(null)] {
+        let item = json!({"kind":"label","ref":"label:one","image":"https://images.invalid/real.jpg","image_fallback":glyph});
+        let row = projection::row(&item,"token".into());
+        assert_eq!(row["image"], item["image"]);
+        assert_eq!(row["ref"], item["ref"]);
+        let expected = glyph.as_str().filter(|glyph| ["user-star","disc","award"].contains(glyph)).unwrap_or_default();
+        assert_eq!(row["image_fallback"], expected);
+    }
+}
+
+#[test]
+fn preview_keeps_one_page_while_another_action_runs_and_close_releases_both() {
+    let (_directory, mut window, catalog) = window(Source::new(2));
+    let session = window.open("fixture native:base", 1);
+    let initial = answer(&mut window,1);
+    let token = initial["page"]["rows"][0]["rowToken"].as_str().unwrap();
+    assert!(window.prepare_action(session,token,2));
+    let first = answer(&mut window,2);
+    let lease = first["action"]["lease"].as_u64().unwrap();
+    let key = first["action"]["key"].as_str().unwrap();
+    assert!(!window.pin_action(session+1,lease));
+    assert!(!window.pin_action(session,lease+1));
+    assert!(window.pin_action(session,lease));
+    assert!(window.broker.shared.lock().action.is_none());
+    assert!(window.prepare_action(session,token,3));
+    let second = answer(&mut window,3);
+    assert!(catalog.stored_shelf(key).is_some());
+    window.release_action(second["action"]["lease"].as_u64().unwrap());
+    assert!(catalog.stored_shelf(key).is_some());
+    window.close(session);
+    assert!(catalog.stored_shelf(key).is_none());
+    assert!(window.broker.shared.lock().preview.is_none());
+    assert!(window.broker.shared.lock().action.is_none());
+}
+
+#[test]
+fn collection_entity_headers_keep_fallback_and_images_with_no_private_payload() {
+    let mut page=json!({"header":{"kind":"award","ref":"opaque:award","title":"Award","image_fallback":"award","image":"https://images.invalid/real.jpg","private":"secret","_host":{"card_id":123},"plugin":"untrusted"}});
+    let header=projection::header(&page,&query()).unwrap();
+    assert_eq!(header["entity"]["image_fallback"],"award");
+    assert_eq!(header["entity"]["image"],page["header"]["image"]);
+    assert_eq!(header["entity"]["plugin"],"fixture");
+    for key in ["private","_host","rowToken"] { assert!(header["entity"].get(key).is_none()); }
+    let mut empty=page.clone(); empty["header"]=json!({});
+    assert!(projection::header(&empty,&query()).unwrap().get("entity").is_none());
+    page["header"]["ref"]=json!("bad ref");
+    assert!(projection::header(&page,&query()).is_err());
 }

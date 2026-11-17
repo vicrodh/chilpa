@@ -22,6 +22,8 @@ pub mod qobject {
         #[qinvokable] fn seek(self: Pin<&mut NativeCollectionModel>, first: i32, last: i32);
         #[qinvokable] fn refresh(self: Pin<&mut NativeCollectionModel>, manual: bool);
         #[qinvokable] fn prepare_action(self: Pin<&mut NativeCollectionModel>, token: &QString) -> bool;
+        #[qinvokable] fn pin_action(self: Pin<&mut NativeCollectionModel>) -> bool;
+        #[qinvokable] fn release_preview(self: Pin<&mut NativeCollectionModel>);
         #[qinvokable] fn release_action(self: Pin<&mut NativeCollectionModel>);
         #[qinvokable] fn poll(self: Pin<&mut NativeCollectionModel>);
         #[qinvokable] fn entry(self: &NativeCollectionModel, index: i32, revision: i32) -> QString;
@@ -39,7 +41,7 @@ pub struct CollectionRust {
     document: QString, action: QString, count: i32, revision: i32, busy: bool, active: bool,
     handle: Option<NativeCollectionWindow>, key: String, session: u64,
     generation: u64, data_revision: u64, request_id: u64,
-    pending: Option<u64>, pending_action: Option<u64>, lease: u64,
+    pending: Option<u64>, pending_action: Option<u64>, lease: u64, preview_lease: u64,
     pages: CollectionCache, window: (usize, usize), has_more: bool, failed: bool,
 }
 impl qobject::NativeCollectionModel {
@@ -83,6 +85,7 @@ impl qobject::NativeCollectionModel {
         self.as_mut().rust_mut().pending = None;
         self.as_mut().rust_mut().pending_action = None;
         self.as_mut().rust_mut().lease = 0;
+        self.as_mut().rust_mut().preview_lease = 0;
         self.as_mut().set_action(QString::from("{}"));
         self.as_mut().set_busy(false);
     }
@@ -117,6 +120,18 @@ impl qobject::NativeCollectionModel {
             self.as_mut().set_busy(true);
         }
         accepted
+    }
+    pub fn pin_action(mut self: Pin<&mut Self>) -> bool {
+        let lease = self.rust().lease;
+        if lease == 0 || !self.rust().handle.as_ref().is_some_and(|handle| handle.pin_action(self.rust().session, lease)) { return false; }
+        self.as_mut().rust_mut().preview_lease = lease;
+        self.as_mut().rust_mut().lease = 0;
+        true
+    }
+    pub fn release_preview(mut self: Pin<&mut Self>) {
+        let lease = self.rust().preview_lease;
+        if lease != 0 { if let Some(handle) = self.rust().handle.as_ref() { handle.release_action(lease); } }
+        self.as_mut().rust_mut().preview_lease = 0;
     }
     pub fn release_action(mut self: Pin<&mut Self>) {
         let lease = self.rust().lease;

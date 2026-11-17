@@ -19,6 +19,7 @@ struct ResultDoc {
 }
 #[derive(Default)]
 pub(crate) struct AudioOutput {
+    pub(crate) channels:crate::outputs::channel_offer::State,
     pub(crate) route: Option<Route>,
     shown: bool,
     requested: bool,

@@ -49,6 +49,7 @@ struct State {
     shutdown: bool,
     startup_error: Option<String>,
     action: Option<Lease>,
+    preview: Option<Lease>,
     article: Option<article::Session>,
     cleanup: bool,
 }
@@ -127,7 +128,7 @@ impl Drop for Broker {
             state.pending.clear();
             state.mailbox = None;
             state.article = None;
-            state.action.take()
+            (state.action.take(), state.preview.take())
         };
         drop(action);
         self.shared.lock().shutdown = true;
@@ -176,7 +177,7 @@ impl NativeCollectionWindow {
         state.pending.clear();
         state.mailbox = None;
         state.article = None;
-        let action = state.action.take();
+        let action = (state.action.take(), state.preview.take());
         let invalid = if key.len() > 32768 {
             Some("The collection address exceeds its limit.".to_string())
         } else {
@@ -242,18 +243,27 @@ impl NativeCollectionWindow {
         }
         self.ask(session, request_id, Command::Action(row_token.to_string()))
     }
+    pub fn pin_action(&self, session: u64, lease: u64) -> bool {
+        let mut state = self.broker.shared.lock();
+        if session == 0 || session != self.session || session != state.session
+            || !state.action.as_ref().is_some_and(|action| action.id == lease) {
+            return false;
+        }
+        let old = state.preview.take();
+        state.preview = state.action.take();
+        drop(state);
+        drop(old);
+        self.broker.shared.cleanup();
+        true
+    }
     pub fn release_action(&self, lease: u64) {
         let action = {
             let mut state = self.broker.shared.lock();
-            if state
-                .action
-                .as_ref()
-                .is_some_and(|action| action.id == lease)
-            {
+            if state.action.as_ref().is_some_and(|action| action.id == lease) {
                 state.action.take()
-            } else {
-                None
-            }
+            } else if state.preview.as_ref().is_some_and(|action| action.id == lease) {
+                state.preview.take()
+            } else { None }
         };
         drop(action);
         self.broker.shared.cleanup();
@@ -270,9 +280,9 @@ impl NativeCollectionWindow {
                 state.pending.clear();
                 state.mailbox = None;
                 state.article = None;
-                state.action.take()
+                (state.action.take(), state.preview.take())
             } else {
-                None
+                (None, None)
             }
         };
         self.session = 0;

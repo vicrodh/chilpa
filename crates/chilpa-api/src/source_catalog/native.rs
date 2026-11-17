@@ -371,7 +371,13 @@ pub(super) fn read_track(catalog: &Catalog, natives: &Arc<Natives>, path: &str) 
     let stamp = now();
     let mut inner = catalog.lock();
     if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
+    let before = inner.store.track_by_path(path).is_some_and(|track| inner.collection_ephemeral.tracks.contains(&track.id))
+        .then(|| inner.store.allocation_watermarks());
     inner.store.take_owned_item_track(&plugin, item, None, stamp);
+    if let Some(before) = before {
+        let after = inner.store.allocation_watermarks();
+        inner.collection_ephemeral.own_allocations(before, after);
+    }
     inner.dirty = true;
     Ok(())
 }
@@ -401,7 +407,7 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
     let stamp = now();
     let mut inner = catalog.lock();
     if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
-    let images = take_record_tracks(&mut inner.store, &plugin, id, kind, holder, &mut answer, stamp);
+    let images = take_record_tracks(&mut inner, &plugin, id, kind, holder, &mut answer, stamp);
     inner.card_errors.remove(&id);
     inner.dirty = true;
     for image in images {
@@ -414,7 +420,9 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
     Ok(())
 }
 
-fn take_record_tracks(store: &mut Store, plugin: &str, id: i64, kind: CardKind, holder: &str, answer: &mut Value, stamp: u64) -> Vec<String> {
+fn take_record_tracks(inner: &mut super::Inner, plugin: &str, id: i64, kind: CardKind, holder: &str, answer: &mut Value, stamp: u64) -> Vec<String> {
+    let store = &mut inner.store;
+    let before = inner.collection_ephemeral.cards.contains(&id).then(|| store.allocation_watermarks());
     let available = answer["availability"] != "unavailable" && answer[holder]["available"] != false;
     if let Some(itself) = answer.get_mut(holder) {
         if itself["shelves"].is_array() { store.take_item(plugin, itself, stamp); }
@@ -436,6 +444,7 @@ fn take_record_tracks(store: &mut Store, plugin: &str, id: i64, kind: CardKind, 
         card.read_at = now();
         if card.format.is_none() { card.format = best; }
     }
+    if let Some(before) = before { inner.collection_ephemeral.own_allocations(before, store.allocation_watermarks()); }
     images
 }
 
@@ -462,14 +471,14 @@ mod tests {
         for (kind, holder, available) in [(CardKind::Album,"album",true), (CardKind::Playlist,"playlist",false),
             (CardKind::Artist,"header",true), (CardKind::Label,"header",false)] {
             for (root_tracks, keep_extras) in [(true,true), (false,true), (true,false), (false,false)] {
-                let mut store = Store::default();
+                let mut inner = super::super::Inner::default();
                 let kind_name = match kind { CardKind::Album => "album", CardKind::Playlist => "playlist", CardKind::Artist => "artist", CardKind::Label => "label" };
                 let reference = format!("{kind_name}:1");
                 let mut header = json!({"kind":kind_name,"ref":reference,"title":"Collection","artist_ref":"artist:1","available":available,
                     "shelves":[{"id":"related","kind":"album","items":[{"kind":"album","ref":"album:extra","title":"Extra"}]}]});
                 if !keep_extras { header.as_object_mut().unwrap().remove("shelves"); }
                 let extras = header["shelves"].clone();
-                let id = store.take_item("fixture", &header, 1).unwrap();
+                let id = inner.store.take_item("fixture", &header, 1).unwrap();
                 let item = json!({"kind":"track","ref":"track:7@list:1","title":"Song","member":"entry:9","available":false,
                     "quality":{"codec":"flac","bits":24,"rate":96000},"image":"https://example.invalid/track.jpg","custom":"x".repeat(128 * 1024)});
                 let allocation = item["custom"].as_str().unwrap().as_ptr();
@@ -481,7 +490,8 @@ mod tests {
                     shelf["items"] = Value::Array(vec![item]);
                     answer["shelves"] = Value::Array(vec![json!({"kind":"album","items":[]}), shelf]);
                 }
-                let images = take_record_tracks(&mut store, "fixture", id, kind, holder, &mut answer, 2);
+                let images = take_record_tracks(&mut inner, "fixture", id, kind, holder, &mut answer, 2);
+                let store = &mut inner.store;
                 let card = &store.cards[&id];
                 let track_id = card.tracks.as_ref().unwrap()[0];
                 let track = &store.tracks[&track_id];
@@ -743,3 +753,6 @@ mod tests {
         assert_eq!(store.tracks[&guest].metadata["artist_ref"], "artist:3");
     }
 }
+
+#[cfg(test)]
+mod collection_preview_tests;

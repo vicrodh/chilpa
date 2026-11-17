@@ -113,6 +113,7 @@ impl Chilpa {
                 }
             }
             PlayerEvent::Finished { frames } => {
+                if shown { self.reset_channel_consent(); }
                 self.settle_play(id, shown);
                 if shown {
                     self.now.frames = frames;
@@ -126,6 +127,7 @@ impl Chilpa {
             }
             PlayerEvent::Stopped { frames } => {
                 if shown {
+                    self.reset_channel_consent();
                     // A play that never started says it stopped with nothing
                     // played: that is not where the window was.
                     if had_started {
@@ -137,8 +139,16 @@ impl Chilpa {
                 }
                 self.settle_play(id, shown);
             }
+            PlayerEvent::ChannelConversionRequired { output,path,index,requested,offered } => {
+                if shown && !self.offer_channel_conversion(output,&path,index,requested,&offered) {
+                    self.now.playing=false;
+                    self.now.error=chilpa_i18n::t("Stereo conversion is not available for this output.");
+                }
+                self.settle_play(id,shown);
+            }
             PlayerEvent::Failed { message } => {
                 if shown {
+                    self.reset_channel_consent();
                     self.player_failed(message, from, had_started);
                 }
                 self.settle_play(id, shown);

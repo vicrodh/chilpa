@@ -18,3 +18,7 @@ crates/chilpa-sacd/
 crates/chilpa-decode/
 crates/chilpa-stream/
 crates/chilpa-cd/
+vendor/symphonia-format-ogg/
+vendor/symphonia-format-isomp4/
+vendor/oxideav-ac3/
+vendor/oxideav-core/

@@ -27,28 +27,46 @@ pub(crate) fn open(path: &Path) -> Result<Opened, TagError> {
     if &head[..4] != b"FRM8" || &head[12..16] != b"DSD " {
         return Err(not_dsdiff());
     }
+    let form_len = u64::from_be_bytes(head[4..12].try_into().unwrap());
+    let form_end = 12u64.checked_add(form_len).filter(|_| form_len >= 4).ok_or_else(invalid_chunk)?;
+    let file_len = file.get_ref().metadata().map_err(TagError::Open)?.len();
     let (mut rate, mut channels, mut samples_len, mut tag) = (None, None, None, None);
     let (mut artist, mut title) = (None, None);
-    while let Some((id, len, start)) = next_chunk(&mut file) {
-        match &id {
+    while let Some(chunk) = next_chunk(&mut file, form_end)? {
+        let len = chunk.len;
+        let audio = matches!(&chunk.id, b"DSD " | b"DST ");
+        if !audio && chunk.next > file_len {
+            return Err(invalid_chunk());
+        }
+        match &chunk.id {
             b"PROP" => {
+                if len < 4 {
+                    return Err(invalid_chunk());
+                }
                 let mut kind = [0u8; 4];
                 file.read_exact(&mut kind).map_err(TagError::Open)?;
-                let end = start + len;
-                while let Some((sub, sub_len, sub_start)) = next_chunk(&mut file).filter(|(_, _, at)| *at < end) {
-                    let mut value = [0u8; 4];
-                    match &sub {
-                        b"FS  " => {
-                            file.read_exact(&mut value).map_err(TagError::Open)?;
-                            rate = Some(u32::from_be_bytes(value));
+                if &kind == b"SND " {
+                    while let Some(sub) = next_chunk(&mut file, chunk.end)? {
+                        let mut value = [0u8; 4];
+                        match &sub.id {
+                            b"FS  " => {
+                                if sub.len < 4 {
+                                    return Err(invalid_chunk());
+                                }
+                                file.read_exact(&mut value).map_err(TagError::Open)?;
+                                rate = Some(u32::from_be_bytes(value));
+                            }
+                            b"CHNL" => {
+                                if sub.len < 2 {
+                                    return Err(invalid_chunk());
+                                }
+                                file.read_exact(&mut value[..2]).map_err(TagError::Open)?;
+                                channels = Some(u16::from_be_bytes([value[0], value[1]]));
+                            }
+                            _ => {}
                         }
-                        b"CHNL" => {
-                            file.read_exact(&mut value[..2]).map_err(TagError::Open)?;
-                            channels = Some(u16::from_be_bytes([value[0], value[1]]));
-                        }
-                        _ => {}
+                        file.seek(SeekFrom::Start(sub.next)).map_err(TagError::Open)?;
                     }
-                    file.seek(SeekFrom::Start(sub_start + sub_len + (sub_len & 1))).map_err(TagError::Open)?;
                 }
             }
             b"DSD " | b"DST " => samples_len = Some(len),
@@ -57,11 +75,15 @@ pub(crate) fn open(path: &Path) -> Result<Opened, TagError> {
                 file.read_exact(&mut bytes).map_err(TagError::Open)?;
                 tag = crate::dsf::id3(bytes);
             }
-            b"DIAR" if len <= LARGEST_TAG => artist = comment(&mut file, len),
-            b"DITI" if len <= LARGEST_TAG => title = comment(&mut file, len),
+            b"DIAR" if (4..=LARGEST_TAG).contains(&len) => artist = comment(&mut file, len),
+            b"DITI" if (4..=LARGEST_TAG).contains(&len) => title = comment(&mut file, len),
             _ => {}
         }
-        file.seek(SeekFrom::Start(start + len + (len & 1))).map_err(TagError::Open)?;
+        // A truncated audio payload is diagnosed by the playback reader.
+        if audio && chunk.next > file_len {
+            break;
+        }
+        file.seek(SeekFrom::Start(chunk.next)).map_err(TagError::Open)?;
     }
     // The format's own artist and title, when no ID3 said more.
     if tag.is_none() && (artist.is_some() || title.is_some()) {
@@ -80,7 +102,8 @@ pub(crate) fn open(path: &Path) -> Result<Opened, TagError> {
     // not known here.
     let duration = match (rate, channels, samples_len) {
         (Some(rate), Some(channels), Some(len)) if channels > 0 => {
-            Duration::from_secs_f64((len / u64::from(channels) * 8) as f64 / f64::from(rate))
+            Duration::try_from_secs_f64((len / u64::from(channels)) as f64 * 8.0 / f64::from(rate))
+                .map_err(|_| invalid_chunk())?
         }
         _ => Duration::ZERO,
     };
@@ -93,14 +116,32 @@ pub(crate) fn open(path: &Path) -> Result<Opened, TagError> {
     })
 }
 
-/// The next chunk: its id, its length and where its payload starts. `None`
-/// at the end of the file.
-fn next_chunk(file: &mut BufReader<std::fs::File>) -> Option<([u8; 4], u64, u64)> {
+struct Chunk {
+    id: [u8; 4],
+    len: u64,
+    end: u64,
+    next: u64,
+}
+
+fn invalid_chunk() -> TagError {
+    TagError::Unreadable("invalid DSDIFF chunk bounds".into())
+}
+
+/// Read a complete header and bound its payload and padding to its container.
+fn next_chunk(file: &mut BufReader<std::fs::File>, limit: u64) -> Result<Option<Chunk>, TagError> {
+    let position = file.stream_position().map_err(TagError::Open)?;
+    if position == limit {
+        return Ok(None);
+    }
+    let start = position.checked_add(12).filter(|end| *end <= limit).ok_or_else(invalid_chunk)?;
     let mut head = [0u8; 12];
-    file.read_exact(&mut head).ok()?;
-    let id = head[..4].try_into().ok()?;
-    let len = u64::from_be_bytes(head[4..].try_into().ok()?);
-    Some((id, len, file.stream_position().ok()?))
+    file.read_exact(&mut head).map_err(TagError::Open)?;
+    let id = head[..4].try_into().unwrap();
+    let len = u64::from_be_bytes(head[4..].try_into().unwrap());
+    let end = start.checked_add(len).ok_or_else(invalid_chunk)?;
+    let next = end.checked_add(len & 1).filter(|end| *end <= limit && *end > position)
+        .ok_or_else(invalid_chunk)?;
+    Ok(Some(Chunk { id, len, end, next }))
 }
 
 /// A `DIAR` or `DITI` chunk: a count, then that many bytes of text. Read as
