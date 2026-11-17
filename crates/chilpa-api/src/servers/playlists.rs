@@ -77,8 +77,9 @@ impl Chilpa {
     /// Whether a change of that server playlist can be sent now: the
     /// account may change it, the network is on, the server answers, it is
     /// not in its first sync and no other change of it is on its way.
-    pub(crate) fn server_playlist_open(&mut self, playlist: &crate::Playlist) -> bool {
-        if !playlist.writable || crate::library_protection::Protection::kept().on || self.offline() || self.server_change_pending(playlist.id) {
+    /// The protection is passed in, read once by a caller that loops.
+    pub(crate) fn server_playlist_open(&mut self, playlist: &crate::Playlist, protection: crate::library_protection::Protection) -> bool {
+        if !playlist.writable || protection.on || self.offline() || self.server_change_pending(playlist.id) {
             return false;
         }
         let Some(server) = self.library().and_then(|lib| lib.server(playlist.source_id).ok().flatten()) else { return false };
