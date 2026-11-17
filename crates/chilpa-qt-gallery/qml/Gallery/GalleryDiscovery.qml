@@ -19,6 +19,7 @@ TitledFlow {
     GenreArtworkEditor { id:artwork; key:'{"kind":"genre","name":"Jazz"}' }
     Loader { id:browser; active:false; sourceComponent:AlbumGenreBrowser { albumId:1; onFinished:browser.active = false } }
     LibraryDestinations {}
+    SidebarEntryChoices { width:Metrics.settingsMaxWidth; value:"home,-library,artists" }
     QtObject { id:sampleNavigation; property var expandedSources:({}); property var sourceView:({}) }
     SourceNavigationTree { width:Metrics.sidebarWidth; pluginId:"fixture"; controller:sampleNavigation; entries:[{id:"collection",title:"Collection",children:[{id:"all",title:"All"}]}] }
     CollectionControls { width:Metrics.settingsMaxWidth; source:""; about:({filters:{},filter_controls:[{key:"search",type:"search",label:"Search collection"},{key:"hidden",type:"toggle",label:"Hide purchases"}]}) }

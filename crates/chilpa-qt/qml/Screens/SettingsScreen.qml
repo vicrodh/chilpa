@@ -20,6 +20,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Components/SettingsActions.js" as Set
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
 import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
 import "qrc:/qt/qml/app/chilpa/themes/qml/Patterns" as Themes
+import "qrc:/qt/qml/app/chilpa/discovery/qml/Components"
 import "qrc:/qt/qml/app/chilpa/metadata/qml/Patterns" as MetadataUi
 // Settings rows follow the facade schema.
 Item {
@@ -118,8 +119,10 @@ Item {
         ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         delegate: SettingsRow {
             id: settingRow; width: ListView.view.width - Metrics.gap12; page: actions
-            themePicker: Component { Themes.ThemePicker { options: settingRow.options; values: settingRow.optionValues; value: settingRow.value; onPicked: (slug) => actions.set(settingRow.key, slug) } }
+            pagePicker: settingRow.control === "entries" ? entriesPicker : themePicker
             themeOptions: Component { Themes.ThemeOptionsPanel {} }
+            Component { id: themePicker; Themes.ThemePicker { options: settingRow.options; values: settingRow.optionValues; value: settingRow.value; onPicked: (slug) => actions.set(settingRow.key, slug) } }
+            Component { id: entriesPicker; SidebarEntryChoices { width: settingRow.width - Metrics.gap16; value: settingRow.value; onChanged: (value) => actions.set(settingRow.key, value) } }
         }
     }
 

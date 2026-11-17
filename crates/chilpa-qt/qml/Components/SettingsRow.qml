@@ -19,8 +19,8 @@ Item {
     required property var marks
     property var page
     property Component serverEditor
-    // The theme's picker, and the options of the auto or custom theme under it.
-    property Component themePicker
+    // A control the page draws itself: the theme's picker, the sidebar's entries.
+    property Component pagePicker
     property Component themeOptions
     readonly property bool themeBox: control === "theme" && (value === "auto" || value === "custom")
     readonly property bool group: rowKind === 0
@@ -73,7 +73,7 @@ Item {
             : row.control === "status" ? status
             : row.control === "slider" ? slider
             : row.control === "file" || row.control === "fileBusy" ? file
-            : row.control === "theme" ? row.themePicker
+            : row.control === "theme" || row.control === "entries" ? row.pagePicker
             : row.control === "text" ? textField
             : null
     }
