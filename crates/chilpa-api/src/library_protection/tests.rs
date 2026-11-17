@@ -64,3 +64,12 @@ fn a_protected_library_refuses_the_folder_batch_even_with_sidecars() {
     assert_eq!(api.metadata_batch_view()["error"], Protection::kept().writes_refused());
     assert_eq!(api.metadata_batch_view()["protected"], true);
 }
+
+#[test]
+fn a_protected_library_deletes_nothing_from_a_server() {
+    if !isolated("library_protection::tests::a_protected_library_deletes_nothing_from_a_server") { return; }
+    let mut api = Chilpa::new();
+    assert!(api.adjust(ENABLED, "true"));
+    let said: serde_json::Value = serde_json::from_str(&api.server_media_delete("track", 1, "fixture", 1)).unwrap();
+    assert_eq!(said["error"], Protection::kept().writes_refused());
+}

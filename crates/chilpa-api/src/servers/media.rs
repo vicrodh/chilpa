@@ -56,6 +56,8 @@ impl Chilpa {
     /// arbitrary remote id. The current library must still name that item.
     pub fn server_media_delete(&mut self, kind: &str, id: i64, expected: &str, source: i64) -> String {
         let refused = |why: String| json!({"pending":false,"error":why}).to_string();
+        let blocked = crate::library_protection::Protection::kept().writes_refused();
+        if !blocked.is_empty() { return refused(blocked); }
         if self.offline() { return refused(chilpa_i18n::t("Turn the network on to delete music from the server.")); }
         if self.servers.media.job.is_some() { return refused(chilpa_i18n::t("A server deletion is still in progress.")); }
         let Some((item, stored, reference)) = target(self, kind, id) else {
