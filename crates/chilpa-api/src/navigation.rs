@@ -158,11 +158,16 @@ pub struct Tabs {
 
 impl Default for Tabs {
     fn default() -> Self {
-        Tabs { tabs: vec![Tab::at(Route::of(Screen::Home))], active: 0 }
+        Tabs::at(Route::of(Screen::Home))
     }
 }
 
 impl Tabs {
+    /// One tab, on `route`.
+    pub fn at(route: Route) -> Tabs {
+        Tabs { tabs: vec![Tab::at(route)], active: 0 }
+    }
+
     pub fn routes(&self) -> Vec<Route> {
         self.tabs.iter().map(|t| t.route.clone()).collect()
     }
@@ -354,7 +359,8 @@ impl crate::Chilpa {
         self.preference("navigation.restoreTabs").as_deref() != Some("false")
     }
 
-    /// The tabs of the last run, unless keeping them was turned off.
+    /// The tabs of the last run, unless keeping them was turned off. With
+    /// none kept, one tab on the sidebar's first entry when Home is hidden.
     pub fn restored_tabs(&self) -> Option<Tabs> {
         // A start died before its window was shown: the remembered tabs are
         // a suspect, so Home opens and they stay kept (the crash chain).
@@ -364,8 +370,13 @@ impl crate::Chilpa {
         }
         // The preferences file is one line per key, so the lines of the
         // tabs are kept as "\n".
-        let saved = self.preference(TABS_KEY).filter(|_| self.restores_tabs())?;
-        Some(Tabs::restore(&saved.replace("\\n", "\n")))
+        match self.preference(TABS_KEY).filter(|_| self.restores_tabs()) {
+            Some(saved) => Some(Tabs::restore(&saved.replace("\\n", "\n"))),
+            None => {
+                let first = crate::sidebar_entries::first_shown();
+                (first != Screen::Home).then(|| Tabs::at(Route::of(first)))
+            }
+        }
     }
 
     /// I protect live routes without reading labels or writing preferences.

@@ -48,6 +48,20 @@ fn devices_turned_off_before_the_list_stays_off() {
     });
 }
 
+#[test]
+fn with_home_hidden_and_no_tabs_kept_chilpa_opens_on_the_first_entry_shown() {
+    isolated("with_home_hidden_and_no_tabs_kept_chilpa_opens_on_the_first_entry_shown", || {
+        use chilpa_api::navigation::Screen;
+        let mut api = chilpa_api::Chilpa::new();
+        assert!(api.restored_tabs().is_none(), "Home shown: nothing changes");
+        api.remember_preference("navigation.restoreTabs", "false");
+        assert!(api.adjust("navigation.sidebar", &DEFAULT.replace("home,library", "-home,library")));
+        let tabs = api.restored_tabs().expect("a tab on the first entry shown");
+        assert_eq!(tabs.routes().len(), 1);
+        assert_eq!(tabs.current().screen, Screen::Library);
+    });
+}
+
 fn isolated(name: &str, run: impl FnOnce()) {
     if std::env::var("CHILPA_SIDEBAR_TEST").as_deref() == Ok(name) {
         run();
