@@ -34,20 +34,18 @@ TestCase {
         wait(30)
     }
 
-    function test_device_shortcut_can_be_hidden_and_restored() {
-        const entry = findChild(sidebar, "deviceNavigation")
-        verify(entry)
-        compare(entry.visible, true)
-        SettingsModel.preferences = {"navigation.devices":"false"}
+    function test_entries_follow_the_layout() {
+        verify(findChild(sidebar, "deviceNavigation"))
+        Prefs.sidebar = "home,library,artists,albums,tracks,genres,composers,compositions,folders,openMedia,-deviceSync"
         Prefs.rev++
-        // Hiding the shortcut drops it from the navigation model, so the
-        // delegate is destroyed; showing it again builds a new one.
-        tryCompare(sidebar, "devicesVisible", false)
-        compare(findChild(sidebar, "deviceNavigation"), null)
-        SettingsModel.preferences = {"navigation.devices":"true"}
+        tryVerify(() => findChild(sidebar, "deviceNavigation") === null)
+        Prefs.sidebar = "deviceSync,home,library,artists,albums,tracks,genres,composers,compositions,folders,openMedia"
         Prefs.rev++
         tryVerify(() => findChild(sidebar, "deviceNavigation") !== null)
-        compare(findChild(sidebar, "deviceNavigation").visible, true)
+        compare(sidebar.localPages[0].screen, "deviceSync")
+        compare(sidebar.localPages.length, 11)
+        Prefs.sidebar = ""
+        Prefs.rev++
     }
 
     function test_global_playlist_grouping_can_collapse_and_return_to_one_list() {

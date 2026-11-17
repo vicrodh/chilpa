@@ -14,9 +14,7 @@ Rectangle {
     property var openSource: function(action, id, text) { Navigation.goKey("source", id) }
 
     readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
-    // The same opt-out the sidebar's Devices entry follows.
-    readonly property bool devicesVisible: Prefs.rev >= 0 && SettingsModel.kept("navigation.devices") !== "false"
-    LibraryDestinations { id: destinations; devices: devicesVisible }
+    LibraryDestinations { id: destinations }
     readonly property var places: destinations.entries
     .concat([{ screen: "playlistManager", glyph: Icons.playlist, text: I18n.tr("Playlists", I18n.rev) }])
     .concat(panels.map(p => ({ screen: "source", key: p.id, text: p.name,

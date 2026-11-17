@@ -28,8 +28,7 @@ Rectangle {
     readonly property var sourceView: JSON.parse(Sources.snapshot || "{}")
     readonly property var panels: sourceView.panels || []
     readonly property var downloadPlugins: (sourceView.download_plugins || []).filter(plugin => plugin.access === "sidebar")
-    readonly property bool devicesVisible: Prefs.rev >= 0 && SettingsModel.kept("navigation.devices") !== "false"
-    LibraryDestinations { id: destinations; devices: devicesVisible }
+    LibraryDestinations { id: destinations }
     readonly property var localPages: destinations.entries
 
     Component.onCompleted: refreshSources()
