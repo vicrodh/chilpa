@@ -210,11 +210,11 @@ CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
 # Fixed third-party source files above the project's per-file limit.
 # Each exception is locked to its reviewed bytes; changes fail closed.
 UPSTREAM_LOC_HASHES = {
-    'vendor/oxideav-ac3/src/audblk.rs': 'a0afa9939aa9f9a4f3c53a65b0582b1ea53f012b1fa2c14066423c52cd8c908b',
+    'vendor/oxideav-ac3/src/audblk.rs': '43fa6f7eb213180c4630cfd16b630416c5dd243f15dde7ac3765c5bfffc9c0e6',
     'vendor/oxideav-ac3/src/bsi.rs': 'a8d53b4a9a3defb20bb0c3b2c3ca90c647cd29038fa3bc48900ff86e516958dc',
     'vendor/oxideav-ac3/src/decoder.rs': '9a69ce532f0f1d61031e7c3a51815ee2635128a4ca35f992c4e3aba52f7437cb',
     'vendor/oxideav-ac3/src/eac3/bsi.rs': 'cce7d8a11c07c2647a98d939329c8266cb8fede45b4dd158be760f846316fed6',
-    'vendor/oxideav-ac3/src/eac3/dsp.rs': '3662beb2a02f34b87ac5acc06f11c049afd04e8e4d19779661b083759a06aae7',
+    'vendor/oxideav-ac3/src/eac3/dsp.rs': 'ce2d53e76c1b089bfceb86523aaa362ee9ba55d4e8c659eea896615d4cca92a1',
     'vendor/oxideav-ac3/src/eac3/ecpl.rs': 'a874f8b8f49607548ffb1f541c24bf6f64a5d036584117dfe7ec29dc9f09a92e',
     'vendor/oxideav-ac3/src/eac3/encoder.rs': '0ed984d20cd574c7f0a9a0388bdffeb0edd81c3fecf121b934515c8f0894cb06',
     'vendor/oxideav-ac3/src/encoder.rs': 'c7efdc5856ce6b142bea275ff953d631a58a61a9fee1ae7098f61edeffb57371',

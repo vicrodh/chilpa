@@ -826,6 +826,10 @@ pub(crate) fn parse_audblk_into(
                 }
             }
             state.cpl_nbnd = n;
+        } else {
+            for ch in 0..nfchans {
+                state.channels[ch].in_coupling = false;
+            }
         }
     }
 
@@ -3601,3 +3605,7 @@ mod spx_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "audblk_coupling_tests.rs"]
+mod coupling_transition_tests;

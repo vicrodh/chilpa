@@ -467,11 +467,11 @@ pub(crate) fn decode_audblks(
     // Absolute block index where deferral began (= first ecpl block). The
     // deferred pass maps snapshot index `i` to block `first_deferred_blk + i`.
     let mut first_deferred_blk = 0usize;
-    // Per-deferred-block full channel-state snapshots + the decouple-skip
-    // flag (true for ecpl blocks). Only populated once `frame_has_ecpl`.
+    // Per-deferred-block channel and global DSP inputs.
+    // Only populated once `frame_has_ecpl`.
     let mut deferred_channels: Vec<[crate::audblk::ChannelState; crate::audblk::MAX_CHANNELS]> =
         Vec::new();
-    let mut deferred_skip_decouple: Vec<bool> = Vec::new();
+    let mut deferred_contexts: Vec<BlockDspContext> = Vec::new();
 
     // §7.2.2.6 — clear leftover coupling state at the top of every
     // frame so a previous frame's `cpl_in_use` doesn't leak forward
@@ -1623,7 +1623,7 @@ pub(crate) fn decode_audblks(
             // correct). The `delay` field is intentionally re-threaded in
             // pass 2, not from the snapshot.
             deferred_channels.push(state.channels.clone());
-            deferred_skip_decouple.push(ecpl_in_use);
+            deferred_contexts.push(BlockDspContext::capture(state, ecpl_in_use));
         } else {
             audblk::dsp_block(state, &si, &ac3_bsi);
 
@@ -1660,7 +1660,7 @@ pub(crate) fn decode_audblks(
             first_deferred_blk,
             &ecpl_blocks,
             &deferred_channels,
-            &deferred_skip_decouple,
+            &deferred_contexts,
             nfchans,
             nchans,
             lfeon,
@@ -1710,6 +1710,72 @@ pub(crate) fn decode_audblks(
     Ok(())
 }
 
+// Parsed global inputs consumed by dsp_block. Channel inputs are already
+// snapshotted separately; delay, ECPL state and noise generators remain live.
+struct BlockDspContext {
+    cpl_in_use: bool,
+    cpl_begf: u8,
+    cpl_begf_mant: usize,
+    cpl_endf_mant: usize,
+    cpl_nsubbnd: usize,
+    cpl_bndstrc: [bool; 18],
+    cpl_coord: [[f32; 18]; MAX_FBW],
+    cpl_phsflg: [bool; 18],
+    cpl_bap0: [bool; N_COEFFS],
+    rematflg: [bool; 4],
+    spx_in_use: bool,
+    spx_strtf: u8,
+    spx_begin_subbnd: usize,
+    spx_end_subbnd: usize,
+    spx_nbnds: usize,
+    spx_bndsztab: [usize; 18],
+    skip_decouple: bool,
+}
+
+impl BlockDspContext {
+    fn capture(state: &Ac3State, skip_decouple: bool) -> Self {
+        Self {
+            cpl_in_use: state.cpl_in_use,
+            cpl_begf: state.cpl_begf,
+            cpl_begf_mant: state.cpl_begf_mant,
+            cpl_endf_mant: state.cpl_endf_mant,
+            cpl_nsubbnd: state.cpl_nsubbnd,
+            cpl_bndstrc: state.cpl_bndstrc,
+            cpl_coord: state.cpl_coord,
+            cpl_phsflg: state.cpl_phsflg,
+            cpl_bap0: state.cpl_bap0,
+            rematflg: state.rematflg,
+            spx_in_use: state.spx_in_use,
+            spx_strtf: state.spx_strtf,
+            spx_begin_subbnd: state.spx_begin_subbnd,
+            spx_end_subbnd: state.spx_end_subbnd,
+            spx_nbnds: state.spx_nbnds,
+            spx_bndsztab: state.spx_bndsztab,
+            skip_decouple,
+        }
+    }
+
+    fn restore(&self, state: &mut Ac3State) {
+        state.cpl_in_use = self.cpl_in_use;
+        state.cpl_begf = self.cpl_begf;
+        state.cpl_begf_mant = self.cpl_begf_mant;
+        state.cpl_endf_mant = self.cpl_endf_mant;
+        state.cpl_nsubbnd = self.cpl_nsubbnd;
+        state.cpl_bndstrc = self.cpl_bndstrc;
+        state.cpl_coord = self.cpl_coord;
+        state.cpl_phsflg = self.cpl_phsflg;
+        state.cpl_bap0 = self.cpl_bap0;
+        state.rematflg = self.rematflg;
+        state.spx_in_use = self.spx_in_use;
+        state.spx_strtf = self.spx_strtf;
+        state.spx_begin_subbnd = self.spx_begin_subbnd;
+        state.spx_end_subbnd = self.spx_end_subbnd;
+        state.spx_nbnds = self.spx_nbnds;
+        state.spx_bndsztab = self.spx_bndsztab;
+        state.skip_decouple = self.skip_decouple;
+    }
+}
+
 /// §E.3.5.5 — the deferred enhanced-coupling DSP second pass.
 ///
 /// Re-renders every audio block of a frame that used enhanced coupling, in
@@ -1719,7 +1785,8 @@ pub(crate) fn decode_audblks(
 ///
 /// 1. The block's snapshot channel-state is restored into `state.channels`,
 ///    preserving the evolving overlap-add `delay` lines (carried from the
-///    previous block's DSP, not from the snapshot).
+///    previous block's DSP, not from the snapshot). The block's parsed
+///    global DSP inputs are restored without rewinding the noise generators.
 /// 2. For an enhanced-coupling block, [`super::ecpl::synthesize_block`]
 ///    reconstructs the carrier from the previous / current / next block's
 ///    de-normalised coefficients (zero buffers at the frame edges, per the
@@ -1749,7 +1816,7 @@ fn run_deferred_ecpl_dsp(
     first_deferred_blk: usize,
     ecpl_blocks: &[Option<super::ecpl::EcplBlock>],
     deferred_channels: &[[crate::audblk::ChannelState; crate::audblk::MAX_CHANNELS]],
-    deferred_skip_decouple: &[bool],
+    deferred_contexts: &[BlockDspContext],
     nfchans: usize,
     nchans: usize,
     lfeon: bool,
@@ -1807,8 +1874,8 @@ fn run_deferred_ecpl_dsp(
         }
         state.blkidx = abs_blk;
 
-        let skip = deferred_skip_decouple[i];
-        state.skip_decouple = skip;
+        deferred_contexts[i].restore(state);
+        let skip = state.skip_decouple;
         if skip && let Some(curr) = &ecpl_blocks[abs_blk] {
             let prev = if abs_blk > 0 {
                 ecpl_blocks[abs_blk - 1].as_ref().unwrap_or(&zero_block)
@@ -3712,3 +3779,7 @@ mod issue13_craft_tests {
         run_crafted_gate("blkstrtinfo", &es);
     }
 }
+
+#[cfg(test)]
+#[path = "deferred_context_tests.rs"]
+mod deferred_context_tests;
