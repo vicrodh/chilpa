@@ -45,6 +45,30 @@ TitledFlow {
             }
         }
     }
+    Column {
+        width: Metrics.confirmWidth
+        PillButton { text: "Resize preceding section"; onClicked: sectionPreview.expanded = !sectionPreview.expanded }
+        Flickable {
+            id: sectionPreview
+            property bool expanded: false
+            width: parent.width; height: Metrics.artistPortrait; contentHeight: sectionColumn.height; clip: true
+            Column {
+                id: sectionColumn
+                width: parent.width; spacing: Metrics.blockGap
+                Repeater {
+                    id: previewSections
+                    model: 5
+                    Item {
+                        required property int index
+                        readonly property var section: ({id:String(index)})
+                        width: sectionColumn.width; height: Metrics.artistPortrait * (index === 0 && sectionPreview.expanded ? 2 : 1) // derived: double the first section to demonstrate anchoring
+                        Text { text: "Section " + (parent.index + 1); color: Theme.color.textPrimary }
+                    }
+                }
+            }
+            ArtistSectionPosition { viewport: sectionPreview; column: sectionColumn; blocks: previewSections }
+        }
+    }
     ArtistContext { width: Metrics.settingsMaxWidth; info: ({title:"Artist",genres:["Jazz","Soul Jazz"],compositions:8}) }
     DiscoveryEntry { width: Metrics.discoveryEntryWidth; entry: ({kind:"genre",name:"Jazz",art:{key:"jazz"}}); detail:"Explore styles in your library" }
     DiscoveryEntry { width: Metrics.sceneCardWidth; activeImages:false; entry: ({kind:"composer",name:"Composer"}); detail:"3 albums" }

@@ -10,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 import "../Patterns"
+import "qrc:/qt/qml/app/chilpa/pages/qml/Patterns"
 
 // An artist's page, one for every source and for the library (ui/adr:
 // artist page): the header, a jump bar that sticks, then the blocks in
@@ -53,6 +54,7 @@ Item {
     // The shelves by key, changed only when a shelf comes or goes, so a
     // page read again keeps every block where it was.
     KeyedModel { id: shelfRows; items: page.shelves }
+    ArtistSectionPosition { id: sectionPosition; viewport: flick; column: column; blocks: blocks; context: page.key + "/" + page.inLibrary; enabled: page.visible }
     Component.onCompleted: { aboutChanged(); acceptContextIntent() }
     onNameChanged: if (presented) acceptContextIntent()
     onPresentedChanged: if (presented) acceptContextIntent()
@@ -71,9 +73,7 @@ Item {
         return null
     }
     function jump(id) {
-        if (id === "about") { flick.contentY = 0; return }
-        const block = blockOf(id)
-        if (block) flick.contentY = Math.min(column.y + block.y - Metrics.jumpOffset, Math.max(0, flick.contentHeight - flick.height))
+        sectionPosition.jump(id, blockOf(id))
     }
     // The last block the page scrolled past is the one the bar marks.
     readonly property string activeJump: {
