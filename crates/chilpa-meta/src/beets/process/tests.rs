@@ -13,6 +13,34 @@ fn with_lookup(body: &str) -> String {
 }
 
 #[test]
+fn a_candidate_carries_the_genres_its_release_names_and_the_lookup_asks_for_them() {
+    // The shipped helper, run on stand-ins for a match and for the configuration it sets.
+    let script = format!(r#"
+import json, sys, types
+bridge = {{'__name__': 'chilpa_bridge_test'}}
+exec({helper}, bridge)
+def release(genres):
+    track = types.SimpleNamespace(title='Part I', medium=1, medium_index=1, length=1, track_id='r', release_track_id='t')
+    info = types.SimpleNamespace(data_source='MusicBrainz', tracks=[track], album_id='a', album='Album', genres=genres)
+    return types.SimpleNamespace(info=info, mapping={{}}, distance=0.0)
+named = bridge['candidate'](release(['rock', 'metal', 'folk', 'jazz', 'blues', 'pop', 'soul']), {{}})['release']['genres']
+unnamed = bridge['candidate'](release(None), {{}})['release']['genres']
+class Setting(dict):
+    def __missing__(self, key): self[key] = Setting(); return self[key]
+    def set(self, value): self['value'] = value
+    def read(self, user=True): pass
+config = Setting()
+sys.modules['beets'] = types.SimpleNamespace(__version__=bridge['BEETS_VERSION'], config=config)
+bridge['lookup']({{'operation': 'probe'}})
+print(json.dumps([named, unnamed, config['musicbrainz']['genres'].get('value')]))
+"#, helper = serde_json::to_string(HELPER).unwrap());
+    let output = Command::new(python()).args(["-I", "-c", &script]).output().unwrap();
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    let seen: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(seen, serde_json::json!([["rock", "metal", "folk", "jazz", "blues"], [], true]));
+}
+
+#[test]
 fn the_owner_keeps_the_pipe_open_until_the_result_frame_is_flushed() {
     let workspace = tempfile::tempdir().unwrap();
     let helper = with_lookup("def fixture_lookup(request):\n    return {'protocol': 1, 'beets_version': '2.14.1', 'candidates': [], 'recommendation': 'none'}");

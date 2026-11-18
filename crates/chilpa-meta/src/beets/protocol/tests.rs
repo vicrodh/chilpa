@@ -6,7 +6,7 @@ fn response() -> Value {
     json!({"protocol":1,"beets_version":BEETS_VERSION,"recommendation":"strong","candidates":[{
         "score":97,"mappings":[{"track":74,"index":0,"composers":["Writer"],"work":"Suite"}],
         "release":{"provider":"musicbrainz","id":"release-1","title":"Album","credits":[],"date":"2001",
-            "genres":[],"label":"Label","catalog_number":"L1","catalog_numbers":[],"country":"","barcode":"",
+            "genres":["rock"],"label":"Label","catalog_number":"L1","catalog_numbers":[],"country":"","barcode":"",
             "discs":1,"media_titles":[],"release_group_id":"group-1","url":"https://musicbrainz.org/release/release-1",
             "tracks":[{"disc":1,"number":1,"title":"Part I","duration_ms":1000,"credits":[],"recording_id":"recording-1","track_id":"track-1"}]}
     }]})
@@ -21,7 +21,7 @@ fn response_retains_source_identity_score_and_explicit_track_mapping() {
     assert_eq!(candidate.mappings[0].track, 74);
     assert_eq!(candidate.mappings[0].index, 0);
     assert_eq!(candidate.mappings[0].composers, ["Writer"]);
-    assert!(candidate.release.genres.is_empty());
+    assert_eq!(candidate.release.genres, ["rock"]);
 }
 
 #[test]

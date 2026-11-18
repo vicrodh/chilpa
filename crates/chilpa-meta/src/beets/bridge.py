@@ -16,6 +16,7 @@ BEETS_VERSION = "2.14.1"
 MAX_INPUT = 1024 * 1024
 MAX_TRACKS = 1024
 MAX_CANDIDATES = 5
+MAX_GENRES = 5
 MAX_OUTPUT = 8 * 1024 * 1024
 
 
@@ -108,7 +109,8 @@ def candidate(match, item_ids):
                        "credits": credits(track), "recording_id": text(getattr(track, "track_id", "")),
                        "track_id": text(getattr(track, "release_track_id", ""))})
     release = {"provider": "musicbrainz", "id": text(info.album_id), "title": text(info.album),
-               "credits": credits(info), "date": date(info), "genres": [],
+               "credits": credits(info), "date": date(info),
+               "genres": strings(list(getattr(info, "genres", None) or [])[:MAX_GENRES]),
                "label": text(getattr(info, "label", "")), "catalog_number": text(getattr(info, "catalognum", "")),
                "catalog_numbers": [], "country": text(getattr(info, "country", "")), "barcode": text(getattr(info, "barcode", "")),
                "discs": min(65535, integer(getattr(info, "mediums", 0))), "media_titles": [],
@@ -126,6 +128,8 @@ def lookup(request):
     beets.config.read(user=False)
     beets.config["include"].set([])
     beets.config["plugins"].set(["musicbrainz"])
+    # The source leaves genres out unless asked: without this a release never names any.
+    beets.config["musicbrainz"]["genres"].set(True)
     if request["operation"] == "probe":
         return {"protocol": PROTOCOL, "beets_version": beets.__version__, "candidates": [], "recommendation": "none"}
 
