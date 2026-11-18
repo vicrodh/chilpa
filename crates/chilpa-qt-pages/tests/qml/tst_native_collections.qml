@@ -168,6 +168,20 @@ TestCase {
         wait(80)
         verify(page.scrollView.headerItem.mapToItem(page,0,0).y>=0,"a fresh collection must show its title and filters before its first row")
     }
+    function test_the_collection_header_keeps_its_top_margin_and_scrolls_away_with_its_rows() {
+        Sources.pages={"fixture native:saved:all":document({knownCount:100})}
+        const router=createTemporaryObject(routedHostFactory,test,{route:"fixture\u001fsource\u001f0\u001fscrolling-collection-header"})
+        tryCompare(router,"phase","content")
+        tryVerify(()=>collection(router.item?.item)?.count === 100)
+        const page=router.item.item
+        tryCompare(page,"restorePending",false)
+        wait(80)
+        const view=page.scrollView
+        const header=view.headerItem
+        compare(Math.round(header.mapToItem(view,0,0).y),view.topMargin,"the header starts under the page's top margin")
+        view.contentY+=header.height+view.topMargin+200
+        tryVerify(()=>header.mapToItem(view,0,header.height).y<=0,1000,"the header must leave with the rows instead of staying over them")
+    }
     function test_a_saved_offset_in_the_first_row_survives_collection_activation() {
         Sources.pages={"fixture native:saved:all":document({knownCount:100})}
         const route="fixture\u001fsource\u001f0\u001ffirst-row-saved-offset"

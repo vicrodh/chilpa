@@ -90,7 +90,7 @@ Item {
         bottomMargin: grid.bottomInset + Metrics.cardRing
         boundsBehavior: Flickable.StopAtBounds
         header: grid.technical ? technicalHeader : null
-        headerPositioning: ListView.OverlayHeader
+        headerPositioning: grid.technical ? ListView.OverlayHeader : ListView.InlineHeader
         ScrollBar.vertical: ViewportScrollBar {
             objectName: "albumVerticalScrollBar"
             policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
