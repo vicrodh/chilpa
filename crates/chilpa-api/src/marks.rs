@@ -136,7 +136,7 @@ impl Chilpa {
         if !self.source_favorites.has_pending() || self.now.path.is_empty() { return false; }
         self.catalog.track_by_path(&self.now.path).is_some_and(|(track, _)| {
             let reference = track.metadata["ref"].as_str().unwrap_or(&track.path);
-            let song = reference.split_once("@playlist:").map_or(reference, |(song, _)| song);
+            let song = crate::source_catalog::song_of(reference);
             self.source_favorites.pending(&track.plugin, song)
         })
     }

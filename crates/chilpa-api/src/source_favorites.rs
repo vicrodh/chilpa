@@ -155,6 +155,18 @@ mod tests {
     }
 
     #[test]
+    fn a_track_is_the_same_song_in_every_listing_that_names_it() {
+        use crate::source_catalog::song_of;
+        for reference in ["track:10", "track:10@playlist:3@entry:2", "track:10@album:7", "track:10@collection:saved"] {
+            assert_eq!(song_of(reference), "track:10", "{reference} must match the favorites list's own row");
+        }
+        // The record a track was opened from is not the list it is a favorite in.
+        let known = vec![(-1, "one".to_string(), song_of("track:10@album:7").to_string())];
+        let listed: HashSet<_> = [key("one", song_of("track:10@collection:saved"))].into();
+        assert_eq!(favorites_among(&known, &listed, &HashMap::new()), [-1].into());
+    }
+
+    #[test]
     fn a_finished_track_write_clears_only_its_pending_identity_on_success_or_failure() {
         for result in [Ok(()), Err("Write failed".into())] {
             let mut api = Chilpa::new();

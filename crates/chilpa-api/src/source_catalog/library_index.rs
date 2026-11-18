@@ -103,7 +103,7 @@ fn song(track: &Track, card: Option<&Card>, saved: bool, enrichment: &super::gen
     let own_genres = genres(&track.metadata, "");
     let own_label = text(&track.metadata, "label");
     let identity = track.metadata["ref"].as_str().filter(|_| track.metadata["kind"] == "track")
-        .map(|reference| reference.split_once("@playlist:").map_or(reference, |(song, _)| song).to_string())
+        .map(|reference| super::song_of(reference).to_string())
         .unwrap_or_else(|| track.path.clone());
     let mut composers = credits.of_track(track, at);
     if composers.is_empty() { composers = album.as_ref().map(|a| a.composers.clone()).unwrap_or_default(); }

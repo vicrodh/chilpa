@@ -195,6 +195,13 @@ pub(crate) fn split(key: &str) -> (&str, &str) {
     key.split_once(' ').unwrap_or((key, ""))
 }
 
+/// The song a track reference names, without the context it was listed in
+/// (a playlist occurrence, the record or mix it was opened from). Favorites
+/// and ratings belong to the song, so every listing of it agrees.
+pub(crate) fn song_of(reference: &str) -> &str {
+    reference.split_once('@').map_or(reference, |(song, _)| song)
+}
+
 impl Catalog {
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
@@ -309,7 +316,7 @@ impl Catalog {
         shelf.tracks.iter().filter_map(|id|inner.store.tracks.get(id))
             .filter(|track|track.metadata["favorite"]==true)
             .filter_map(|track|track.metadata["ref"].as_str())
-            .map(|reference|reference.split_once("@playlist:").map_or(reference,|(song,_)|song).to_string()).collect()
+            .map(|reference|song_of(reference).to_string()).collect()
     }
 
     /// What the source calls each track of a listing.
@@ -318,7 +325,7 @@ impl Catalog {
         let Some(shelf) = inner.store.shelves.get(key) else { return Vec::new() };
         shelf.tracks.iter().filter_map(|id| inner.store.tracks.get(id))
             .filter_map(|track| track.metadata["ref"].as_str().filter(|_| track.metadata["kind"] == "track"))
-            .map(|reference| reference.split_once("@playlist:").map_or(reference, |(song, _)| song).to_string())
+            .map(|reference| song_of(reference).to_string())
             .collect()
     }
 
@@ -574,7 +581,7 @@ impl Catalog {
             .filter_map(|card| Some(("album".to_string(), card.plugin.clone(), card.identity.clone(), rated(&card.metadata)?)));
         let tracks = inner.store.tracks.values().filter(|track| track.metadata["kind"] == "track").filter_map(|track| {
             let reference = track.metadata["ref"].as_str()?;
-            let song = reference.split_once("@playlist:").map_or(reference, |(song, _)| song);
+            let song = song_of(reference);
             Some(("track".to_string(), track.plugin.clone(), song.to_string(), rated(&track.metadata)?))
         });
         cards.chain(tracks).collect()
@@ -585,7 +592,7 @@ impl Catalog {
     pub(crate) fn set_source_rating(&self, plugin: &str, kind: &str, identity: &str, value: f64) {
         let mut inner = self.lock();
         let value = serde_json::json!(value);
-        let song = |track: &store::Track| track.metadata["ref"].as_str().is_some_and(|r| r.split_once("@playlist:").map_or(r, |(song, _)| song) == identity);
+        let song = |track: &store::Track| track.metadata["ref"].as_str().is_some_and(|r| song_of(r) == identity);
         for card in inner.store.cards.values_mut_where(|card| kind == "album" && card.kind == store::CardKind::Album && card.plugin == plugin && card.identity == identity && card.metadata.is_object()) {
             card.metadata["rating"] = value.clone();
         }
@@ -607,7 +614,7 @@ impl Catalog {
         cards.chain(inner.store.tracks.values().map(|track| {
             // A playlist occurrence identifies an editable row; personal stars identify its song.
             let identity = track.metadata["ref"].as_str().filter(|_| track.metadata["kind"] == "track")
-                .map(|reference| reference.split_once("@playlist:").map_or(reference, |(song, _)| song).to_string())
+                .map(|reference| song_of(reference).to_string())
                 .unwrap_or_else(|| track.path.clone());
             ("track".into(), track.id, track.plugin.clone(), identity)
         })).collect()
