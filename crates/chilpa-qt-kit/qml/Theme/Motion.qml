@@ -24,6 +24,8 @@ QtObject {
     // (QBZ's ContentRouter fadeGuard). Not motion: never reduced.
     readonly property int revealGuard: 1500
     readonly property int ambient: reduced ? 0 : 600
+    readonly property int tickerRest: 900
+    readonly property int tickerPerPixel: 22
     readonly property int toast: 2200
     // A toast stays long enough to be read: this much per character over
     // the shortest, up to the longest.

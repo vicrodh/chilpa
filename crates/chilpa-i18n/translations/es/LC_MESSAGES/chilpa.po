@@ -244,6 +244,9 @@ msgstr "Una sincronización todavía usa este perfil."
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que escuches sin conexión se envía después."
 
+msgid "A track or album title too long for its place slides to show the rest while the pointer rests on it."
+msgstr "El título de una pista o de un álbum que no cabe en su lugar se desliza para mostrar el resto mientras el puntero está sobre él."
+
 msgid "A-B loop"
 msgstr "Loop A-B"
 
@@ -7216,6 +7219,9 @@ msgstr "Saltadas"
 
 msgid "Sleep timer"
 msgstr "Temporizador"
+
+msgid "Slide long titles"
+msgstr "Deslizar títulos largos"
 
 msgid "Small"
 msgstr "Pequeño"

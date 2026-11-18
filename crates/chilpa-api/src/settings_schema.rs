@@ -165,6 +165,7 @@ pub const SECTIONS: &[Section] = &[
                 setting("appearance.font", Chilpa::mark("Font"), Chilpa::mark("Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."), Control::Segmented),
                 setting("appearance.albumHeader", Chilpa::mark("Album header"), Chilpa::mark("Full atmosphere, artwork colors only, or no derived background."), Control::Segmented),
                 setting(crate::play_indicator::ANIMATED, Chilpa::mark("Play indicator animation"), Chilpa::mark("Animate the playing track's mark with equalizer bars. Off by default: a still mark with an accent edge, lighter on the CPU."), Control::Toggle),
+                setting(crate::title_ticker::SLIDES, Chilpa::mark("Slide long titles"), Chilpa::mark("A track or album title too long for its place slides to show the rest while the pointer rests on it."), Control::Toggle),
             ],
         }, Group {
             title: Chilpa::mark("Background"),

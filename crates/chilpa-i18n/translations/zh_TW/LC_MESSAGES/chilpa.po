@@ -252,6 +252,9 @@ msgstr "仍有同步操作正在使用此設定檔。"
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "曲目播放過半或達四分鐘即計為一次聆聽。離線時的聆聽紀錄會稍後傳送。"
 
+msgid "A track or album title too long for its place slides to show the rest while the pointer rests on it."
+msgstr "曲目或專輯標題超出顯示範圍時，游標停留其上會滑動顯示其餘部分。"
+
 msgid "A-B loop"
 msgstr "A-B 循環"
 
@@ -7216,6 +7219,9 @@ msgstr "跳過次數"
 
 msgid "Sleep timer"
 msgstr "睡眠定時器"
+
+msgid "Slide long titles"
+msgstr "滑動顯示較長的標題"
 
 msgid "Small"
 msgstr "小"

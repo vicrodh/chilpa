@@ -75,6 +75,7 @@ pub mod device_sync;
 mod privacy;
 pub use privacy::network_allowed;
 mod play_indicator;
+mod title_ticker;
 mod rating_switch;
 mod sidebar_entries;
 mod library_protection;

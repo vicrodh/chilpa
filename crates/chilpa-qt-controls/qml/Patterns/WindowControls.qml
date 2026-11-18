@@ -16,6 +16,7 @@ Item {
     id: controls
     property bool outputDetailsHost: true
     ChannelOffer { active:controls.outputDetailsHost;onRequested:controls.present() }
+    TitleTicker {}
     Connections {
         target: controls.outputDetailsHost ? Prefs : null
         function onRevChanged() { AudioOutput.takeRequest() }

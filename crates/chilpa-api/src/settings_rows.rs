@@ -173,7 +173,7 @@ impl Chilpa {
             self.remember_preference(key, value);
             return true;
         }
-        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.sidebar_entries_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value) || self.back_button_setting(key, value) || self.device_lock_setting(key, value) || self.channel_mode_setting(key, value) || self.offline_limit_setting(key, value) || self.rating_switch_setting(key, value) || self.server_ratings_setting(key, value) || self.server_favorites_setting(key, value) || self.library_protection_setting(key, value)
+        self.track_credits_setting(key, value) || self.playlist_grouping_setting(key, value) || self.search_preview_setting(key, value) || self.sidebar_entries_setting(key, value) || self.tray_setting(key, value) || self.discord_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.title_ticker_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value) || self.back_button_setting(key, value) || self.device_lock_setting(key, value) || self.channel_mode_setting(key, value) || self.offline_limit_setting(key, value) || self.rating_switch_setting(key, value) || self.server_ratings_setting(key, value) || self.server_favorites_setting(key, value) || self.library_protection_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -465,6 +465,7 @@ impl Chilpa {
             }
             "navigation.extraControls" => row.value = self.pref_on("playback.extra", true),
             crate::play_indicator::ANIMATED => row.value = self.play_indicator_animated().to_string(),
+            crate::title_ticker::SLIDES => row.value = self.title_ticker().to_string(),
             "navigation.autoHide" => row.value = self.pref_on("playback.autoHide", false),
             "playback.gapless" => row.value = self.gapless().to_string(),
             "playback.normalize" => row.value = self.normalize().to_string(),

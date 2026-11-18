@@ -54,6 +54,7 @@ TitledFlow {
     WindowActions { controls: galleryControls; commandBar: null; sheet: null; settings: null }
     TrackFocus { window: Window.window }
     NavigationPointer { window: Window.window; enabled: false }
+    TitleTicker { enabled: false }
     CommandBar { width: Metrics.settingsMaxWidth; opened: true; Component.onCompleted: input.text = "search " }
     // The cursor helpers use a short, silent list; the buttons show their
     // state without asking the player to open a file.

@@ -244,6 +244,9 @@ msgstr ""
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Прослушивание засчитывается, когда проиграна половина трека или четыре минуты. Прослушивания офлайн отправляются позже."
 
+msgid "A track or album title too long for its place slides to show the rest while the pointer rests on it."
+msgstr "Название трека или альбома, которое не помещается на своём месте, прокручивается и показывает остальное, пока на нём стоит указатель."
+
 msgid "A-B loop"
 msgstr "Повтор A-B"
 
@@ -7224,6 +7227,9 @@ msgstr "Пропуски"
 
 msgid "Sleep timer"
 msgstr "Таймер сна"
+
+msgid "Slide long titles"
+msgstr "Прокручивать длинные названия"
 
 msgid "Small"
 msgstr "Маленький"

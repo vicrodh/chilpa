@@ -244,6 +244,9 @@ msgstr ""
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "トラックは半分または4分再生された時点で1回として数えられます。オフラインでの再生は後で送信されます。"
 
+msgid "A track or album title too long for its place slides to show the rest while the pointer rests on it."
+msgstr "表示領域に収まらない曲名やアルバム名は、ポインターを置いている間スライドして続きを表示します。"
+
 msgid "A-B loop"
 msgstr "ABループ"
 
@@ -7208,6 +7211,9 @@ msgstr "スキップ"
 
 msgid "Sleep timer"
 msgstr "スリープタイマー"
+
+msgid "Slide long titles"
+msgstr "長いタイトルをスライド表示"
 
 msgid "Small"
 msgstr "小"

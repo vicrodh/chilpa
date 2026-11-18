@@ -244,6 +244,9 @@ msgstr ""
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Uma faixa conta depois de tocar metade dela, ou quatro minutos. As reproduções feitas offline são enviadas depois."
 
+msgid "A track or album title too long for its place slides to show the rest while the pointer rests on it."
+msgstr "O título de uma faixa ou de um álbum que não cabe no seu lugar desliza para mostrar o resto enquanto o ponteiro está sobre ele."
+
 msgid "A-B loop"
 msgstr "Repetição A-B"
 
@@ -7216,6 +7219,9 @@ msgstr "Puladas"
 
 msgid "Sleep timer"
 msgstr "Timer de sono"
+
+msgid "Slide long titles"
+msgstr "Deslizar títulos longos"
 
 msgid "Small"
 msgstr "Pequeno"
