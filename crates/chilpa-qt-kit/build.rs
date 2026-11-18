@@ -40,10 +40,12 @@ fn main() {
     println!("cargo:rerun-if-changed=cxx/page_lifetime.cpp");
     println!("cargo:rerun-if-changed=cxx/qml_types.cpp");
     println!("cargo:rerun-if-changed=cxx/playing_surface.cpp");
+    println!("cargo:rerun-if-changed=cxx/pointer_watch.cpp");
     CxxQtBuilder::library(Interface::default())
         .qobject_header("cxx/frame_fence.h")
         .qobject_header("cxx/page_lifetime.h")
         .qobject_header("cxx/playing_surface.h")
+        .qobject_header("cxx/pointer_watch.h")
         .qt_module("Gui")
         .qt_module("Qml")
         .qt_module("Quick")
@@ -62,6 +64,7 @@ fn main() {
             cc.file("cxx/page_lifetime.cpp");
             cc.file("cxx/qml_types.cpp");
             cc.file("cxx/playing_surface.cpp");
+            cc.file("cxx/pointer_watch.cpp");
         })
         .build();
 }

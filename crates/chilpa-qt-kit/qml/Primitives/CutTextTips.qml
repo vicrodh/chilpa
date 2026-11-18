@@ -1,4 +1,5 @@
 import QtQuick
+import app.chilpa.kit.primitives
 import "../Theme"
 
 // Any line of text cut short says itself whole when the pointer rests on
@@ -17,7 +18,7 @@ Item {
     height: 0
 
     function under(item) {
-        const at = item.mapFromItem(tips.watching, hover.point.position)
+        const at = item.mapFromItem(null, hover.position)
         return at.x >= 0 && at.y >= 0 && at.x < item.width && at.y < item.height
     }
 
@@ -29,7 +30,7 @@ Item {
 
     function look() {
         // Whatever already says itself -- a button, a card's title -- goes on.
-        if (showing || TipState.target !== null || !hover.hovered)
+        if (showing || TipState.target !== null || !hover.inside)
             return
         const cut = cutAt(tips.watching)
         if (cut) {
@@ -58,15 +59,17 @@ Item {
         return null
     }
 
-    HoverHandler {
+    // Read from the window, not from a hover handler: an area that takes
+    // hover under the pointer kept it from one on what holds everything,
+    // and its lines stayed quiet until a click.
+    PointerWatch {
         id: hover
-        parent: tips.watching
-        onPointChanged: {
+        onMoved: {
             if (tips.showing && !tips.under(tips.showing))
                 tips.letGo()
             rest.restart()
         }
-        onHoveredChanged: if (!hovered) tips.letGo()
+        onInsideChanged: if (!inside) tips.letGo()
     }
 
     Timer {

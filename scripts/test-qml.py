@@ -51,6 +51,9 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     surface = root / "crates/chilpa-qt-kit/cxx/playing_surface.cpp"
     surface_moc = temporary / "moc_playing_surface.cpp"
     subprocess.run([str(libexec / "moc"), str(surface.with_suffix(".h")), "-o", str(surface_moc)], check=True)
+    pointer = root / "crates/chilpa-qt-kit/cxx/pointer_watch.cpp"
+    pointer_moc = temporary / "moc_pointer_watch.cpp"
+    subprocess.run([str(libexec / "moc"), str(pointer.with_suffix(".h")), "-o", str(pointer_moc)], check=True)
     native_spectrum = any(test.name == "tst_spectrum_item.qml" or (test.is_dir() and (test / "tst_spectrum_item.qml").is_file()) for test in tests)
     spectrum_sources = []
     if native_spectrum:
@@ -59,7 +62,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
         subprocess.run([str(libexec / "moc"), str(spectrum.with_suffix(".h")), "-o", str(spectrum_moc)], check=True)
         spectrum_sources = [str(spectrum), str(spectrum_moc)]
     flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "Qt6Quick", "Qt6Qml"], text=True))
-    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(fence), str(fence_moc), str(lifetime), str(lifetime_moc), str(surface), str(surface_moc), *spectrum_sources,
+    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(fence), str(fence_moc), str(lifetime), str(lifetime_moc), str(surface), str(surface_moc), str(pointer), str(pointer_moc), *spectrum_sources,
                     "-o", str(temporary / "loader.so"), *flags], check=True)
     imports = temporary / "imports"
     shutil.copytree(root / "crates/chilpa-qt/tests/qml/imports", imports)

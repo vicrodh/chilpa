@@ -50,7 +50,9 @@ Item {
                 font: slide.line ? slide.line.font : Qt.font({})
                 color: slide.line ? slide.line.color : Theme.color.textPrimary
                 verticalAlignment: slide.line ? slide.line.verticalAlignment : Text.AlignTop
-                textFormat: Text.PlainText
+                // As the line draws it: a credit with links is marked up, and plain would show the markup.
+                textFormat: slide.line ? slide.line.textFormat : Text.PlainText
+                linkColor: slide.line ? slide.line.linkColor : color
                 SequentialAnimation on x {
                     loops: Animation.Infinite
                     running: words.over > 0

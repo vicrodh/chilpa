@@ -22,7 +22,7 @@ TestCase {
             height: 40
             Text { id: cut; width: 80; text: "[1982] The Number of the Beast, 5644.2, Vinyl"; elide: Text.ElideMiddle }
             Text { id: fits; x: 150; width: 120; text: "Iron Maiden"; elide: Text.ElideRight }
-            MouseArea { anchors.fill: parent; hoverEnabled: true }
+            MouseArea { id: rowHover; anchors.fill: parent; hoverEnabled: true }
         }
     }
 
@@ -31,6 +31,7 @@ TestCase {
         mouseMove(holder, 20, 10)
         mouseMove(holder, 22, 12)
         tryCompare(TipState, "target", cut)
+        verify(rowHover.containsMouse, "the row under the watcher still hears the pointer")
         compare(TipState.text, cut.text)
         mouseMove(holder, 200, 10)
         tryCompare(TipState, "target", null)
