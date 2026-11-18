@@ -68,6 +68,7 @@ Item {
     }
     WheelHandler {
         parent: memory.viewport
+        blocking: false
         target: null
         onWheel: event => { memory.pending = -1; event.accepted = false }
     }
