@@ -176,7 +176,9 @@ fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
     if !value.is_object() { return; }
     value["plugin"] = json!(plugin);
     if let Some(date) = value["release_date"].as_str() { value["released"] = json!(crate::album_versions::release_label(date)); }
-    let kind = value["kind"].as_str().unwrap_or_default();
+    let kind = value["kind"].as_str().unwrap_or_default().to_owned();
+    let kind = kind.as_str();
+    if kind == "playlist" { for field in ["quality_label", "quality_tier"] { value.as_object_mut().map(|fields| fields.remove(field)); } }
     if matches!(kind,"album" | "artist" | "playlist" | "label") {
         if let Some(shelf) = catalog.shelf(&format!("{plugin} section:{kind}s")) {
             let reference=value["ref"].as_str().unwrap_or_default();
@@ -307,8 +309,13 @@ impl crate::Chilpa {
         let mut info = card.metadata.clone();
         if info["genre"].as_str().is_none_or(str::is_empty) { info["genre"] = json!(super::genres::own_genres(&card.metadata, &card.genre).join(", ")); }
         if card.contain_art() { info["art_fit"] = json!("contain"); }
-        let quality = self.album_card_quality(id);
-        info["quality_label"] = json!(quality.short()); info["quality_tier"] = json!(quality.tier.rank());
+        // A playlist holds tracks of many qualities: each row says its own, the header says none.
+        if card.kind == super::store::CardKind::Playlist {
+            for field in ["quality_label", "quality_tier"] { info.as_object_mut().map(|fields| fields.remove(field)); }
+        } else {
+            let quality = self.album_card_quality(id);
+            info["quality_label"] = json!(quality.short()); info["quality_tier"] = json!(quality.tier.rank());
+        }
         decorate_header(&self.catalog, &card.plugin, &mut info);
         info["art"] = json!(url::Url::from_file_path(self.catalog.art_of_card(id)).ok().map(|url| url.to_string()).unwrap_or_default());
         if let Some(url) = self.catalog.chosen_art(id).and_then(|path| url::Url::from_file_path(path).ok()) {
@@ -510,6 +517,24 @@ mod tests {
         }
         assert_eq!(catalog.card_summary(id).unwrap()["genre"], "Ambient");
         assert_eq!(catalog.revisions(),before);
+    }
+
+    #[test]
+    fn a_playlist_header_names_no_quality_and_a_record_keeps_its_own() {
+        let mut app = crate::Chilpa::new();
+        let manifest: chilpa_plugin::Manifest = serde_json::from_value(json!({
+            "id":"fixture","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"})).unwrap();
+        crate::natives::tests::remember_source(&app.natives, manifest, json!({"pages":true}));
+        let mut playlist = json!({"kind":"playlist","ref":"playlist:1","title":"Mixed","quality_label":"24-bit / 96 kHz","quality_tier":3});
+        decorate_header(&app.catalog, "fixture", &mut playlist);
+        assert!(playlist.get("quality_label").is_none() && playlist.get("quality_tier").is_none(), "its tracks differ, so the header says none");
+        let mut record = json!({"kind":"album","ref":"album:1","title":"Record","quality_label":"24-bit / 96 kHz"});
+        decorate_header(&app.catalog, "fixture", &mut record);
+        assert_eq!(record["quality_label"], "24-bit / 96 kHz");
+        let card = app.catalog.lock().store.take_item("fixture", &json!({"kind":"playlist","ref":"playlist:1","title":"Mixed","quality_label":"24-bit / 96 kHz"}), 1).unwrap();
+        let info: Value = serde_json::from_str(&app.native_card_info(card)).unwrap();
+        assert_eq!(info["title"], "Mixed");
+        assert!(info.get("quality_label").is_none() && info.get("quality_tier").is_none());
     }
 
     #[test]
