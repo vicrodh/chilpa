@@ -99,7 +99,7 @@ impl crate::Chilpa {
         }
         self.audio_output.shown = true;
         let selected = if action == "open" {
-            self.casting.inspected_selection().map(remote_id).unwrap_or_else(|| {
+            self.casting.inspected_selection().map(|d| remote_id(d.kind,&d.id)).unwrap_or_else(|| {
                 self.audio_output.route.as_ref().filter(|_| self.now.playing).map(|r|r.device.clone())
                     .unwrap_or_else(|| chilpa_core::settings::load().output)
             })
@@ -139,10 +139,7 @@ impl crate::Chilpa {
         self.audio_output.selection = selected.into();
         self.audio_output.inspection = None; self.audio_output.last = None; self.audio_output.saved = false;
         self.audio_output.cancel = Arc::new(AtomicBool::new(false));
-        let mut remotes: Vec<_> = self.casting.inspected_devices().iter().take(256).cloned().collect();
-        if let Some(current) = self.casting.inspected_selection() {
-            if !remotes.iter().any(|d| d.id == current.id && d.kind == current.kind) { remotes.push(current.clone()); }
-        }
+        let remotes = self.casting.inspected_remotes();
         let selected = selected.to_string();
         let path = chilpa_dirs::config().join("audio-output-checks.json");
         let (tx,rx) = mpsc::sync_channel(1);
@@ -209,16 +206,17 @@ impl crate::Chilpa {
     }
 }
 
-fn remote_id(d: &chilpa_cast::Device) -> String { format!("cast:{:?}:{}",d.kind,d.id) }
-fn listed(remotes: &[chilpa_cast::Device]) -> Vec<Value> {
+/// A label for one renderer in this panel. It is compared whole, never split back into its parts.
+fn remote_id(kind: chilpa_cast::Kind, id: &str) -> String { format!("cast:{kind:?}:{id}") }
+fn listed(remotes: &[crate::casting::Remote]) -> Vec<Value> {
     let mut outputs: Vec<_> = chilpa_core::outputs().into_iter().take(256)
         .filter(|o| !o.id.starts_with("file:") || std::env::var_os("CHILPA_DEV").is_some_and(|v| v == "1"))
         .map(|o| json!({"id":o.id,"label":o.label,"detail":o.detail})).collect();
-    outputs.extend(remotes.iter().take(256).map(|d| json!({"id":remote_id(d),"label":d.name,"detail":d.model})));
+    outputs.extend(remotes.iter().take(256).map(|d| json!({"id":remote_id(d.kind,&d.id),"label":d.name,"detail":d.model})));
     outputs
 }
-fn inspect(selected: &str, remotes: &[chilpa_cast::Device]) -> Inspection {
-    if let Some(d) = remotes.iter().find(|d| remote_id(d) == selected) {
+fn inspect(selected: &str, remotes: &[crate::casting::Remote]) -> Inspection {
+    if let Some(d) = remotes.iter().find(|d| remote_id(d.kind,&d.id) == selected) {
         let mut doc = Inspection::unavailable("cast",selected,format!("{:?}:{}",d.kind,d.model));
         doc.identity.stable_id = d.id.clone(); doc.identity.strong = !d.id.is_empty();
         doc.identity.transport = format!("{:?}",d.kind); doc.render_available = false;

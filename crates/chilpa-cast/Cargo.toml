@@ -16,6 +16,7 @@ native-tls = "0.2"
 mdns-sd = "0.21"
 serde_json = "1"
 getrandom = "0.4"
+tempfile = "3"
 
 [target.'cfg(target_os = "android")'.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }

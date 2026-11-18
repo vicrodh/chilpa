@@ -35,7 +35,7 @@ impl crate::Chilpa {
                 if crate::source_opener::of_plugin(&self.now.path).is_some()
                     || self.now.path.starts_with("http://") || self.now.path.starts_with("https://")
                     || chilpa_models::RemoteEntry::parse(&self.now.path).is_some() { self.stop(); }
-            }
+            } else { self.cast_online(); }
             self.natives.network_changed(self.catalog.clone());
         }
     }

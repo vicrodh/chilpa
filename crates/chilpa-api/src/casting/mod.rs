@@ -4,15 +4,20 @@ mod end;
 mod reporting;
 mod worker;
 mod picker;
+mod inventory;
+pub(crate) use inventory::Remote;
 use crate::{Chilpa, NowPlaying, Repeat, VolumeView};
 use chilpa_cast::{Device, State, Status};
-use std::{sync::{Arc, atomic::{AtomicBool, Ordering}, mpsc::{self, Receiver}}, time::{Duration, Instant}};
+use chilpa_cast::registry::EndpointKey;
+use std::time::{Duration, Instant};
 use worker::{Action, Event, Order, Worker};
 
 #[derive(Default)]
 pub(crate) struct Casting {
     worker: Option<Worker>, generation: u64, selected: Option<Device>, connected: bool,
-    discovery_running: Option<Arc<AtomicBool>>, devices: Vec<Device>, discovery: Option<Receiver<Vec<Device>>>, picker: bool, searched: Option<Instant>,
+    inventory: inventory::Inventory, picker: bool,
+    /// The menu lists the renderers to forget instead of the outputs.
+    forgetting: bool,
     pub(crate) disconnecting: bool,
     pub(crate) local_start: Option<(usize, String, Option<Duration>)>,
     local_output: (String, String),
@@ -23,7 +28,6 @@ pub(crate) struct Casting {
 }
 impl Casting {
     pub(crate) fn inspected_selection(&self) -> Option<&Device> { self.selected.as_ref() }
-    pub(crate) fn inspected_devices(&self) -> &[Device] { &self.devices }
     pub(crate) fn inspected_status(&self) -> &Status { &self.status }
     pub(crate) fn inspected_error(&self) -> &str { &self.error }
     pub(crate) fn active(&self) -> bool { self.selected.is_some() }
@@ -35,44 +39,17 @@ impl Chilpa {
         self.cast_picker(false);
         if self.casting.active() { self.cast_disconnect(); }
         if let Some(worker) = self.casting.worker.take() { std::thread::spawn(move || drop(worker)); }
-        self.casting.devices.clear();
+        self.casting.inventory.set_online(false);
     }
 
     pub(crate) fn shutdown_cast(&mut self) { self.casting.worker.take(); }
 
-    pub fn cast_picker(&mut self, open: bool) {
-        self.casting.picker = open;
-        if open {
-            self.name_local_output();
-            self.cast_discover();
-        }
-        else {
-            if let Some(running) = self.casting.discovery_running.take() { running.store(false, Ordering::Release); }
-            self.casting.discovery = None;
-            self.casting.searched = None;
-        }
-    }
-    pub fn cast_discover(&mut self) {
-        if self.offline() { self.casting.error = chilpa_core::network::blocked(); return; }
-        if self.casting.discovery.is_some() { return; }
-        let (tx, rx) = mpsc::channel(); self.casting.discovery = Some(rx); self.casting.searched = Some(Instant::now());
-        let running = Arc::new(AtomicBool::new(true)); self.casting.discovery_running = Some(running.clone());
-        std::thread::spawn(move || {
-            let cast_running = running.clone();
-            let cast = std::thread::spawn(move || chilpa_cast::discovery::chromecast_until(Duration::from_secs(5), &cast_running).unwrap_or_default());
-            let mut devices = chilpa_cast::discovery::dlna_until(Duration::from_secs(3), &running).unwrap_or_default();
-            devices.extend(cast.join().unwrap_or_default()); devices.sort_by(|a,b| a.name.cmp(&b.name));
-            let _ = tx.send(devices);
-        });
-    }
-    pub fn cast_connect(&mut self, id: &str) {
-        if let Some(device) = self.casting.devices.iter().find(|d| d.id == id).cloned() { self.cast_connect_device(device); }
-    }
     /// I also accept an explicitly addressed renderer for protocol tests.
     pub fn cast_connect_device(&mut self, device: Device) {
         if self.offline() { self.casting.error = chilpa_core::network::blocked(); return; }
         if self.casting.selected.as_ref().is_some_and(|selected| selected.id == device.id && selected.kind == device.kind) && self.casting.error.is_empty() { return; }
         self.casting.disconnecting = false; self.casting.local_start = None;
+        self.cast_session_on(Some(&device));
         let transfer = self.now.playing && !self.now.paused;
         self.casting.advance();
         if self.casting.worker.is_none() { self.casting.worker = Some(Worker::new()); }
@@ -95,6 +72,7 @@ impl Chilpa {
     pub fn cast_disconnect(&mut self) {
         self.casting.disconnecting = self.casting.worker.is_some();
         self.casting.local_start = None;
+        self.cast_session_on(None);
         self.casting.advance(); self.casting.send(Order::Disconnect);
         self.casting.selected = None; self.casting.connected = false; self.casting.loaded = false;
         self.casting.loading = false; self.casting.error.clear();
@@ -169,19 +147,12 @@ impl Chilpa {
         self.casting.local_output = self.output_names(&output);
     }
     pub(crate) fn poll_cast(&mut self) {
-        if let Some(rx) = &self.casting.discovery {
-            match rx.try_recv() {
-                Ok(devices) => { self.casting.devices = devices; self.casting.discovery = None; }
-                Err(mpsc::TryRecvError::Disconnected) => self.casting.discovery = None,
-                _ => {}
-            }
-        }
+        self.poll_inventory();
         if self.casting.picker {
             // Somebody is looking at the local output's name: the listing keeps itself current, and the name follows it.
             self.outputs_listing.watch_for(Duration::from_secs(6));
             if self.casting.local_output_rev != self.outputs_revision() { self.name_local_output(); }
         }
-        if self.casting.picker && self.casting.searched.is_none_or(|t| t.elapsed() > Duration::from_secs(10)) { self.cast_discover(); }
         let events = self.casting.worker.as_ref().map(|w| w.poll()).unwrap_or_default();
         for (generation, event) in events {
             if generation != self.casting.generation { continue; }
@@ -207,12 +178,15 @@ impl Chilpa {
                         if let Some(duration) = status.duration.filter(|d| d.is_finite() && *d > 0.0) { self.now.total_seconds = duration; }
                     }
                     self.casting.status = status;
+                    // The session's own answer is this renderer's evidence: nothing else probes it.
+                    if let Some(device) = &self.casting.selected { self.casting.inventory.session_alive(&EndpointKey::of(device), Instant::now()); }
                 }
                 Event::Ended => self.cast_next(true),
                 Event::Failed(error) => { self.casting.error = error.clone(); self.now.error = error; self.now.playing = false; self.now.paused = false; self.casting.loaded = false; self.casting.loading = false; }
                 Event::ControlFailed(error) => { self.casting.error = error.clone(); self.now.error = error; },
                 Event::Disconnected => {
                     self.casting.connected = false; self.casting.selected = None;
+                    self.casting.inventory.set_active(None);
                     self.casting.loading = false; self.casting.loaded = false; self.casting.disconnecting = false;
                     self.now.playing = false; self.now.paused = false;
                     if let Some((index, device, position)) = self.casting.local_start.take() {
@@ -237,11 +211,5 @@ impl Chilpa {
         // the catalog, just as the reference player's cast presentation does.
         self.now.quality = crate::Quality::of_track(&self.now.path, track.codec.as_deref().or(Some(&self.now.quality.format)),
             self.now.quality.bits.or(track.bit_depth), self.now.quality.rate_hz.or(track.sample_rate_hz));
-    }
-}
-
-impl Drop for Casting {
-    fn drop(&mut self) {
-        if let Some(running) = &self.discovery_running { running.store(false, Ordering::Release); }
     }
 }

@@ -43,7 +43,7 @@ Controls.Popup {
         const row = shown[index]
         if (!row || row.entry.separator || row.entry.note || row.entry.enabled === false) return
         if (row.entry.submenu) { submenu(row.original, top); return }
-        close()
+        if (row.entry.keepOpen !== true) close()
         chosen(row.original)
     }
     onAboutToShow: {

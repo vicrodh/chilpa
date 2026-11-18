@@ -3,6 +3,7 @@ pub mod dlna;
 pub mod chromecast;
 pub mod discovery;
 pub mod media_server;
+pub mod registry;
 
 use std::net::SocketAddr;
 use serde::Serialize;
@@ -27,7 +28,7 @@ impl std::fmt::Display for Error {
 }
 impl std::error::Error for Error {}
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 pub enum Kind { Dlna, Chromecast }
 #[derive(Clone, Debug, Serialize)]
 pub struct Device {

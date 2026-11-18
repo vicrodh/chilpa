@@ -1424,6 +1424,9 @@ msgstr "Chilpa is up-to-date."
 msgid "Chilpa lyrics API"
 msgstr "Songtekst-API van Chilpa"
 
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpa wijzigt je bibliotheek nooit uit zichzelf: elke wijziging gaat via jou. Wil je bewerkingen en alles wat niet ongedaan kan worden uitsluiten, zet dit dan aan. Het blokkeert het bewerken van tags en hoezen, verwijderingen, wijzigingen aan afspeellijsten op de server en synchronisatie naar een apparaat waarvan de map in je bibliotheek staat. Favorieten, waarderingen en het toevoegen van bronnen blijven werken."
+
 msgid "Chilpa never writes these files"
 msgstr "Chilpa schrijft deze bestanden nooit"
 
@@ -2570,6 +2573,9 @@ msgstr "Verbinding verbreken"
 msgid "Disconnect account"
 msgstr "Account loskoppelen"
 
+msgid "Disconnect before forgetting this device."
+msgstr "Verbreek de verbinding met dit apparaat voordat je het vergeet."
+
 msgid "Disconnected"
 msgstr "Verbinding verbroken"
 
@@ -3142,6 +3148,12 @@ msgstr "Lettertype"
 
 msgid "For a long while"
 msgstr "Voor een lange zit"
+
+msgid "Forget a device"
+msgstr "Een apparaat vergeten"
+
+msgid "Forget a device…"
+msgstr "Een apparaat vergeten…"
 
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "Vergeet de tot nu toe gevonden songteksten en de nummers waarvan bekend is dat ze er geen hebben. Ze worden opnieuw opgezocht terwijl nummers worden afgespeeld."
@@ -5009,6 +5021,9 @@ msgstr "Reageert niet"
 msgid "Not checked"
 msgstr ""
 
+msgid "Not checked yet"
+msgstr "Nog niet gecontroleerd"
+
 msgid "Not compatible"
 msgstr "Niet compatibel"
 
@@ -5806,9 +5821,6 @@ msgstr "Druk op toetsen…"
 
 msgid "Prevent clipping"
 msgstr "Clipping voorkomen"
-
-msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
-msgstr "Chilpa wijzigt je bibliotheek nooit uit zichzelf: elke wijziging gaat via jou. Wil je bewerkingen en alles wat niet ongedaan kan worden uitsluiten, zet dit dan aan. Het blokkeert het bewerken van tags en hoezen, verwijderingen, wijzigingen aan afspeellijsten op de server en synchronisatie naar een apparaat waarvan de map in je bibliotheek staat. Favorieten, waarderingen en het toevoegen van bronnen blijven werken."
 
 msgid "Preview changes"
 msgstr ""
@@ -6739,6 +6751,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "Mappen zoeken"
 
+msgid "Search for devices"
+msgstr "Apparaten zoeken"
+
 msgid "Search genres"
 msgstr ""
 
@@ -7626,6 +7641,12 @@ msgstr "De verbinding is niet versleuteld."
 msgid "The current track has no such destination."
 msgstr "Het huidige nummer heeft zo'n bestemming niet."
 
+msgid "The device list could not be saved."
+msgstr "De apparatenlijst kon niet worden opgeslagen."
+
+msgid "The device list is full. Forget a device to add another."
+msgstr "De apparatenlijst is vol. Vergeet een apparaat om een ander toe te voegen."
+
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr ""
 
@@ -7980,6 +8001,15 @@ msgstr "Het opgeslagen Discogs-account kon niet worden geopend. Maak opnieuw ver
 msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
 msgstr "Het opgeslagen Discogs-account kon na het annuleren niet worden hersteld. Controleer het account voordat je opnieuw opstart."
 
+msgid "The saved device list comes from a newer Chilpa. Changes will not be saved."
+msgstr "De opgeslagen apparatenlijst komt van een nieuwere versie van Chilpa. Wijzigingen worden niet opgeslagen."
+
+msgid "The saved device list could not be read. Changes will not be saved."
+msgstr "De opgeslagen apparatenlijst kon niet worden gelezen. Wijzigingen worden niet opgeslagen."
+
+msgid "The saved device list is damaged and was kept. Search for devices to start a new list."
+msgstr "De opgeslagen apparatenlijst is beschadigd en is bewaard. Zoek apparaten om een nieuwe lijst te beginnen."
+
 msgid "The saved folder scan policy is invalid."
 msgstr "Het opgeslagen scanbeleid voor mappen is ongeldig."
 
@@ -8009,6 +8039,9 @@ msgstr "De scan kon niet worden gestart: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "Het scanproces is onverwacht gestopt."
+
+msgid "The search for devices failed."
+msgstr "Het zoeken naar apparaten is mislukt."
 
 msgid "The selected Python environment could not start beets."
 msgstr ""

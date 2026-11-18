@@ -1430,6 +1430,9 @@ msgstr "Chilpa 已是最新版本。"
 msgid "Chilpa lyrics API"
 msgstr "Chilpa 歌詞 API"
 
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpa 從不自行更動你的音樂庫：每項變更都由你決定。若要完全排除編輯與無法復原的變更，請開啟此選項。它會封鎖標籤與封面的編輯、刪除、伺服器播放清單的變更，以及同步到資料夾位於音樂庫中的裝置。我的最愛、評分與新增來源仍可使用。"
+
 msgid "Chilpa never writes these files"
 msgstr "Chilpa 不會寫入這些檔案"
 
@@ -2576,6 +2579,9 @@ msgstr "斷開連線"
 msgid "Disconnect account"
 msgstr "中斷帳號連線"
 
+msgid "Disconnect before forgetting this device."
+msgstr "請先中斷此裝置的連線，再將其忘記。"
+
 msgid "Disconnected"
 msgstr "已斷線"
 
@@ -3148,6 +3154,12 @@ msgstr "字型"
 
 msgid "For a long while"
 msgstr "長期以來"
+
+msgid "Forget a device"
+msgstr "忘記裝置"
+
+msgid "Forget a device…"
+msgstr "忘記裝置…"
 
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "忘記目前找到的歌詞以及已知無歌詞的曲目。播放曲目時會重新查詢。"
@@ -5012,6 +5024,9 @@ msgstr "未回應"
 msgid "Not checked"
 msgstr ""
 
+msgid "Not checked yet"
+msgstr "尚未檢查"
+
 msgid "Not compatible"
 msgstr "不相容"
 
@@ -5809,9 +5824,6 @@ msgstr "請按下按鍵…"
 
 msgid "Prevent clipping"
 msgstr "防止削波（Clipping）"
-
-msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
-msgstr "Chilpa 從不自行更動你的音樂庫：每項變更都由你決定。若要完全排除編輯與無法復原的變更，請開啟此選項。它會封鎖標籤與封面的編輯、刪除、伺服器播放清單的變更，以及同步到資料夾位於音樂庫中的裝置。我的最愛、評分與新增來源仍可使用。"
 
 msgid "Preview changes"
 msgstr ""
@@ -6741,6 +6753,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "搜尋資料夾"
 
+msgid "Search for devices"
+msgstr "搜尋裝置"
+
 msgid "Search genres"
 msgstr ""
 
@@ -7624,6 +7639,12 @@ msgstr "此連線未加密。"
 msgid "The current track has no such destination."
 msgstr "目前曲目沒有此目的地。"
 
+msgid "The device list could not be saved."
+msgstr "無法儲存裝置清單。"
+
+msgid "The device list is full. Forget a device to add another."
+msgstr "裝置清單已滿。請忘記一個裝置以新增其他裝置。"
+
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr "裝置播放清單選擇器最多可顯示 2,048 個播放清單。"
 
@@ -7978,6 +7999,15 @@ msgstr "無法開啟儲存的 Discogs 帳號。請重新連線。"
 msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
 msgstr "取消後無法還原儲存的 Discogs 帳號。重新啟動前請檢視該帳號。"
 
+msgid "The saved device list comes from a newer Chilpa. Changes will not be saved."
+msgstr "已儲存的裝置清單來自較新版本的 Chilpa。變更將不會儲存。"
+
+msgid "The saved device list could not be read. Changes will not be saved."
+msgstr "無法讀取已儲存的裝置清單。變更將不會儲存。"
+
+msgid "The saved device list is damaged and was kept. Search for devices to start a new list."
+msgstr "已儲存的裝置清單已損毀並予以保留。搜尋裝置即可建立新清單。"
+
 msgid "The saved folder scan policy is invalid."
 msgstr "儲存的資料夾掃描原則無效。"
 
@@ -8007,6 +8037,9 @@ msgstr "無法啟動掃描：{}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "掃描工作程序意外停止。"
+
+msgid "The search for devices failed."
+msgstr "搜尋裝置失敗。"
 
 msgid "The selected Python environment could not start beets."
 msgstr ""

@@ -1106,3 +1106,7 @@ cplinu
 downmixed
 pts
 spxattene
+# Network endpoint registry: mDNS instance names, UPnP, and withdrawing a check.
+fullname
+unask
+upnp

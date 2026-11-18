@@ -1424,6 +1424,9 @@ msgstr ""
 msgid "Chilpa lyrics API"
 msgstr ""
 
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+
 msgid "Chilpa never writes these files"
 msgstr ""
 
@@ -2570,6 +2573,9 @@ msgstr ""
 msgid "Disconnect account"
 msgstr ""
 
+msgid "Disconnect before forgetting this device."
+msgstr ""
+
 msgid "Disconnected"
 msgstr ""
 
@@ -3141,6 +3147,12 @@ msgid "Font"
 msgstr ""
 
 msgid "For a long while"
+msgstr ""
+
+msgid "Forget a device"
+msgstr ""
+
+msgid "Forget a device…"
 msgstr ""
 
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
@@ -5009,6 +5021,9 @@ msgstr ""
 msgid "Not checked"
 msgstr ""
 
+msgid "Not checked yet"
+msgstr ""
+
 msgid "Not compatible"
 msgstr "Not compatible"
 
@@ -5806,9 +5821,6 @@ msgstr ""
 
 msgid "Prevent clipping"
 msgstr ""
-
-msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
-msgstr "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
 
 msgid "Preview changes"
 msgstr ""
@@ -6739,6 +6751,9 @@ msgstr ""
 msgid "Search folders"
 msgstr ""
 
+msgid "Search for devices"
+msgstr ""
+
 msgid "Search genres"
 msgstr ""
 
@@ -7626,6 +7641,12 @@ msgstr ""
 msgid "The current track has no such destination."
 msgstr ""
 
+msgid "The device list could not be saved."
+msgstr ""
+
+msgid "The device list is full. Forget a device to add another."
+msgstr ""
+
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr "The device playlist picker can show at most 2,048 playlists."
 
@@ -7980,6 +8001,15 @@ msgstr "The saved Discogs account could not be opened. Connect again."
 msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
 msgstr "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
 
+msgid "The saved device list comes from a newer Chilpa. Changes will not be saved."
+msgstr ""
+
+msgid "The saved device list could not be read. Changes will not be saved."
+msgstr ""
+
+msgid "The saved device list is damaged and was kept. Search for devices to start a new list."
+msgstr ""
+
 msgid "The saved folder scan policy is invalid."
 msgstr "The saved folder scan policy is invalid."
 
@@ -8009,6 +8039,9 @@ msgstr "The scan could not start: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "The scan worker stopped unexpectedly."
+
+msgid "The search for devices failed."
+msgstr ""
 
 msgid "The selected Python environment could not start beets."
 msgstr ""

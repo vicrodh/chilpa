@@ -1422,6 +1422,9 @@ msgstr "Chilpaは最新です。"
 msgid "Chilpa lyrics API"
 msgstr "Chilpaの歌詞API"
 
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpaが勝手にライブラリを変更することはありません。変更はすべてあなたの操作で行われます。編集や元に戻せない変更を完全に防ぎたい場合は、これをオンにしてください。タグやカバーの編集、削除、サーバー上のプレイリストの変更、ライブラリ内にフォルダーがあるデバイスへの同期をブロックします。お気に入り、評価、ソースの追加は引き続き使えます。"
+
 msgid "Chilpa never writes these files"
 msgstr "Chilpaはこれらのファイルを書き込みません"
 
@@ -2568,6 +2571,9 @@ msgstr "接続を解除"
 msgid "Disconnect account"
 msgstr "アカウントの接続を解除"
 
+msgid "Disconnect before forgetting this device."
+msgstr "このデバイスを削除する前に接続を解除してください。"
+
 msgid "Disconnected"
 msgstr "切断済み"
 
@@ -3140,6 +3146,12 @@ msgstr "フォント"
 
 msgid "For a long while"
 msgstr "じっくり長く"
+
+msgid "Forget a device"
+msgstr "デバイスを削除"
+
+msgid "Forget a device…"
+msgstr "デバイスを削除…"
 
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "これまでに見つかった歌詞と、歌詞がないと判明したトラックを消去します。トラックの再生時にもう一度検索されます。"
@@ -5004,6 +5016,9 @@ msgstr "応答なし"
 msgid "Not checked"
 msgstr ""
 
+msgid "Not checked yet"
+msgstr "未確認"
+
 msgid "Not compatible"
 msgstr "互換性なし"
 
@@ -5801,9 +5816,6 @@ msgstr "キーを押してください…"
 
 msgid "Prevent clipping"
 msgstr "クリッピングを防止"
-
-msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
-msgstr "Chilpaが勝手にライブラリを変更することはありません。変更はすべてあなたの操作で行われます。編集や元に戻せない変更を完全に防ぎたい場合は、これをオンにしてください。タグやカバーの編集、削除、サーバー上のプレイリストの変更、ライブラリ内にフォルダーがあるデバイスへの同期をブロックします。お気に入り、評価、ソースの追加は引き続き使えます。"
 
 msgid "Preview changes"
 msgstr ""
@@ -6733,6 +6745,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "フォルダーを検索"
 
+msgid "Search for devices"
+msgstr "デバイスを検索"
+
 msgid "Search genres"
 msgstr ""
 
@@ -7616,6 +7631,12 @@ msgstr "接続は暗号化されていません。"
 msgid "The current track has no such destination."
 msgstr "現在のトラックにはそのような移動先がありません。"
 
+msgid "The device list could not be saved."
+msgstr "デバイス一覧を保存できませんでした。"
+
+msgid "The device list is full. Forget a device to add another."
+msgstr "デバイス一覧がいっぱいです。追加するにはデバイスを削除してください。"
+
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr ""
 
@@ -7970,6 +7991,15 @@ msgstr "保存済みのDiscogsアカウントを開けませんでした。も�
 msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
 msgstr "キャンセル後に保存済みのDiscogsアカウントを復元できませんでした。再起動する前にアカウントを確認してください。"
 
+msgid "The saved device list comes from a newer Chilpa. Changes will not be saved."
+msgstr "保存されたデバイス一覧は新しいバージョンの Chilpa のものです。変更は保存されません。"
+
+msgid "The saved device list could not be read. Changes will not be saved."
+msgstr "保存されたデバイス一覧を読み込めませんでした。変更は保存されません。"
+
+msgid "The saved device list is damaged and was kept. Search for devices to start a new list."
+msgstr "保存されたデバイス一覧が破損しているため、そのまま残しました。デバイスを検索すると新しい一覧を作成します。"
+
 msgid "The saved folder scan policy is invalid."
 msgstr "保存されたフォルダーのスキャン設定が無効です。"
 
@@ -7999,6 +8029,9 @@ msgstr "スキャンを開始できませんでした: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "スキャン処理が予期せず停止しました。"
+
+msgid "The search for devices failed."
+msgstr "デバイスの検索に失敗しました。"
 
 msgid "The selected Python environment could not start beets."
 msgstr ""

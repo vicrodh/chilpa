@@ -15,9 +15,9 @@ Menu {
     property var previewEntries: [
         { act: "local", icon: "local", text: "Desktop audio", detail: I18n.tr("This computer", I18n.rev), checked: true },
         { separator: true }, { text: "Chromecast", note: true },
-        { act: "connect", id: "living", icon: "cast", text: "Living Room", detail: "Chromecast Audio" },
+        { act: "connect", protocol: "cast", id: "living", icon: "cast", text: "Living Room", detail: "Chromecast Audio" },
         { separator: true }, { text: "DLNA / UPnP", note: true },
-        { act: "connect", id: "receiver", icon: "dlna", text: "Network receiver", detail: "UPnP renderer" }
+        { act: "connect", protocol: "upnp", id: "receiver", icon: "dlna", text: "Network receiver", detail: "UPnP renderer" }
     ]
     readonly property var castState: JSON.parse(Cast.snapshot || "{}")
     parent: Overlay.overlay
@@ -58,8 +58,7 @@ Menu {
     onChosen: (index) => {
         if (preview) return
         const entry = entries[index]
-        if (entry.act === "local") Cast.disconnectDevice()
-        else if (entry.act === "connect") Cast.connectDevice(entry.id)
+        Cast.act(entry.act, entry.protocol || "", entry.id || "")
     }
     Timer {
         interval: Motion.refresh

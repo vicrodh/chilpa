@@ -40,11 +40,15 @@ pub fn parse(location: &str, xml: &str) -> Result<Description> {
         transport, rendering: find("RenderingControl"), connection: find("ConnectionManager"),
     })
 }
-pub(crate) fn agent() -> ureq::Agent {
-    ureq::Agent::config_builder().timeout_global(Some(Duration::from_secs(4))).http_status_as_error(false).max_redirects(0).build().into()
+pub(crate) fn agent() -> ureq::Agent { agent_within(Duration::from_secs(4)) }
+fn agent_within(limit: Duration) -> ureq::Agent {
+    ureq::Agent::config_builder().timeout_global(Some(limit)).http_status_as_error(false).max_redirects(0).build().into()
 }
-pub fn describe(location: &str) -> Result<Description> {
-    let mut reply = agent().get(location).call().map_err(|_| Error::Network)?;
+pub fn describe(location: &str) -> Result<Description> { describe_within(location, Duration::from_secs(4)) }
+/// One GET of a description, without redirects: resolving, connecting and
+/// reading all end within `limit`.
+pub fn describe_within(location: &str, limit: Duration) -> Result<Description> {
+    let mut reply = agent_within(limit).get(location).call().map_err(|_| Error::Network)?;
     if reply.status() != 200 { return Err(Error::Description); }
     let xml = reply.body_mut().with_config().limit(512 * 1024).read_to_string().map_err(|_| Error::Description)?;
     parse(location, &xml)

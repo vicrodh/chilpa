@@ -1426,6 +1426,9 @@ msgstr "Установлена последняя версия Chilpa."
 msgid "Chilpa lyrics API"
 msgstr "API текстов песен Chilpa"
 
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpa никогда не меняет вашу библиотеку сама: каждое изменение проходит через вас. Чтобы исключить правки и всё, что нельзя отменить, включите этот параметр. Он блокирует редактирование тегов и обложек, удаление, изменение плейлистов на сервере и синхронизацию с устройством, папка которого входит в вашу библиотеку. Избранное, оценки и добавление источников продолжают работать."
+
 msgid "Chilpa never writes these files"
 msgstr "Chilpa никогда не записывает эти файлы"
 
@@ -2572,6 +2575,9 @@ msgstr "Отключить"
 msgid "Disconnect account"
 msgstr "Отключить учётную запись"
 
+msgid "Disconnect before forgetting this device."
+msgstr "Отключите это устройство, прежде чем забыть его."
+
 msgid "Disconnected"
 msgstr "Отключено"
 
@@ -3144,6 +3150,12 @@ msgstr "Шрифт"
 
 msgid "For a long while"
 msgstr "Надолго"
+
+msgid "Forget a device"
+msgstr "Забыть устройство"
+
+msgid "Forget a device…"
+msgstr "Забыть устройство…"
 
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "Забывает найденные до сих пор тексты песен и треки, у которых, как известно, текстов нет. При воспроизведении треков они ищутся снова."
@@ -5014,6 +5026,9 @@ msgstr "Не отвечает"
 msgid "Not checked"
 msgstr ""
 
+msgid "Not checked yet"
+msgstr "Ещё не проверено"
+
 msgid "Not compatible"
 msgstr "Несовместим"
 
@@ -5811,9 +5826,6 @@ msgstr "Нажмите клавиши…"
 
 msgid "Prevent clipping"
 msgstr "Не допускать клиппинга"
-
-msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
-msgstr "Chilpa никогда не меняет вашу библиотеку сама: каждое изменение проходит через вас. Чтобы исключить правки и всё, что нельзя отменить, включите этот параметр. Он блокирует редактирование тегов и обложек, удаление, изменение плейлистов на сервере и синхронизацию с устройством, папка которого входит в вашу библиотеку. Избранное, оценки и добавление источников продолжают работать."
 
 msgid "Preview changes"
 msgstr ""
@@ -6745,6 +6757,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "Поиск папок"
 
+msgid "Search for devices"
+msgstr "Искать устройства"
+
 msgid "Search genres"
 msgstr ""
 
@@ -7636,6 +7651,12 @@ msgstr "Соединение не зашифровано."
 msgid "The current track has no such destination."
 msgstr "У текущего трека нет такого назначения."
 
+msgid "The device list could not be saved."
+msgstr "Не удалось сохранить список устройств."
+
+msgid "The device list is full. Forget a device to add another."
+msgstr "Список устройств заполнен. Забудьте одно устройство, чтобы добавить другое."
+
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr ""
 
@@ -7990,6 +8011,15 @@ msgstr "Не удалось открыть сохранённый аккаунт
 msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
 msgstr "Не удалось восстановить сохранённый аккаунт Discogs после отмены. Проверьте аккаунт перед перезапуском."
 
+msgid "The saved device list comes from a newer Chilpa. Changes will not be saved."
+msgstr "Сохранённый список устройств создан более новой версией Chilpa. Изменения не будут сохранены."
+
+msgid "The saved device list could not be read. Changes will not be saved."
+msgstr "Не удалось прочитать сохранённый список устройств. Изменения не будут сохранены."
+
+msgid "The saved device list is damaged and was kept. Search for devices to start a new list."
+msgstr "Сохранённый список устройств повреждён и был сохранён как есть. Выполните поиск устройств, чтобы начать новый список."
+
 msgid "The saved folder scan policy is invalid."
 msgstr "Сохранённая политика сканирования папок недействительна."
 
@@ -8019,6 +8049,9 @@ msgstr "Не удалось начать сканирование: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "Процесс сканирования неожиданно остановился."
+
+msgid "The search for devices failed."
+msgstr "Поиск устройств не удался."
 
 msgid "The selected Python environment could not start beets."
 msgstr ""

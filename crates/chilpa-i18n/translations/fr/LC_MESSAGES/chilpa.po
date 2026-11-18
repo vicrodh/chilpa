@@ -1424,6 +1424,9 @@ msgstr "Chilpa est à jour."
 msgid "Chilpa lyrics API"
 msgstr "API de paroles de Chilpa"
 
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "Chilpa ne modifie jamais votre bibliothèque de lui-même : chaque changement passe par vous. Pour exclure les modifications et tout ce qui ne peut pas être annulé, activez cette option. Elle bloque la modification des tags et des pochettes, les suppressions, les changements des playlists du serveur et la synchronisation vers un appareil dont le dossier est dans votre bibliothèque. Les favoris, les notes et l'ajout de sources continuent de fonctionner."
+
 msgid "Chilpa never writes these files"
 msgstr "Chilpa n'écrit jamais ces fichiers"
 
@@ -2570,6 +2573,9 @@ msgstr "Déconnecter"
 msgid "Disconnect account"
 msgstr "Déconnecter le compte"
 
+msgid "Disconnect before forgetting this device."
+msgstr "Déconnectez cet appareil avant de l'oublier."
+
 msgid "Disconnected"
 msgstr "Déconnecté"
 
@@ -3142,6 +3148,12 @@ msgstr "Police"
 
 msgid "For a long while"
 msgstr "Pour un long moment"
+
+msgid "Forget a device"
+msgstr "Oublier un appareil"
+
+msgid "Forget a device…"
+msgstr "Oublier un appareil…"
 
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "Oublie les paroles trouvées jusqu'ici, et les pistes connues pour n'en avoir aucune. Elles seront cherchées à nouveau à la lecture des pistes."
@@ -5009,6 +5021,9 @@ msgstr "Ne répond pas"
 msgid "Not checked"
 msgstr ""
 
+msgid "Not checked yet"
+msgstr "Pas encore vérifié"
+
 msgid "Not compatible"
 msgstr "Non compatible"
 
@@ -5806,9 +5821,6 @@ msgstr "Appuyez sur des touches…"
 
 msgid "Prevent clipping"
 msgstr "Éviter l'écrêtage"
-
-msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
-msgstr "Chilpa ne modifie jamais votre bibliothèque de lui-même : chaque changement passe par vous. Pour exclure les modifications et tout ce qui ne peut pas être annulé, activez cette option. Elle bloque la modification des tags et des pochettes, les suppressions, les changements des playlists du serveur et la synchronisation vers un appareil dont le dossier est dans votre bibliothèque. Les favoris, les notes et l'ajout de sources continuent de fonctionner."
 
 msgid "Preview changes"
 msgstr ""
@@ -6739,6 +6751,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "Rechercher des dossiers"
 
+msgid "Search for devices"
+msgstr "Rechercher des appareils"
+
 msgid "Search genres"
 msgstr ""
 
@@ -7626,6 +7641,12 @@ msgstr "La connexion n'est pas chiffrée."
 msgid "The current track has no such destination."
 msgstr "La piste en cours n'a pas cette destination."
 
+msgid "The device list could not be saved."
+msgstr "La liste des appareils n'a pas pu être enregistrée."
+
+msgid "The device list is full. Forget a device to add another."
+msgstr "La liste des appareils est pleine. Oubliez un appareil pour en ajouter un autre."
+
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr ""
 
@@ -7980,6 +8001,15 @@ msgstr "Impossible d’ouvrir le compte Discogs enregistré. Reconnectez-vous."
 msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
 msgstr "Impossible de restaurer le compte Discogs enregistré après l’annulation. Vérifiez le compte avant de redémarrer."
 
+msgid "The saved device list comes from a newer Chilpa. Changes will not be saved."
+msgstr "La liste d'appareils enregistrée vient d'une version plus récente de Chilpa. Les modifications ne seront pas enregistrées."
+
+msgid "The saved device list could not be read. Changes will not be saved."
+msgstr "La liste d'appareils enregistrée n'a pas pu être lue. Les modifications ne seront pas enregistrées."
+
+msgid "The saved device list is damaged and was kept. Search for devices to start a new list."
+msgstr "La liste d'appareils enregistrée est endommagée et a été conservée. Recherchez des appareils pour commencer une nouvelle liste."
+
 msgid "The saved folder scan policy is invalid."
 msgstr "La règle d’analyse des dossiers enregistrée n’est pas valide."
 
@@ -8009,6 +8039,9 @@ msgstr "Impossible de démarrer l’analyse : {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "Le processus d’analyse s’est arrêté de façon inattendue."
+
+msgid "The search for devices failed."
+msgstr "La recherche d'appareils a échoué."
 
 msgid "The selected Python environment could not start beets."
 msgstr ""

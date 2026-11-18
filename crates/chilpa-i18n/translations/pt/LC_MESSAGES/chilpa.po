@@ -1424,6 +1424,9 @@ msgstr "O Chilpa está atualizado."
 msgid "Chilpa lyrics API"
 msgstr "API de letras do Chilpa"
 
+msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
+msgstr "O Chilpa nunca altera sua biblioteca por conta própria: toda mudança passa por você. Se quiser descartar edições e tudo o que não pode ser desfeito, ative esta opção. Ela bloqueia a edição de tags e capas, exclusões, mudanças em playlists do servidor e a sincronização com um dispositivo cuja pasta está na sua biblioteca. Favoritos, avaliações e a adição de fontes continuam funcionando."
+
 msgid "Chilpa never writes these files"
 msgstr "O Chilpa nunca grava estes arquivos"
 
@@ -2570,6 +2573,9 @@ msgstr "Desconectar"
 msgid "Disconnect account"
 msgstr "Desconectar conta"
 
+msgid "Disconnect before forgetting this device."
+msgstr "Desconecte este dispositivo antes de esquecê-lo."
+
 msgid "Disconnected"
 msgstr "Desconectado"
 
@@ -3142,6 +3148,12 @@ msgstr "Fonte"
 
 msgid "For a long while"
 msgstr "Para ouvir sem pressa"
+
+msgid "Forget a device"
+msgstr "Esquecer um dispositivo"
+
+msgid "Forget a device…"
+msgstr "Esquecer um dispositivo…"
 
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "Esquece as letras encontradas até agora e as faixas que se sabe não terem letra. Elas são buscadas de novo conforme as faixas tocam."
@@ -5009,6 +5021,9 @@ msgstr "Não responde"
 msgid "Not checked"
 msgstr ""
 
+msgid "Not checked yet"
+msgstr "Ainda não verificado"
+
 msgid "Not compatible"
 msgstr "Não compatível"
 
@@ -5806,9 +5821,6 @@ msgstr "Pressione as teclas…"
 
 msgid "Prevent clipping"
 msgstr "Evitar clipping"
-
-msgid "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."
-msgstr "O Chilpa nunca altera sua biblioteca por conta própria: toda mudança passa por você. Se quiser descartar edições e tudo o que não pode ser desfeito, ative esta opção. Ela bloqueia a edição de tags e capas, exclusões, mudanças em playlists do servidor e a sincronização com um dispositivo cuja pasta está na sua biblioteca. Favoritos, avaliações e a adição de fontes continuam funcionando."
 
 msgid "Preview changes"
 msgstr ""
@@ -6739,6 +6751,9 @@ msgstr ""
 msgid "Search folders"
 msgstr "Buscar pastas"
 
+msgid "Search for devices"
+msgstr "Procurar dispositivos"
+
 msgid "Search genres"
 msgstr ""
 
@@ -7626,6 +7641,12 @@ msgstr "A conexão não é criptografada."
 msgid "The current track has no such destination."
 msgstr "A faixa atual não tem esse destino."
 
+msgid "The device list could not be saved."
+msgstr "Não foi possível salvar a lista de dispositivos."
+
+msgid "The device list is full. Forget a device to add another."
+msgstr "A lista de dispositivos está cheia. Esqueça um dispositivo para adicionar outro."
+
 msgid "The device playlist picker can show at most 2,048 playlists."
 msgstr ""
 
@@ -7980,6 +8001,15 @@ msgstr "Não foi possível abrir a conta do Discogs salva. Conecte novamente."
 msgid "The saved Discogs account could not be restored after cancellation. Review the account before restarting."
 msgstr "Não foi possível restaurar a conta do Discogs salva após cancelar. Confira a conta antes de reiniciar."
 
+msgid "The saved device list comes from a newer Chilpa. Changes will not be saved."
+msgstr "A lista de dispositivos salva vem de uma versão mais nova do Chilpa. As alterações não serão salvas."
+
+msgid "The saved device list could not be read. Changes will not be saved."
+msgstr "Não foi possível ler a lista de dispositivos salva. As alterações não serão salvas."
+
+msgid "The saved device list is damaged and was kept. Search for devices to start a new list."
+msgstr "A lista de dispositivos salva está danificada e foi mantida. Procure dispositivos para começar uma nova lista."
+
 msgid "The saved folder scan policy is invalid."
 msgstr "A política de verificação de pastas salva é inválida."
 
@@ -8009,6 +8039,9 @@ msgstr "Não foi possível iniciar a verificação: {}"
 
 msgid "The scan worker stopped unexpectedly."
 msgstr "O processo de verificação parou inesperadamente."
+
+msgid "The search for devices failed."
+msgstr "A busca por dispositivos falhou."
 
 msgid "The selected Python environment could not start beets."
 msgstr ""

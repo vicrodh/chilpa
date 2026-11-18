@@ -115,7 +115,7 @@ TestCase {
         const idle = Cast.refreshes
         wait(1150)
         compare(Cast.refreshes, idle, "a disconnected player does not poll Cast")
-        Cast.connectDevice("receiver")
+        Cast.act("connect", "upnp", "receiver")
         const connected = Cast.refreshes
         tryVerify(() => Cast.refreshes > connected, 1500)
         Cast.nextActive = false

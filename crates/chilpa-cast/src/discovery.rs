@@ -40,11 +40,25 @@ pub fn location(reply: &str) -> Option<String> {
 
 pub fn chromecast(window: Duration) -> Result<Vec<Device>> { chromecast_until(window, &AtomicBool::new(true)) }
 pub fn chromecast_until(window: Duration, running: &AtomicBool) -> Result<Vec<Device>> {
+    let mut devices = std::collections::HashMap::new();
+    browse(window, running, &mut |sighting| { devices.insert(sighting.device.id.clone(), sighting.device); true })?;
+    Ok(devices.into_values().collect())
+}
+/// A Cast receiver as one mDNS answer describes it: the TXT `id` is its
+/// identity, and the instance name is kept to resolve it again later.
+#[derive(Clone, Debug)]
+pub struct Sighting { pub device: Device, pub fullname: String }
+/// The most receivers one browse reports.
+pub const BROWSE_LIMIT: usize = 128;
+/// Browses for Cast receivers and hands each one over as it resolves, again
+/// when its address changes. Ends when `window` runs out, `running` clears,
+/// `found` returns false or `BROWSE_LIMIT` receivers were seen.
+pub fn browse(window: Duration, running: &AtomicBool, found: &mut dyn FnMut(Sighting) -> bool) -> Result<()> {
     let daemon = mdns_sd::ServiceDaemon::new().map_err(|_| Error::Network)?;
     let result = (|| {
         let receiver = daemon.browse("_googlecast._tcp.local.").map_err(|_| Error::Network)?;
         let deadline = Instant::now() + window;
-        let mut devices = std::collections::HashMap::new();
+        let mut seen = std::collections::HashMap::new();
         while running.load(Ordering::Acquire) && Instant::now() < deadline {
             if let Ok(mdns_sd::ServiceEvent::ServiceResolved(info)) = receiver.recv_timeout(Duration::from_millis(100)) {
                 let Some(id) = info.get_property_val_str("id").filter(|s| !s.is_empty()) else { continue };
@@ -54,10 +68,13 @@ pub fn chromecast_until(window: Duration, running: &AtomicBool) -> Result<Vec<De
                     mdns_sd::ScopedIp::V6(ip) => std::net::SocketAddr::V6(std::net::SocketAddrV6::new(*ip.addr(), info.get_port(), 0, ip.scope_id().index)),
                     _ => continue,
                 };
-                devices.insert(id.to_string(), Device { id: id.into(), name: info.get_property_val_str("fn").unwrap_or(id).into(), model: info.get_property_val_str("md").unwrap_or("Chromecast").into(), kind: crate::Kind::Chromecast, address, description: String::new() });
+                if seen.get(id) == Some(&address) || (seen.len() >= BROWSE_LIMIT && !seen.contains_key(id)) { continue; }
+                seen.insert(id.to_string(), address);
+                let device = Device { id: id.into(), name: info.get_property_val_str("fn").unwrap_or(id).into(), model: info.get_property_val_str("md").unwrap_or("Chromecast").into(), kind: crate::Kind::Chromecast, address, description: String::new() };
+                if !found(Sighting { device, fullname: info.get_fullname().into() }) { break; }
             }
         }
-        Ok(devices.into_values().collect())
+        Ok(())
     })();
     let _ = daemon.shutdown();
     result

@@ -17,13 +17,9 @@ pub mod qobject {
         #[qinvokable]
         fn picker(self: Pin<&mut Cast>, open: bool);
         #[qinvokable]
-        fn connect_device(self: Pin<&mut Cast>, id: &QString);
-        #[qinvokable]
-        fn disconnect_device(self: Pin<&mut Cast>);
+        fn act(self: Pin<&mut Cast>, action: &QString, protocol: &QString, id: &QString);
         #[qinvokable]
         fn refresh(self: Pin<&mut Cast>);
-        #[qinvokable]
-        fn discover(self: Pin<&mut Cast>);
     }
 }
 use cxx_qt_lib::QString;
@@ -32,9 +28,9 @@ use std::pin::Pin;
 pub struct CastRust { snapshot: QString, destination: QString, active: bool }
 impl qobject::Cast {
     pub fn picker(self: Pin<&mut Self>, open: bool) { crate::app::with(|api| api.cast_picker(open)); self.refresh(); }
-    pub fn connect_device(self: Pin<&mut Self>, id: &QString) { crate::app::with(|api| api.cast_connect(&id.to_string())); self.refresh(); }
-    pub fn disconnect_device(self: Pin<&mut Self>) { crate::app::with(|api| api.cast_disconnect()); self.refresh(); }
-    pub fn discover(self: Pin<&mut Self>) { crate::app::with(|api| api.cast_discover()); self.refresh(); }
+    pub fn act(self: Pin<&mut Self>, action: &QString, protocol: &QString, id: &QString) {
+        crate::app::with(|api| api.cast_act(&action.to_string(), &protocol.to_string(), &id.to_string())); self.refresh();
+    }
     pub fn refresh(mut self: Pin<&mut Self>) {
         let (snapshot, destination) = crate::app::with(|api| (api.cast_json(), api.cast_destination()));
         self.as_mut().set_snapshot(QString::from(&snapshot));

@@ -33,7 +33,7 @@ impl crate::Chilpa {
             "description":range_name(f),"scope":scope(f.scope)})).collect();
         let attributes: Vec<_> = inspection.into_iter().flat_map(|i| &i.attributes).map(|a| json!({
             "name":attribute(&a.name),"value":a.value,"scope":scope(a.scope)})).collect();
-        let current = if self.casting.active() { self.casting.inspected_selection().map(remote_id).unwrap_or_default() }
+        let current = if self.casting.active() { self.casting.inspected_selection().map(|d| remote_id(d.kind,&d.id)).unwrap_or_default() }
             else if self.now.playing { state.route.as_ref().map(|r|r.device.clone()).unwrap_or_default() }
             else { let kept = chilpa_core::settings::load().output;
                 if kept.is_empty() { state.outputs.first().and_then(|o|o["id"].as_str()).unwrap_or_default().into() } else { kept } };
