@@ -34,6 +34,13 @@ TestCase {
         verify(!emptyState(page).visible, "a tab that only offers its pages must not say that nothing is here")
     }
 
+    function test_a_discovery_tab_of_links_alone_shows_its_line_without_an_empty_page() {
+        const page = open("fixture native:discover:styles", {title:"Music",tab:"styles",native_page:true,plugin:"fixture",reference:"discover:styles",
+            loading:false,error:"",personal:false,genres:[],genre_filter:"",tabs:tabs,subtabs:subtabs(-1),shelves:[]})
+        tryVerify(() => findChild(page.headerItem, "sourceSubtabs").height > 0)
+        verify(!emptyState(page).visible, "a tab that only offers its pages must not say that nothing is here")
+    }
+
     function test_the_line_sits_under_the_tabs_and_wraps_inside_the_page() {
         const page = open("fixture native:discover:styles", {title:"Music",tabs:tabs,subtabs:subtabs(-1)})
         const line = findChild(page.headerItem, "sourceSubtabs")

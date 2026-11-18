@@ -640,6 +640,22 @@ mod tests {
     }
 
     #[test]
+    fn a_page_with_a_line_under_its_tabs_is_drawn_as_shelves_even_when_it_only_links() {
+        let mut app = crate::Chilpa::new();
+        let manifest: chilpa_plugin::Manifest = serde_json::from_value(json!({
+            "id":"fixture","name":"Fixture","version":"1.0.0","api_version":1,"kind":"source","runtime":"process"})).unwrap();
+        crate::natives::tests::remember_source(&app.natives, manifest, json!({"pages":true}));
+        app.catalog.lock().loaded = true;
+        let tabs = json!([{"title":"Styles","ref":"discover:styles","active":true}]);
+        ingest_document(&app.catalog, "fixture", "discover:styles", &json!({"tabs":tabs,"items":[],
+            "subtabs":[{"title":"Quiet","ref":"discover:styles:quiet"}]}));
+        ingest_document(&app.catalog, "fixture", "discover:flat", &json!({"tabs":tabs,"items":[]}));
+        let shown = |app: &mut crate::Chilpa, key: &str| serde_json::from_str::<Value>(&app.source_page_presentation(key)).unwrap();
+        assert!(shown(&mut app, "fixture native:discover:styles")["shelves"].is_array(), "the line is drawn with the shelves");
+        assert!(shown(&mut app, "fixture native:discover:flat").get("shelves").is_none(), "a flat listing keeps its own screen");
+    }
+
+    #[test]
     fn tabs_and_the_pages_under_a_tab_both_lead_to_native_pages() {
         let catalog = Catalog::new();
         ingest_document(&catalog, "fixture", "discover:styles", &json!({"tabs":[{"title":"Styles","ref":"discover:styles","active":true}],

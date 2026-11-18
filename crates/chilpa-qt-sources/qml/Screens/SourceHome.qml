@@ -106,7 +106,7 @@ ListView {
             active: page.visible && !page.leaving
             property var entry: parent.entry
             section: Object.assign({}, entry, {kind:entry.entityKind || entry.kind})
-            wrap: (page.about.header || {}).kind === "artist" && section.kind === "album"
+            wrap: ((page.about.header || {}).kind === "artist" && section.kind === "album") || ((page.about.subtabs || []).length > 0 && (section.key || "").endsWith("|items"))
             oneRow: !wrap
         }
     }

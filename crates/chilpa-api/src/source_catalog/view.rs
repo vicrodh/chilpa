@@ -362,7 +362,8 @@ impl Chilpa {
         if let Some(layout) = page["layout"].as_str().filter(|layout| layout.len() <= 32) {
             result.insert("layout".into(), layout.into());
         }
-        if page.get("shelves").is_some() {
+        // The line under the tabs is drawn with the shelves, so its page is one of shelves.
+        if page.get("shelves").is_some() || page["subtabs"].as_array().is_some_and(|rows| !rows.is_empty()) {
             result.insert("shelves".into(), serde_json::json!([]));
         }
         serde_json::Value::Object(result).to_string()
