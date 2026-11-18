@@ -497,3 +497,30 @@ fn checking_a_real_renderer_sends_only_description_reads() {
     assert!(seen.len() >= 5, "{seen:?}");
     assert!(seen.iter().all(|request| request == "GET /device.xml"), "a check may only read the description: {seen:?}");
 }
+
+/// Half an hour of openings, checks and searches leaves nothing behind.
+#[test]
+fn many_cycles_end_with_nothing_in_flight_and_the_same_rows() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("network-endpoints.json");
+    let (fixture, mut bench) = found(Some(&path));
+    bench.until(|_| path.exists());
+    let written = std::fs::metadata(&path).unwrap().modified().unwrap();
+    let revision = bench.controller.registry().revision();
+    for cycle in 1..=180u64 {
+        bench.close();
+        bench.at = Duration::from_secs(cycle * 10);
+        bench.open();
+        if cycle % 30 == 0 { assert!(bench.controller.discover(bench.now())); }
+        bench.until(|c| c.load() == Load::default());
+        let load = bench.controller.load();
+        assert!(load.probes <= PROBES && load.scans <= 2 && load.queued <= 2, "cycle {cycle}: {load:?}");
+    }
+    bench.settle();
+    assert_eq!(bench.controller.load(), Load::default());
+    assert_eq!(bench.names(), ["Hall", "Kitchen"]);
+    assert_eq!(bench.controller.registry().revision(), revision, "thirty minutes of the same answers rebuild no row");
+    assert_eq!(std::fs::metadata(&path).unwrap().modified().unwrap(), written, "and write nothing");
+    assert!(bench.outcomes.is_empty());
+    assert_eq!(fixture.count("search"), 1 + 6, "only the searches asked for by hand");
+}
