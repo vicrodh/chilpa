@@ -21,7 +21,7 @@ Item {
     readonly property bool shown: !ready || body.item.shown
     readonly property bool placeholderVisible: !ready && !displayed
     readonly property var footprint: Visit.recall("home.module." + entry.id, null)
-    height: ready ? (shown ? body.height : 0)
+    height: (ready || displayed) && body.item ? (body.item.shown ? body.height : 0)
         : footprint && Math.abs(footprint.width - width) < Metrics.gap2 ? footprint.height : placeholder.height
     function remember() {
         if (ready) Visit.keep("home.module." + entry.id, { width: width, height: shown ? body.height : 0 })

@@ -133,10 +133,10 @@ Item {
                         : skeleton.implicitHeight
                     property bool mounted: false
                     width: column.width - panel.width
-                    // Each block says whether it has anything to show; its
-                    // own visibility would read back the Loader's.
-                    visible: !knownEmpty && (!ready || item.shown === true)
-                    height: visible ? ready ? Math.max(skeleton.implicitHeight, item.implicitHeight) : reservedHeight : 0
+                    // Once drawn a block keeps its own height while it reads again; its own visibility would read back the Loader's.
+                    property bool settled: false; onReadyChanged: if (ready) settled = true
+                    visible: !knownEmpty && (!ready && !settled || item?.shown === true)
+                    height: visible ? ready || settled && item ? Math.max(skeleton.implicitHeight, item.implicitHeight) : reservedHeight : 0
                     active: !knownEmpty && page.presented && (mounted || page.about.loading !== true && column.y + y < flick.contentY + flick.height * 2)
                     asynchronous: true
                     sourceComponent: role === "popular" || (role === "appears" && section.kind === "track") ? trackBlock
@@ -145,7 +145,7 @@ Item {
                     Column {
                         id: skeleton
                         width: parent.width; spacing: Metrics.gap12
-                        visible: !block.ready && block.visible
+                        visible: !block.ready && !block.settled && block.visible
                         Text { text: block.section.title || ""; font.pointSize: Type.section; font.weight: Type.heading; color: Theme.color.textPrimary }
                         ShelfSkeleton { width: parent.width; tracks: block.role === "popular"; trackRowHeight: SettingsModel.density === "rich" ? Metrics.rowRich : Metrics.rowCompact; count: tracks ? block.section.preview || Metrics.previewRows : block.role === "latest" ? 1 : CardLayout.columns(width); oneRow: true }
                     }

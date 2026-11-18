@@ -30,7 +30,7 @@ mod library_sources;
 pub use albums_view::{artist_cards, artist_cards_ordered, grid_rows, mixes_sources, AlbumsFound, GridRow, ListedArtist};
 mod portraits;
 pub use portraits::{request_artist_portrait, PortraitImage, PortraitRequest};
-pub use tracks_view::{group_of, section_at, FoundTracks, TrackGroups, TracksQuery};
+pub use tracks_view::{group_of, reload_withdraws_ready, section_at, FoundTracks, TrackGroups, TracksQuery};
 mod queries;
 pub use queries::QueryWorker;
 mod chosen_artwork;

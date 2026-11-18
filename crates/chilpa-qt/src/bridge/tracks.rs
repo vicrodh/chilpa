@@ -749,7 +749,9 @@ impl qobject::TrackListModel {
     /// Asks for a reload once this turn of the event loop is over, however
     /// many inputs changed in it.
     fn schedule(mut self: Pin<&mut Self>) {
-        if matches!(self.rust().kind.to_string().as_str(), "tracks" | "discovery" | "source") { self.as_mut().set_ready(false); }
+        let kind = self.rust().kind.to_string();
+        let shown = self.rust().loaded.as_ref() == Some(&(kind.clone(), self.rust().album_id, self.rust().key.to_string()));
+        if chilpa_api::reload_withdraws_ready(&kind, shown) { self.as_mut().set_ready(false); }
         self.as_mut().rust_mut().asked = self.rust().asked.wrapping_add(1);
         if self.rust().pending {
             return;

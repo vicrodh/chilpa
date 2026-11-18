@@ -162,12 +162,34 @@ impl Reader {
     }
 }
 
+/// Whether a track list stops being ready while it is read again. A source's
+/// list already shown is only refreshed by a change in its catalog: taking its
+/// readiness back would swap every section sized by it for its placeholder
+/// and move the page under the listener. Another list is not there yet.
+pub fn reload_withdraws_ready(kind: &str, shown: bool) -> bool {
+    match kind {
+        "source" => !shown,
+        "tracks" | "discovery" => true,
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod measurement;
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_shown_source_list_stays_ready_while_its_catalog_refreshes_it() {
+        assert!(!reload_withdraws_ready("source", true), "a refresh must not swap the shown rows for a placeholder");
+        assert!(reload_withdraws_ready("source", false), "another list is not there yet");
+        for shown in [false, true] {
+            assert!(reload_withdraws_ready("tracks", shown) && reload_withdraws_ready("discovery", shown));
+            assert!(!reload_withdraws_ready("album", shown));
+        }
+    }
 
     #[test]
     fn the_order_asked_for_stands_whatever_the_grouping() {

@@ -53,6 +53,8 @@ TestCase {
         for (let i = 0; i < tracks.count; i++) rows.push(Object.assign({}, tracks.get(i)))
         tracks.ready = false
         tracks.clear()
+        // As on a first visit: the preview has not been drawn yet.
+        latest.settled = false
         waitForRendering(page)
         page.jump(artistKey + "|album")
         waitForRendering(page)
@@ -66,6 +68,30 @@ TestCase {
         verify(latest.height > previewHeight, "the real asynchronous preview changed the preceding section's height")
         verify(Math.abs(albums.mapToItem(page, 0, 0).y - before) <= 1,
             "Albums moved after a preceding preview settled: " + before + " -> " + albums.mapToItem(page, 0, 0).y)
+    }
+    function test_a_refresh_of_a_shown_list_keeps_every_section_in_place_data() {
+        return [{tag:"top", jump:false}, {tag:"after_jump", jump:true}]
+    }
+    function test_a_refresh_of_a_shown_list_keeps_every_section_in_place(data) {
+        const page = createTemporaryObject(pageMaker, test, {width:1400})
+        ready(page)
+        const latest = page.blockOf(artistKey + "|latest")
+        const albums = page.blockOf(artistKey + "|album")
+        tryVerify(() => page.blockOf(artistKey + "|tracks")?.ready === true)
+        if (data.jump) page.jump(artistKey + "|album")
+        let settledAt = -1
+        tryVerify(() => { const y = albums.mapToItem(page, 0, 0).y; const still = y === settledAt; settledAt = y; return still })
+        const tracks = findChild(latest, "latestReleaseTracks").model
+        const before = {y:albums.mapToItem(page, 0, 0).y, height:latest.height}
+        // A change in the catalog reads the list again: for a moment its model is not ready.
+        tracks.ready = false
+        waitForRendering(page)
+        compare(latest.height, before.height, "a section already drawn must keep its height while it reads again")
+        compare(albums.mapToItem(page, 0, 0).y, before.y, "what follows it must not move")
+        tracks.ready = true
+        waitForRendering(page)
+        compare(latest.height, before.height)
+        compare(albums.mapToItem(page, 0, 0).y, before.y)
     }
     function cleanup() { SettingsModel.density = "compact" }
     function test_delayed_release_card_without_a_track_preview_keeps_albums_in_place() {
