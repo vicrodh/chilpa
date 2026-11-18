@@ -371,7 +371,69 @@ fn a_failed_write_leaves_memory_working_and_says_so() {
     bench.until(|c| c.notices().unsaved);
     assert_eq!(bench.names(), ["Hall", "Kitchen"]);
     assert_eq!(std::fs::read_dir(&closed).unwrap().count(), 0, "a failed write leaves nothing behind");
+    for _ in 0..20 { bench.step(); }
+    assert_eq!(std::fs::read_dir(&closed).unwrap().count(), 0, "a failed write is not tried again on every round");
     std::fs::set_permissions(&closed, std::fs::Permissions::from_mode(0o755)).unwrap();
+    drop(bench);
+    assert_eq!(parse(&bytes(&path)).unwrap().len(), 2, "what could not be written is written when the registry goes");
+}
+
+#[test]
+fn a_stranger_at_a_remembered_address_is_found_by_a_search_asked_for_by_hand() {
+    let (fixture, mut bench) = found(None);
+    fixture.edit(|w| { w.at.insert("http://192.0.2.1/a.xml".into(), renderer("uuid:new", "Newcomer", "http://192.0.2.1/a.xml")); });
+    bench.close(); bench.at = Duration::from_secs(40); bench.open(); bench.settle();
+    assert_eq!(bench.presence(&upnp("uuid:a")), Some(Presence::Unavailable(Absence::WrongIdentity)));
+    assert_eq!(bench.names(), ["Hall", "Kitchen"]);
+    bench.at = Duration::from_secs(45);
+    assert!(bench.controller.discover(bench.now()));
+    bench.settle();
+    assert_eq!(bench.names(), ["Hall", "Kitchen", "Newcomer"], "an address is not an identity: whoever answers there now is found");
+    assert_eq!(bench.presence(&upnp("uuid:a")), Some(Presence::Unavailable(Absence::WrongIdentity)));
+    assert_eq!(bench.presence(&upnp("uuid:new")), Some(Presence::Reachable));
+}
+
+#[test]
+fn a_list_emptied_by_hand_stays_empty_until_a_search_is_asked_for() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("network-endpoints.json");
+    let (fixture, mut bench) = found(Some(&path));
+    bench.at = Duration::from_secs(60);
+    assert!(bench.controller.forget(&upnp("uuid:a")) && bench.controller.forget(&cast("cast-1")));
+    let asked = fixture.calls().len();
+    for second in 61..140 { bench.at = Duration::from_secs(second); bench.step(); }
+    bench.close(); bench.at = Duration::from_secs(200); bench.open(); bench.settle();
+    assert!(bench.names().is_empty(), "nobody asked for a search: {:?}", bench.names());
+    assert_eq!(fixture.calls().len(), asked, "an emptied list is not a first use");
+    drop(bench);
+    let mut bench = Bench::new(Some(&path), &fixture);
+    bench.open(); bench.settle();
+    assert_eq!(fixture.calls().len(), asked, "nor is it one after a restart");
+    assert!(bench.controller.discover(bench.now()));
+    bench.settle();
+    assert_eq!(bench.names(), ["Hall", "Kitchen"]);
+}
+
+#[test]
+fn a_search_left_behind_by_going_offline_admits_nothing() {
+    let fixture = Arc::new(Fixture::default());
+    fixture.edit(|w| {
+        w.at.insert("http://192.0.2.1/a.xml".into(), renderer("uuid:a", "Hall", "http://192.0.2.1/a.xml"));
+        w.located = vec!["http://192.0.2.1/a.xml".into()];
+        w.receivers = vec![receiver("cast-1", "Kitchen", "192.0.2.2:8009")];
+        w.hold_search = true; w.hold_browse = true;
+    });
+    let mut bench = Bench::new(None, &fixture);
+    bench.open(); bench.step();
+    assert_eq!((fixture.count("search"), fixture.count("browse")), (1, 1));
+    bench.controller.set_online(false);
+    bench.close();
+    bench.controller.set_online(true);
+    fixture.edit(|w| { w.hold_search = false; w.hold_browse = false; });
+    bench.settle();
+    assert!(bench.names().is_empty(), "answers to a search from before belong to the network that was left: {:?}", bench.names());
+    assert_eq!(fixture.count("describe"), 0);
+    assert!(!bench.controller.searching());
 }
 
 #[test]

@@ -62,7 +62,8 @@ pub fn browse(window: Duration, running: &AtomicBool, found: &mut dyn FnMut(Sigh
         while running.load(Ordering::Acquire) && Instant::now() < deadline {
             if let Ok(mdns_sd::ServiceEvent::ServiceResolved(info)) = receiver.recv_timeout(Duration::from_millis(100)) {
                 let Some(id) = info.get_property_val_str("id").filter(|s| !s.is_empty()) else { continue };
-                let Some(ip) = info.get_addresses().iter().filter(|a| !a.is_loopback()).min_by_key(|a| !a.is_ipv4()) else { continue };
+                // The same receiver gives the same address every time: IPv4 first, then the lowest.
+                let Some(ip) = info.get_addresses().iter().filter(|a| !a.is_loopback()).min_by_key(|a| (!a.is_ipv4(), a.to_ip_addr())) else { continue };
                 let address = match ip {
                     mdns_sd::ScopedIp::V4(ip) => std::net::SocketAddr::new((*ip.addr()).into(), info.get_port()),
                     mdns_sd::ScopedIp::V6(ip) => std::net::SocketAddr::V6(std::net::SocketAddrV6::new(*ip.addr(), info.get_port(), 0, ip.scope_id().index)),

@@ -169,6 +169,9 @@ impl Registry {
         for record in stored {
             if skip(&record.key) { dropped = true; continue; }
             if self.get(&record.key).is_some() { continue; }
+            // What was found before the list arrived may have taken its room.
+            let full = self.endpoints.len() >= MAX_ENDPOINTS || self.endpoints.iter().filter(|e| e.key.protocol == record.key.protocol).count() >= MAX_PER_PROTOCOL;
+            if full { dropped = true; continue; }
             let version = self.version();
             self.endpoints.push(Endpoint { key: record.key, name: record.name, model: record.model, locators: record.locators, last_seen: record.last_seen,
                 answer: Presence::Unknown, asked: None, checked: None, device: None, version });

@@ -37,7 +37,7 @@ const SEARCH_LIMIT: usize = 128;
 enum Purpose { Check, Repair, Discover }
 
 enum Event {
-    Loaded(std::result::Result<Vec<Stored>, Unusable>),
+    Loaded(std::result::Result<Option<Vec<Stored>>, Unusable>),
     Answered { operation: u64, generation: u64, result: Result<Device> },
     Located { operation: u64, generation: u64, result: Result<Vec<String>> },
     Sighted { operation: u64, generation: u64, sighting: Sighting },
@@ -52,7 +52,12 @@ struct Run { operation: u64, purpose: Purpose, until: Instant, located: bool, re
 struct Scan { alive: Arc<AtomicBool>, running: Arc<AtomicBool>, run: Option<Run>, want: Option<Purpose>, requested: u64, started: Option<Instant> }
 impl Scan {
     fn cancel(&mut self) { self.running.store(false, Ordering::Release); self.run = None; self.want = None; }
-    fn ask(&mut self, purpose: Purpose, at: u64) { self.want = self.want.max(Some(purpose)); self.requested = at; }
+    /// A check or a repair joining a search that already waits does not make
+    /// that search any newer.
+    fn ask(&mut self, purpose: Purpose, at: u64) {
+        if purpose == Purpose::Discover || self.want.is_none() { self.requested = at; }
+        self.want = self.want.max(Some(purpose));
+    }
     fn discovering(&self) -> bool { self.want == Some(Purpose::Discover) || self.run.as_ref().is_some_and(|r| r.purpose == Purpose::Discover) }
 }
 /// A thread gives its place back when it ends, not when it is cancelled.
@@ -82,6 +87,12 @@ pub struct Controller {
     upnp: Scan, cast: Scan,
     queue: VecDeque<Queued>, flying: HashMap<u64, Job>, operations: u64,
     online: bool, open: bool, loaded: bool, replace: bool,
+    /// Nothing was ever stored: the first opening may search by itself.
+    /// A list emptied by hand, in this process or an earlier one, may not.
+    first_use: bool, emptied: bool,
+    /// A write failed and has not been made good; a repair search is due;
+    /// when the last Cast browse could not even start.
+    unwritten: bool, repair_owed: bool, browse_failed: Option<Instant>,
     pass_until: Option<Instant>, recheck: Option<Instant>, searched: Option<Instant>,
     intent: Option<(EndpointKey, Instant)>, active: Option<EndpointKey>,
     /// Forgotten keys with the operation counter at that moment: nothing
@@ -104,7 +115,7 @@ impl Controller {
         });
         Self { registry: Registry::default(), network, writer, sender, events, generation: Default::default(), probing: Default::default(),
             upnp: Scan::default(), cast: Scan::default(), queue: VecDeque::new(), flying: HashMap::new(), operations: 0,
-            online: true, open: false, loaded, replace: false, pass_until: None, recheck: None, searched: None, intent: None, active: None,
+            online: true, open: false, loaded, replace: false, first_use: loaded, emptied: false, unwritten: false, repair_owed: false, browse_failed: None, pass_until: None, recheck: None, searched: None, intent: None, active: None,
             forgotten: HashMap::new(), clock: None, notices, outcomes: Vec::new() }
     }
     pub fn registry(&self) -> &Registry { &self.registry }
@@ -126,7 +137,7 @@ impl Controller {
     pub fn set_open(&mut self, open: bool, now: Instant) {
         if self.open == open { return; }
         self.open = open;
-        if open { self.recheck = None; self.refresh_known(now); return; }
+        if open { self.recheck = None; self.refresh_known(now); self.first_search(now); return; }
         self.pass_until = None; self.recheck = None;
         let keep = self.intent.as_ref().map(|(key, _)| key.clone());
         self.queue.retain(|q| matches!(&q.job, Job::Probe { key, .. } if Some(key) == keep.as_ref()));
@@ -142,10 +153,6 @@ impl Controller {
     pub fn refresh_known(&mut self, now: Instant) {
         if !self.online || !self.open || !self.loaded { return; }
         self.recheck = Some(now + RECHECK);
-        if self.registry.endpoints().is_empty() {
-            if self.searched.is_none_or(|at| now.saturating_duration_since(at) >= COOLDOWN) { self.search(now); }
-            return;
-        }
         let mut stale: Vec<_> = self.registry.endpoints().iter()
             .filter(|e| Some(&e.key) != self.active.as_ref() && !e.fresh(now) && e.asked().is_none())
             .map(|e| (e.checked(), e.key.clone())).collect();
@@ -154,11 +161,18 @@ impl Controller {
         if self.pass_until.is_none_or(|until| now >= until) { self.pass_until = Some(now + PASS_LIMIT); }
         for (_, key) in stale { self.check(&key, false, now); }
     }
+    /// A profile that never stored a renderer searches once when the picker
+    /// opens. It does not repeat while the picker stays open.
+    fn first_search(&mut self, now: Instant) {
+        let may = self.online && self.open && self.loaded && self.first_use && !self.emptied && self.registry.endpoints().is_empty();
+        if may && self.searched.is_none_or(|at| now.saturating_duration_since(at) >= COOLDOWN) { self.search(now); }
+    }
     fn check(&mut self, key: &EndpointKey, first: bool, now: Instant) {
         let Some(endpoint) = self.registry.get(key) else { return };
         if key.protocol == Kind::Chromecast {
             // Identity comes from the receiver's own mDNS answer; an open
             // port on a remembered address would prove nothing.
+            if self.browse_failed.is_some_and(|at| now.saturating_duration_since(at) < COOLDOWN) { return; }
             self.registry.ask(key, self.operations);
             self.cast.ask(Purpose::Check, self.operations);
             return;
@@ -178,7 +192,8 @@ impl Controller {
     /// A renderer stopped answering where it was: one search may find where
     /// it went. Reopening the picker does not shorten the wait.
     fn repair(&mut self, now: Instant) {
-        if self.open && self.upnp.started.is_none_or(|at| now.saturating_duration_since(at) >= COOLDOWN) { self.upnp.ask(Purpose::Repair, self.operations); }
+        self.repair_owed = !(self.open && self.online && self.upnp.started.is_none_or(|at| now.saturating_duration_since(at) >= COOLDOWN));
+        if !self.repair_owed { self.upnp.ask(Purpose::Repair, self.operations); }
     }
     fn search(&mut self, now: Instant) {
         self.searched = Some(now);
@@ -197,6 +212,7 @@ impl Controller {
         if !self.online { return false; }
         if self.notices.kept == Some(Unusable::Damaged) { self.notices.kept = None; self.replace = true; self.registry.mark_dirty(); }
         self.notices.full = false;
+        self.emptied = false;
         self.search(now);
         true
     }
@@ -223,6 +239,7 @@ impl Controller {
         self.queue.retain(|q| !matches!(&q.job, Job::Probe { key: k, .. } if k == key));
         if self.intends(key) { self.intent = None; }
         self.notices.full = false;
+        self.emptied = true;
         true
     }
     /// The endpoint the session plays on is never probed: the session's own
@@ -240,7 +257,9 @@ impl Controller {
     fn reset(&mut self) {
         self.generation.fetch_add(1, Ordering::AcqRel);
         self.upnp.cancel(); self.cast.cancel();
-        self.queue.clear();
+        // What is still in flight answers for a network that was left.
+        self.queue.clear(); self.flying.clear();
+        self.repair_owed = false; self.browse_failed = None;
         self.registry.invalidate();
         self.pass_until = None; self.recheck = None;
         if let Some((key, _)) = self.intent.take() { self.outcomes.push(Outcome::Unreachable(key)); }
@@ -257,16 +276,22 @@ impl Controller {
         let orphaned = self.probing.load(Ordering::Acquire) == 0 && !self.flying.is_empty();
         let mut sightings = Vec::new();
         let mut browsed = Vec::new();
+        let mut arrived = false;
+        // A search thread that had already ended reported everything it ever will.
+        let ended = |scan: &Scan| scan.run.as_ref().filter(|_| !scan.alive.load(Ordering::Acquire)).map(|run| run.operation);
+        let (upnp_ended, cast_ended) = (ended(&self.upnp), ended(&self.cast));
         let events: Vec<_> = self.events.try_iter().take(EVENTS * 2).collect();
         for event in events {
             match event {
                 Event::Loaded(result) => {
                     self.loaded = true;
+                    self.first_use = !matches!(result, Ok(Some(_)));
                     match result {
-                        Ok(stored) => { let forgotten = &self.forgotten; self.registry.restore(stored, |key| forgotten.contains_key(key)); }
+                        Ok(stored) => { let forgotten = &self.forgotten; self.registry.restore(stored.unwrap_or_default(), |key| forgotten.contains_key(key)); }
                         Err(why) => self.notices.kept = Some(why),
                     }
                     self.recheck = None;
+                    arrived = true;
                 }
                 Event::Answered { operation, generation, result } => {
                     let Some(job) = self.flying.remove(&operation) else { continue };
@@ -292,7 +317,9 @@ impl Controller {
                     let Ok(mut locations) = result else { self.notices.search_failed |= admit; continue };
                     locations.sort(); locations.dedup(); locations.truncate(SEARCH_LIMIT);
                     for url in locations {
-                        let settled = self.registry.endpoints().iter().any(|e| e.description() == Some(url.as_str()) && (e.fresh(now) || e.asked().is_some()));
+                        // Only an endpoint that just answered there settles an address: a
+                        // stranger at a remembered one still has to be read.
+                        let settled = self.registry.endpoints().iter().any(|e| e.description() == Some(url.as_str()) && e.answer() == Presence::Reachable && e.fresh(now));
                         if settled || url.len() > MAX_URL { continue; }
                         self.operations += 1;
                         self.queue.push_back(Queued { operation: self.operations, job: Job::Describe { url, scan: operation, admit, requested } });
@@ -322,12 +349,15 @@ impl Controller {
         }
         for (run, exhausted, failed) in browsed {
             self.notices.search_failed |= failed && run.purpose == Purpose::Discover;
+            if failed { self.browse_failed = Some(now); }
             let asked: Vec<_> = self.registry.endpoints().iter().filter(|e| e.key.protocol == Kind::Chromecast && e.asked().is_some_and(|at| at < run.operation)).map(|e| e.key.clone()).collect();
             // Only a whole window without an answer says a receiver is away.
             for key in asked { if exhausted { self.fail(&key, Absence::NoAnswer, now); } else { self.registry.unask(&key); } }
             let waiting = self.registry.endpoints().iter().any(|e| e.key.protocol == Kind::Chromecast && e.asked().is_some());
             if waiting && !failed { self.cast.ask(Purpose::Check, self.operations); }
         }
+        if cast_ended.is_some() && self.cast.run.as_ref().map(|run| run.operation) == cast_ended { self.cast.run = None; self.unask_receivers(); }
+        if upnp_ended.is_some() && self.upnp.run.as_ref().filter(|run| !run.located).map(|run| run.operation) == upnp_ended { self.upnp.run = None; }
         if orphaned {
             // Every probe thread had ended before this round: what is still
             // listed as in flight will never report.
@@ -335,9 +365,11 @@ impl Controller {
         }
         self.expire(now);
         if self.open && self.recheck.is_none_or(|at| now >= at) { self.refresh_known(now); }
+        if arrived { self.first_search(now); }
+        if self.repair_owed && self.open { self.repair(now); }
         for protocol in [Kind::Dlna, Kind::Chromecast] { self.launch(protocol, now); }
         self.dispatch();
-        self.persist();
+        self.persist(false);
         let idle = self.flying.is_empty() && self.queue.is_empty() && self.load().scans == 0 && [&self.upnp, &self.cast].iter().all(|scan| scan.run.is_none() && scan.want.is_none());
         if idle && self.loaded { self.forgotten.clear(); }
         std::mem::take(&mut self.outcomes)
@@ -434,10 +466,18 @@ impl Controller {
             let _ = sender.send(Event::Browsed { operation, generation: mine, exhausted, failed: result.is_err() });
         });
         // A thread that never started dropped its guard with the closure.
+        if spawned.is_err() {
+            self.notices.search_failed |= purpose == Purpose::Discover;
+            if protocol == Kind::Chromecast { self.unask_receivers(); }
+            return;
+        }
         let scan = self.scan(protocol);
-        if spawned.is_err() { self.notices.search_failed |= purpose == Purpose::Discover; return; }
         scan.started = Some(now);
         scan.run = Some(Run { operation, purpose, until: now + PASS_LIMIT, located: false, requested });
+    }
+    fn unask_receivers(&mut self) {
+        let asked: Vec<_> = self.registry.endpoints().iter().filter(|e| e.key.protocol == Kind::Chromecast && e.asked().is_some()).map(|e| e.key.clone()).collect();
+        for key in asked { self.registry.unask(&key); }
     }
     fn dispatch(&mut self) {
         while self.probing.load(Ordering::Acquire) < PROBES {
@@ -458,15 +498,19 @@ impl Controller {
         }
     }
     /// Writes only what changed for good; answers alone change nothing stored.
-    fn persist(&mut self) {
+    /// A write that failed is tried again with the next change, and once
+    /// more when the registry goes (`last`): never on every round.
+    fn persist(&mut self, last: bool) {
         let Some(writer) = &self.writer else { return };
         match writer.outcome() {
-            store::SAVED => self.notices.unsaved = false,
-            store::FAILED => self.notices.unsaved = true,
-            store::TOO_LARGE => { self.notices.unsaved = true; self.notices.full = true; }
+            store::SAVED => { self.notices.unsaved = false; self.unwritten = false; }
+            store::FAILED => { self.notices.unsaved = true; self.unwritten = true; }
+            store::TOO_LARGE => { self.notices.unsaved = true; self.notices.full = true; self.unwritten = true; }
             _ => {}
         }
-        if self.loaded && self.notices.kept.is_none() && self.registry.take_dirty() { writer.save(self.registry.stored(), std::mem::take(&mut self.replace)); }
+        if !self.loaded || self.notices.kept.is_some() { return; }
+        let changed = self.registry.take_dirty();
+        if changed || (last && self.unwritten) { writer.save(self.registry.stored(), std::mem::take(&mut self.replace)); }
     }
 }
 impl Drop for Controller {
@@ -474,6 +518,6 @@ impl Drop for Controller {
     fn drop(&mut self) {
         self.generation.fetch_add(1, Ordering::AcqRel);
         self.upnp.cancel(); self.cast.cancel();
-        self.persist();
+        self.persist(true);
     }
 }

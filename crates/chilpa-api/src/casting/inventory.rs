@@ -69,7 +69,11 @@ impl Chilpa {
         let Some(kind) = protocol_named(protocol) else { return };
         if self.offline() { self.casting.error = chilpa_core::network::blocked(); return; }
         let key = EndpointKey::new(kind, id);
-        if self.casting.selected.as_ref().is_some_and(|d| d.kind == kind && d.id == id) && self.casting.error.is_empty() { return; }
+        if self.casting.selected.as_ref().is_some_and(|d| d.kind == kind && d.id == id) && self.casting.error.is_empty() {
+            // Choosing the connected renderer again withdraws a choice still waiting.
+            self.casting.inventory.deselect();
+            return;
+        }
         match self.casting.inventory.select(&key, Instant::now()) {
             Selection::Ready(device) => self.cast_connect_device(device),
             Selection::Pending => self.casting.error.clear(),
