@@ -41,6 +41,26 @@ TestCase {
         verify(!emptyState(page).visible, "a tab that only offers its pages must not say that nothing is here")
     }
 
+    function test_a_tab_that_only_links_opens_its_line_in_place_without_leaving_the_page() {
+        const pages = subtabs(-1)
+        const menu = [{title:"Home",ref:"discover:home",key:"fixture native:discover:home",active:true},
+            {title:"Styles",ref:"discover:styles",key:"fixture native:discover:styles",pages:pages}]
+        const page = open("fixture native:discover:home", {title:"Music",tabs:menu,shelves:[]})
+        const line = findChild(page.headerItem, "sourceSubtabs")
+        verify(!line.visible)
+        const pill = text => { let found = null; const walk = item => { if (item.text === text && item.clicked) found = item; for (const child of item.children || []) walk(child) }; walk(page.headerItem); return found }
+        waitForRendering(page)
+        const before = Navigation.went ? Navigation.went.length : 0
+        mouseClick(pill("Styles"))
+        tryVerify(() => line.visible && line.height > 0)
+        compare(Navigation.went ? Navigation.went.length : 0, before, "opening the line must not leave the page")
+        compare(pill("Styles").kind, "primary")
+        mouseClick(pill("Style 3"))
+        compare(Navigation.went[1], "fixture native:discover:styles:3")
+        mouseClick(pill("Home"))
+        tryVerify(() => !line.visible, 1000, "the tab the page is on closes the line")
+    }
+
     function test_the_line_sits_under_the_tabs_and_wraps_inside_the_page() {
         const page = open("fixture native:discover:styles", {title:"Music",tabs:tabs,subtabs:subtabs(-1)})
         const line = findChild(page.headerItem, "sourceSubtabs")

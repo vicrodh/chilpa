@@ -10,6 +10,7 @@ Flow {
 
     property var model: []
     property var navigate: null
+    property string opened: ""
 
     spacing: Metrics.gap8
     visible: model.length > 0
@@ -19,9 +20,9 @@ Flow {
         model: tabs.model
         PillButton {
             required property var modelData
-            kind: modelData.active ? "primary" : "secondary"
+            kind: (tabs.opened ? tabs.opened === modelData.key : modelData.active) ? "primary" : "secondary"
             text: modelData.title
-            onClicked: if (!modelData.active) tabs.navigate ? tabs.navigate(modelData.key) : Navigation.goKey("source", modelData.key)
+            onClicked: if ((modelData.pages || []).length > 0) tabs.opened = tabs.opened === modelData.key ? "" : modelData.key; else if (modelData.active) tabs.opened = ""; else { tabs.opened = ""; tabs.navigate ? tabs.navigate(modelData.key) : Navigation.goKey("source", modelData.key) }
         }
     }
 }

@@ -75,7 +75,7 @@ ListView {
                 }
                 SourceDiscoveryControls { id: discovery; anchors.right: parent.right; about: page.about; visible: !!page.about.tab }
             }
-            SourceTabs { objectName: "sourceSubtabs"; width: parent.width; model: page.about.subtabs || [] }
+            SourceTabs { objectName: "sourceSubtabs"; width: parent.width; model: ((tabs.model || []).find(tab => tab.key === tabs.opened) || {}).pages || page.about.subtabs || [] }
             SourcePageHeader { width: parent.width; currentPage: true; tracksKey: ((page.about.shelves || []).find(shelf => shelf.tracks) || {}).key || ""; info: page.about.header || ({}); visible: !!page.about.header }
 
             SourceState {

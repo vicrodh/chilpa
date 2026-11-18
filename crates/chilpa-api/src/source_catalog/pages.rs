@@ -131,8 +131,13 @@ pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, 
             if let Some(more) = shelf["more"].as_str() { shelf["more_key"] = json!(format!("{plugin} native:{more}")); }
         }
     }
+    let keyed = |tab: &mut Value| if let Some(reference) = tab["ref"].as_str() { tab["key"] = json!(format!("{plugin} native:{reference}")); };
     for row in ["tabs", "subtabs"] {
-        for tab in document[row].as_array_mut().into_iter().flatten() { if let Some(reference) = tab["ref"].as_str() { tab["key"] = json!(format!("{plugin} native:{reference}")); } }
+        for tab in document[row].as_array_mut().into_iter().flatten() {
+            keyed(tab);
+            // A tab may carry the pages it leads to, opened in place without leaving the page.
+            tab["pages"].as_array_mut().into_iter().flatten().for_each(keyed);
+        }
     }
     if document["header"].is_object() {
         catalog.lock().store.take_item(plugin, &document["header"], now());
@@ -664,6 +669,10 @@ mod tests {
         assert_eq!(document["tabs"][0]["key"], "fixture native:discover:styles");
         assert_eq!(document["subtabs"][0]["key"], "fixture native:discover:styles:quiet");
         assert!(document["subtabs"][1].get("key").is_none(), "a row without a reference leads nowhere");
+        ingest_document(&catalog, "fixture", "discover:home", &json!({"shelves":[],"tabs":[{"title":"Styles","ref":"discover:styles",
+            "pages":[{"title":"Quiet","ref":"discover:styles:quiet"}]}]}));
+        let home = catalog.shelf("fixture native:discover:home").unwrap().document;
+        assert_eq!(home["tabs"][0]["pages"][0]["key"], "fixture native:discover:styles:quiet", "a tab's own pages open from where the tab is shown");
     }
 
     #[test]
