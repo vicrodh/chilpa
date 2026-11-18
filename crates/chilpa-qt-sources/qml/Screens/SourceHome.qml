@@ -75,11 +75,12 @@ ListView {
                 }
                 SourceDiscoveryControls { id: discovery; anchors.right: parent.right; about: page.about; visible: !!page.about.tab }
             }
+            SourceTabs { objectName: "sourceSubtabs"; width: parent.width; model: page.about.subtabs || [] }
             SourcePageHeader { width: parent.width; currentPage: true; tracksKey: ((page.about.shelves || []).find(shelf => shelf.tracks) || {}).key || ""; info: page.about.header || ({}); visible: !!page.about.header }
 
             SourceState {
-                width: column.width
-                visible: (page.about.shelves || []).length === 0
+                objectName: "sourceEmptyState"; width: column.width
+                visible: (page.about.shelves || []).length === 0 && ((page.about.subtabs || []).length === 0 || page.about.subtabs.some(tab => tab.active === true))
                 source: page.about.native_page ? page.about.plugin + " native:" + page.about.reference : (page.key.indexOf(" ") < 0 ? page.key + " root" : page.key)
                 about: page.about
             }

@@ -131,8 +131,8 @@ pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, 
             if let Some(more) = shelf["more"].as_str() { shelf["more_key"] = json!(format!("{plugin} native:{more}")); }
         }
     }
-    if let Some(tabs) = document["tabs"].as_array_mut() {
-        for tab in tabs { if let Some(reference) = tab["ref"].as_str() { tab["key"] = json!(format!("{plugin} native:{reference}")); } }
+    for row in ["tabs", "subtabs"] {
+        for tab in document[row].as_array_mut().into_iter().flatten() { if let Some(reference) = tab["ref"].as_str() { tab["key"] = json!(format!("{plugin} native:{reference}")); } }
     }
     if document["header"].is_object() {
         catalog.lock().store.take_item(plugin, &document["header"], now());
@@ -637,6 +637,17 @@ mod tests {
         legacy["header_key"] = json!("another native:home|context");
         context_card(&app.catalog, "fixture", "fixture native:old|module", &mut legacy);
         assert_eq!(legacy["header_key"], "fixture native:old|module-header");
+    }
+
+    #[test]
+    fn tabs_and_the_pages_under_a_tab_both_lead_to_native_pages() {
+        let catalog = Catalog::new();
+        ingest_document(&catalog, "fixture", "discover:styles", &json!({"tabs":[{"title":"Styles","ref":"discover:styles","active":true}],
+            "subtabs":[{"title":"Quiet","ref":"discover:styles:quiet"},{"title":"Unnamed"}]}));
+        let document = catalog.shelf("fixture native:discover:styles").unwrap().document;
+        assert_eq!(document["tabs"][0]["key"], "fixture native:discover:styles");
+        assert_eq!(document["subtabs"][0]["key"], "fixture native:discover:styles:quiet");
+        assert!(document["subtabs"][1].get("key").is_none(), "a row without a reference leads nowhere");
     }
 
     #[test]

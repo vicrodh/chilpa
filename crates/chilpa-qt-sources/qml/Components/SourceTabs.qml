@@ -3,9 +3,9 @@ import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// The tabs of a source's page that has them (Library: All, Releases,
-// Tracks...): each one is a listing of its own, opened in its place.
-Row {
+// The tabs of a source's page: each one is a listing of its own, opened in
+// its place. With a width they wrap; without one they stay on a single line.
+Flow {
     id: tabs
 
     property var model: []

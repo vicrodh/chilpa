@@ -456,7 +456,7 @@ fn greeting(launched: &Launched, network: bool) -> Value {
         "protocol": PROTOCOL,
         "playback_events": 1,
         "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
-        "features": {"source_navigation": 1, "collection_pages": 1, "article_pages": 1},
+        "features": {"source_navigation": 1, "collection_pages": 1, "article_pages": 1, "page_subtabs": 1},
         "data_dir": launched.data,
         "cache_dir": launched.cache,
         "locale": chilpa_i18n::current_language(),

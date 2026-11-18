@@ -103,7 +103,7 @@ fn greeting_advertises_native_articles_and_collections_without_embedded_web() {
         let greeting = greeting(&launched, network);
         assert_eq!(greeting["protocol"], PROTOCOL);
         assert_eq!(greeting["features"], json!({
-            "source_navigation": 1, "collection_pages": 1, "article_pages": 1
+            "source_navigation": 1, "collection_pages": 1, "article_pages": 1, "page_subtabs": 1
         }));
         assert!(greeting["features"].get("web_pages").is_none());
         assert!(greeting.get("web_pages").is_none());
