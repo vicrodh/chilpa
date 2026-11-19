@@ -521,7 +521,7 @@ impl qobject::TrackListModel {
             while to >= 0 && self.rust().queue_keys.get(to as usize).is_some_and(String::is_empty) { to += by; }
             self.list_action(&QString::from("move"), row, to); return;
         }
-        if self.rust().kind.to_string() != "playlist" || row < 0 || !self.rust().available(row as usize) {
+        if self.rust().kind.to_string() != "playlist" || !self.rust().key.is_empty() || row < 0 || !self.rust().available(row as usize) {
             return;
         }
         let to = row + by;
@@ -539,7 +539,7 @@ impl qobject::TrackListModel {
             self.list_action(&QString::from("move"), from, to);
             return;
         }
-        if self.rust().kind.to_string() != "playlist" || self.rust().order.to_string() != "custom" || from < 0 || to < 0 || from == to {
+        if self.rust().kind.to_string() != "playlist" || !self.rust().key.is_empty() || self.rust().order.to_string() != "custom" || from < 0 || to < 0 || from == to {
             return;
         }
         if !self.rust().available(from as usize) {
@@ -598,8 +598,9 @@ impl qobject::TrackListModel {
             server_delete: chosen.len() == 1 && app::with(|api| api.server_media_info("track", chosen[0]) != "{}"),
             queued: !this.queue_keys.is_empty(),
             editable,
-            move_up: editable && this.order.to_string() == "custom" && row > 0,
-            move_down: editable && this.order.to_string() == "custom" && row < this.len() as i32 - 1,
+            // Rows found by what is typed are not the whole order to move in.
+            move_up: editable && this.order.to_string() == "custom" && this.key.is_empty() && row > 0,
+            move_down: editable && this.order.to_string() == "custom" && this.key.is_empty() && row < this.len() as i32 - 1,
             album: self.can_go(row, &QString::from("album")),
             artist: self.can_go(row, &QString::from("artist")),
             artists: this.track(row.max(0) as usize).map(|t| t.credits.as_ref().map(|c| c.artists.iter().chain(&c.featured).map(|p| p.name.clone()).collect()).unwrap_or_else(|| app::with(|api| api.credit_names(&t.artist)))).unwrap_or_default(),
