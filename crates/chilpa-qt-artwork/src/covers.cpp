@@ -1,13 +1,20 @@
 // The window's covers, at the size they are drawn (frontend ADR-0014,
 // rule 5): an image provider behind `image://cover/<size>/<path>`.
 //
-// All three providers share two workers. Pending work is newest-first within
-// its class, with every ninth dispatch reserved for the oldest request in that
-// class. Classes take round-robin turns so contained covers and atmosphere
-// cannot starve row covers or be starved by them. When covers are pending,
-// non-cover work occupies at most one worker so headers and immersive views
-// cannot take both cover slots. Pending producers exist only while at least one
-// live Image is subscribed, so demand bounds the queue without rejecting it.
+// All three providers share two workers. Within its class, pending work is
+// served oldest first: a list asks for its visible rows before its buffer
+// rows, so at rest the screen fills top-down before anything off screen. A
+// pending request withdrawn while others still wait means rows are leaving
+// the screen; until the queue drains, the class then alternates its newest
+// and oldest requests, so the leading edge of a scroll gets every other
+// dispatch and the rows already on screen the rest. A jump withdraws the old
+// screen before the new one asks, so the queue drains and the new screen is
+// served oldest first again. Classes take round-robin turns so contained
+// covers and atmosphere cannot starve row covers or be starved by them. When
+// covers are pending, non-cover work occupies at most one worker so headers
+// and immersive views cannot take both cover slots. Pending producers exist
+// only while at least one live Image is subscribed, so demand bounds the
+// queue without rejecting it.
 
 #include <QtCore/QHash>
 #include <QtCore/QMetaObject>
@@ -187,8 +194,6 @@ private:
 class CoverScheduler : public std::enable_shared_from_this<CoverScheduler>
 {
 public:
-    static constexpr quint64 OldestDispatchInterval = 9;
-
     CoverScheduler() { m_pool.setMaxThreadCount(2); }
     ~CoverScheduler() { m_pool.waitForDone(); }
 
@@ -250,6 +255,10 @@ public:
                     m_byKey.remove((*pending)->key);
                     m_pending.erase(pending);
                 }
+                if (m_pending.empty())
+                    drainedLocked();
+                else
+                    m_scrolling = true;
                 found = true;
                 break;
             }
@@ -456,6 +465,8 @@ private:
             const auto selected = selectLocked();
             auto work = *selected;
             m_pending.erase(selected);
+            if (m_pending.empty())
+                drainedLocked();
             m_running.push_back(work);
             m_pool.start(new CoverJob(shared_from_this(), work));
         }
@@ -494,12 +505,18 @@ private:
                 continue;
             if (!(nonCoverRunning && coverPending))
                 m_nextClass = (candidateClass + 1) % 3;
-            const bool oldestTurn = ++m_classDispatches[candidateClass] % OldestDispatchInterval == 0;
-            if (oldestTurn)
+            if (!m_scrolling)
                 return oldest;
-            return newest;
+            const bool oldestTurn = ++m_classDispatches[candidateClass] % 2 == 0;
+            return oldestTurn ? oldest : newest;
         }
         return m_pending.begin();
+    }
+
+    void drainedLocked()
+    {
+        m_scrolling = false;
+        m_classDispatches = {};
     }
 
     mutable QMutex m_mutex;
@@ -509,6 +526,8 @@ private:
     std::vector<std::shared_ptr<CoverWork>> m_running;
     std::vector<std::shared_ptr<CoverWork>> m_delivering;
     quint64 m_demandSequence = 0;
+    // A pending request was withdrawn since the queue last drained.
+    bool m_scrolling = false;
     std::array<quint64, 3> m_classDispatches{};
     int m_nextClass = 0;
 };

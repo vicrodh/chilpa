@@ -434,12 +434,12 @@ int main(int argc, char **argv)
         responses.add(&providers.cover, coverId(QStringLiteral("middle")));
         responses.add(&providers.cover, coverId(QStringLiteral("new")));
         allow("c:/block-a");
-        waitEntered("c:/new");
-        allow("c:/new");
-        waitEntered("c:/middle");
-        allow("c:/middle");
         waitEntered("c:/old");
         allow("c:/old");
+        waitEntered("c:/middle");
+        allow("c:/middle");
+        waitEntered("c:/new");
+        allow("c:/new");
         allow("c:/block-b");
         responses.wait();
         require(maximum == 2, "the scheduler keeps exactly two workers");
@@ -464,15 +464,77 @@ int main(int argc, char **argv)
         }
         allow("c:/block-b");
         responses.wait();
+        // Nothing was withdrawn: a page at rest, whose visible rows ask first.
+        for (int index = 0; index < 500; ++index)
+            require(order[index] == "c:/burst-" + std::to_string(index),
+                    "a burst with nothing withdrawn is served in the order it asked");
+    }
+
+    reset();
+    {
+        Providers providers;
+        Responses responses(application);
+        responses.add(&providers.cover, coverId(QStringLiteral("block-a")));
+        responses.add(&providers.cover, coverId(QStringLiteral("block-b")));
+        waitEntered("c:/block-a");
+        waitEntered("c:/block-b");
+        // A scroll: each row entering at the leading edge asks for its cover
+        // and the row eight places behind it leaves and withdraws its request.
+        constexpr int rows = 40;
+        constexpr int window = 8;
+        std::vector<QQuickImageResponse *> scrolled;
+        for (int index = 0; index < rows; ++index) {
+            scrolled.push_back(responses.add(&providers.cover, coverId(QStringLiteral("scroll-%1").arg(index))));
+            if (index >= window)
+                scrolled[index - window]->cancel();
+        }
+        allow("c:/block-a");
+        std::vector<std::string> order;
+        for (int position = 0; position < window; ++position) {
+            const std::string name = enteredAt(position + 2);
+            order.push_back(name);
+            allow(name);
+        }
+        allow("c:/block-b");
+        responses.wait();
         const auto positionOf = [&](int index) {
-            const std::string name = "c:/burst-" + std::to_string(index);
+            const std::string name = "c:/scroll-" + std::to_string(index);
             return int(std::find(order.begin(), order.end(), name) - order.begin()) + 1;
         };
-        require(positionOf(0) <= 9, "the first aged request gets one of every nine dispatches");
-        require(positionOf(1) <= 18, "the second aged request gets the next reserved dispatch");
-        require(positionOf(2) <= 27, "the third aged request gets the following reserved dispatch");
-        for (int index = 460; index < 500; ++index)
-            require(positionOf(index) <= 45, "the last forty requests stay near the front of a burst");
+        require(positionOf(rows - 1) == 1, "the leading edge of a scroll is served first");
+        require(positionOf(rows - window) == 2, "the oldest row still on screen is served next");
+        require(positionOf(rows - 2) == 3, "the leading edge keeps every other dispatch");
+        require(positionOf(rows - window + 1) == 4, "the rows on screen keep the remaining dispatches");
+    }
+
+    reset();
+    {
+        Providers providers;
+        Responses responses(application);
+        responses.add(&providers.cover, coverId(QStringLiteral("block-a")));
+        responses.add(&providers.cover, coverId(QStringLiteral("block-b")));
+        waitEntered("c:/block-a");
+        waitEntered("c:/block-b");
+        // A jump: the old screen withdraws everything before the new screen asks.
+        std::vector<QQuickImageResponse *> left;
+        for (int index = 0; index < 40; ++index)
+            left.push_back(responses.add(&providers.cover, coverId(QStringLiteral("left-%1").arg(index))));
+        for (auto *response : left)
+            response->cancel();
+        for (int index = 0; index < 20; ++index)
+            responses.add(&providers.cover, coverId(QStringLiteral("landed-%1").arg(index)));
+        allow("c:/block-a");
+        std::vector<std::string> order;
+        for (int position = 0; position < 20; ++position) {
+            const std::string name = enteredAt(position + 2);
+            order.push_back(name);
+            allow(name);
+        }
+        allow("c:/block-b");
+        responses.wait();
+        for (int index = 0; index < 20; ++index)
+            require(order[index] == "c:/landed-" + std::to_string(index),
+                    "after a jump drains the queue the new screen is served in the order it asked");
     }
 
     reset();
@@ -565,15 +627,15 @@ int main(int argc, char **argv)
             return int(std::find(withinClass.begin(), withinClass.end(), name) - withinClass.begin()) + 1;
         };
         const auto covers = classOrder("/cover-");
-        require(positionOf(covers, "c:/cover-0") <= 9, "the cover class dispatches its first aged request");
-        require(positionOf(covers, "c:/cover-1") <= 18, "the cover class dispatches successive aged requests");
+        require(positionOf(covers, "c:/cover-0") == 1, "the cover class dispatches its oldest request first");
+        require(positionOf(covers, "c:/cover-1") == 2, "the cover class dispatches in the order it was asked");
         const auto atmospheres = classOrder("/atmosphere-");
-        require(positionOf(atmospheres, "a:/atmosphere-0") <= 9, "the atmosphere class dispatches its first aged request");
-        require(positionOf(atmospheres, "a:/atmosphere-1") <= 18, "the atmosphere class dispatches successive aged requests");
+        require(positionOf(atmospheres, "a:/atmosphere-0") == 1, "the atmosphere class dispatches its oldest request first");
+        require(positionOf(atmospheres, "a:/atmosphere-1") == 2, "the atmosphere class dispatches in the order it was asked");
         const auto contained = classOrder("/contained-");
-        require(positionOf(contained, "c:/contained-0") <= 9, "the contained class dispatches its first aged base phase");
-        require(positionOf(contained, "n:/contained-0") <= 18, "the contained class dispatches the aged continuation");
-        require(positionOf(contained, "c:/contained-1") <= 27, "the contained class dispatches its next aged base phase");
+        require(positionOf(contained, "c:/contained-0") == 1, "the contained class dispatches its oldest base phase first");
+        require(positionOf(contained, "n:/contained-0") == 2, "the contained continuation keeps its original age");
+        require(positionOf(contained, "c:/contained-1") == 3, "the contained class then dispatches its next base phase");
     }
 
     reset();
