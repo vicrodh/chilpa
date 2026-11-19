@@ -21,6 +21,8 @@ TestCase {
     TrackListModel { id: tracks }
     TrackList { id: list; width: 1000; height: 300; model: tracks; rich: false; showPlays: true }
     readonly property Item view: findChild(list, "trackListView")
+    property real flickVelocity: 0
+    function initTestCase() { flickVelocity = view.maximumFlickVelocity }
     readonly property var covers: ["", "qrc:/qt/qml/app/chilpa/kit/assets/logo.png", "qrc:/qt/qml/app/chilpa/kit/assets/app-icon-dark.png"]
     // A cover no other picture in the suite shares: one green square.
     Canvas {
@@ -34,6 +36,15 @@ TestCase {
         target: test.view ? test.view.contentItem : null
         property var seen: new Set()
         function onChildrenChanged() { for (const child of test.view.contentItem.children) if (child.rowIndex !== undefined && child.listMode !== undefined) seen.add(child) }
+    }
+    // Every frame the window makes, as it takes the scene: on the offscreen platform the software render loop emits
+    // beforeSynchronizing on this thread, after the views are laid out and before the scene is synced and drawn.
+    Connections {
+        id: frames
+        target: test.Window.window
+        property int made: 0
+        property int emptiest: 0
+        function onBeforeSynchronizing() { made++; emptiest = Math.max(emptiest, test.emptyRows()) }
     }
     // The Tracks page: a sheet that scrolls sideways, with the snapshot rows and the optional columns.
     Component {
@@ -99,12 +110,16 @@ TestCase {
         Ratings.pendingTracks = ({}); Ratings.sources = ({})
         Prefs.animatedIndicator = false
         Motion.reduced = false
+        view.cancelFlick()
+        view.maximumFlickVelocity = test.flickVelocity
         list.height = 300
         list.cursorRow = -1
         test.forceActiveFocus()
     }
 
     function slots() { return view.contentItem.children.filter(item => item.contentBuilds !== undefined && item.rowKind !== undefined) }
+    // The rows the screen shows, by their place in the view, that have no body to draw.
+    function emptyRows() { return slots().filter(row => row.visible && row.y + row.height > view.contentY && row.y < view.contentY + view.height && body(row) === null).length }
     function surfaces() { return view.contentItem.children.filter(item => item.rowIndex !== undefined && item.listMode !== undefined) }
     function body(row) { return findChild(row, "trackRowBody") }
     function findItem(item, wanted) {
@@ -516,15 +531,18 @@ TestCase {
         compare(built() - again, 0, "filled again, it built no body")
     }
 
-    // A body is built for the first time only once its row is placed: on the screen at once, in the
-    // margin asynchronously. Nothing is built for a row the list lets go in the same turn, and the
-    // first frame shows every row on the screen with its body. Each case logs what it built, when.
-    function test_first_bodies_wait_for_placement_data() {
+    // A body is built for the first time on the screen at once, in the margin asynchronously once its row is placed,
+    // and never for the screen a jump lays out on its way. Every frame the window makes shows each row on the screen
+    // with its body: the one made right after the call, before any turn of the event loop, and every one after it,
+    // through a real flick too. Nothing is built for a row the list lets go. Each case logs what it built, when.
+    function test_first_bodies_and_the_frames_that_show_them_data() {
         return [{ tag: "first fill" }, { tag: "taller list" }, { tag: "rich to compact" }, { tag: "scroll into a wider band" },
             { tag: "jumpTo" }, { tag: "jumpTo, grouped", grouped: true },
-            { tag: "positionViewAtIndex" }, { tag: "positionViewAtIndex, grouped", grouped: true }]
+            { tag: "positionViewAtIndex" }, { tag: "positionViewAtIndex, grouped", grouped: true },
+            { tag: "flick" }, { tag: "flick, grouped", grouped: true },
+            { tag: "flick faster than a screen a frame", fast: true }, { tag: "flick faster than a screen a frame, grouped", grouped: true, fast: true }]
     }
-    function test_first_bodies_wait_for_placement(data) {
+    function test_first_bodies_and_the_frames_that_show_them(data) {
         if (data.grouped) { view.section.property = "group"; fill(400); view.positionViewAtBeginning(); view.forceLayout() }
         if (data.tag === "first fill") tracks.clear()
         if (data.tag === "rich to compact") { list.rich = true; view.forceLayout() }
@@ -532,29 +550,32 @@ TestCase {
         // A cold pool: the list lets go of what it pooled.
         view.reuseItems = false; view.reuseItems = true
         wait(0)
+        if (data.fast) view.maximumFlickVelocity = view.height * 100
         const had = new Set(slots().map(row => body(row)).filter(own => own !== null))
-        const before = built()
-        if (data.tag === "first fill") { for (let i = 0; i < 400; ++i) tracks.append(entry(i)); view.forceLayout() }
-        else if (data.tag === "taller list") { list.height = 676; view.forceLayout() }
-        else if (data.tag === "rich to compact") { list.rich = false; view.forceLayout() }
-        else if (data.tag === "scroll into a wider band") { view.contentY = at(0.5); view.forceLayout() }
+        const before = built(), top = view.contentY
+        frames.made = 0; frames.emptiest = 0
+        if (data.tag === "first fill") for (let i = 0; i < 400; ++i) tracks.append(entry(i))
+        else if (data.tag === "taller list") list.height = 676
+        else if (data.tag === "rich to compact") list.rich = false
+        else if (data.tag === "scroll into a wider band") view.contentY = at(0.5)
         else if (data.tag.startsWith("jumpTo")) list.jumpTo(300)
+        else if (data.tag.startsWith("flick")) view.flick(0, -view.maximumFlickVelocity)
         else list.positionAt(300, ListView.Beginning)
         const during = built() - before
-        const waiting = slots().filter(row => row.visible && row.immediate && body(row) === null).length
-        wait(0)
-        const first = built() - before
+        grabImage(test)
+        const first = frames.emptiest
+        if (data.tag.startsWith("flick")) tryVerify(() => !view.moving, 5000, "the flick ends")
+        wait(300)
+        if (data.tag.startsWith("flick")) verify(view.contentY > top + view.height * 2, "the flick went " + (view.contentY - top) + " px")
         const shown = slots().filter(row => row.visible && row.immediate)
         verify(shown.length > 0)
-        for (const row of shown) {
-            verify(body(row) !== null, "row " + row.index + " is drawn on the first frame")
-            checkRow(row)
-        }
-        wait(300)
-        const fresh = slots().map(row => body(row)).filter(own => own !== null && !had.has(own)).length
-        console.log(data.tag + ": " + during + " bodies built in the call, " + waiting + " rows on the screen waiting for theirs after it, "
-            + first + " built by the first frame, " + (built() - before) + " in all, " + fresh + " of them kept")
-        compare(built() - before, fresh, "no body was built for a row the list let go")
+        for (const row of shown) checkRow(row)
+        const all = built() - before
+        const kept = slots().map(row => body(row)).filter(own => own !== null && !had.has(own)).length
+        console.log(data.tag + ": " + during + " bodies built in the call, " + all + " in all, " + kept + " kept, " + (all - kept) + " thrown away; "
+            + first + " rows on the screen without a body in the frame made right after the call, at most " + frames.emptiest + " in the " + frames.made + " frames made")
+        compare(frames.emptiest, 0, "no frame showed a row on the screen without its body")
+        compare(all - kept, 0, "no body was built for a row the list let go")
     }
 
     function test_keyboard_moves_show_rows_already_built() {

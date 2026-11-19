@@ -25,13 +25,13 @@ QtObject {
     // Restart estimates before a far jump through section bands. Reusing the
     // old pool while rebuilding the model can briefly show the wrong row.
     function jumpTo(row) {
-        place = null
+        view.positioning = true
         view.reuseItems = false
-        view.model = null
-        view.model = Qt.binding(() => viewport.model)
-        view.forceLayout()
-        view.positionViewAtIndex(row, ListView.Beginning)
-        view.reuseItems = true
+        try {
+            view.model = null
+            view.model = Qt.binding(() => viewport.model)
+            positionAt(row, ListView.Beginning)
+        } finally { view.positioning = false; view.reuseItems = true }
     }
     function identity() { return model ? model.kind + "\n" + model.albumId + "\n" + model.key : "" }
     function keep() {

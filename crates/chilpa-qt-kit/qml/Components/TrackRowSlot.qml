@@ -5,11 +5,11 @@ import "../Theme"
 Item {
     id: slot
     property bool inViewport: true
-    // In a list that scrolls itself I keep the body I built through the pool, up to its budget (TrackListViewport).
-    // A body never built waits for my placement, as in any list, and off the screen it is built asynchronously.
+    // In a list that scrolls itself I keep my body through the pool, up to its budget (TrackListViewport), and build it at once on the
+    // screen; else it waits for my placement, off the screen built asynchronously. None is built for a screen a jump lays out on its way.
     property bool resident: false
+    readonly property bool deferFirstBuild: ListView.view !== null && ListView.view.positioning === true
     property bool layoutReady: false
-    // I wait for the view to place the slot before I build its visible contents.
     function finishLayout() { layoutReady = true }
     Component.onCompleted: Qt.callLater(finishLayout)
     property bool immediate: true
@@ -52,5 +52,5 @@ Item {
         return point.x >= 0 && point.x < stars.width && point.y >= 0 && point.y < stars.height
             ? Math.floor(point.x / stars.width * Metrics.ratingMaximum) + 1 : 0
     }
-    Loader { id: body; property int builds: 0; onLoaded: builds++; anchors.fill: parent; active: slot.layoutReady && slot.inViewport || slot.resident && body.item !== null; asynchronous: !slot.immediate; sourceComponent: slot.content }
+    Loader { id: body; property int builds: 0; onLoaded: builds++; anchors.fill: parent; active: !slot.deferFirstBuild && slot.inViewport && (slot.layoutReady || slot.resident && slot.immediate) || slot.resident && body.item !== null; asynchronous: !slot.immediate; sourceComponent: slot.content }
 }

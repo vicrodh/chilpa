@@ -5,6 +5,7 @@ import "../Theme/Viewport.js" as Viewport
 ListView {
     id: view
     property Flickable motionViewport: null
+    property bool positioning: false // while the list places a row it jumps to (TrackListViewport.jumpTo)
     readonly property real visibleContentTop: motionViewport ? motionViewport.contentY - Viewport.topIn(contentItem, motionViewport.contentItem) : contentY
     readonly property bool motionVisible: visible && (!motionViewport || Viewport.topIn(view, motionViewport.contentItem) + height > motionViewport.contentY && Viewport.topIn(view, motionViewport.contentItem) < motionViewport.contentY + motionViewport.height)
     readonly property int motionDuration: motionVisible ? Motion.panel : 0
