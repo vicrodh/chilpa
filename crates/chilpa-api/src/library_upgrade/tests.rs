@@ -344,3 +344,19 @@ fn putting_the_copy_back_runs_behind_a_line_that_says_so() {
     assert_eq!(wait_for_a_request(&mut api), crate::WindowRequest::Quit);
     assert_eq!(version_of(&path), 54);
 }
+
+#[test]
+fn a_library_swapped_for_an_older_one_while_running_is_said() {
+    if !in_own_profile("library_upgrade::tests::a_library_swapped_for_an_older_one_while_running_is_said", "CHILPA_TEST_SWAPPED_LIBRARY") { return; }
+    let path = chilpa_library::Library::default_path();
+    drop(chilpa_library::Library::open(&path).unwrap());
+    let mut api = crate::Chilpa::new();
+    assert!(!api.library_upgrading());
+    // Replaced by an older file after the start, before it was first read.
+    for suffix in ["", "-wal", "-shm"] {
+        let _ = std::fs::remove_file(format!("{}{suffix}", path.display()));
+    }
+    older(&path, 50);
+    assert!(api.library().is_none());
+    assert!(api.now.error.contains("has to be updated first"), "the window says why the library is empty: {:?}", api.now.error);
+}

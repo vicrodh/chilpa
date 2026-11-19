@@ -887,10 +887,11 @@ impl Chilpa {
                     self.load_chosen_remote_art();
                 }
                 Err(e) => {
-                    // One waiting for its upgrade is refused without an error.
-                    if chilpa_library::schema::upgrade::pending(&chilpa_library::Library::default_path()).is_none() {
-                        self.now.error = chilpa_i18n::t_args("the library could not be opened: {}", &[&e.to_string()]);
-                    }
+                    // Said even when it is older: an upgrade under way never
+                    // gets here, and one this start did not see (the file
+                    // swapped, or unreadable when it was looked at) would
+                    // otherwise show an empty library with no reason.
+                    self.now.error = chilpa_i18n::t_args("the library could not be opened: {}", &[&e.to_string()]);
                     return None;
                 }
             }
