@@ -35,6 +35,103 @@ TestCase {
         tryVerify(() => page.blockOf(artistKey + "|latest")?.ready === true)
         waitForRendering(page)
     }
+    // Popular Tracks, above the releases, loads on a turn of its own and takes a few frames to lay out. Settled before the
+    // scroll, it cannot move the releases during the wheel, which took the wheel's motion with it.
+    function settledPopular(page) {
+        const popular = page.blockOf(artistKey + "|tracks")
+        tryVerify(() => popular?.ready === true && findChild(page, "artistHeaderLoader").status === Loader.Ready, 2000, "the header and Popular Tracks are loaded")
+        const popularRows = findChild(popular.item, "trackListView")
+        tryVerify(() => popularRows.count > 0 && Array.from({length:popularRows.count}, (_, i) => popularRows.itemAtIndex(i)).every(row => row !== null), 2000, "every popular track has its row")
+        popularRows.forceLayout(); popular.item.forceLayout(); popular.parent.forceLayout()
+        return popular
+    }
+    // Where the section stands in every frame, read after the frame's layout and before it is drawn.
+    Component {
+        id: framesMaker
+        Connections {
+            property Item item
+            property Item page
+            property var seen: []
+            function onAfterAnimating() { seen.push(item.mapToItem(page, 0, 0).y) }
+        }
+    }
+    function test_a_layout_pass_that_rounds_the_offset_keeps_the_section_in_place_data() {
+        return [{tag:"grows", expanded:false}, {tag:"shrinks", expanded:true}]
+    }
+    // A wheel step or a compensation leaves the offset between two pixels. When a block above changes height, the viewport
+    // rounds the offset inside the page column's layout pass, before the column reports it is done: that change of position
+    // is the layout's, not the listener's, and cannot choose the anchor from blocks that have moved but are not compensated.
+    function test_a_layout_pass_that_rounds_the_offset_keeps_the_section_in_place(data) {
+        const page = createTemporaryObject(pageMaker, test)
+        ready(page)
+        const albums = page.blockOf(artistKey + "|album")
+        const popular = settledPopular(page)
+        if (data.expanded) {
+            const rows = popular.height
+            popular.item.loadMore()
+            tryVerify(() => popular.height > rows, 2000, "Popular Tracks shows every row")
+            waitForRendering(page)
+        }
+        page.jump(artistKey + "|album")
+        waitForRendering(page)
+        page.scrollView.contentY += 0.4
+        verify(page.scrollView.contentY % 1 !== 0, "the offset sits between two pixels")
+        const before = albums.mapToItem(page, 0, 0).y
+        const rows = popular.height
+        const frames = createTemporaryObject(framesMaker, test, {target:test.Window.window, item:albums, page:page})
+        popular.item.loadMore()
+        tryVerify(() => popular.height !== rows, 2000, "Popular Tracks changed its height: " + rows)
+        waitForRendering(page)
+        verify(frames.seen.length > 0)
+        for (const y of frames.seen)
+            verify(Math.abs(y - before) <= 1, "Albums moved in a frame after Popular Tracks changed height: " + before + " -> " + frames.seen.join(", "))
+        verify(Math.abs(albums.mapToItem(page, 0, 0).y - before) <= 1, "Albums moved: " + before + " -> " + albums.mapToItem(page, 0, 0).y)
+    }
+    // Grows Popular Tracks on the first frame of a wheel step; its layout lands on a later frame, mid-step.
+    Component {
+        id: growMaker
+        Connections {
+            property Item popular
+            function onContentYChanged() { enabled = false; popular.loadMore() }
+        }
+    }
+    function test_a_block_that_settles_during_a_wheel_step_keeps_the_step_data() {
+        // Before the step's first frame, settle() moves the offset and stops the step. Mid-step the offset sits between two
+        // pixels, and the viewport rounds it to the new height and stops the step first.
+        return [{tag:"before_the_first_frame", early:true}, {tag:"mid_step", early:false}]
+    }
+    function test_a_block_that_settles_during_a_wheel_step_keeps_the_step(data) {
+        const page = createTemporaryObject(pageMaker, test)
+        ready(page)
+        const albums = page.blockOf(artistKey + "|album")
+        const popular = settledPopular(page)
+        page.jump(artistKey + "|album")
+        waitForRendering(page)
+        mouseMove(page.scrollView, 10, 100)
+        // One notch on a still page says how far a step moves the releases.
+        let start = albums.mapToItem(page, 0, 0).y
+        mouseWheel(page.scrollView, 10, 100, 0, -120, Qt.NoButton, Qt.NoModifier, 20)
+        tryCompare(page.scrollView, "moving", false)
+        const step = start - albums.mapToItem(page, 0, 0).y
+        verify(step > 1, "a notch moved the releases: " + step)
+        start = albums.mapToItem(page, 0, 0).y
+        const rows = popular.height
+        const frames = createTemporaryObject(framesMaker, test, {target:test.Window.window, item:albums, page:page})
+        if (!data.early) createTemporaryObject(growMaker, test, {target:page.scrollView, popular:popular.item})
+        mouseWheel(page.scrollView, 10, 100, 0, -120, Qt.NoButton, Qt.NoModifier, 20)
+        verify(page.scrollView.moving, "the second step is under way")
+        if (data.early) {
+            popular.item.loadMore()
+            findChild(popular.item, "trackListView").forceLayout(); popular.item.forceLayout(); popular.parent.forceLayout()
+        }
+        tryVerify(() => popular.height !== rows, 2000, "Popular Tracks changed its height during the step")
+        tryCompare(page.scrollView, "moving", false)
+        waitForRendering(page)
+        for (const y of frames.seen)
+            verify(y <= start + 1 && y >= start - step - 1, "Albums left the step's path in a frame: " + start + " -> " + frames.seen.join(", "))
+        const moved = start - albums.mapToItem(page, 0, 0).y
+        verify(Math.abs(moved - step) <= 1, "the step moved the releases " + moved + " px; on a still page it moves them " + step + " px")
+    }
     function test_delayed_preview_keeps_the_visible_release_section_in_place_data() {
         return [
             {tag:"compact", density:"compact", width:1400},
@@ -131,13 +228,7 @@ TestCase {
         }
         const albums = page.blockOf(artistKey + "|album")
         const latest = page.blockOf(artistKey + "|latest")
-        // Popular Tracks, above the releases, loads on a turn of its own and takes a few frames to lay out. Settled before the
-        // scroll, it cannot move the releases during the wheel, which took the wheel's motion with it.
-        const popular = page.blockOf(artistKey + "|tracks")
-        tryVerify(() => popular?.ready === true && findChild(page, "artistHeaderLoader").status === Loader.Ready, 2000, "the header and Popular Tracks are loaded")
-        const popularRows = findChild(popular.item, "trackListView")
-        tryVerify(() => popularRows.count > 0 && Array.from({length:popularRows.count}, (_, i) => popularRows.itemAtIndex(i)).every(row => row !== null), 2000, "every popular track has its row")
-        popularRows.forceLayout(); popular.item.forceLayout(); albums.parent.forceLayout()
+        settledPopular(page)
         const tracks = findChild(latest, "latestReleaseTracks").model
         const rows = []
         for (let i = 0; i < tracks.count; i++) rows.push(Object.assign({}, tracks.get(i)))
