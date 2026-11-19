@@ -595,9 +595,12 @@ private:
 extern "C" void chilpa_install_covers(void *engine)
 {
     static NetworkFactory network;
-    // Jobs may outlive their providers during engine teardown. Keep the shared
-    // pool alive until process shutdown so it is never destroyed by a worker.
-    static auto scheduler = std::make_shared<CoverScheduler>();
+    // Never destroyed. A running job also owns the scheduler, so if this
+    // reference were released at exit a worker could become the last owner,
+    // and the destructor would then wait for the pool from inside it. Kept
+    // to the end of the process, the count never reaches zero on any thread,
+    // and a response cancelled while the process exits can still reach it.
+    static const auto &scheduler = *new std::shared_ptr<CoverScheduler>(std::make_shared<CoverScheduler>());
     static_cast<QQmlEngine *>(engine)->setNetworkAccessManagerFactory(&network);
     static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("cover"), new CoverProvider(scheduler));
     static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("contained"), new CoverProvider(scheduler, CoverClass::Contained));
