@@ -14,7 +14,7 @@ ListModel {
     property bool ascending: true
     property string summary: "3 tracks"
     property bool playlistEditable: false
-    function selectedRow() { return -1 }
+    property int selectedAt: -1; function selectedRow() { return selectedAt }
     // The longest texts of each column, as the bridge gives them, when a
     // test asks for them; otherwise nothing, and the proportions stand.
     property bool measures: false

@@ -564,7 +564,7 @@ impl qobject::TrackListModel {
         if this.selected.len() != 1 {
             return -1;
         }
-        (0..this.len()).find(|&r| this.track_id(r).is_some_and(|id| this.selected.contains(&id))).map_or(-1, |r| r as i32)
+        this.selected.iter().next().and_then(|id| this.rows.row_of(*id)).map_or(-1, |row| row as i32)
     }
 
     pub fn playing_row(&self) -> i32 {
@@ -974,11 +974,9 @@ impl qobject::TrackListModel {
             unsafe { self.as_mut().end_reset_model() };
         }
         { let mut this = self.as_mut().rust_mut();
-            if let Rows::Loaded(entries) = &this.rows {
-                let there: HashSet<_> = entries.iter().filter_map(|e| if let Entry::Track(t) = e { Some(t.id) } else { None }).collect();
-                this.selected.retain(|id| there.contains(id));
-                if !this.queue_keys.is_empty() && this.anchor.is_none() { this.selected.clear(); }
-            }
+            let this = &mut *this;
+            this.rows.keep_listed(&mut this.selected);
+            if !this.queue_keys.is_empty() && this.anchor.is_none() { this.selected.clear(); }
         }
         let chosen = self.rust().selected.len() as i32;
         self.as_mut().set_selected_count(chosen);

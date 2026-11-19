@@ -29,9 +29,11 @@ TestCase {
     function init() {
         Ratings.tracks = ({}); Ratings.favorites = ({}); Ratings.fail = false; ++Ratings.rev
         list.height = 250
+        list.rich = true
         tracks.clear()
         tracks.append(track(0))
         tracks.lastAction = ""
+        tracks.selectedAt = -1
         list.cursorRow = -1
         wait(30)
     }
@@ -104,5 +106,20 @@ TestCase {
         tracks.setProperty(2, "plays", 7)
         wait(30)
         verify(menu.visible, "a value that changes in place keeps the row's track and its menu")
+    }
+    function test_the_cursor_follows_the_selected_track_through_a_reset() {
+        list.rich = false
+        for (let i = 1; i < 6; ++i) tracks.append(track(i))
+        wait(30)
+        const item = list.rows.itemAtIndex(3)
+        mouseClick(item, item.cols.titleX + 3, item.height / 2)
+        compare(list.cursorRow, 3)
+        tracks.remove(0, 2)
+        tracks.selectedAt = 1
+        tracks.modelReset()
+        compare(list.cursorRow, 1, "the cursor stays on its track, now at row 1")
+        tracks.selectedAt = -1
+        tracks.modelReset()
+        compare(list.cursorRow, -1, "with no single selected track to follow the cursor clears")
     }
 }
