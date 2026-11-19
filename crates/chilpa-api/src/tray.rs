@@ -65,9 +65,11 @@ impl Chilpa {
         self.preference(CLOSE_TO_TRAY).is_none_or(|v| v == "true") && self.tray_present()
     }
 
-    /// Whether quitting asks first.
+    /// Whether quitting asks first. Not while the library is upgraded: the
+    /// question says playback stops, and what stops is the upgrade, which
+    /// goes on at the next start.
     pub fn confirms_quit(&self) -> bool {
-        self.preference(CONFIRM_QUIT).is_none_or(|v| v == "true")
+        !self.library_upgrading() && self.preference(CONFIRM_QUIT).is_none_or(|v| v == "true")
     }
 
     /// Quitting stops asking: the question's "Don't ask again".

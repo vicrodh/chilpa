@@ -396,3 +396,16 @@ fn an_upgrade_thread_that_ends_without_an_answer_says_so() {
     assert!(!upgrade.advance());
     assert_eq!(upgrade.view()["message"], "The library update stopped unexpectedly.");
 }
+
+#[test]
+fn quitting_during_an_upgrade_does_not_ask() {
+    if !in_own_profile("library_upgrade::tests::quitting_during_an_upgrade_does_not_ask", "CHILPA_TEST_QUIT_UNASKED") { return; }
+    older(&chilpa_library::Library::default_path(), 50);
+    let mut api = crate::Chilpa::new();
+    api.start_services();
+    // The question says playback stops and the window closes; what stops is
+    // the upgrade, and it goes on at the next start.
+    assert!(!api.confirms_quit());
+    wait_for_the_upgrade(&mut api);
+    assert!(api.confirms_quit(), "afterwards quitting asks as it did");
+}
