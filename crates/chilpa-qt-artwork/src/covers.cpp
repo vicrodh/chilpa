@@ -332,6 +332,7 @@ private:
         bool containedWanted = false;
         bool atmosphereWanted = false;
         std::shared_ptr<CoverWork> coverDelivery;
+        bool coverDeliveryRegistered = false;
         {
             QMutexLocker lock(&m_mutex);
             const bool makeContained = std::any_of(work->subscribers.begin(), work->subscribers.end(), [](const auto &entry) {
@@ -353,19 +354,21 @@ private:
                 work->priority = CoverClass::Contained;
                 m_running.erase(std::find(m_running.begin(), m_running.end(), work));
                 m_pending.push_back(work);
-                if (!coverDelivery->subscribers.empty())
+                if (!coverDelivery->subscribers.empty()) {
                     m_delivering.push_back(coverDelivery);
+                    coverDeliveryRegistered = true;
+                }
                 dispatchLocked();
             } else {
                 closeForDeliveryLocked(work, coverWanted, containedWanted, atmosphereWanted);
             }
         }
 #ifdef CHILPA_COVER_SCHEDULER_TEST
-        if (coverDelivery)
+        if (coverDeliveryRegistered)
             coverTestAfterSplitRegistered();
 #endif
         if (coverDelivery) {
-            if (!coverDelivery->subscribers.empty())
+            if (coverDeliveryRegistered)
                 deliverClosed(coverDelivery, coverPath, {}, true, false, false);
             return;
         }
