@@ -409,3 +409,19 @@ fn quitting_during_an_upgrade_does_not_ask() {
     wait_for_the_upgrade(&mut api);
     assert!(api.confirms_quit(), "afterwards quitting asks as it did");
 }
+
+#[test]
+fn files_asked_for_during_an_upgrade_open_once_it_ends() {
+    if !in_own_profile("library_upgrade::tests::files_asked_for_during_an_upgrade_open_once_it_ends", "CHILPA_TEST_FILES_WAIT") { return; }
+    older(&chilpa_library::Library::default_path(), 50);
+    let mut api = crate::Chilpa::new();
+    api.start_services();
+    // A second launch, or this one's command line, handed over a file.
+    api.desktop.opening.push("/music/asked.flac".into());
+    api.desktop.requests.push_back(crate::WindowRequest::Open);
+    assert!(api.window_request().is_none(), "nothing is opened behind the splash");
+    assert!(api.take_open_request().is_none());
+    wait_for_the_upgrade(&mut api);
+    assert_eq!(api.window_request(), Some(crate::WindowRequest::Open));
+    assert_eq!(api.take_open_request().as_deref(), Some("/music/asked.flac"));
+}

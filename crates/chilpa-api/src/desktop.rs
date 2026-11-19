@@ -64,7 +64,7 @@ pub(crate) struct Desktop {
     mac: MacDesktop,
     pub(crate) requests: VecDeque<WindowRequest>,
     /// Paths a launch asked to open, until the window takes them.
-    opening: Vec<String>,
+    pub(crate) opening: Vec<String>,
 }
 
 /// What the menu-bar item or the Dock asked, until the facade takes it.
@@ -243,12 +243,19 @@ impl Chilpa {
                 self.desktop.requests.push_back(WindowRequest::Raise);
             }
         }
+        // Files asked for while the library is upgraded open once it is
+        // current: opening one plays it, behind the startup cover.
+        if self.library_upgrading() {
+            let at = self.desktop.requests.iter().position(|request| *request != WindowRequest::Open)?;
+            return self.desktop.requests.remove(at);
+        }
         self.desktop.requests.pop_front()
     }
 
     /// The paths a launch asked to open, as `open_media::read` takes them
     /// under the kind `launch`: one per line. Said once.
     pub fn take_open_request(&mut self) -> Option<String> {
+        if self.library_upgrading() { return None; }
         let paths = std::mem::take(&mut self.desktop.opening);
         (!paths.is_empty()).then(|| paths.join("\n"))
     }
