@@ -9,6 +9,7 @@ pub mod bridge {
     pub mod transport_actions;
     pub mod commands;
     pub mod hotkeys;
+    pub mod library_upgrade;
     pub mod now_about;
     pub mod queues;
     pub mod place;

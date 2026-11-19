@@ -697,6 +697,9 @@ msgstr "Анимировать значок воспроизводимого т�
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Анимированный фон из обложки альбома за всем приложением. Высокое потребление ресурсов: ускоряется на GPU."
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr "Другой Chilpa обновляет эту библиотеку. Ожидание…"
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1365,6 +1368,9 @@ msgstr "Проверка идентификатора накопителя"
 
 msgid "Checking the account…"
 msgstr "Проверка учётной записи…"
+
+msgid "Checking the result…"
+msgstr "Проверка результата…"
 
 msgid "Checking your audio stack…"
 msgstr "Проверка аудиостека…"
@@ -5179,6 +5185,12 @@ msgstr "Пока ничего не сохранено."
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr "Здесь ничего вводить не нужно. Понадобится браузер, в котором можно войти в аккаунт Plex."
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr "Ничего не потеряно: библиотека осталась такой, какой была до этого шага, а копия, сделанная до обновления, находится в {}."
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr "Ничего не потеряно: библиотека осталась такой, какой была до этого шага."
+
 msgid "Nov"
 msgstr "нояб."
 
@@ -6769,6 +6781,9 @@ msgstr "Сохранённые результаты доступны между 
 msgid "Saved to {} and read back from it."
 msgstr "Сохраняется на {} и затем считывается оттуда."
 
+msgid "Saving a copy of the library first…"
+msgstr "Сначала сохраняется копия библиотеки…"
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -7438,6 +7453,9 @@ msgstr "Статистика, созданная Chilpa"
 msgid "Status"
 msgstr "Статус"
 
+msgid "Step {} of {}: {}"
+msgstr "Шаг {} из {}: {}"
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7887,6 +7905,9 @@ msgstr ""
 
 msgid "The library could not be read."
 msgstr "Не удалось прочитать библиотеку."
+
+msgid "The library could not be updated"
+msgstr "Не удалось обновить библиотеку"
 
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
@@ -8397,6 +8418,9 @@ msgstr ""
 
 msgid "This genre is no longer present on the album."
 msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
+msgstr "Это происходит один раз после обновления и может занять несколько минут, если библиотека большая. Chilpa откроется сам, когда всё будет готово."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Это занимает больше времени, чем обычно. Возможно, MusicBrainz перегружен. Повторите попытку чуть позже."
@@ -9639,6 +9663,9 @@ msgstr "вызов плагина «{}», который никто не одо�
 
 msgid "cannot be done"
 msgstr "невозможно"
+
+msgid "changing how the library is stored"
+msgstr "изменение способа хранения библиотеки"
 
 msgid "choose at least one folder that holds your music"
 msgstr "выберите хотя бы одну папку с вашей музыкой"

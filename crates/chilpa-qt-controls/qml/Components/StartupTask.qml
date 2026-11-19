@@ -49,6 +49,7 @@ Column {
         width: parent.width
         horizontalAlignment: Text.AlignHCenter
         text: task.text
+        wrapMode: Text.Wrap
         font.pointSize: Type.micro
         color: Theme.color.textSecondary
     }

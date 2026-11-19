@@ -695,6 +695,9 @@ msgstr "再生中のトラックのマークをイコライザーバーでアニ
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "アプリ全体の背後にアルバムアートのアニメーション背景を表示します。リソース使用量が多く、GPUアクセラレーションを使います。"
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr "別の Chilpa がこのライブラリを更新しています。完了を待っています…"
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1361,6 +1364,9 @@ msgstr "ストレージを識別中"
 
 msgid "Checking the account…"
 msgstr "アカウントを確認中…"
+
+msgid "Checking the result…"
+msgstr "結果を確認しています…"
 
 msgid "Checking your audio stack…"
 msgstr "オーディオスタックを確認中…"
@@ -5169,6 +5175,12 @@ msgstr "まだ何も保存されていません。"
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr "ここで入力するものはありません。Plex アカウントにサインインできるブラウザが必要です。"
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr "何も失われていません。ライブラリはこのステップの前の状態のままで、更新前のコピーは {} にあります。"
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr "何も失われていません。ライブラリはこのステップの前の状態のままです。"
+
 msgid "Nov"
 msgstr "11月"
 
@@ -6757,6 +6769,9 @@ msgstr "保存した結果は、セッションをまたいで利用できます
 msgid "Saved to {} and read back from it."
 msgstr "{} に保存し、そこから読み直します。"
 
+msgid "Saving a copy of the library first…"
+msgstr "まずライブラリのコピーを保存しています…"
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -7422,6 +7437,9 @@ msgstr "Chilpaが生成した統計"
 msgid "Status"
 msgstr "ステータス"
 
+msgid "Step {} of {}: {}"
+msgstr "ステップ {}/{}：{}"
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7867,6 +7885,9 @@ msgstr ""
 
 msgid "The library could not be read."
 msgstr "ライブラリを読み取れませんでした。"
+
+msgid "The library could not be updated"
+msgstr "ライブラリを更新できませんでした"
 
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
@@ -8375,6 +8396,9 @@ msgstr ""
 
 msgid "This genre is no longer present on the album."
 msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
+msgstr "これは更新後に一度だけ行われ、大きなライブラリでは数分かかることがあります。完了すると Chilpa が自動的に開きます。"
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "通常より時間がかかっています。MusicBrainzが混雑している可能性があります。しばらくしてからもう一度お試しください。"
@@ -9615,6 +9639,9 @@ msgstr "「{}」を呼び出していますが、誰も承認していません"
 
 msgid "cannot be done"
 msgstr "非対応"
+
+msgid "changing how the library is stored"
+msgstr "ライブラリの保存形式を変更しています"
 
 msgid "choose at least one folder that holds your music"
 msgstr "音楽が入っているフォルダを1つ以上選んでください"

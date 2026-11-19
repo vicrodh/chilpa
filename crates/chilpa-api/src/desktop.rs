@@ -62,7 +62,7 @@ pub(crate) struct Desktop {
     /// What the menu-bar item and the Dock ask of a Mac.
     #[cfg(target_os = "macos")]
     mac: MacDesktop,
-    requests: VecDeque<WindowRequest>,
+    pub(crate) requests: VecDeque<WindowRequest>,
     /// Paths a launch asked to open, until the window takes them.
     opening: Vec<String>,
 }

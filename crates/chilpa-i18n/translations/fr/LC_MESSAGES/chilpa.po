@@ -696,6 +696,9 @@ msgstr "Anime la marque de la piste en lecture avec des barres d'égaliseur. Dé
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Arrière-plan animé à partir de la pochette, derrière toute l'application. Forte consommation de ressources : accélération par GPU."
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr "Un autre Chilpa met à jour cette bibliothèque. En attente…"
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1363,6 +1366,9 @@ msgstr "Vérification de l’identité du stockage"
 
 msgid "Checking the account…"
 msgstr "Vérification du compte…"
+
+msgid "Checking the result…"
+msgstr "Vérification du résultat…"
 
 msgid "Checking your audio stack…"
 msgstr "Vérification de votre pile audio…"
@@ -5174,6 +5180,12 @@ msgstr "Rien d'enregistré pour le moment."
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr "Rien à saisir ici. Il vous faut un navigateur où vous pouvez vous connecter à votre compte Plex."
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr "Rien n'a été perdu : la bibliothèque est telle qu'elle était avant cette étape, et une copie d'avant la mise à jour se trouve dans {}."
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr "Rien n'a été perdu : la bibliothèque est telle qu'elle était avant cette étape."
+
 msgid "Nov"
 msgstr "nov."
 
@@ -6763,6 +6775,9 @@ msgstr "Les résultats enregistrés restent disponibles d'une session à l'autre
 msgid "Saved to {} and read back from it."
 msgstr "Enregistré sur {} puis relu depuis celui-ci."
 
+msgid "Saving a copy of the library first…"
+msgstr "Enregistrement préalable d'une copie de la bibliothèque…"
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -7430,6 +7445,9 @@ msgstr "Statistiques générées par Chilpa"
 msgid "Status"
 msgstr "État"
 
+msgid "Step {} of {}: {}"
+msgstr "Étape {} sur {} : {}"
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7877,6 +7895,9 @@ msgstr ""
 
 msgid "The library could not be read."
 msgstr "La bibliothèque n’a pas pu être lue."
+
+msgid "The library could not be updated"
+msgstr "La bibliothèque n'a pas pu être mise à jour"
 
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
@@ -8386,6 +8407,9 @@ msgstr ""
 
 msgid "This genre is no longer present on the album."
 msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
+msgstr "Cela n'arrive qu'une fois après une mise à jour et peut prendre quelques minutes avec une grande bibliothèque. Chilpa s'ouvre tout seul une fois terminé."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Cela prend plus de temps que d'habitude. MusicBrainz est peut-être occupé. Réessayez dans un instant."
@@ -9627,6 +9651,9 @@ msgstr "appel de « {} », que personne n'a approuvé"
 
 msgid "cannot be done"
 msgstr "impossible"
+
+msgid "changing how the library is stored"
+msgstr "modification du stockage de la bibliothèque"
 
 msgid "choose at least one folder that holds your music"
 msgstr "choisissez au moins un dossier qui contient votre musique"

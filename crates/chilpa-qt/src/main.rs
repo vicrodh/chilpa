@@ -123,15 +123,9 @@ fn main() {
         eprintln!("chilpa: the bundled font could not be loaded; using the system's");
     }
 
-    // Sources load independently; guest initialization cannot hold up the window.
-    app::with(|api| {
-        api.start_plugins();
-        // Listens go to ListenBrainz from now on, if an account is connected.
-        api.start_scrobbling();
-        // My servers: their tracks play, sync and are watched (ADR-017).
-        api.start_servers();
-        api.start_media_controls();
-    });
+    // What reads the library starts now, or once an older library is
+    // upgraded under the startup cover; nothing here waits for either.
+    app::with(|api| api.start_services());
 
     // CHILPA_GALLERY opens the component gallery.
     let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "gallery/qml/Gallery/Gallery.qml" } else { "qml/Main.qml" };

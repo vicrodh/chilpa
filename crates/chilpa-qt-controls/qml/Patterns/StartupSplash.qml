@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Components"
 import "../Theme"
@@ -14,27 +15,39 @@ import "../Theme"
 // it is, and the cover goes when every one is done. A server's sync is not
 // one of them: it goes on behind, and the lists read the library again each
 // time it writes.
+//
+// A library older than this Chilpa is upgraded first, and that is the first
+// bar: nothing reads the library and the plugins do not start until it is
+// done, however long it takes, and if it fails the cover says so and stays.
 Rectangle {
     id: splash
 
     readonly property var view: JSON.parse(Sources.snapshot || "{}")
     readonly property var startup: view.startup || ({})
+    readonly property var upgrade: JSON.parse(LibraryUpgrade.snapshot || "{}")
+    readonly property bool upgrading: upgrade.active === true
+    readonly property bool failed: upgrading && upgrade.failed === true
     // Read once: a later reading of the library does not bring the cover back.
     property bool libraryRead: false
     // A reading that never answers does not keep the window shut: past this
-    // the cover goes, and the log says so.
+    // the cover goes, and the log says so. An upgrade is waited for whole.
     property int limit: Sizes.startupLimit
     property bool given: false
-    readonly property var tasks: [
-        { done: view.starting === false, progress: startup.total > 0 ? startup.done / startup.total : -1,
+    readonly property var tasks: (upgrading ? [
+        { done: false, progress: upgrade.progress, text: upgrade.text || "" }
+    ] : []).concat([
+        { done: !upgrading && view.starting === false, progress: startup.total > 0 ? startup.done / startup.total : -1,
           text: startup.name ? I18n.trArgs("Starting {}…", [startup.name], I18n.rev) : I18n.tr("Starting plugins…", I18n.rev) },
         { done: libraryRead, progress: -1, text: I18n.tr("Reading the library…", I18n.rev) }
-    ]
-    readonly property bool waiting: !given && tasks.some(task => !task.done)
+    ])
+    readonly property bool waiting: upgrading || (!given && tasks.some(task => !task.done))
 
     // The library is read once something of it arrived: its first answer is
-    // never given up for a newer request (`Library::refresh`).
-    function seeLibrary() { if (!Library.busy || Library.rev > 0) libraryRead = true }
+    // never given up for a newer request (`Library::refresh`). What arrives
+    // while it is upgraded is not the library's answer.
+    function seeLibrary() { if (!upgrading && (!Library.busy || Library.rev > 0)) libraryRead = true }
+    function look() { LibraryUpgrade.refresh(); Sources.refresh() }
+    onUpgradingChanged: seeLibrary()
     Connections {
         target: Library
         function onBusyChanged() { splash.seeLibrary() }
@@ -46,11 +59,11 @@ Rectangle {
     opacity: waiting ? 1 : 0
     Behavior on opacity { NumberAnimation { duration: Motion.panel } }
 
-    Component.onCompleted: { Sources.refresh(); seeLibrary() }
-    Timer { interval: Motion.poll; repeat: true; running: splash.waiting; onTriggered: Sources.refresh() }
+    Component.onCompleted: { look(); seeLibrary() }
+    Timer { interval: Motion.poll; repeat: true; running: splash.waiting; onTriggered: splash.look() }
     Timer {
         interval: splash.limit
-        running: splash.waiting
+        running: splash.waiting && !splash.upgrading
         onTriggered: {
             console.warn("startup: still reading after " + interval + " ms; the window opens without waiting")
             splash.given = true
@@ -88,7 +101,7 @@ Rectangle {
         }
         // One bar a task, kept while the tasks change how far they are.
         Repeater {
-            model: splash.tasks.length
+            model: splash.failed ? 0 : splash.tasks.length
             StartupTask {
                 required property int index
                 objectName: "startupTask"
@@ -97,6 +110,24 @@ Rectangle {
                 progress: splash.tasks[index].progress
                 done: splash.tasks[index].done
             }
+        }
+        Text {
+            objectName: "upgradeNote"
+            width: parent.width
+            visible: splash.upgrading && !splash.failed
+            horizontalAlignment: Text.AlignHCenter
+            text: splash.upgrade.note || ""
+            wrapMode: Text.Wrap
+            font.pointSize: Type.micro
+            color: Theme.color.textSecondary
+        }
+        UpgradeFailure {
+            objectName: "upgradeFailure"
+            width: parent.width
+            visible: splash.failed
+            upgrade: splash.upgrade
+            onRetry: LibraryUpgrade.retry()
+            onQuit: LibraryUpgrade.quit()
         }
     }
 }

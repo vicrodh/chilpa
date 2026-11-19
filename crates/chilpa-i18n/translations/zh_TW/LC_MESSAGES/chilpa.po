@@ -703,6 +703,9 @@ msgstr "以等化器動態長條圖呈現目前播放曲目的標記。預設關
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "在整個應用程式背景顯示動態專輯封面。資源消耗較高：使用 GPU 加速。"
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr "另一個 Chilpa 正在更新這個音樂庫。正在等待…"
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1369,6 +1372,9 @@ msgstr "正在檢查儲存空間識別"
 
 msgid "Checking the account…"
 msgstr "正在檢查帳號…"
+
+msgid "Checking the result…"
+msgstr "正在檢查結果…"
 
 msgid "Checking your audio stack…"
 msgstr "正在檢查你的音訊堆疊…"
@@ -5177,6 +5183,12 @@ msgstr "尚無儲存內容。"
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr "此處無需輸入任何內容。你需要使用一款支援登入 Plex 帳戶的瀏覽器。"
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr "沒有遺失任何資料：音樂庫維持在這個步驟之前的狀態，更新前的副本位於 {}。"
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr "沒有遺失任何資料：音樂庫維持在這個步驟之前的狀態。"
+
 msgid "Nov"
 msgstr "11 月"
 
@@ -6765,6 +6777,9 @@ msgstr "已儲存的結果在不同作業階段間仍可使用。"
 msgid "Saved to {} and read back from it."
 msgstr ""
 
+msgid "Saving a copy of the library first…"
+msgstr "正在先儲存音樂庫的副本…"
+
 msgid "Saving selection…"
 msgstr "正在儲存選取內容…"
 
@@ -7430,6 +7445,9 @@ msgstr "由 Chilpa 產生的統計資料"
 msgid "Status"
 msgstr "狀態"
 
+msgid "Step {} of {}: {}"
+msgstr "第 {} 步，共 {} 步：{}"
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7875,6 +7893,9 @@ msgstr ""
 
 msgid "The library could not be read."
 msgstr ""
+
+msgid "The library could not be updated"
+msgstr "無法更新音樂庫"
 
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
@@ -8383,6 +8404,9 @@ msgstr ""
 
 msgid "This genre is no longer present on the album."
 msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
+msgstr "這只會在更新後發生一次，音樂庫較大時可能需要幾分鐘。完成後 Chilpa 會自動開啟。"
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "耗時比平時更久。MusicBrainz 可能忙碌中。請稍後再試。"
@@ -9623,6 +9647,9 @@ msgstr "呼叫「{}」，但尚未經核准"
 
 msgid "cannot be done"
 msgstr "無法執行"
+
+msgid "changing how the library is stored"
+msgstr "正在變更音樂庫的儲存方式"
 
 msgid "choose at least one folder that holds your music"
 msgstr "請至少選擇一個存放音樂的資料夾"

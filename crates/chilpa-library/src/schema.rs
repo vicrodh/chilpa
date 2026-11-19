@@ -90,11 +90,11 @@ pub(crate) fn upgrade(db: &Connection, library: &Path) -> rusqlite::Result<()> {
 /// Builds a database stopped at an older version, as a shipped Chilpa would
 /// have left it.
 ///
-/// It is here and not in a test module because two of them need it: the one
-/// that walks every version forward, and the one that checks a library is
-/// copied before it is upgraded.
-#[cfg(test)]
-pub(crate) fn stop_at(db: &Connection, version: usize) {
+/// It is here and not in a test module because the tests of this crate and
+/// of the facade need it: the ones that walk every version forward, and the
+/// ones that bring an older library up.
+#[doc(hidden)]
+pub fn stop_at(db: &Connection, version: usize) {
     for step in STEPS.iter().take(version) {
         db.execute_batch(step).unwrap();
     }

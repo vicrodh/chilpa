@@ -696,6 +696,9 @@ msgstr ""
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr ""
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr ""
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1362,6 +1365,9 @@ msgid "Checking storage identity"
 msgstr "Checking storage identity"
 
 msgid "Checking the account…"
+msgstr ""
+
+msgid "Checking the result…"
 msgstr ""
 
 msgid "Checking your audio stack…"
@@ -5174,6 +5180,12 @@ msgstr ""
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr ""
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr ""
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr ""
+
 msgid "Nov"
 msgstr ""
 
@@ -6763,6 +6775,9 @@ msgstr ""
 msgid "Saved to {} and read back from it."
 msgstr ""
 
+msgid "Saving a copy of the library first…"
+msgstr ""
+
 msgid "Saving selection…"
 msgstr "Saving selection…"
 
@@ -7430,6 +7445,9 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
+msgid "Step {} of {}: {}"
+msgstr ""
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7877,6 +7895,9 @@ msgstr ""
 
 msgid "The library could not be read."
 msgstr "The library could not be read."
+
+msgid "The library could not be updated"
+msgstr ""
 
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
@@ -8385,6 +8406,9 @@ msgid "This genre is no longer available."
 msgstr ""
 
 msgid "This genre is no longer present on the album."
+msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
 msgstr ""
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
@@ -9626,6 +9650,9 @@ msgid "calling \"{}\", which nobody has approved"
 msgstr ""
 
 msgid "cannot be done"
+msgstr ""
+
+msgid "changing how the library is stored"
 msgstr ""
 
 msgid "choose at least one folder that holds your music"

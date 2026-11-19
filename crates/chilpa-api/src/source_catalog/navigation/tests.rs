@@ -296,3 +296,37 @@ fn typed_article_routes_do_not_become_music_roots_and_other_routes_keep_their_ow
     assert!(inner.protection().0.contains(&queue_path));
     assert!(inner.protection().0.contains(&playlist_path));
 }
+
+#[test]
+fn restored_playlist_roots_are_read_again_once_an_upgrade_ends() {
+    const CHILD: &str = "CHILPA_TEST_UPGRADED_PLAYLIST_ROOTS";
+    if std::env::var(CHILD).as_deref() != Ok("1") {
+        let profile = tempfile::tempdir().unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "source_catalog::navigation::tests::restored_playlist_roots_are_read_again_once_an_upgrade_ends", "--nocapture"])
+            .env(CHILD, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
+        assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        return;
+    }
+    let path = crate::source_opener::entry_of("fixture", "track:restored");
+    let mut tabs = Tabs::default();
+    tabs.go(record(Screen::Playlist, 1));
+    let mut seed = crate::Chilpa::new();
+    seed.remember_preference("ui.tabs", &tabs.save().replace('\n', "\\n"));
+    drop(seed);
+    let library = chilpa_library::Library::default_path();
+    crate::library_upgrade::tests::older(&library, 50);
+    rusqlite::Connection::open(&library).unwrap().execute(
+        "INSERT INTO playlists(id, source_id, name, created_at, updated_at) VALUES (1, 1, 'Restored', 0, 0);", []).unwrap();
+    rusqlite::Connection::open(&library).unwrap().execute(
+        "INSERT INTO playlist_tracks(playlist_id, position, external_id) VALUES (1, 0, ?1);", [&path]).unwrap();
+    let mut api = crate::Chilpa::new();
+    assert!(api.catalog.lock().navigation.playlists.get(&1).is_some_and(|paths| paths.is_empty()), "the restored tab is protected before its list can be read");
+    api.start_services();
+    crate::library_upgrade::tests::wait_for_the_upgrade(&mut api);
+    assert_eq!(api.catalog.lock().navigation.playlists.get(&1), Some(&[path.clone()].into()), "the list is read once the library is current");
+    assert_eq!(api.catalog.lock().protection().0, [path].into());
+    api.protect_tabs(&Tabs::default());
+    assert!(api.catalog.lock().navigation.playlists.is_empty(), "a second protection replaces the first instead of adding to it");
+    assert!(api.catalog.lock().protection().0.is_empty());
+}
