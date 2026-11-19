@@ -269,6 +269,36 @@ mod tests {
     }
 
     #[test]
+    fn an_account_is_allowed_and_a_listen_sent_as_the_api_says() {
+        let (origin, served) = server::answering(vec![
+            r#"{"token":"request-1"}"#,
+            r#"{"error":14,"message":"This token has not yet been authorised"}"#,
+            r#"{"session":{"name":"someone","key":"session-1","subscriber":0}}"#,
+            r#"{"scrobbles":{"@attr":{"accepted":1,"ignored":0}}}"#,
+            r#"{"error":9,"message":"Invalid session key - Please re-authenticate"}"#,
+        ]);
+        let typed = server::pack(&[&format!("{origin}/"), "key", "secret"]);
+        let (connecting, link) = begin_gnufm(&typed).expect("a request token");
+        assert_eq!(link, format!("{origin}/api/auth/?api_key=key&token=request-1"));
+        assert_eq!(check(&connecting), Err(Failure::Later(3)), "not allowed yet");
+        let (user, account) = check(&connecting).expect("allowed");
+        assert_eq!(user, "someone");
+        assert_eq!(read(&account), Some((Server { origin: &origin, key: "key", secret: "secret" }, "session-1")));
+        let listen = Listen { artist: "Björk & Co".into(), track: "T".into(), duration_ms: 61_000, listened_at: 1_700_000_000, ..Listen::default() };
+        assert_eq!(submit(&account, Kind::Single, std::slice::from_ref(&listen)), Ok(()));
+        assert_eq!(submit(&account, Kind::Single, &[listen]), Err(Failure::Token), "a session the server dropped");
+        let sent = served.join().expect("the server ran");
+        assert!(sent.iter().all(|request| request.starts_with("POST /2.0/ HTTP/1.1")), "every call is a form posted to the API");
+        let body = |i: usize| sent[i].split("\r\n\r\n").nth(1).unwrap_or_default().to_string();
+        assert!(body(0).contains("method=auth.getToken") && body(0).contains("api_key=key") && body(0).ends_with("format=json"), "{}", body(0));
+        assert!(body(2).contains("method=auth.getSession") && body(2).contains("token=request-1"));
+        let scrobble = body(3);
+        for part in ["method=track.scrobble", "sk=session-1", "artist%5B0%5D=Bj%C3%B6rk+%26+Co", "track%5B0%5D=T", "duration%5B0%5D=61", "timestamp%5B0%5D=1700000000", "api_sig="] {
+            assert!(scrobble.contains(part), "{part} in {scrobble}");
+        }
+    }
+
+    #[test]
     #[ignore = "goes out to Libre.fm; run it on purpose"]
     fn the_real_server_hands_out_a_token_and_waits_for_it_to_be_allowed() {
         let (connecting, link) = begin_librefm("").expect("Libre.fm answered");

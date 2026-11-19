@@ -31,6 +31,46 @@ pub(super) fn unpack(account: &str) -> Vec<&str> {
     account.split('\n').collect()
 }
 
+/// A server on loopback for the wires' tests: it answers each request with
+/// the next reply, as JSON, and hands back what it was sent, whole.
+#[cfg(test)]
+pub(super) fn answering(replies: Vec<&'static str>) -> (String, std::thread::JoinHandle<Vec<String>>) {
+    use std::io::{Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("a loopback port");
+    let origin = format!("http://127.0.0.1:{}", listener.local_addr().expect("its address").port());
+    let served = std::thread::spawn(move || {
+        replies
+            .into_iter()
+            .map(|reply| {
+                let (mut peer, _) = listener.accept().expect("a request");
+                let mut sent = Vec::new();
+                let mut chunk = [0u8; 4096];
+                // The head, then as much body as it says it carries.
+                let whole = |sent: &[u8]| {
+                    let text = String::from_utf8_lossy(sent);
+                    let Some(head) = text.find("\r\n\r\n") else { return false };
+                    let length = text[..head]
+                        .lines()
+                        .find_map(|line| line.to_ascii_lowercase().strip_prefix("content-length:").and_then(|n| n.trim().parse::<usize>().ok()))
+                        .unwrap_or(0);
+                    sent.len() >= head + 4 + length
+                };
+                while !whole(&sent) {
+                    let n = peer.read(&mut chunk).expect("the request is readable");
+                    if n == 0 {
+                        break;
+                    }
+                    sent.extend_from_slice(&chunk[..n]);
+                }
+                let answer = format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{reply}", reply.len());
+                peer.write_all(answer.as_bytes()).expect("the reply is written");
+                String::from_utf8_lossy(&sent).into_owned()
+            })
+            .collect()
+    });
+    (origin, served)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

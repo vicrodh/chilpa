@@ -37,9 +37,12 @@ fn title(year: i64, month: u32) -> String {
     }
 }
 
-/// Each of a top's rows with its time in whole minutes, as the card says it.
+/// Each of a top's rows with its time in whole minutes, as the card says
+/// it. What was only started and never heard by half has no play to its
+/// name, and is not one of the period's first.
 fn with_minutes(rows: Vec<Value>) -> Vec<Value> {
     rows.into_iter()
+        .filter(|row| row["plays"].as_u64().unwrap_or(0) > 0)
         .map(|mut row| {
             let minutes = row["listened_ms"].as_u64().unwrap_or(0) / 60_000;
             row["minutes"] = json!(minutes);
@@ -126,7 +129,12 @@ mod tests {
 
     #[test]
     fn a_top_row_says_its_time_in_whole_minutes() {
-        let rows = with_minutes(vec![json!({"name": "A", "listened_ms": 179_999}), json!({"name": "B"})]);
+        let rows = with_minutes(vec![
+            json!({"name": "A", "plays": 3, "listened_ms": 179_999}),
+            json!({"name": "B", "plays": 1}),
+            json!({"name": "Skipped", "plays": 0, "listened_ms": 20_000}),
+        ]);
+        assert_eq!(rows.len(), 2, "what was never heard by half is left out");
         assert_eq!(rows[0]["minutes"], 2);
         assert_eq!(rows[1]["minutes"], 0);
     }

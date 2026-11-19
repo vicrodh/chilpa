@@ -65,6 +65,27 @@ mod tests {
     }
 
     #[test]
+    fn a_key_is_checked_and_a_listen_sent_under_the_servers_own_path() {
+        let (origin, served) = server::answering(vec![
+            r#"{"code":200,"message":"Token valid.","valid":true,"user_name":"someone"}"#,
+            "{}",
+            r#"{"code":401,"error":"Incorrect Authorization"}"#,
+        ]);
+        let (user, account) = check(&server::pack(&[&origin, " key-1 "])).expect("a good key");
+        assert_eq!(user, "someone");
+        assert_eq!(account, server::pack(&[&format!("{origin}/apis/listenbrainz/1"), "key-1"]));
+        let listen = Listen { artist: "A".into(), track: "T".into(), listened_at: 1_700_000_000, ..Listen::default() };
+        assert_eq!(submit(&account, Kind::Single, &[listen]), Ok(()));
+        // A reply that says the key is not valid, whatever its status.
+        assert_eq!(check(&server::pack(&[&origin, "old"])), Err(Failure::Token));
+        let sent = served.join().expect("the server ran");
+        assert!(sent[0].starts_with("GET /apis/listenbrainz/1/validate-token HTTP/1.1"), "{}", sent[0]);
+        assert!(sent[0].to_ascii_lowercase().contains("authorization: token key-1"), "{}", sent[0]);
+        assert!(sent[1].starts_with("POST /apis/listenbrainz/1/submit-listens HTTP/1.1"), "{}", sent[1]);
+        assert!(sent[1].contains(r#""listen_type":"single""#) && sent[1].contains(r#""listened_at":1700000000"#), "{}", sent[1]);
+    }
+
+    #[test]
     fn an_account_that_cannot_be_read_asks_to_connect_again() {
         assert_eq!(submit("only-one-line", Kind::Single, &[Listen::default()]), Err(Failure::Token));
     }
