@@ -18,6 +18,19 @@ pub fn header(header: &chilpa_api::GroupHeader, role: i32) -> QVariant {
     }
 }
 
+/// A snapshot slot whose identity disappeared keeps the track role types so
+/// a recycled QML delegate cannot retain values from its previous row.
+pub fn missing(role: i32) -> QVariant {
+    let text = || QVariant::from(&QString::default());
+    match role - 256 {
+        0 | 1 | 6 | 8 | 29 => QVariant::from(&0i32),
+        9 | 10 | 16 | 21 | 24 | 26 => QVariant::from(&false),
+        13 | 14 | 30 => QVariant::from(&0i64),
+        2..=5 | 7 | 11 | 12 | 15 | 17..=20 | 22 | 23 | 25 | 27 | 28 => text(),
+        _ => QVariant::default(),
+    }
+}
+
 pub fn track(track: &chilpa_api::TrackRow, role: i32, number: i32, playing: bool, selected: bool, group: &str) -> QVariant {
     let text = |s: &str| QVariant::from(&QString::from(s));
     match role - 256 {

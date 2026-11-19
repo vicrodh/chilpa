@@ -391,11 +391,19 @@ impl<T> Default for PageCache<T> {
     fn default() -> Self { Self { pages: Default::default(), order: Default::default() } }
 }
 impl<T> PageCache<T> {
+    pub fn insert(&mut self, page: usize, rows: Vec<T>) {
+        self.insert_shared(page, std::rc::Rc::new(rows));
+    }
+    fn insert_shared(&mut self, page: usize, rows: std::rc::Rc<Vec<T>>) {
+        self.pages.insert(page, rows);
+        self.order.retain(|cached| *cached != page);
+        self.order.push_back(page);
+    }
+
     pub fn read(&mut self, page: usize, capacity: usize, load: impl FnOnce() -> Vec<T>) -> std::rc::Rc<Vec<T>> {
         if let Some(rows) = self.pages.get(&page) { return rows.clone(); }
         let rows = std::rc::Rc::new(load());
-        self.pages.insert(page, rows.clone());
-        self.order.push_back(page);
+        self.insert_shared(page, rows.clone());
         if self.order.len() > capacity {
             if let Some(old) = self.order.pop_front() { self.pages.remove(&old); }
         }

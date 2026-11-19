@@ -291,7 +291,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         }
         At::Track(page, i) => page[*i].as_ref().expect("a hydrated track slot"),
         At::Loaded(t) => *t,
-        At::Missing => return QVariant::default(),
+        At::Missing => return chilpa_qt_kit::track_roles::missing(role),
     };
     let number = if list.by_track_number { i32::from(track.number) } else { list.queue_numbers.get(row).copied().unwrap_or(row as i32 + 1) };
     let playing = role == ROLE_PLAYING && if let Some(key) = list.queue_keys.get(row) { app::with(|api| api.listen_is_playing(key)) } else { !list.playing.is_empty() && track.path == list.playing };

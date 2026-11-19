@@ -36,6 +36,13 @@ TestCase {
         wait(30)
     }
     function row() { return findChild(list, "trackListView").itemAtIndex(0) }
+    function hole() { return { trackId: 0, rowKind: 0, number: 0, title: "", artist: "", album: "", duration: "", plays: 0,
+        quality: "", tier: 0, available: false, playing: false, selected: false, headerLabel: "", headerMeta: "", art: "" } }
+    function checkHole(item) {
+        compare([item.trackId, item.number, item.title, item.artist, item.album, item.duration, item.plays, item.quality, item.tier], [0, 0, "", "", "", "", 0, "", 0])
+        compare([item.available, item.playing, item.selected, item.canRate], [false, false, false, false])
+        verify(item.end !== null && !item.end.visible)
+    }
     function test_track_rating_never_selects_plays_or_reorders() {
         const item = row()
         verify(item !== null)
@@ -64,6 +71,26 @@ TestCase {
         Ratings.rate("track", 43, 5)
         tryCompare(item, "rating", 5)
         compare(Ratings.stars("track", 42, 0), 1)
+    }
+    function test_a_loaded_delegate_becomes_an_inert_typed_hole() {
+        const item = row(), revision = Ratings.rev
+        tracks.set(0, hole())
+        tryCompare(item, "trackId", 0)
+        checkHole(item)
+        mouseClick(item, item.cols.ratingX + 3, item.height / 2)
+        mouseClick(item, item.cols.moreX + 3, item.height / 2)
+        compare(Ratings.rev, revision, "a hole writes no rating or favorite")
+        compare(list.cursorRow, -1, "a hole cannot receive the pointer cursor")
+    }
+    function test_a_recycled_delegate_clears_the_track_before_a_hole() {
+        list.height = 70
+        for (let i = 1; i < 20; ++i) tracks.append(i === 19 ? hole() : { trackId: 42 + i, rowKind: 0, number: i + 1, title: "Track " + i,
+            artist: "Band", album: "Album", duration: "3:00", plays: 2, quality: "FLAC", tier: 2, available: true, playing: false, selected: false,
+            headerLabel: "", headerMeta: "", art: "" })
+        list.rows.positionViewAtIndex(19, ListView.End)
+        tryVerify(() => list.rows.itemAtIndex(19) !== null)
+        checkHole(list.rows.itemAtIndex(19))
+        list.height = 250
     }
     function test_external_previews_fill_only_the_requested_star_cells() {
         waitForRendering(passiveStars)
