@@ -313,7 +313,9 @@ fn nested_links_stay_in_scope_and_hardlink_paths_are_independent() {
 fn retry_after_file_commit_finishes_overlay_without_rewriting_audio() {
     use super::{files, model::Stamp};
     let directory = tempfile::tempdir().unwrap();
-    let path = mp3(directory.path(), "first", "Artist A");
+    // The worker hands rows over by canonical path and a save refuses any
+    // other; a temporary folder may sit behind a link (macOS /var).
+    let path = std::fs::canonicalize(mp3(directory.path(), "first", "Artist A")).unwrap();
     let home = Home::of(path.to_str().unwrap(), None);
     let mut sidecar = Sidecar::new(1);
     sidecar.album.genres = Override::Value(vec!["Overlay Genre".into()]);

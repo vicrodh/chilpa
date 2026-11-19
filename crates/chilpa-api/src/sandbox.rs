@@ -235,8 +235,11 @@ mod tests {
         assert_eq!(appearance_within(Duration::ZERO), Some(light), "an answer kept is not waited for");
     }
 
-    fn document(name: &str) -> String {
-        chilpa_dirs::document_portal_mounts()[0].join("a1").join(name).to_string_lossy().into_owned()
+    /// A folder as the document portal hands it over; `None` where the
+    /// platform has no document portal, so no path is one of its own.
+    fn document(name: &str) -> Option<String> {
+        let mount = chilpa_dirs::document_portal_mounts().into_iter().next()?;
+        Some(mount.join("a1").join(name).to_string_lossy().into_owned())
     }
 
     #[test]
@@ -244,7 +247,7 @@ mod tests {
         if !cfg!(target_os = "linux") {
             return;
         }
-        let (music, other, plain) = (document("Music"), document("Other"), "/srv/music".to_string());
+        let (music, other, plain) = (document("Music").unwrap(), document("Other").unwrap(), "/srv/music".to_string());
         let paths = [music.clone(), other.clone(), plain.clone()];
         let mut host = HostPaths::default();
         let (tx, rx) = mpsc::channel();
@@ -268,7 +271,9 @@ mod tests {
     #[test]
     fn without_a_portal_nothing_is_asked_and_nothing_waits() {
         let mut host = HostPaths::default();
-        let paths = [document("Music")];
+        // Holds on every platform: with a portal folder where there is a
+        // document portal, and with a plain folder everywhere.
+        let paths: Vec<String> = document("Music").into_iter().chain(["/srv/music".to_string()]).collect();
         assert_eq!(host.shown(&paths, || None), paths);
         assert!(!host.absorb());
     }
