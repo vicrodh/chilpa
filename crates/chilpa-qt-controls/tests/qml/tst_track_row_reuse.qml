@@ -65,6 +65,7 @@ TestCase {
         view.forceLayout()
     }
     function cleanup() {
+        mouseMove(test, test.width - 2, test.height - 2)
         view.hovered = -1; view.actionHovered = 0
         Ratings.pendingTracks = ({}); Ratings.sources = ({})
         Prefs.animatedIndicator = false
@@ -362,5 +363,44 @@ TestCase {
         for (const row of arriving) verify(!Qt.colorEqual(pixelAt(tile(row)), "#00ff00"), "row " + row.index + " on the first frame")
         tryVerify(() => arriving.every(row => tile(row).ready), 2000, "their own covers arrive")
         for (const row of arriving) verify(!Qt.colorEqual(pixelAt(tile(row)), "#00ff00"))
+    }
+
+    // Where the source tooltip is now: on the badge under the pointer, saying that row's source, or nowhere.
+    function checkTip(x, y, what) {
+        const row = view.itemAtIndex(view.indexAt(x, y + view.contentY))
+        if (TipState.target === null) return
+        verify(TipState.target.visible, what + ": the tooltip's badge is shown")
+        verify(row !== null && TipState.target === row.sourceBadge, what + ": the tooltip is on the badge under the pointer")
+        compare(TipState.text, row.sourceName, what + ": it says the source of row " + row.index)
+        compare(TipState.key, row.trackId, what + ": it stands for track " + row.trackId)
+    }
+    function test_a_source_tooltip_follows_its_track() {
+        warm()
+        const row = view.itemAtIndex(9)
+        const x = list.columns.sourceX + list.columns.sourceWidth / 2, y = row.y - view.contentY + row.height / 2
+        mouseMove(view, x, y)
+        tryVerify(() => TipState.shown && TipState.target === row.sourceBadge, 2000, "the badge says its source")
+        compare(TipState.text, "Source 9")
+        // Rich rows are taller: under a still pointer, row 9 goes to the pool.
+        list.rich = true
+        waitForRendering(view)
+        compare(row.visible, false, "the row of the tooltip waits in the pool")
+        checkTip(x, y, "rich")
+        verify(TipState.target !== row.sourceBadge, "the pooled badge keeps no tooltip")
+        list.rich = false
+        waitForRendering(view)
+        checkTip(x, y, "compact again")
+        // A reset under a still pointer: the same row object stays there, now another track.
+        const under = view.itemAtIndex(view.indexAt(x, y + view.contentY))
+        compare(under.index, 9)
+        mouseMove(view, x, y + 1)
+        tryVerify(() => TipState.shown && TipState.target === under.sourceBadge, 2000, "the badge under the pointer says its source")
+        for (let i = 0; i < 400; ++i) tracks.set(i, entry((i + 2) % 400))
+        tracks.modelReset()
+        wait(0)
+        compare(view.itemAtIndex(view.indexAt(x, y + view.contentY)), under, "the same row object is under the pointer")
+        compare(under.trackId, 12, "now showing another track")
+        checkTip(x, y, "after the reset")
+        tryVerify(() => TipState.shown && TipState.target === under.sourceBadge && TipState.text === "Source 11", 2000, "it says the new track's source: " + TipState.text)
     }
 }

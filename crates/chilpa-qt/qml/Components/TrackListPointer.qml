@@ -4,10 +4,12 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-    // Hover and clicks are resolved once for the whole list.
+// Hover and clicks are resolved once for the whole list, and again when the rows change under a still pointer.
 MouseArea {
     id: pointer
 
+    readonly property var shape: rows && host ? [rows.contentHeight, host.rowsRev] : []
+    onShapeChanged: track()
     property Item host
     property ListView rows
     property TrackColumns cols
@@ -49,11 +51,9 @@ MouseArea {
         rows.albumHovered = containsMouse && onAlbum(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
         const item = rows.hovered >= 0 ? rows.itemAtIndex(rows.hovered) : null
         const badge = item && !item.header && cols.sourceWidth > 0 && mouseX >= cols.sourceX && mouseX < cols.sourceX + cols.sourceWidth ? item.sourceBadge : null
-        if (sourceTip !== badge) {
-            if (sourceTip) TipState.hide(sourceTip)
-            sourceTip = badge
-            if (badge) TipState.show(item.sourceName, badge)
-        }
+        if (sourceTip && sourceTip !== badge) TipState.hide(sourceTip)
+        sourceTip = badge
+        if (badge) TipState.show(item.sourceName, badge, item.trackId)
         rows.ratingHovered = ratingAt(rows.hovered, mouseX, mouseY)
         rows.actionHovered = containsMouse ? (groupActionAt(rows.hovered, mouseX, mouseY) || actionAt(rows.hovered, mouseX, mouseY)) : 0
         rows.moveHovered = containsMouse ? moveAt(rows.hovered, mouseX, mouseY) : 0
