@@ -111,6 +111,8 @@ fn offline_workers_cannot_connect_to_external_addresses() {
         loop {
             match listener.accept() {
                 Ok((mut socket, _)) => {
+                    // An accepted socket takes the listener's non-blocking mode here: read would not wait for the request.
+                    socket.set_nonblocking(false).unwrap();
                     socket.set_read_timeout(Some(Duration::from_secs(2))).unwrap();
                     let mut request = [0; 2048];
                     socket.read(&mut request).unwrap();
