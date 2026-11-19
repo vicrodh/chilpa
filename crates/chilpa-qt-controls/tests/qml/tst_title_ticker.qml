@@ -160,6 +160,46 @@ TestCase {
         menu.close()
     }
 
+    // The line a menu kept quiet goes on with the menu gone, until a scroll hides it and brings another line under the
+    // still pointer: the hidden line is let go of, and the line now under the pointer says itself.
+    function test_a_line_kept_quiet_after_a_menu_is_let_go_of_when_it_hides() {
+        const made = watchedScene()
+        const menu = createTemporaryObject(menuFactory, test)
+        menu.open()
+        tryVerify(() => menu.opened)
+        compare(TipState.target, null, "the menu took the tooltip")
+        menu.close()
+        tryVerify(() => !menu.visible)
+        wait(Metrics.cutTextLook * 2)
+        compare(TipState.target, null, "with the menu gone, the line under the still pointer stays quiet")
+        made.first.visible = false
+        made.second.visible = true
+        tryCompare(TipState, "target", made.second, Metrics.cutTextLook * 10, "the line now under the still pointer says itself")
+        compare(TipState.text, made.second.text)
+    }
+
+    // Another item takes the tooltip from the line still shown under the still pointer, and a menu opened from the
+    // keyboard at once hides it: the line stays quiet while the menu is open and after it, until the pointer moves, and
+    // then says itself without the pointer having left it.
+    Component { id: otherFactory; Rectangle { x: 400; y: 250; width: 40; height: 20 } }
+    function test_a_line_another_item_takes_the_tooltip_from_says_itself_at_the_next_move() {
+        const made = watchedScene()
+        const other = createTemporaryObject(otherFactory, test)
+        TipState.show("Another item", other)
+        const menu = createTemporaryObject(menuFactory, test)
+        menu.open()
+        tryVerify(() => menu.opened)
+        compare(TipState.target, null, "the menu took the tooltip")
+        wait(Metrics.cutTextLook * 4)
+        compare(TipState.target, null, "the line under the still pointer does not take it back while the menu is open")
+        menu.close()
+        tryVerify(() => !menu.visible)
+        wait(Metrics.cutTextLook * 2)
+        compare(TipState.target, null, "nor after it, with the pointer still")
+        mouseMove(test, 43, 27)
+        tryCompare(TipState, "target", made.first, Metrics.cutTextLook * 10, "a move within the line makes it say itself")
+    }
+
     function test_a_line_that_fits_is_left_alone() {
         const made = scene()
         TipState.show(made.whole.text, made.whole)
