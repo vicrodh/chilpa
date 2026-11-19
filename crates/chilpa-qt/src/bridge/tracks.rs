@@ -225,6 +225,7 @@ pub struct TrackListRust {
     letters: String,
     sections: Vec<(usize, String)>,
     asked: u64,
+    queries: chilpa_qt_kit::track_loading::LatestQuery,
     queue_keys: Vec<String>,
     queue_numbers: Vec<i32>,
 }
@@ -805,17 +806,25 @@ impl qobject::TrackListModel {
             let extras = browse::read(|s| s.filter.clone());
             let asked = self.rust().asked.wrapping_add(1);
             self.as_mut().rust_mut().asked = asked;
+            if !self.as_mut().rust_mut().queries.start(asked) {
+                return;
+            }
             let thread = self.qt_thread();
             let expected_kind = kind.clone();
-            chilpa_qt_kit::track_loading::submit_collection(kind, query, extras, move |found, timing| {
-                let expected_kind = expected_kind.clone();
+            chilpa_qt_kit::track_loading::submit_collection(kind, query, extras, move |result| {
                 let _ = thread.queue(move |mut model| {
-                    if model.rust().asked == asked && model.kind().to_string() == expected_kind {
+                    let latest = model.rust().asked;
+                    let completed = model.as_mut().rust_mut().queries.finish(asked, latest);
+                    if completed.publish && model.kind().to_string() == expected_kind {
+                        let Some((found, timing)) = result else { return; };
                         let timing = timing.next("delivery");
                         let ms = found.snapshot.totals.duration_ms;
                         (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
                         model.as_mut().show(expected_kind, Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
                         timing.published(*model.count());
+                    }
+                    if completed.restart && !model.rust().pending && matches!(model.kind().to_string().as_str(), "tracks" | "discovery") {
+                        model.as_mut().reload();
                     }
                 });
             });
