@@ -4,6 +4,8 @@
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QEvent>
 #include <QtCore/QEventLoop>
+#include <QtCore/QFile>
+#include <QtCore/QFileInfo>
 #include <QtCore/QPointer>
 #include <QtCore/QTemporaryDir>
 #include <QtCore/QTimer>
@@ -65,6 +67,16 @@ void require(bool condition, const char *message)
     }
 }
 
+// Like the facade, the stub makes the derivative again when its file is missing.
+void ensureSuccessfulImage()
+{
+    static std::mutex fileMutex;
+    std::lock_guard lock(fileMutex);
+    const QString path = QString::fromStdString(successfulImage);
+    if (!QFileInfo::exists(path))
+        require(QImage(8, 8, QImage::Format_RGB32).save(path), "the test image is written");
+}
+
 void waitUntil(const std::function<bool()> &condition, const char *message)
 {
     QElapsedTimer timer;
@@ -93,6 +105,8 @@ bool decode(const char *path, char kind, char *out, unsigned long capacity)
         gateChanged.wait(lock, [&] { return allowed.find(name) != allowed.end(); });
     }
     const bool result = successful.load();
+    if (result)
+        ensureSuccessfulImage();
     if (result && capacity > successfulImage.size())
         std::memcpy(out, successfulImage.c_str(), successfulImage.size() + 1);
     --active;
@@ -408,7 +422,7 @@ int main(int argc, char **argv)
     QTemporaryDir pictures;
     require(pictures.isValid(), "the test image directory exists");
     successfulImage = pictures.filePath(QStringLiteral("success.png")).toStdString();
-    require(QImage(8, 8, QImage::Format_RGB32).save(QString::fromStdString(successfulImage)), "the test image is written");
+    ensureSuccessfulImage();
     const QByteArray isolatedCase = qgetenv("CHILPA_TSAN_CASE");
     const auto runs = [&](const char *name) { return isolatedCase.isEmpty() || isolatedCase == name; };
 
@@ -751,6 +765,50 @@ int main(int argc, char **argv)
         Responses responses(application);
         responses.add(&providers.cover, coverId(QStringLiteral("successful")), true);
         responses.wait();
+    }
+
+    reset();
+    {
+        Providers providers;
+        Responses responses(application);
+        successful = true;
+        automatic = true;
+        {
+            std::lock_guard lock(gateMutex);
+            holdBeforeImageLoad = true;
+        }
+        responses.add(&providers.cover, coverId(QStringLiteral("swept")), true);
+        {
+            std::unique_lock lock(gateMutex);
+            require(gateChanged.wait_for(lock, std::chrono::seconds(5), [] { return beforeImageLoadEntered; }),
+                    "the derivative path is resolved before its pixels are read");
+        }
+        // The cache sweep removes the derivative between the two.
+        require(QFile::remove(QString::fromStdString(successfulImage)), "the derivative is swept");
+        {
+            std::lock_guard lock(gateMutex);
+            releaseImageLoad = true;
+            gateChanged.notify_all();
+        }
+        responses.wait();
+        require(calls == 2, "a swept derivative is asked for once more");
+    }
+
+    reset();
+    {
+        Providers providers;
+        Responses responses(application);
+        successful = true;
+        automatic = true;
+        QFile unreadable(QString::fromStdString(successfulImage));
+        require(unreadable.open(QIODevice::WriteOnly | QIODevice::Truncate) && unreadable.write("not a picture") > 0,
+                "the derivative is made unreadable");
+        unreadable.close();
+        responses.add(&providers.cover, coverId(QStringLiteral("unreadable")));
+        responses.wait();
+        require(calls == 2, "an unreadable derivative is asked for once more and no further");
+        require(QFile::remove(QString::fromStdString(successfulImage)), "the unreadable derivative is removed");
+        ensureSuccessfulImage();
     }
 
     reset();

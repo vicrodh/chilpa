@@ -209,6 +209,7 @@ public:
             if (const auto existing = m_byKey.value(key)) {
                 if (kind == CoverClass::Cover && existing->phase == WorkPhase::Contained) {
                     readyCover = std::make_shared<CoverWork>();
+                    readyCover->id = id;
                     readyCover->subscribers.push_back({response, kind});
                     readyCoverPath = existing->coverPath;
                     m_delivering.push_back(readyCover);
@@ -353,6 +354,7 @@ private:
             });
             if (makeContained) {
                 coverDelivery = std::make_shared<CoverWork>();
+                coverDelivery->id = work->id;
                 auto subscriber = work->subscribers.begin();
                 while (subscriber != work->subscribers.end()) {
                     if (subscriber->kind == CoverClass::Cover) {
@@ -437,8 +439,11 @@ private:
 #ifdef CHILPA_COVER_SCHEDULER_TEST
         coverTestBeforeImageLoad();
 #endif
-        const QImage coverImage = (coverWanted || atmosphereWanted) && !coverPath.isEmpty() ? QImage(coverPath) : QImage();
-        const QImage containedImage = containedWanted && !containedPath.isEmpty() ? QImage(containedPath) : QImage();
+        const CoverClass coverOperation = atmosphereWanted ? CoverClass::Atmosphere : CoverClass::Cover;
+        const QImage coverImage = (coverWanted || atmosphereWanted) && !coverPath.isEmpty()
+            ? load(work, coverOperation, coverPath) : QImage();
+        const QImage containedImage = containedWanted && !containedPath.isEmpty()
+            ? load(work, CoverClass::Contained, containedPath) : QImage();
 #ifdef CHILPA_COVER_SCHEDULER_TEST
         coverTestBeforeDelivery();
 #endif
@@ -457,6 +462,18 @@ private:
             work->subscribers.clear();
             m_delivering.erase(std::find(m_delivering.begin(), m_delivering.end(), work));
         }
+    }
+
+    // The cache sweep can remove a file between the facade naming it and
+    // this read. The facade is asked once more, which makes the file again;
+    // a second failure is delivered as an error.
+    QImage load(const std::shared_ptr<CoverWork> &work, CoverClass operation, const QString &path)
+    {
+        QImage image(path);
+        if (!image.isNull())
+            return image;
+        QByteArray out(4096, '\0');
+        return make(work, operation, out) ? QImage(QString::fromUtf8(out.constData())) : QImage();
     }
 
     void dispatchLocked()
