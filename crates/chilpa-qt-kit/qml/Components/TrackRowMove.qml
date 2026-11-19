@@ -28,6 +28,7 @@ Item {
 
     width: stacked ? Metrics.colMoveRich : Metrics.colMoveCompact
     onHoveredChanged: explain()
+    Component.onCompleted: if (hovered !== 0) explain() // made again under a still pointer when its track can play again
 
     Repeater {
         model: 2

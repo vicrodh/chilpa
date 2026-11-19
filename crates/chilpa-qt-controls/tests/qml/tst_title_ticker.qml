@@ -35,6 +35,30 @@ TestCase {
         }
     }
 
+    // As in the window: one watcher for every cut line, and the ticker sliding the one it says.
+    Component {
+        id: watched
+        Item {
+            anchors.fill: parent
+            property alias first: first
+            property alias second: second
+            Text { id: first; x: 20; y: 20; width: 120; elide: Text.ElideRight; text: test.longTitle }
+            Text { id: second; x: 20; y: 20; width: 120; elide: Text.ElideRight; visible: false; text: "Another title much too long for its place in a row" }
+            CutTextTips { watching: parent }
+            TitleTicker {}
+        }
+    }
+    Component { id: lineFactory; Text { x: 20; y: 20; width: 120; elide: Text.ElideRight } }
+    function watchedScene() {
+        const made = createTemporaryObject(watched, test)
+        verify(made)
+        tryVerify(() => made.first.truncated)
+        mouseMove(test, 40, 26)
+        mouseMove(test, 42, 27)
+        tryCompare(TipState, "target", made.first, Metrics.cutTextLook * 10, "the cut line says itself")
+        return made
+    }
+
     function slide() {
         const layer = test.Overlay.overlay
         for (const child of layer.children)
@@ -79,6 +103,36 @@ TestCase {
         tryVerify(() => slide() === null)
         compare(made.cut.opacity, 1, "let go, the line is drawn again as it was")
         verify(!TipState.quiet)
+    }
+
+    // TipState lets go of a line that hides; the watcher lets go of it too, and looks again under the still pointer.
+    function test_a_cut_line_hidden_and_shown_again_under_a_still_pointer_says_itself_again() {
+        const made = watchedScene()
+        tryVerify(() => slide() !== null, 1000, "it slides")
+        made.first.visible = false
+        compare(TipState.target, null, "a hidden line says nothing")
+        tryVerify(() => slide() === null, 1000, "and stops sliding")
+        wait(Metrics.cutTextLook * 2)
+        made.first.visible = true
+        tryCompare(TipState, "target", made.first, Metrics.cutTextLook * 10, "shown again, it says itself again without the pointer moving")
+        compare(TipState.text, test.longTitle)
+        tryVerify(() => slide() !== null, 1000, "and slides again")
+    }
+
+    function test_a_cut_line_put_in_the_place_of_another_says_itself() {
+        const made = watchedScene()
+        made.first.visible = false
+        made.second.visible = true
+        tryCompare(TipState, "target", made.second, Metrics.cutTextLook * 10, "the line now under the still pointer says itself")
+        compare(TipState.text, made.second.text)
+        // One line goes for good and another is made in its place.
+        const gone = createTemporaryObject(lineFactory, made, { text: test.longTitle + " (gone)" })
+        made.second.visible = false
+        tryCompare(TipState, "target", gone, Metrics.cutTextLook * 10)
+        const next = createTemporaryObject(lineFactory, made, { text: test.longTitle + " (next)" })
+        gone.destroy()
+        tryCompare(TipState, "target", next, Metrics.cutTextLook * 10, "the line made in the place of a destroyed one says itself")
+        compare(TipState.text, test.longTitle + " (next)")
     }
 
     function test_a_line_that_fits_is_left_alone() {

@@ -3,6 +3,7 @@ import QtTest
 import app.chilpa
 import app.chilpa.stats
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../../qml/Theme"
 import "../../qml/Screens"
 import "../../qml/Components"
@@ -136,6 +137,28 @@ TestCase {
         // An empty place of the grid neither.
         mouseMove(field, mosaic.cell / 2, mosaic.cell / 2)
         compare(mosaic.hovered, -1)
+    }
+
+    // The tooltip lets go of the square's marker when the grid hides; shown again under the pointer, the square says itself again.
+    function test_a_square_hidden_and_shown_again_under_the_pointer_says_itself() {
+        const page = createTemporaryObject(statsPage, this)
+        findChild(page, "chartKind").activated(1)
+        const mosaic = findChild(page, "heroMosaic")
+        const field = findChild(mosaic, "mosaicField")
+        tryVerify(() => mosaic.step > 1)
+        mouseMove(field, mosaic.step + mosaic.cell / 2, mosaic.cell / 2)
+        tryCompare(mosaic, "hovered", 1)
+        const marker = TipState.target
+        verify(marker !== null, "the square asked for the tooltip")
+        mosaic.visible = false
+        compare(TipState.target, null, "a hidden grid says nothing")
+        mosaic.visible = true
+        compare(TipState.target, marker, "shown again under the still pointer, the square says itself again")
+        // A menu that opens takes the tooltip away; the pointer moving within the same square brings it back.
+        TipState.hide(TipState.target)
+        mouseMove(field, mosaic.step + mosaic.cell / 2 + 1, mosaic.cell / 2 + 1)
+        compare(TipState.target, marker, "the pointer moving within the same square brings it back")
+        TipState.hide(marker)
     }
 
     function test_a_year_too_wide_for_its_room_scrolls_and_opens_on_its_last_week() {

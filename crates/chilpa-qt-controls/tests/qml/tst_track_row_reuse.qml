@@ -423,14 +423,14 @@ TestCase {
         mouseMove(view, x, y)
         tryVerify(() => TipState.shown && TipState.target === row.sourceBadge, 2000, "the badge says its source")
         compare(TipState.text, "Source 9")
-        // Rich rows are taller: under a still pointer, row 9 goes to the pool.
+        // Rich rows are taller: under a still pointer, row 9 goes to the pool. The list asks again once the rows are laid out, a turn later.
         list.rich = true
-        waitForRendering(view)
+        waitForRendering(view); wait(0)
         compare(row.visible, false, "the row of the tooltip waits in the pool")
         checkTip(x, y, "rich")
         verify(TipState.target !== row.sourceBadge, "the pooled badge keeps no tooltip")
         list.rich = false
-        waitForRendering(view)
+        waitForRendering(view); wait(0)
         checkTip(x, y, "compact again")
         // A reset under a still pointer: the same row object stays there, now another track.
         const under = view.itemAtIndex(view.indexAt(x, y + view.contentY))
@@ -444,6 +444,39 @@ TestCase {
         compare(under.trackId, 12, "now showing another track")
         checkTip(x, y, "after the reset")
         tryVerify(() => TipState.shown && TipState.target === under.sourceBadge && TipState.text === "Source 11", 2000, "it says the new track's source: " + TipState.text)
+    }
+
+    // The row under a still pointer changes in place, as the bridge's dataChanged does it: no reset, no move, no new height.
+    function test_a_source_tooltip_follows_a_change_in_place() {
+        warm()
+        const row = view.itemAtIndex(9)
+        const x = list.columns.sourceX + list.columns.sourceWidth / 2, y = row.y - view.contentY + row.height / 2
+        mouseMove(view, x, y)
+        tryVerify(() => TipState.shown && TipState.target === row.sourceBadge, 2000, "the badge says its source")
+        compare(TipState.text, "Source 9")
+        const resets = list.rowsRev, height = view.contentHeight, top = view.contentY
+        // The same track, now from another source.
+        tracks.setProperty(9, "sourceName", "Source moved")
+        tryCompare(TipState, "text", "Source moved", 1000, "the tooltip says the new source")
+        verify(TipState.shown && TipState.target === row.sourceBadge && TipState.key === 10, "of the same track, without asking anew")
+        // Another track in the same row.
+        tracks.set(9, entry(11))
+        tryVerify(() => TipState.key === 12 && TipState.text === "Source 11", 1000, "it stands for the track now in the row: " + TipState.key + ", " + TipState.text)
+        compare(TipState.target, row.sourceBadge)
+        tryVerify(() => TipState.shown, 2000, "and says it after its delay")
+        // The track cannot play for a while: its menu button goes with its end, and comes back with it.
+        mouseMove(view, list.columns.moreX + row.end.favoriteWidth + Metrics.rowAction / 2, y)
+        tryVerify(() => TipState.shown && TipState.target === row.end, 2000, "the menu button says what it does")
+        for (const pause of [0, 50]) {
+            tracks.setProperty(9, "available", false)
+            compare(TipState.target, null, "a hidden end says nothing")
+            wait(pause)
+            tracks.setProperty(9, "available", true)
+            tryVerify(() => TipState.target === row.end, 1000, "shown again under the still pointer " + pause + " ms later, it says it again")
+        }
+        compare(view.itemAtIndex(9), row, "the same row object all along")
+        compare(list.rowsRev, resets, "no reset"); compare(view.contentHeight, height, "no new height"); compare(view.contentY, top, "no scroll")
+        tracks.set(9, entry(9))
     }
 
     function test_the_pool_holds_at_most_a_band_of_bodies() {

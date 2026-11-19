@@ -53,6 +53,7 @@ Item {
 
     width: favoriteWidth + Metrics.rowAction
     onHoveredChanged: explain()
+    onVisibleChanged: if (visible && hovered !== 0) explain() // TipState let it go when it hid
     onFavoriteChanged: if (hovered === 1) explain()
 
     Repeater {

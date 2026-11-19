@@ -42,11 +42,8 @@ Item {
         return point.x >= 0 && point.y >= 0 && point.x < Math.min(label.width, label.contentWidth) && point.y < label.height
     }
     function containsArtist(x, y) {
-        const label = artistLabel
-        if (header || !label || !label.visible) return false
-        const point = label.mapFromItem(slot, x, y)
-        return point.x >= 0 && point.y >= 0 && point.x < Math.min(label.width, label.contentWidth) && point.y < label.height
-            && (!credits.links || label.linkAt(point.x, point.y) !== "")
+        const label = artistLabel, point = label ? label.mapFromItem(slot, x, y) : null
+        return !header && containsLabel(slot, label, x, y) && (!credits.links || label.linkAt(point.x, point.y) !== "")
     }
     function ratingAt(x, y) {
         const stars = body.item ? body.item.ratingStars : null

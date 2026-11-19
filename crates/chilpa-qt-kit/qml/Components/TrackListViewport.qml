@@ -15,10 +15,7 @@ QtObject {
         if (view.visible && view.contentItem.children.filter(slot => slot.resident && !slot.visible).length > 3 * Math.ceil(view.height / Metrics.rowCompact)) { view.reuseItems = false; view.reuseItems = true }
     }
     // One reset restoration per turn, cancelled with the owning list.
-    readonly property Timer pending: Timer {
-        interval: 0
-        onTriggered: viewport.restore()
-    }
+    readonly property Timer pending: Timer { interval: 0; onTriggered: viewport.restore() }
     function restoreLater() { pending.restart() }
     function positionAt(row, mode) {
         place = null

@@ -46,8 +46,9 @@ Item {
     }
     onOpenColumnChanged: settle()
     readonly property int cell: step - Charts.mosaicApart
-    // The square under the pointer, or -1.
+    // The square under the pointer, or -1; shown again under a still pointer, it says itself again.
     property int hovered: -1
+    onVisibleChanged: if (visible && pointer.hovered) pointer.place()
     // Where each square is in `cells`, by its place in the grid.
     readonly property var places: {
         const at = {}
@@ -139,7 +140,8 @@ Item {
                     const row = Math.floor(point.position.y / grid.step)
                     const found = hovered && column >= 0 && row >= 0 && row < 7 ? grid.places[column * 7 + row] : undefined // derived: seven days a column
                     const next = found === undefined || grid.cells[found].later ? -1 : found
-                    if (next === grid.hovered)
+                    // TipState lets go of the marker when the grid hides: the same square asks again.
+                    if (next === grid.hovered && (next < 0 || TipState.target === marker))
                         return
                     TipState.hide(marker)
                     grid.hovered = next

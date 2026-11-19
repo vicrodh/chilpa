@@ -4,12 +4,14 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// Hover and clicks are resolved once for the whole list, and again when the rows change under a still pointer.
+// Hover and clicks are resolved once for the whole list, and again a turn after the rows change under a still pointer, in place too.
 MouseArea {
     id: pointer
 
-    readonly property var shape: rows && host ? [rows.contentHeight, host.rowsRev] : []
-    onShapeChanged: track()
+    property Item pointed: null
+    readonly property var shape: rows && host ? [rows.contentHeight, host.rowsRev, pointed && [pointed.trackId, pointed.sourceName, pointed.sourceBadge, pointed.available, pointed.header]] : []
+    onShapeChanged: again.start()
+    Timer { id: again; interval: 0; onTriggered: pointer.track() }
     property Item host
     property ListView rows
     property TrackColumns cols
@@ -19,7 +21,6 @@ MouseArea {
     cursorShape: Qt.PointingHandCursor
 
     property Item sourceTip: null
-    onVisibleChanged: if (!visible && sourceTip) { TipState.hide(sourceTip); sourceTip = null }
     Component.onDestruction: if (sourceTip) TipState.hide(sourceTip)
 
     property int pressedRow: -1
@@ -49,7 +50,7 @@ MouseArea {
         rows.hovered = containsMouse ? rowAt(mouseY) : -1
         rows.artistHovered = containsMouse && onArtist(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
         rows.albumHovered = containsMouse && onAlbum(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
-        const item = rows.hovered >= 0 ? rows.itemAtIndex(rows.hovered) : null
+        const item = pointed = rows.hovered >= 0 ? rows.itemAtIndex(rows.hovered) : null
         const badge = item && !item.header && cols.sourceWidth > 0 && mouseX >= cols.sourceX && mouseX < cols.sourceX + cols.sourceWidth ? item.sourceBadge : null
         if (sourceTip && sourceTip !== badge) TipState.hide(sourceTip)
         sourceTip = badge
@@ -73,8 +74,7 @@ MouseArea {
     }
     function move(row, x, y) {
         const arrow = moveAt(row, x, y)
-        if (arrow > 0)
-            host.model.moveInPlaylist(row, arrow === 1 ? -1 : 1)
+        if (arrow > 0) host.model.moveInPlaylist(row, arrow === 1 ? -1 : 1)
         return arrow > 0
     }
     function actionAt(row, x, y) {
@@ -94,19 +94,15 @@ MouseArea {
     // here, once for the list, and not by a handler on every row.
     function onArtist(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
-        if (!item || item.header || item.artist === "" || !host.model.canGo(row, "artist"))
-            return false
-        return item.containsArtist(x - item.x, y + rows.contentY - item.y)
+        return !!item && !item.header && item.artist !== "" && host.model.canGo(row, "artist") && item.containsArtist(x - item.x, y + rows.contentY - item.y)
     }
 
     function onAlbum(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
-        if (!item || item.header || item.album === "" || !host.model.canGo(row, "album")) return false
-        return item.containsLabel(pointer, item.albumText, x, y)
+        return !!item && !item.header && item.album !== "" && host.model.canGo(row, "album") && item.containsLabel(pointer, item.albumText, x, y)
     }
     function onHeaderComposer(item, x, y) {
-        return item && item.headerWork && item.headerComposerTarget !== ""
-            && item.containsLabel(pointer, item.headerComposerLabel, x, y)
+        return item && item.headerWork && item.headerComposerTarget !== "" && item.containsLabel(pointer, item.headerComposerLabel, x, y)
     }
 
     function creditAt(row, x, y) {

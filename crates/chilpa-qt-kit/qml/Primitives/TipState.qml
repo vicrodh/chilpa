@@ -20,7 +20,7 @@ QtObject {
         interval: Metrics.tooltipDelay
         onTriggered: tips.shown = tips.target !== null
     }
-    readonly property Connections hiding: Connections { target: tips.target; function onVisibleChanged() { if (!tips.target.visible) tips.hide(tips.target) } }
+    readonly property Connections hiding: Connections { target: tips.target; function onVisibleChanged() { if (tips.target && !tips.target.visible) tips.hide(tips.target) } }
 
     function show(said, item, standsFor) {
         text = said
