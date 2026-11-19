@@ -95,10 +95,6 @@ public:
 
     void finish(QImage image = {}, QString error = {})
     {
-        if (thread() == QThread::currentThread()) {
-            deliver(std::move(image), std::move(error));
-            return;
-        }
         {
             QMutexLocker lock(&m_completionMutex);
             if (m_completionScheduled)
@@ -186,30 +182,41 @@ public:
     CoverResponse *request(CoverClass kind, const QString &id)
     {
         auto *response = new CoverResponse(weak_from_this());
+        std::shared_ptr<CoverWork> readyCover;
+        QString readyCoverPath;
         {
             QMutexLocker lock(&m_mutex);
             QString key = kind == CoverClass::Atmosphere ? QStringLiteral("atmosphere:") + id
                                                          : QStringLiteral("derivative:") + id;
             if (const auto existing = m_byKey.value(key)) {
-                existing->subscribers.push_back({response, kind});
-                existing->lastDemand = ++m_demandSequence;
-                if (kind == CoverClass::Cover && existing->phase == WorkPhase::Base)
-                    existing->priority = CoverClass::Cover;
-                return response;
+                if (kind == CoverClass::Cover && existing->phase == WorkPhase::Contained) {
+                    readyCover = std::make_shared<CoverWork>();
+                    readyCover->subscribers.push_back({response, kind});
+                    readyCoverPath = existing->coverPath;
+                    m_delivering.push_back(readyCover);
+                } else {
+                    existing->subscribers.push_back({response, kind});
+                    existing->lastDemand = ++m_demandSequence;
+                    if (kind == CoverClass::Cover)
+                        existing->priority = CoverClass::Cover;
+                }
+            } else {
+                auto work = std::make_shared<CoverWork>();
+                work->key = key;
+                work->id = id;
+                work->operation = kind == CoverClass::Atmosphere ? WorkOperation::Atmosphere
+                    : key.startsWith(QStringLiteral("contained:")) ? WorkOperation::Contained
+                                                                   : WorkOperation::Derivative;
+                work->priority = kind;
+                work->firstSeen = work->lastDemand = ++m_demandSequence;
+                work->subscribers.push_back({response, kind});
+                m_pending.push_back(work);
+                m_byKey.insert(key, work);
+                dispatchLocked();
             }
-            auto work = std::make_shared<CoverWork>();
-            work->key = key;
-            work->id = id;
-            work->operation = kind == CoverClass::Atmosphere ? WorkOperation::Atmosphere
-                : key.startsWith(QStringLiteral("contained:")) ? WorkOperation::Contained
-                                                               : WorkOperation::Derivative;
-            work->priority = kind;
-            work->firstSeen = work->lastDemand = ++m_demandSequence;
-            work->subscribers.push_back({response, kind});
-            m_pending.push_back(work);
-            m_byKey.insert(key, work);
-            dispatchLocked();
         }
+        if (readyCover)
+            deliverClosed(readyCover, readyCoverPath, {}, true, false, false);
         return response;
     }
 
@@ -312,21 +319,39 @@ private:
         bool coverWanted = false;
         bool containedWanted = false;
         bool atmosphereWanted = false;
+        std::shared_ptr<CoverWork> coverDelivery;
         {
             QMutexLocker lock(&m_mutex);
             const bool makeContained = std::any_of(work->subscribers.begin(), work->subscribers.end(), [](const auto &entry) {
                 return entry.kind == CoverClass::Contained;
             });
             if (makeContained) {
-                work->coverPath = std::move(coverPath);
+                coverDelivery = std::make_shared<CoverWork>();
+                auto subscriber = work->subscribers.begin();
+                while (subscriber != work->subscribers.end()) {
+                    if (subscriber->kind == CoverClass::Cover) {
+                        coverDelivery->subscribers.push_back(*subscriber);
+                        subscriber = work->subscribers.erase(subscriber);
+                    } else {
+                        ++subscriber;
+                    }
+                }
+                work->coverPath = coverPath;
                 work->phase = WorkPhase::Contained;
                 work->priority = CoverClass::Contained;
                 m_running.erase(std::find(m_running.begin(), m_running.end(), work));
                 m_pending.push_back(work);
+                if (!coverDelivery->subscribers.empty())
+                    m_delivering.push_back(coverDelivery);
                 dispatchLocked();
-                return;
+            } else {
+                closeForDeliveryLocked(work, coverWanted, containedWanted, atmosphereWanted);
             }
-            closeForDeliveryLocked(work, coverWanted, containedWanted, atmosphereWanted);
+        }
+        if (coverDelivery) {
+            if (!coverDelivery->subscribers.empty())
+                deliverClosed(coverDelivery, coverPath, {}, true, false, false);
+            return;
         }
         deliverClosed(work, coverPath, {}, coverWanted, containedWanted, atmosphereWanted);
     }
