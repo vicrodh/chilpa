@@ -810,23 +810,8 @@ impl qobject::TrackListModel {
                 return;
             }
             let thread = self.qt_thread();
-            let expected_kind = kind.clone();
-            chilpa_qt_kit::track_loading::submit_collection(kind, query, extras, move |result| {
-                let _ = thread.queue(move |mut model| {
-                    let latest = model.rust().asked;
-                    let completed = model.as_mut().rust_mut().queries.finish(asked, latest);
-                    if completed.publish && model.kind().to_string() == expected_kind {
-                        let Some((found, timing)) = result else { return; };
-                        let timing = timing.next("delivery");
-                        let ms = found.snapshot.totals.duration_ms;
-                        (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
-                        model.as_mut().show(expected_kind, Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
-                        timing.published(*model.count());
-                    }
-                    if completed.restart && !model.rust().pending && matches!(model.kind().to_string().as_str(), "tracks" | "discovery") {
-                        model.as_mut().reload();
-                    }
-                });
+            chilpa_qt_kit::track_loading::submit_collection(kind.clone(), query, extras, move |result| {
+                let _ = thread.queue(move |model| chilpa_qt_kit::track_loading::complete(&mut Collection(model), asked, &kind, result));
             });
             return;
         }
@@ -989,6 +974,22 @@ impl qobject::TrackListModel {
         self.as_mut().set_summary(QString::from(&text));
         self.as_mut().set_ready(true);
     }
+}
+
+/// A tracks or discovery model as the query gate sees it.
+struct Collection<'a>(Pin<&'a mut qobject::TrackListModel>);
+impl chilpa_qt_kit::track_loading::QueryModel for Collection<'_> {
+    fn asked(&mut self) -> (u64, &mut chilpa_qt_kit::track_loading::LatestQuery) { let this = self.0.as_mut().rust_mut().get_mut(); (this.asked, &mut this.queries) }
+    fn kind(&self) -> String { self.0.kind().to_string() }
+    fn idle(&self) -> bool { !self.0.rust().pending }
+    fn show(&mut self, kind: String, found: chilpa_api::FoundTracks, timing: chilpa_qt_kit::track_loading::Timing) {
+        let ms = found.snapshot.totals.duration_ms;
+        let mut this = self.0.as_mut().rust_mut();
+        (this.group, this.letters, this.sections) = (found.group, found.letters, found.sections);
+        self.0.as_mut().show(kind, Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
+        timing.published(*self.0.count());
+    }
+    fn reload(&mut self) { self.0.as_mut().reload(); }
 }
 
 impl cxx_qt::Initialize for qobject::TrackListModel {

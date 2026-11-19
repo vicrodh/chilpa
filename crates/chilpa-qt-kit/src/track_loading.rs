@@ -47,6 +47,30 @@ impl LatestQuery {
     }
 }
 
+/// What the query gate needs from a track model.
+pub trait QueryModel {
+    /// The latest request and the gate it goes through.
+    fn asked(&mut self) -> (u64, &mut LatestQuery);
+    fn kind(&self) -> String;
+    /// No reload is scheduled yet.
+    fn idle(&self) -> bool;
+    /// Replaces the rows on screen: the reset a stale result must not cause.
+    fn show(&mut self, kind: String, found: FoundTracks, timing: Timing);
+    fn reload(&mut self);
+}
+
+/// Hands a returned query to its model. Only the answer to the latest request
+/// for the kind still shown replaces the rows; a request that waited behind it
+/// runs next.
+pub fn complete(model: &mut impl QueryModel, asked: u64, kind: &str, result: Option<(FoundTracks, Timing)>) {
+    let (latest, queries) = model.asked();
+    let completed = queries.finish(asked, latest);
+    if let Some((found, timing)) = result.filter(|_| completed.publish && model.kind() == kind) {
+        model.show(kind.to_string(), found, timing.next("delivery"));
+    }
+    if completed.restart && model.idle() && matches!(model.kind().as_str(), "tracks" | "discovery") { model.reload(); }
+}
+
 /// One timestamp per in-flight query; disabled timing allocates nothing.
 #[derive(Clone, Copy)]
 pub struct Timing(Option<Instant>);
@@ -130,7 +154,7 @@ mod tests {
     }
 
     #[test]
-    fn a_stale_result_does_not_reset_the_model() {
+    fn a_stale_completion_is_not_publishable() {
         let mut queries = LatestQuery::default();
         let mut resets = 0;
         assert!(queries.start(7));
@@ -168,5 +192,38 @@ mod tests {
             assert_eq!(received.try_recv(), Err(std::sync::mpsc::TryRecvError::Disconnected), "{lost}: exactly one completion");
             assert!(queries.lock().unwrap().start(2), "{lost}: the latest request runs after the lost one");
         }
+    }
+
+    /// A model as the gate sees it, counting the resets it would draw.
+    #[derive(Default)]
+    struct Model { asked: u64, queries: LatestQuery, kind: &'static str, pending: bool, shown: Vec<usize>, reloads: usize }
+    impl QueryModel for Model {
+        fn asked(&mut self) -> (u64, &mut LatestQuery) { (self.asked, &mut self.queries) }
+        fn kind(&self) -> String { self.kind.into() }
+        fn idle(&self) -> bool { !self.pending }
+        fn show(&mut self, _: String, found: FoundTracks, _: Timing) { self.shown.push(found.snapshot.ids.len()) }
+        fn reload(&mut self) { self.reloads += 1 }
+    }
+    fn found(rows: i64) -> Option<(FoundTracks, Timing)> {
+        Some((FoundTracks { snapshot: chilpa_api::Snapshot { ids: (1..=rows).collect(), ..Default::default() }, ..Default::default() }, Timing(None)))
+    }
+
+    #[test]
+    fn a_stale_result_does_not_reset_the_model() {
+        let mut model = Model { asked: 7, kind: "tracks", ..Default::default() };
+        assert!(model.queries.start(7));
+        model.asked = 8;
+        assert!(!model.queries.start(8), "a newer request waits behind the running one");
+        complete(&mut model, 7, "tracks", found(3));
+        assert!(model.shown.is_empty(), "the stale rows never replaced the model's");
+        assert_eq!(model.reloads, 1, "the request that waited runs instead");
+        assert!(model.queries.start(8));
+        complete(&mut model, 8, "tracks", found(2));
+        assert_eq!((model.shown.as_slice(), model.reloads), (&[2][..], 1), "the latest result resets the model once");
+        model.asked = 9;
+        assert!(model.queries.start(9));
+        model.kind = "album";
+        complete(&mut model, 9, "tracks", found(4));
+        assert_eq!((model.shown.len(), model.reloads), (1, 1), "a model that left the kind keeps its rows");
     }
 }
