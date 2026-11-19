@@ -147,7 +147,8 @@ impl LibraryUpgrade {
         let result = match outcome.try_recv() {
             Ok(result) => result,
             Err(mpsc::TryRecvError::Empty) => return false,
-            Err(mpsc::TryRecvError::Disconnected) => Err(String::new()),
+            // The thread ended without an answer: it panicked.
+            Err(mpsc::TryRecvError::Disconnected) => Err(chilpa_i18n::t("The library update stopped unexpectedly.")),
         };
         self.outcome = None;
         if let Some(worker) = self.worker.take() {

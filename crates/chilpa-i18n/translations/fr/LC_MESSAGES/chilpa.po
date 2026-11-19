@@ -7923,6 +7923,9 @@ msgstr "La bibliothèque est restée occupée par une autre tâche, ce choix n'a
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "La bibliothèque est restée occupée par une autre tâche. Rien de plus n'a été retiré ; réessayez dans un instant."
 
+msgid "The library update stopped unexpectedly."
+msgstr "La mise à jour de la bibliothèque s'est arrêtée de façon inattendue."
+
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
 

@@ -7921,6 +7921,9 @@ msgstr ""
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "音樂庫正忙於執行其他任務。未移除任何額外內容；請稍後再試。"
 
+msgid "The library update stopped unexpectedly."
+msgstr "音樂庫更新意外停止。"
+
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
 

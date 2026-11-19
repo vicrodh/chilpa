@@ -7923,6 +7923,9 @@ msgstr ""
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr ""
 
+msgid "The library update stopped unexpectedly."
+msgstr ""
+
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
 

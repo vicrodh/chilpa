@@ -7933,6 +7933,9 @@ msgstr "Библиотека оставалась занята другой за
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "Библиотека оставалась занята другой задачей. Больше ничего не удалено; попробуйте снова чуть позже."
 
+msgid "The library update stopped unexpectedly."
+msgstr "Обновление библиотеки неожиданно остановилось."
+
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
 

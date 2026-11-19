@@ -382,3 +382,17 @@ fn a_failure_after_the_last_step_says_the_library_was_updated() {
     assert!(!view["detail"].as_str().unwrap().contains("Nothing was lost"), "it is not as it was before: {view}");
     assert_eq!((view["canRestore"].as_bool(), view["canRetry"].as_bool()), (Some(false), Some(true)));
 }
+
+#[test]
+fn an_upgrade_thread_that_ends_without_an_answer_says_so() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    older(&path, 54);
+    let mut upgrade = LibraryUpgrade::detect(path.clone());
+    let (tell, outcome) = mpsc::channel::<Result<(), String>>();
+    drop(tell);
+    upgrade.outcome = Some(outcome);
+    upgrade.state = State::Running;
+    assert!(!upgrade.advance());
+    assert_eq!(upgrade.view()["message"], "The library update stopped unexpectedly.");
+}

@@ -7913,6 +7913,9 @@ msgstr "ライブラリが別の処理で使用中のままだったため、こ
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "ライブラリが別の処理で使用中のままでした。これ以上は削除されていません。少ししてからもう一度お試しください。"
 
+msgid "The library update stopped unexpectedly."
+msgstr "ライブラリの更新が予期せず停止しました。"
+
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
 
