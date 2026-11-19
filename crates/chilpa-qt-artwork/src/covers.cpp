@@ -64,7 +64,7 @@ public:
 };
 
 enum class CoverClass : int { Cover = 0, Contained = 1, Atmosphere = 2 };
-enum class WorkOperation { Derivative, Contained, Atmosphere };
+enum class WorkOperation { Derivative, Atmosphere };
 enum class WorkPhase { Base, Contained };
 class CoverScheduler;
 
@@ -224,8 +224,7 @@ public:
                 work->key = key;
                 work->id = id;
                 work->operation = kind == CoverClass::Atmosphere ? WorkOperation::Atmosphere
-                    : key.startsWith(QStringLiteral("contained:")) ? WorkOperation::Contained
-                                                                   : WorkOperation::Derivative;
+                                                                 : WorkOperation::Derivative;
                 work->priority = kind;
                 work->firstSeen = work->lastDemand = ++m_demandSequence;
                 work->subscribers.push_back({response, kind});
@@ -312,11 +311,9 @@ public:
             complete(work, made ? QString::fromUtf8(coverOut.constData()) : QString(), {});
             return;
         }
-        if (work->operation == WorkOperation::Contained) {
-            const bool made = make(work, CoverClass::Contained, containedOut);
-            complete(work, {}, made ? QString::fromUtf8(containedOut.constData()) : QString());
-            return;
-        }
+        // A contained cover takes two queue turns: the base derivative, which
+        // plain cover askers of the same key share, then the contained
+        // picture made from it.
         if (work->phase == WorkPhase::Contained) {
             const bool made = make(work, CoverClass::Contained, containedOut);
             complete(work, work->coverPath, made ? QString::fromUtf8(containedOut.constData()) : QString());
@@ -326,6 +323,7 @@ public:
         continueAfterBase(work, coverMade ? QString::fromUtf8(coverOut.constData()) : QString());
     }
 
+#ifdef CHILPA_COVER_SCHEDULER_TEST
     qsizetype pendingCount() const
     {
         QMutexLocker lock(&m_mutex);
@@ -338,6 +336,7 @@ public:
         return m_pending.empty() && m_running.empty() && m_delivering.empty()
             && m_pool.activeThreadCount() == 0;
     }
+#endif
 
 private:
     void continueAfterBase(const std::shared_ptr<CoverWork> &work, QString coverPath)
@@ -493,7 +492,7 @@ private:
     {
         if (work->operation == WorkOperation::Atmosphere)
             return CoverClass::Atmosphere;
-        if (work->operation == WorkOperation::Contained || work->phase == WorkPhase::Contained)
+        if (work->phase == WorkPhase::Contained)
             return CoverClass::Contained;
         return CoverClass::Cover;
     }
