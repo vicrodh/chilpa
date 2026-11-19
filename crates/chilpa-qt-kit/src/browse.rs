@@ -12,7 +12,7 @@ pub struct State {
     pub facets: Rc<Facets>,
     pub snapshot: Rc<Snapshot>,
     pub album_pages: Rc<RefCell<chilpa_api::PageCache<chilpa_api::Album>>>,
-    pub track_pages: Rc<RefCell<chilpa_api::PageCache<chilpa_api::TrackRow>>>,
+    pub track_pages: Rc<RefCell<chilpa_api::PageCache<Option<chilpa_api::TrackRow>>>>,
     pub page_revision: i32,
 }
 

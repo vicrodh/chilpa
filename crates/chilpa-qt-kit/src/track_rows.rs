@@ -9,7 +9,7 @@ const PAGES_KEPT: usize = 32;
 
 pub enum Rows {
     Loaded(Vec<Entry>),
-    Snapshot { ids: Rc<chilpa_api::Snapshot>, pages: Rc<RefCell<chilpa_api::PageCache<TrackRow>>> },
+    Snapshot { ids: Rc<chilpa_api::Snapshot>, pages: Rc<RefCell<chilpa_api::PageCache<Option<TrackRow>>>> },
 }
 
 impl Default for Rows {
@@ -18,8 +18,9 @@ impl Default for Rows {
 
 pub enum At<'a> {
     Header(&'a chilpa_api::GroupHeader),
-    Track(Rc<Vec<TrackRow>>, usize),
+    Track(Rc<Vec<Option<TrackRow>>>, usize),
     Loaded(&'a TrackRow),
+    Missing,
 }
 
 impl Rows {
@@ -50,7 +51,11 @@ impl Rows {
                     if let Some(started) = started { eprintln!("tracks hydrate_page={} rows={} elapsed_us={}", page, rows.len(), started.elapsed().as_micros()); }
                     rows
                 });
-                (row % PAGE < rows.len()).then(|| At::Track(rows, row % PAGE))
+                match rows.get(row % PAGE) {
+                    Some(Some(_)) => Some(At::Track(rows, row % PAGE)),
+                    Some(None) => Some(At::Missing),
+                    None => None,
+                }
             }
         }
     }

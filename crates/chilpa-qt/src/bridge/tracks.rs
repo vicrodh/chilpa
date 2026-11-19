@@ -225,6 +225,7 @@ pub struct TrackListRust {
     letters: String,
     sections: Vec<(usize, String)>,
     asked: u64,
+    queries: chilpa_qt_kit::track_loading::LatestQuery,
     queue_keys: Vec<String>,
     queue_numbers: Vec<i32>,
 }
@@ -238,23 +239,26 @@ impl TrackListRust {
 
     fn track(&self, row: usize) -> Option<TrackRow> {
         match self.at(row)? {
-            At::Track(page, i) => Some(page[i].clone()),
+            At::Track(page, i) => page[i].clone(),
             At::Loaded(t) => Some(t.clone()),
-            At::Header(..) => None,
+            At::Header(..) | At::Missing => None,
         }
     }
 
-    /// Whether the row's track can play now. A row not loaded yet, or a
-    /// header, counts as one that can.
-    fn available(&self, row: usize) -> bool {
-        self.track(row).is_none_or(|t| t.available)
-    }
+    /// Whether the row's track can play now. Headers remain actionable, but
+    /// a missing snapshot slot cannot act as a neighboring track.
+    fn available(&self, row: usize) -> bool { match self.at(row) {
+        Some(At::Track(page, at)) => page[at].as_ref().is_some_and(|track| track.available),
+        Some(At::Loaded(track)) => track.available,
+        Some(At::Header(_)) => true,
+        Some(At::Missing) | None => false,
+    } }
 
     fn track_id(&self, row: usize) -> Option<i64> {
         match self.at(row)? {
-            At::Track(page, i) => Some(page[i].id),
+            At::Track(page, i) => page[i].as_ref().map(|track| track.id),
             At::Loaded(t) => Some(t.id),
-            At::Header(..) => None,
+            At::Header(..) | At::Missing => None,
         }
     }
 
@@ -285,8 +289,9 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         At::Header(header) => {
             return chilpa_qt_kit::track_roles::header(header, role);
         }
-        At::Track(page, i) => &page[*i],
+        At::Track(page, i) => page[*i].as_ref().expect("a hydrated track slot"),
         At::Loaded(t) => *t,
+        At::Missing => return QVariant::default(),
     };
     let number = if list.by_track_number { i32::from(track.number) } else { list.queue_numbers.get(row).copied().unwrap_or(row as i32 + 1) };
     let playing = role == ROLE_PLAYING && if let Some(key) = list.queue_keys.get(row) { app::with(|api| api.listen_is_playing(key)) } else { !list.playing.is_empty() && track.path == list.playing };
@@ -321,6 +326,7 @@ impl qobject::TrackListModel {
             app::with(|api| api.listen_row_action(key, "play", ""));
             return;
         }
+        if matches!(self.rust().rows, Rows::Snapshot { .. }) && self.rust().track(row).is_none() { return; }
         // A row that cannot play now does not play, by click or by key (ADR-017).
         if self.rust().track(row).is_some_and(|t| !t.available) {
             return;
@@ -340,8 +346,10 @@ impl qobject::TrackListModel {
                 let thread = self.qt_thread();
                 let origin = app::with(|api| api.browse_origin());
                 worker::submit(move |reader| {
-                    let paths = reader.paths(&ids);
-                    let _ = thread.queue(move |_| app::with(|api| api.with_queue_origin(origin, |api| api.play_from(&paths, row))));
+                    let (paths, start) = reader.paths_with_start(&ids, row);
+                    let _ = thread.queue(move |_| if let Some(start) = start {
+                        app::with(|api| api.with_queue_origin(origin, |api| api.play_from(&paths, start)));
+                    });
                 });
             }
         }
@@ -798,17 +806,25 @@ impl qobject::TrackListModel {
             let extras = browse::read(|s| s.filter.clone());
             let asked = self.rust().asked.wrapping_add(1);
             self.as_mut().rust_mut().asked = asked;
+            if !self.as_mut().rust_mut().queries.start(asked) {
+                return;
+            }
             let thread = self.qt_thread();
             let expected_kind = kind.clone();
-            chilpa_qt_kit::track_loading::submit_collection(kind, query, extras, move |found, timing| {
-                let expected_kind = expected_kind.clone();
+            chilpa_qt_kit::track_loading::submit_collection(kind, query, extras, move |result| {
                 let _ = thread.queue(move |mut model| {
-                    if model.rust().asked == asked && model.kind().to_string() == expected_kind {
+                    let latest = model.rust().asked;
+                    let completed = model.as_mut().rust_mut().queries.finish(asked, latest);
+                    if completed.publish && model.kind().to_string() == expected_kind {
+                        let Some((found, timing)) = result else { return; };
                         let timing = timing.next("delivery");
                         let ms = found.snapshot.totals.duration_ms;
                         (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters, model.as_mut().rust_mut().sections) = (found.group, found.letters, found.sections);
                         model.as_mut().show(expected_kind, Rows::Snapshot { ids: Rc::new(found.snapshot), pages: Rc::default() }, Some(ms), Vec::new());
                         timing.published(*model.count());
+                    }
+                    if completed.restart && !model.rust().pending && matches!(model.kind().to_string().as_str(), "tracks" | "discovery") {
+                        model.as_mut().reload();
                     }
                 });
             });
