@@ -68,6 +68,7 @@ void coverTestResponseDestroyed();
 void coverTestResponseFinished();
 void coverTestWorkCompleted();
 void coverTestBeforeImageLoad();
+void coverTestAfterSplitRegistered();
 void coverTestDeliveryQueued();
 void coverTestTsanNegativeCallback();
 #endif
@@ -359,6 +360,10 @@ private:
                 closeForDeliveryLocked(work, coverWanted, containedWanted, atmosphereWanted);
             }
         }
+#ifdef CHILPA_COVER_SCHEDULER_TEST
+        if (coverDelivery)
+            coverTestAfterSplitRegistered();
+#endif
         if (coverDelivery) {
             if (!coverDelivery->subscribers.empty())
                 deliverClosed(coverDelivery, coverPath, {}, true, false, false);

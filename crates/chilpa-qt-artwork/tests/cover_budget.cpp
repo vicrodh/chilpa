@@ -45,6 +45,9 @@ bool releaseDelivery = false;
 bool holdBeforeImageLoad = false;
 bool beforeImageLoadEntered = false;
 bool releaseImageLoad = false;
+bool holdAfterSplitRegistered = false;
+bool afterSplitRegisteredEntered = false;
+bool releaseSplitDelivery = false;
 bool deliveryQueuedEntered = false;
 bool readerRequestCreated = false;
 std::atomic_bool tsanNegativeStart{false};
@@ -149,6 +152,9 @@ void reset()
     holdBeforeImageLoad = false;
     beforeImageLoadEntered = false;
     releaseImageLoad = false;
+    holdAfterSplitRegistered = false;
+    afterSplitRegisteredEntered = false;
+    releaseSplitDelivery = false;
     deliveryQueuedEntered = false;
     readerRequestCreated = false;
     engineDestroyed = false;
@@ -190,6 +196,16 @@ void coverTestBeforeImageLoad()
     beforeImageLoadEntered = true;
     gateChanged.notify_all();
     gateChanged.wait(lock, [] { return releaseImageLoad; });
+}
+
+void coverTestAfterSplitRegistered()
+{
+    std::unique_lock lock(gateMutex);
+    if (!holdAfterSplitRegistered)
+        return;
+    afterSplitRegisteredEntered = true;
+    gateChanged.notify_all();
+    gateChanged.wait(lock, [] { return releaseSplitDelivery; });
 }
 
 void coverTestDeliveryQueued()
@@ -474,6 +490,40 @@ int main(int argc, char **argv)
     {
         Providers providers;
         Responses responses(application);
+        successful = true;
+        {
+            std::lock_guard lock(gateMutex);
+            holdAfterSplitRegistered = true;
+        }
+        responses.add(&providers.contained, coverId(QStringLiteral("cancel-split")), true);
+        auto *cover = responses.add(&providers.cover, coverId(QStringLiteral("cancel-split")));
+        waitEntered("c:/cancel-split");
+        allow("c:/cancel-split");
+        {
+            std::unique_lock lock(gateMutex);
+            require(gateChanged.wait_for(lock, std::chrono::seconds(5), [] { return afterSplitRegisteredEntered; }),
+                    "the split cover delivery is registered before cancellation");
+        }
+        cover->cancel();
+        responses.waitForFinished(1);
+        require(responsesFinished == 1, "the cancelled split cover finishes exactly once");
+        {
+            std::lock_guard lock(gateMutex);
+            releaseSplitDelivery = true;
+            gateChanged.notify_all();
+        }
+        waitEntered("n:/cancel-split");
+        responses.settle();
+        require(responses.finished == 1, "closing the empty split delivery does not finish the cover again");
+        allow("n:/cancel-split");
+        responses.wait();
+        waitForScheduler(providers.scheduler);
+    }
+
+    reset();
+    {
+        Providers providers;
+        Responses responses(application);
         responses.add(&providers.cover, coverId(QStringLiteral("block-a")));
         responses.add(&providers.cover, coverId(QStringLiteral("block-b")));
         waitEntered("c:/block-a");
@@ -580,9 +630,10 @@ int main(int argc, char **argv)
         responses.add(&providers.cover, coverId(QStringLiteral("waiting-cover")));
         allow("c:/mixed");
         require(enteredAt(2) == "c:/waiting-cover", "a pending cover enters before a mixed contained continuation");
+        responses.add(&providers.cover, coverId(QStringLiteral("mixed")), true);
+        responses.waitForFinished(2);
         allow("c:/waiting-cover");
         waitEntered("n:/mixed");
-        responses.add(&providers.cover, coverId(QStringLiteral("mixed")), true);
         responses.waitForFinished(3);
         allow("n:/mixed");
         allow("a:/blocked-atmosphere");
