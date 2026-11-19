@@ -733,6 +733,41 @@ TestCase {
             compare(surfaces().filter(surface => surface.visible && surface.y === row.y).length, 1, "row " + row.index + " has one surface at its place")
     }
 
+    // A track that cannot play arrives by an insert, with motion on: it fades in to its dimmed opacity, and its row keeps
+    // following whether its track can play, also as another such track in the same row, and when the motion stops
+    // halfway through an arrival and settles it.
+    function test_a_track_that_cannot_play_arrives_dimmed() {
+        Motion.reduced = false
+        warm()
+        tracks.insert(2, entry(3))
+        view.forceLayout()
+        const row = view.itemAtIndex(2)
+        verify(row !== null && !row.available)
+        wait(Motion.panel * 3)
+        compare(row.opacity, Metrics.disabledOpacity, "it arrived dimmed")
+        tracks.set(2, entry(10))
+        compare(view.itemAtIndex(2), row, "the same row object")
+        compare(row.opacity, Metrics.disabledOpacity, "another track that cannot play in the same row stays dimmed")
+        tracks.setProperty(2, "available", true)
+        compare(row.opacity, 1, "its track can play")
+        tracks.setProperty(2, "available", false)
+        compare(row.opacity, Metrics.disabledOpacity, "and cannot again")
+        tracks.remove(2)
+        wait(Motion.panel * 3)
+        tracks.insert(2, entry(3))
+        view.forceLayout()
+        wait(Motion.base / 3)
+        const arriving = view.itemAtIndex(2)
+        verify(arriving !== null && !arriving.available)
+        Motion.reduced = true
+        compare(arriving.opacity, Metrics.disabledOpacity, "the motion stopped, its arrival settles dimmed")
+        tracks.setProperty(2, "available", true)
+        compare(arriving.opacity, 1, "and its row still follows its track")
+        tracks.setProperty(2, "available", false)
+        compare(arriving.opacity, Metrics.disabledOpacity)
+        tracks.remove(2)
+    }
+
     function test_the_tracks_sheet_reuses_its_rows() {
         const page = createTemporaryObject(sheetPage, test)
         const sheetView = findChild(page.list, "trackListView"), cols = page.list.columns

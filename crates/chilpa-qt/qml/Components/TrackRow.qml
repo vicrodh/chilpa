@@ -64,7 +64,7 @@ TrackRowSlot {
 
     width: cols.width
     height: record ? Metrics.rowRecord : headerWork ? Metrics.rowWork : header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
-    opacity: available ? 1 : Metrics.disabledOpacity
+    readonly property real motionOpacity: available ? 1 : Metrics.disabledOpacity; opacity: motionOpacity // what an arrival fades in to (MotionListView)
 
     content: Item {
         id: content

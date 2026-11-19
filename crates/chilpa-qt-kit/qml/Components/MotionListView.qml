@@ -24,7 +24,7 @@ ListView {
         bank.active = motionDuration > 0
         if (!bank.active) {
             for (const [item, point] of targets) {
-                if (item && item.parent) { item.x = point.x; item.y = point.y; item.opacity = item.motionOpacity ?? 1 }
+                if (item && item.parent) { item.x = point.x; item.y = point.y; item.opacity = item.motionOpacity === undefined ? 1 : Qt.binding(() => item.motionOpacity) } // a row with one follows it again
             }
             // ListView schedules its layout. Forcing it here feeds geometry
             // back into motionVisible while that binding is still evaluating.
