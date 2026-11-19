@@ -24,6 +24,9 @@ QtObject {
     // day each, with the months named above and the days beside.
     readonly property int chartTools: Metrics.button28
     readonly property int mosaicCell: 16
+    // The smallest a square is drawn; a year that does not fit at that
+    // size scrolls sideways.
+    readonly property int mosaicLeast: 10
     readonly property int mosaicApart: 3
     readonly property int mosaicRound: 3
     readonly property int mosaicMonths: 18

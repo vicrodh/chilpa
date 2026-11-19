@@ -21,6 +21,7 @@ TestCase {
     Component { id: statsPage; StatsScreen { width: 1200; height: 900 } }
     Component { id: historyPage; HistoryScreen { width: 1200; height: 900 } }
     Component { id: recapPage; RecapScreen { width: 1200; height: 900 } }
+    Component { id: narrowMosaic; MosaicGrid { width: 300; height: 160 } }
     Component { id: narrowRecap; RecapScreen { width: 620; height: 900 } }
 
     function init() {
@@ -135,6 +136,26 @@ TestCase {
         // An empty place of the grid neither.
         mouseMove(field, mosaic.cell / 2, mosaic.cell / 2)
         compare(mosaic.hovered, -1)
+    }
+
+    function test_a_year_too_wide_for_its_room_scrolls_and_opens_on_its_last_week() {
+        const weeks = 53
+        const cells = Array.from({ length: weeks * 7 }, (_, i) => ({ date: "day" + i, column: Math.floor(i / 7), row: i % 7, plays: 1, level: 1, later: i >= 40 * 7, tip: "" }))
+        const grid = createTemporaryObject(narrowMosaic, this, { mosaic: { columns: weeks, levels: 4, cells: cells, months: [], rows: [] } })
+        const view = findChild(grid, "mosaicView")
+        compare(grid.step, Charts.mosaicLeast + Charts.mosaicApart, "a square is never drawn smaller than its least")
+        verify(view.contentWidth > view.width)
+        verify(view.interactive)
+        compare(grid.openColumn, 39, "the last week there is")
+        tryCompare(view, "contentX", 40 * grid.step - view.width)
+        // The day chosen is the week it opens on.
+        grid.chosen = "day14"
+        compare(grid.openColumn, 2)
+        tryCompare(view, "contentX", 0)
+        // A year that fits does not scroll.
+        grid.width = 1200
+        verify(!view.interactive)
+        compare(view.contentX, 0)
     }
 
     function test_the_recap_opens_on_last_month_and_a_month_or_a_year_is_picked() {
