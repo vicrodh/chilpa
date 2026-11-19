@@ -14,6 +14,7 @@ TestCase {
     height: 400
     TrackListModel { id: tracks }
     TrackList { id: list; width: 1000; height: 250; model: tracks; rich: true; reorderable: true }
+    TrackMenu { id: menu; model: tracks }
 
     function track(i) {
         return { trackId: 42 + i, rowKind: 0, number: i + 1, title: "Track " + i, artist: "Band", album: "Album", duration: "3:00", plays: 2,
@@ -24,6 +25,7 @@ TestCase {
         return { trackId: 0, rowKind: 0, number: 0, title: "", artist: "", album: "", duration: "", plays: 0, quality: "", tier: 0,
             available: false, playing: false, selected: false, headerLabel: "", headerMeta: "", art: "", missing: true }
     }
+    function cleanup() { menu.close() }
     function init() {
         Ratings.tracks = ({}); Ratings.favorites = ({}); Ratings.fail = false; ++Ratings.rev
         list.height = 250
@@ -82,5 +84,25 @@ TestCase {
         list.height = 250
         tryVerify(() => list.rows.itemAtIndex(39) === item && item.y + item.height <= list.rows.contentY + list.rows.height)
         actOn(item)
+    }
+    function test_an_open_menu_closes_when_rows_move_under_it() {
+        for (const change of ["remove", "insert", "move", "reset"]) {
+            tracks.clear()
+            for (let i = 0; i < 4; ++i) tracks.append(track(i))
+            tracks.lastAction = ""
+            menu.show(2, 100, 100)
+            tryCompare(menu, "opened", true, 1000, change)
+            if (change === "remove") tracks.remove(0)
+            else if (change === "insert") tracks.insert(0, track(9))
+            else if (change === "move") tracks.move(0, 3, 1)
+            else tracks.modelReset()
+            tryCompare(menu, "visible", false, 1000, change + ": row 2 holds another track now, so its menu cannot act")
+            compare(tracks.lastAction, "", change)
+        }
+        menu.show(2, 100, 100)
+        tryCompare(menu, "opened", true)
+        tracks.setProperty(2, "plays", 7)
+        wait(30)
+        verify(menu.visible, "a value that changes in place keeps the row's track and its menu")
     }
 }
