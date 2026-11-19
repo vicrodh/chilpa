@@ -20,6 +20,18 @@ fn a_checked_query_finishes_with_an_error_and_the_same_worker_can_recover() {
 }
 
 #[test]
+fn a_panicking_job_does_not_drop_the_next_queued_job() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    let _library = chilpa_library::Library::open(&path).unwrap();
+    let worker = QueryWorker::start(path, crate::source_catalog::Catalog::new()).unwrap();
+    assert!(worker.submit(|_| panic!("the first query panics")));
+    let (sent, received) = channel();
+    assert!(worker.submit(move |_| { let _ = sent.send("next query ran"); }));
+    assert_eq!(received.recv_timeout(Duration::from_secs(2)).unwrap(), "next query ran");
+}
+
+#[test]
 fn a_failed_reader_open_is_retried_on_the_next_job() {
     let dir = std::env::temp_dir().join(format!("chilpa-reader-retry-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();

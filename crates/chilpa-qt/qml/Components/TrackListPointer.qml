@@ -143,10 +143,10 @@ MouseArea {
     }
     onContainsMouseChanged: track()
     onClicked: (mouse) => {
-        const row = rowAt(mouse.y)
-        if (row < 0 || dropped)
+        const row = rowAt(mouse.y), header = rows.itemAtIndex(row)
+        // A slot whose track left the list takes no click: no cursor, selection or menu.
+        if (row < 0 || dropped || !header || !header.header && !host.model.isTrack(row))
             return
-        const header = rows.itemAtIndex(row)
         const groupAction = groupActionAt(row, mouse.x, mouse.y)
         if (mouse.button === Qt.LeftButton && groupAction > 0) {
             if (groupAction === 3) {
@@ -205,7 +205,7 @@ MouseArea {
     onDoubleClicked: (mouse) => {
         const row = rowAt(mouse.y)
         const header = row >= 0 ? rows.itemAtIndex(row) : null
-        if (groupActionAt(row, mouse.x, mouse.y) || onHeaderComposer(header, mouse.x, mouse.y))
+        if (!header || !header.header && !host.model.isTrack(row) || groupActionAt(row, mouse.x, mouse.y) || onHeaderComposer(header, mouse.x, mouse.y))
             return
         if (creditAt(row, mouse.x, mouse.y) || onAlbum(row, mouse.x, mouse.y) || onArtist(row, mouse.x, mouse.y))
             return

@@ -81,7 +81,7 @@ Item {
         // After the view has taken the reset in.
         function onModelReset() {
             list.rowsRev++
-            if (list.cursorRow >= view.count) list.cursorRow = -1
+            if (list.cursorRow >= 0) list.cursorRow = list.model.selectedRow() // the old number may hold another track: follow the selected one
             keptViewport.restoreLater()
         }
     }

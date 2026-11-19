@@ -14,7 +14,7 @@ ListModel {
     property bool ascending: true
     property string summary: "3 tracks"
     property bool playlistEditable: false
-    function selectedRow() { return -1 }
+    property int selectedAt: -1; function selectedRow() { return selectedAt }
     // The longest texts of each column, as the bridge gives them, when a
     // test asks for them; otherwise nothing, and the proportions stand.
     property bool measures: false
@@ -31,7 +31,7 @@ ListModel {
     function canGo(row, kind) { return true }
     function creditOf(row) { return get(row).artist || "" }
     function select(row, mode) { lastAction = "select"; lastRow = row }
-    function isTrack(row) { return row >= 0 && row < count && get(row).rowKind === 0 }
+    function isTrack(row) { return row >= 0 && row < count && get(row).rowKind === 0 && !get(row).missing }
     function queue(row) { lastAction = "queue"; lastRow = row }
     function favoriteChosen(row, favorite) { lastAction = favorite ? "favorite" : "unfavorite"; lastRow = row }
     function play(row) { lastAction = "play"; lastRow = row }
