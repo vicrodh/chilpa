@@ -582,3 +582,18 @@ fn a_library_written_after_its_upgrade_failed_gets_a_new_copy() {
     assert_eq!(version_of(&kept), 54, "the copy from before the first attempt stays under its own name");
     assert_eq!(version_of(&path), VERSION);
 }
+
+#[test]
+fn the_copy_its_marker_and_a_restored_library_are_synced_into_their_folder() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    Connection::open(&path).unwrap().execute_batch("CREATE TABLE local_release_members(planted INTEGER);").unwrap();
+    let syncs = || upgrade::FOLDER_SYNCS.with(|cell| cell.get());
+    let before = syncs();
+    heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap_err();
+    let failed = syncs();
+    assert!(failed >= before + 3, "the copy's rename, its marker and the sealed marker: {}", failed - before);
+    upgrade::restore(&path).unwrap();
+    assert!(syncs() > failed, "and the library put back");
+}

@@ -326,6 +326,9 @@ pub fn restore(library: &Path) -> rusqlite::Result<()> {
     }
     // The copy is in place. What follows tidies up after it, and a failure
     // there is written down, not returned: the library is already the copy.
+    if let Err(error) = sync_folder(library) {
+        eprintln!("library: the folder of the restored library was not synced: {error}");
+    }
     for suffix in ["-wal", "-shm"] {
         let mut name = library.as_os_str().to_os_string();
         name.push(suffix);
@@ -387,7 +390,7 @@ fn seal(library: &Path) {
     let sealed = File::create(&path).and_then(|mut file| {
         file.write_all(format!("{copied} {target} {length} {modified}").as_bytes())?;
         file.sync_all()
-    });
+    }).map_err(|error| io_error(&path, error)).and_then(|()| sync_folder(&path));
     if let Err(error) = sealed {
         eprintln!("library: the marker of the unfinished upgrade could not record the library: {error}");
     }
@@ -414,7 +417,21 @@ fn mark(library: &Path, version: i64) -> rusqlite::Result<()> {
     let path = marker_path(library);
     let mut file = File::create(&path).map_err(|error| io_error(&path, error))?;
     file.write_all(format!("{version} {VERSION}").as_bytes()).and_then(|()| file.sync_all())
-        .map_err(|error| io_error(&path, error))
+        .map_err(|error| io_error(&path, error))?;
+    sync_folder(&path)
+}
+
+/// Makes a new file or a rename in `path`'s folder last through a power
+/// cut: the folder's own list of names is synced, not only the file. Where
+/// a folder cannot be opened as a file, as on Windows, this does nothing.
+fn sync_folder(path: &Path) -> rusqlite::Result<()> {
+    let parent = path.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
+    #[cfg(test)]
+    FOLDER_SYNCS.with(|cell| cell.set(cell.get() + 1));
+    match File::open(parent) {
+        Ok(folder) => folder.sync_all().map_err(|error| io_error(parent, error)),
+        Err(_) => Ok(()),
+    }
 }
 
 fn unmark(library: &Path) -> rusqlite::Result<()> {
@@ -440,6 +457,12 @@ fn clear_staging(library: &Path) {
 
 const STAGING: &str = ".library-upgrade-";
 const RESTORING: &str = ".library-restore-";
+
+#[cfg(test)]
+thread_local! {
+    /// How many times a folder was synced, for the tests that ask.
+    pub(super) static FOLDER_SYNCS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
 
 #[cfg(test)]
 thread_local! {
@@ -503,5 +526,5 @@ pub(super) fn backup(db: &Connection, library: &Path) -> rusqlite::Result<()> {
     copied.sync_all().map_err(|error| io_error(&destination, error))?;
     drop(copied);
     std::fs::rename(&temporary, &destination).map_err(|error| io_error(&destination, error))?;
-    Ok(())
+    sync_folder(&destination)
 }
