@@ -306,10 +306,29 @@ fn cached_derivative(dir: &Path, fingerprint: u64, target: u32) -> Option<image:
 }
 
 fn cached_derivative_candidates(dir: &Path, fingerprint: u64, target: u32) -> Vec<PathBuf> {
-    let first = target.div_ceil(DERIVATIVE_STEP) * DERIVATIVE_STEP;
-    (first..=2048).rev().step_by(DERIVATIVE_STEP as usize).filter_map(|size| {
+    cached_derivative_candidates_with(dir, fingerprint, target, Path::is_file)
+}
+
+fn cached_derivative_candidates_with(
+    dir: &Path, fingerprint: u64, target: u32, mut is_file: impl FnMut(&Path) -> bool,
+) -> Vec<PathBuf> {
+    // Non-step derivatives remain exact hits in `derivative_in`. Reuse probes only
+    // the bounded step names, so a request never enumerates a library-sized cache.
+    let mut sizes = Vec::new();
+    let twice = target.saturating_mul(2);
+    let mut size = twice.div_ceil(DERIVATIVE_STEP) * DERIVATIVE_STEP;
+    while size <= 2048 {
+        sizes.push(size);
+        size = size.saturating_add(DERIVATIVE_STEP);
+    }
+    size = target.div_ceil(DERIVATIVE_STEP) * DERIVATIVE_STEP;
+    while size < twice && size <= 2048 {
+        sizes.push(size);
+        size = size.saturating_add(DERIVATIVE_STEP);
+    }
+    sizes.into_iter().filter_map(|size| {
         let path = dir.join(format!("{fingerprint:016x}-{size}.jpg"));
-        path.is_file().then_some(path)
+        is_file(&path).then_some(path)
     }).collect()
 }
 
@@ -463,7 +482,7 @@ mod tests {
     }
 
     #[test]
-    fn a_missing_small_derivative_uses_the_largest_cached_one() {
+    fn a_missing_small_derivative_uses_the_smallest_cached_one_at_least_twice_its_size() {
         let dir = tempfile::tempdir().unwrap();
         let original = cover(dir.path(), "cover.png", 600);
         let cache = dir.path().join("cache");
@@ -473,32 +492,108 @@ mod tests {
         let small = derivative_in(&cache, &original, 128).unwrap();
         let made = image::open(&small).unwrap();
         assert_eq!((made.width(), made.height()), (128, 128));
-        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[large]));
-        assert!(medium.exists());
+        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[medium]));
+        assert!(large.exists());
     }
 
     #[test]
-    fn candidate_lookup_does_not_list_a_library_sized_cache() {
+    fn candidate_lookup_probes_only_bounded_step_names() {
         let dir = tempfile::tempdir().unwrap();
         let fingerprint = 0x1234_u64;
         for index in 0..9_700 {
             std::fs::File::create(dir.path().join(format!("unrelated-{index}.jpg"))).unwrap();
         }
         std::fs::File::create(dir.path().join(format!("{fingerprint:016x}-512.jpg"))).unwrap();
-        let prefix = format!("{fingerprint:016x}-");
-        let measure = |lookup: &dyn Fn() -> usize| {
-            let started = std::time::Instant::now();
-            let found: usize = (0..20).map(|_| std::hint::black_box(lookup())).sum();
-            (found, started.elapsed())
-        };
-        let scan = || std::fs::read_dir(dir.path()).unwrap().flatten().filter(|entry| {
-            entry.file_name().to_str().is_some_and(|name| name.starts_with(&prefix))
-        }).count();
-        let direct = || cached_derivative_candidates(dir.path(), fingerprint, 128).len();
-        let (scanned, scan_time) = measure(&scan);
-        let (looked_up, lookup_time) = measure(&direct);
-        eprintln!("candidate lookup over 9700 unrelated files, 20 requests: scan={scan_time:?} direct={lookup_time:?}");
-        assert_eq!((scanned, looked_up), (20, 20));
+        let mut probes = Vec::new();
+        let candidates = cached_derivative_candidates_with(dir.path(), fingerprint, 128, |path| {
+            probes.push(path.to_path_buf());
+            path.is_file()
+        });
+        assert_eq!(candidates, [dir.path().join(format!("{fingerprint:016x}-512.jpg"))]);
+        assert_eq!(probes.len(), 16, "lookup cost is independent of unrelated directory entries");
+        assert!(probes.iter().all(|path| path.parent() == Some(dir.path())));
+    }
+
+    #[test]
+    fn non_step_derivatives_are_exact_hits_but_not_reuse_candidates() {
+        let dir = tempfile::tempdir().unwrap();
+        let fingerprint = 0x4321_u64;
+        let non_step = dir.path().join(format!("{fingerprint:016x}-192.jpg"));
+        let stepped = dir.path().join(format!("{fingerprint:016x}-256.jpg"));
+        std::fs::File::create(&non_step).unwrap();
+        std::fs::File::create(&stepped).unwrap();
+        assert_eq!(cached_derivative_candidates(dir.path(), fingerprint, 128), [stepped]);
+        assert!(non_step.is_file(), "the non-step derivative remains available to an exact request");
+    }
+
+    #[test]
+    #[ignore = "release-mode derivative source measurement"]
+    fn measure_128_derivative_sources() {
+        fn encode(image: &image::RgbImage, path: &Path) {
+            let file = std::fs::File::create(path).unwrap();
+            image::codecs::jpeg::JpegEncoder::new_with_quality(file, QUALITY).encode_image(image).unwrap();
+        }
+        fn make_128(path: &Path, original: bool) -> image::RgbImage {
+            let pixels = if original {
+                with_cover_size(path, Some(128), |cover| {
+                    let small = if cover.width().max(cover.height()) > 128 { cover.thumbnail(128, 128) } else { cover };
+                    small.into_rgb8()
+                }).unwrap()
+            } else {
+                with_cover(path, |cover| cover.resize(128, 128, image::imageops::FilterType::Lanczos3).into_rgb8()).unwrap()
+            };
+            let mut encoded = Vec::new();
+            image::codecs::jpeg::JpegEncoder::new_with_quality(&mut encoded, QUALITY).encode_image(&pixels).unwrap();
+            image::load_from_memory(&encoded).unwrap().into_rgb8()
+        }
+        fn median_time(path: &Path, original: bool) -> (image::RgbImage, std::time::Duration) {
+            let mut times = Vec::new();
+            let mut result = image::RgbImage::new(1, 1);
+            for _ in 0..7 {
+                let started = std::time::Instant::now();
+                result = std::hint::black_box(make_128(path, original));
+                times.push(started.elapsed());
+            }
+            times.sort_unstable();
+            (result, times[times.len() / 2])
+        }
+        fn difference(actual: &image::RgbImage, reference: &image::RgbImage) -> (f64, f64) {
+            let squared: f64 = actual.as_raw().iter().zip(reference.as_raw()).map(|(left, right)| {
+                let delta = f64::from(*left) - f64::from(*right);
+                delta * delta
+            }).sum();
+            let absolute: u64 = actual.as_raw().iter().zip(reference.as_raw())
+                .map(|(left, right)| u64::from(left.abs_diff(*right))).sum();
+            let samples = actual.as_raw().len() as f64;
+            let mean_squared_error = squared / samples;
+            (absolute as f64 / samples, 10.0 * (255.0 * 255.0 / mean_squared_error).log10())
+        }
+
+        let dir = tempfile::tempdir().unwrap();
+        let original = dir.path().join("detailed-original.jpg");
+        let detailed = image::RgbImage::from_fn(2048, 2048, |x, y| image::Rgb([
+            ((x * 17 + y * 31 + (x ^ y)) % 256) as u8,
+            ((x * 7 + y * 13 + x * y) % 251) as u8,
+            (((x / 3) ^ (y * 19)) % 256) as u8,
+        ]));
+        encode(&detailed, &original);
+        let source = image::open(&original).unwrap().into_rgb8();
+        let source_256 = image::imageops::resize(&source, 256, 256, image::imageops::FilterType::Lanczos3);
+        let source_2048 = image::imageops::resize(&source, 2048, 2048, image::imageops::FilterType::Lanczos3);
+        let path_256 = dir.path().join("detailed-256.jpg");
+        let path_2048 = dir.path().join("detailed-2048.jpg");
+        encode(&source_256, &path_256);
+        encode(&source_2048, &path_2048);
+
+        let (direct, direct_time) = median_time(&original, true);
+        let (from_256, time_256) = median_time(&path_256, false);
+        let (from_2048, time_2048) = median_time(&path_2048, false);
+        let (mean_absolute_256, peak_signal_to_noise_256) = difference(&from_256, &direct);
+        let (mean_absolute_2048, peak_signal_to_noise_2048) = difference(&from_2048, &direct);
+        eprintln!("128 derivative source measurement: 256={time_256:?} mad={mean_absolute_256:.4} psnr={peak_signal_to_noise_256:.2}dB; 2048={time_2048:?} mad={mean_absolute_2048:.4} psnr={peak_signal_to_noise_2048:.2}dB; original={direct_time:?}");
+        assert_eq!(direct.dimensions(), (128, 128));
+        assert_eq!(from_256.dimensions(), direct.dimensions());
+        assert_eq!(from_2048.dimensions(), direct.dimensions());
     }
 
     #[test]
