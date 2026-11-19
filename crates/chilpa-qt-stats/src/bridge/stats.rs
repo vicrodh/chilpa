@@ -1,5 +1,6 @@
 //! The stats documents as QML reads them, each one JSON document from the
-//! facade: a period's report and a page of the history; and the two ways
+//! facade: a period's report, a year's mosaic, a recap and a page of the
+//! history; and the two ways
 //! out of the screen, the history as CSV and the report as a picture.
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -21,6 +22,16 @@ pub mod qobject {
         /// it; `rev` is the language's, so its labels follow it.
         #[qinvokable]
         fn report(self: &Stats, kind: &QString, anchor: &QString, first_day: i32, rev: i32) -> QString;
+
+        /// The mosaic of the year that holds `anchor`, `back` years before
+        /// it: a square a day, laid out a week a column.
+        #[qinvokable]
+        fn mosaic(self: &Stats, anchor: &QString, back: i32, first_day: i32, rev: i32) -> QString;
+
+        /// The recap of a month (1 to 12) or of a whole year (month 0); a
+        /// year of 0 is the month before this one.
+        #[qinvokable]
+        fn recap(self: &Stats, year: i32, month: i32, rev: i32) -> QString;
 
         /// One page of the history, newest first: `page` from 1, with 20, 50
         /// or 100 listens, only those that hold every word of `query`.
@@ -65,6 +76,15 @@ impl qobject::Stats {
     pub fn report(&self, kind: &QString, anchor: &QString, first_day: i32, _rev: i32) -> QString {
         let (kind, anchor) = (kind.to_string(), anchor.to_string());
         QString::from(&app::with(|api| api.stats_report_json(&kind, &anchor, i64::from(first_day))))
+    }
+
+    pub fn mosaic(&self, anchor: &QString, back: i32, first_day: i32, _rev: i32) -> QString {
+        let anchor = anchor.to_string();
+        QString::from(&app::with(|api| api.stats_mosaic_json(&anchor, i64::from(back), i64::from(first_day))))
+    }
+
+    pub fn recap(&self, year: i32, month: i32, _rev: i32) -> QString {
+        QString::from(&app::with(|api| api.recap_json(i64::from(year), i64::from(month))))
     }
 
     pub fn history(&self, page: i32, per_page: i32, query: &QString, _rev: i32) -> QString {

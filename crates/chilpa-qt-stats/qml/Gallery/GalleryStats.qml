@@ -28,6 +28,22 @@ Item {
         facts: { per_day: 76.6, best_day: { label: "Sat 4 Oct", plays: 112 }, bit_perfect: 480, events: 600, skips: 31 }
     })
 
+    // Six weeks of a made-up year, busier as they go.
+    readonly property var year: ({
+        year: 2026, earlier: true, later: false, columns: 6, levels: 4, most: 12, plays: 240,
+        rows: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        months: [{ label: "Jan", column: 0 }, { label: "Feb", column: 5 }],
+        cells: Array.from({ length: 42 }, (_, i) => ({ date: "2026-01-" + String(i + 1).padStart(2, "0"), column: Math.floor(i / 7), row: i % 7, plays: i % 5 * 3, level: i % 5, later: i > 38, tip: "Day " + (i + 1) }))
+    })
+    readonly property var month: ({
+        year: 2026, month: 10, title: "Your October 2026 recap", first_year: 2025, first_month: 3, now_year: 2026, now_month: 11,
+        months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], any: true, empty: false,
+        artists: [["Mora Vale", 90], ["Yoko Kanno", 71], ["May'n", 40], ["Aimer", 33], ["Faded Lines", 21]].map(a => ({ name: a[0], plays: a[1], minutes: a[1] * 3, art: "" })),
+        albums: [["Faded Lines", 87], ["Macross Frontier", 50], ["Sun Dance", 31]].map(a => ({ title: a[0], plays: a[1], minutes: a[1] * 3, art: "", id: 1 })),
+        tracks: [["A song with a name long enough to be drawn smaller", 31], ["Lion", 20]].map(a => ({ title: a[0], plays: a[1], minutes: a[1] * 4, art: "" })),
+        minutes: 3030, plays: 868, per_day: 29.9, tracks_count: 345, albums_count: 205, artists_count: 145, new_tracks: 63, new_albums: 24, new_artists: 13
+    })
+
     Column {
         id: column
         x: Metrics.contentX
@@ -66,6 +82,15 @@ Item {
             StatsCard { width: Charts.chartMin; height: Charts.chartTall; title: "Genres"; RankBars { width: parent.width; points: gallery.week.genres.map(g => ({ label: g.name, value: g.plays })) } }
         }
         PeriodBars { width: parent.width; height: Charts.chartTall; points: gallery.week.series }
+        StatsHero { width: parent.width; report: gallery.week; chart: "mosaic"; mosaic: gallery.year }
+        MosaicGrid { width: parent.width; mosaic: gallery.year; chosen: "2026-01-09" }
+        Row {
+            spacing: Metrics.gap24
+            RecapPeriods { width: Charts.recapPeriods; recap: gallery.month; shownYear: 2026 }
+            RecapCard { width: gallery.sampleWide - Charts.recapPeriods - Metrics.gap24; recap: gallery.month; timed: true }
+        }
+        RecapTop { width: parent.width; caption: "Top album"; leaders: gallery.month.albums }
+        RecapFigure { width: Charts.recapCell; value: "3,030"; label: "Minutes" }
         Row {
             spacing: Metrics.gap16
             TopTile { width: Charts.tileMin; height: Charts.tileTall; kind: "artists"; title: "Artists"; numbers: gallery.week.artists }

@@ -1008,6 +1008,9 @@ msgstr ""
 msgid "Barcode"
 msgstr "Streepjescode"
 
+msgid "Bars"
+msgstr "Balken"
+
 msgid "Based on {artist} · {genres}"
 msgstr "Gebaseerd op {artist} · {genres}"
 
@@ -2738,6 +2741,9 @@ msgstr "Eerder"
 msgid "Earlier tabs"
 msgstr "Eerdere tabbladen"
 
+msgid "Earlier year"
+msgstr "Eerder jaar"
+
 msgid "Edit"
 msgstr "Bewerken"
 
@@ -4085,6 +4091,9 @@ msgstr "Later"
 msgid "Later tabs"
 msgstr "Latere tabbladen"
 
+msgid "Later year"
+msgstr "Later jaar"
+
 msgid "Latest release"
 msgstr "Nieuwste uitgave"
 
@@ -4472,6 +4481,9 @@ msgstr "Standaardweergave minispeler"
 msgid "Minimize"
 msgstr "Minimaliseren"
 
+msgid "Minutes"
+msgstr "Minuten"
+
 msgid "Missing"
 msgstr "Ontbreekt"
 
@@ -4507,6 +4519,9 @@ msgstr "Mono licht"
 
 msgid "Month"
 msgstr "Maand"
+
+msgid "Monthly"
+msgstr "Per maand"
 
 msgid "Mood"
 msgstr "Stemming"
@@ -4552,6 +4567,9 @@ msgstr "Meer dan 16 bits"
 
 msgid "More than 48 kHz"
 msgstr "Meer dan 48 kHz"
+
+msgid "Mosaic"
+msgstr "Mozaïek"
 
 msgid "Most albums"
 msgstr ""
@@ -4733,8 +4751,14 @@ msgstr "Nooit afgespeeld; plays:1.. betekent minstens één keer afgespeeld"
 msgid "New Tab"
 msgstr "Nieuw tabblad"
 
+msgid "New albums"
+msgstr "Nieuwe albums"
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "Nieuwe analyses verschijnen hier. Je opgeslagen nummerresultaten vind je onder Nummers."
+
+msgid "New artists"
+msgstr "Nieuwe artiesten"
 
 msgid "New conditions go into this group"
 msgstr "Nieuwe voorwaarden komen in deze groep"
@@ -4762,6 +4786,9 @@ msgstr "Nieuw tabblad"
 
 msgid "New third-party plugin"
 msgstr "Nieuwe plug-in van derden"
+
+msgid "New tracks"
+msgstr "Nieuwe nummers"
 
 msgid "New, saved with the next save"
 msgstr "Nieuw, wordt opgeslagen bij de volgende keer opslaan"
@@ -5050,6 +5077,9 @@ msgstr "Nog niet gecontroleerd"
 
 msgid "Not compatible"
 msgstr "Niet compatibel"
+
+msgid "Not enough was played in this period for a recap."
+msgstr "In deze periode is niet genoeg afgespeeld voor een terugblik."
 
 msgid "Not for me"
 msgstr "Niet voor mij"
@@ -6194,6 +6224,9 @@ msgstr "Bouwt de tellers en de zoekindex opnieuw op uit de nummers en het afspee
 msgid "Recalculate usage"
 msgstr "Gebruik herberekenen"
 
+msgid "Recap"
+msgstr "Terugblik"
+
 msgid "Receiver"
 msgstr "Ontvanger"
 
@@ -7139,6 +7172,9 @@ msgstr "De zoekopdracht als consoletekst tonen"
 
 msgid "Show the sidebar"
 msgstr "De zijbalk tonen"
+
+msgid "Show time listened"
+msgstr "Luistertijd tonen"
 
 msgid "Show token"
 msgstr "Token tonen"
@@ -8645,11 +8681,20 @@ msgstr ""
 msgid "Tools"
 msgstr "Hulpmiddelen"
 
+msgid "Top album"
+msgstr "Topalbum"
+
+msgid "Top artist"
+msgstr "Topartiest"
+
 msgid "Top level"
 msgstr "Bovenste niveau"
 
 msgid "Top result"
 msgstr "Topresultaat"
+
+msgid "Top track"
+msgstr "Topnummer"
 
 msgid "Trace"
 msgstr "Trace"
@@ -9331,6 +9376,9 @@ msgstr "DIT VIND JE MISSCHIEN OOK LEUK"
 msgid "Year"
 msgstr "Jaar"
 
+msgid "Yearly"
+msgstr "Per jaar"
+
 msgid "Yes"
 msgstr "Ja"
 
@@ -9387,6 +9435,12 @@ msgstr "Jouw shows"
 
 msgid "Your {} of them are removed too."
 msgstr "Ook je {} ervan worden verwijderd."
+
+msgid "Your {} recap"
+msgstr "Jouw terugblik op {}"
+
+msgid "Your {} {} recap"
+msgstr "Jouw terugblik op {1} {2}"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "een DASH-manifest, dat Chilpa nog niet kan lezen"

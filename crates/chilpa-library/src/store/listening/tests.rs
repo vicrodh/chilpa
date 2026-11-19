@@ -408,3 +408,24 @@ fn a_local_date_starts_at_its_own_midnight() {
     let today: String = lib.db.query_row("SELECT date('now', 'localtime')", [], |r| r.get(0)).unwrap();
     assert_eq!(lib.local_date_start(&today).unwrap(), lib.local_day_start(0).unwrap());
 }
+
+#[test]
+fn a_period_counts_what_was_heard_for_the_first_time_in_it() {
+    let lib = fixture();
+    assert_eq!(lib.listening_first_day().unwrap(), None, "an empty log has no first day");
+    // Track 1 first in the earlier period, and again in the later one;
+    // track 2 only in the later one. Both are of the same record.
+    lib.record_listen(&event(&lib, 1, 86_400, Some(0), 1000)).unwrap();
+    lib.record_listen(&event(&lib, 1, 10 * 86_400, Some(0), 1000)).unwrap();
+    lib.record_listen(&event(&lib, 2, 10 * 86_400 + 60, Some(0), 1000)).unwrap();
+    let period = |from, until| ListenFilter { from: Some(from), until: Some(until), ..Default::default() };
+    assert_eq!(lib.listening_firsts(&period(0, 5 * 86_400)).unwrap(), (1, 1, 1));
+    assert_eq!(
+        lib.listening_firsts(&period(5 * 86_400, 20 * 86_400)).unwrap(),
+        (1, 0, 1),
+        "track 2 and its artist are new; the record and track 1 were heard before"
+    );
+    assert_eq!(lib.listening_firsts(&period(20 * 86_400, 30 * 86_400)).unwrap(), (0, 0, 0));
+    assert_eq!(lib.listening_firsts(&ListenFilter::default()).unwrap(), (2, 1, 2), "no bounds is the whole log");
+    assert_eq!(lib.listening_first_day().unwrap().as_deref(), Some("1970-01-02"));
+}

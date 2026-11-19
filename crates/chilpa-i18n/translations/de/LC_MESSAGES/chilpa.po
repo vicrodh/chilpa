@@ -1008,6 +1008,9 @@ msgstr ""
 msgid "Barcode"
 msgstr "Barcode"
 
+msgid "Bars"
+msgstr "Balken"
+
 msgid "Based on {artist} · {genres}"
 msgstr "Basierend auf {artist} · {genres}"
 
@@ -2738,6 +2741,9 @@ msgstr "Früher"
 msgid "Earlier tabs"
 msgstr "Frühere Tabs"
 
+msgid "Earlier year"
+msgstr "Früheres Jahr"
+
 msgid "Edit"
 msgstr "Bearbeiten"
 
@@ -4085,6 +4091,9 @@ msgstr "Später"
 msgid "Later tabs"
 msgstr "Spätere Tabs"
 
+msgid "Later year"
+msgstr "Späteres Jahr"
+
 msgid "Latest release"
 msgstr "Neueste Veröffentlichung"
 
@@ -4472,6 +4481,9 @@ msgstr "Standardansicht des Mini-Players"
 msgid "Minimize"
 msgstr "Minimieren"
 
+msgid "Minutes"
+msgstr "Minuten"
+
 msgid "Missing"
 msgstr "Fehlend"
 
@@ -4507,6 +4519,9 @@ msgstr "Mono hell"
 
 msgid "Month"
 msgstr "Monat"
+
+msgid "Monthly"
+msgstr "Monatlich"
 
 msgid "Mood"
 msgstr "Stimmung"
@@ -4552,6 +4567,9 @@ msgstr "Mehr als 16 Bit"
 
 msgid "More than 48 kHz"
 msgstr "Mehr als 48 kHz"
+
+msgid "Mosaic"
+msgstr "Mosaik"
 
 msgid "Most albums"
 msgstr ""
@@ -4733,8 +4751,14 @@ msgstr "Noch nie abgespielt; plays:1.. bedeutet mindestens einmal abgespielt"
 msgid "New Tab"
 msgstr "Neuer Tab"
 
+msgid "New albums"
+msgstr "Neue Alben"
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "Neue Analysedurchläufe erscheinen hier. Deine gespeicherten Titelergebnisse findest du unter Titel."
+
+msgid "New artists"
+msgstr "Neue Künstler"
 
 msgid "New conditions go into this group"
 msgstr "Neue Bedingungen landen in dieser Gruppe"
@@ -4762,6 +4786,9 @@ msgstr "Neuer Tab"
 
 msgid "New third-party plugin"
 msgstr "Neues Plugin von Drittanbietern"
+
+msgid "New tracks"
+msgstr "Neue Titel"
 
 msgid "New, saved with the next save"
 msgstr "Neu, wird beim nächsten Speichern gesichert"
@@ -5050,6 +5077,9 @@ msgstr "Noch nicht geprüft"
 
 msgid "Not compatible"
 msgstr "Nicht kompatibel"
+
+msgid "Not enough was played in this period for a recap."
+msgstr "In diesem Zeitraum wurde nicht genug gespielt für einen Rückblick."
 
 msgid "Not for me"
 msgstr "Nichts für mich"
@@ -6194,6 +6224,9 @@ msgstr "Baut die Zähler und den Suchindex aus den Titeln und dem Wiedergabeprot
 msgid "Recalculate usage"
 msgstr "Nutzung neu berechnen"
 
+msgid "Recap"
+msgstr "Rückblick"
+
 msgid "Receiver"
 msgstr "Empfänger"
 
@@ -7139,6 +7172,9 @@ msgstr "Abfrage als Konsolentext zeigen"
 
 msgid "Show the sidebar"
 msgstr "Seitenleiste anzeigen"
+
+msgid "Show time listened"
+msgstr "Hörzeit anzeigen"
 
 msgid "Show token"
 msgstr "Token anzeigen"
@@ -8645,11 +8681,20 @@ msgstr ""
 msgid "Tools"
 msgstr "Werkzeuge"
 
+msgid "Top album"
+msgstr "Top-Album"
+
+msgid "Top artist"
+msgstr "Top-Künstler"
+
 msgid "Top level"
 msgstr "Oberste Ebene"
 
 msgid "Top result"
 msgstr "Bestes Ergebnis"
+
+msgid "Top track"
+msgstr "Top-Titel"
 
 msgid "Trace"
 msgstr "Trace"
@@ -9331,6 +9376,9 @@ msgstr "DAS KÖNNTE DIR AUCH GEFALLEN"
 msgid "Year"
 msgstr "Jahr"
 
+msgid "Yearly"
+msgstr "Jährlich"
+
 msgid "Yes"
 msgstr "Ja"
 
@@ -9387,6 +9435,12 @@ msgstr "Deine Sendungen"
 
 msgid "Your {} of them are removed too."
 msgstr "Auch deine {} davon werden entfernt."
+
+msgid "Your {} recap"
+msgstr "Dein Rückblick {}"
+
+msgid "Your {} {} recap"
+msgstr "Dein Rückblick für {1} {2}"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "ein DASH-Manifest, das Chilpa noch nicht lesen kann"

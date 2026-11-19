@@ -15,6 +15,7 @@ use serde_json::{json, Value};
 
 use crate::artist_page::MONTHS;
 use crate::listening_period::{self as period, Kind, Period};
+use crate::listening_tops as tops;
 
 /// A sample rate in kHz as a quality line says it: 44.1, 96.
 pub(crate) fn khz(rate: u32) -> String {
@@ -24,14 +25,6 @@ pub(crate) fn khz(rate: u32) -> String {
 
 /// How many of the top artists, records and tracks the report names.
 const TOP: usize = 5;
-
-/// I read the source id and a length-checked reference, including its colons.
-fn source_key<'a>(key: &'a str, prefix: &str) -> Option<(i64, &'a str)> {
-    let (source, rest) = key.strip_prefix(prefix)?.split_once(':')?;
-    let (length, reference) = rest.split_once(':')?;
-    (reference.chars().count() == length.parse::<usize>().ok()?)
-        .then_some((source.parse().ok()?, reference))
-}
 
 fn plugin_art(catalog: &crate::source_catalog::Catalog, plugin: &str, track: &str, album: &str) -> String {
     if !track.is_empty() {
@@ -46,7 +39,7 @@ fn plugin_art(catalog: &crate::source_catalog::Catalog, plugin: &str, track: &st
 }
 
 /// The days of the week from Monday, as a date says them short.
-const WEEKDAYS: [&str; 7] = [
+pub(crate) const WEEKDAYS: [&str; 7] = [
     i18n::mark("Mon"), i18n::mark("Tue"), i18n::mark("Wed"), i18n::mark("Thu"), i18n::mark("Fri"), i18n::mark("Sat"), i18n::mark("Sun"),
 ];
 
@@ -56,7 +49,7 @@ fn civil(day: &str) -> Option<(i64, u32, u32)> {
     period::parse(day).map(period::civil_from_days)
 }
 
-fn month_name(month: u32) -> String {
+pub(crate) fn month_name(month: u32) -> String {
     i18n::t(MONTHS[month as usize - 1])
 }
 
@@ -200,71 +193,9 @@ impl crate::Chilpa {
         let earlier_summary = lib.listening_summary(&before).unwrap_or_default();
         let (artists, albums) = lib.listening_counts(&now).unwrap_or_default();
         let (artists_before, albums_before) = lib.listening_counts(&before).unwrap_or_default();
-        let pictures = lib.artist_pictures().unwrap_or_default();
-        let top = |dimension| lib.listening_buckets(&now, dimension, ListenOrder::Plays, TOP).unwrap_or_default();
-        let top_artists: Vec<Value> = top(ListenDimension::Artist)
-            .into_iter()
-            .filter(|b| b.key.is_some())
-            .map(|b| {
-                let art = pictures.of(&b.label).map(str::to_string).or_else(|| lib.artist_cover(&b.label).ok().flatten()).unwrap_or_default();
-                json!({"name": b.label, "plays": b.metrics.plays, "art": art})
-            })
-            .collect();
-        let top_albums: Vec<Value> = top(ListenDimension::Album)
-            .into_iter()
-            .filter(|b| b.key.is_some())
-            .map(|b| {
-                let id = b.key.as_deref().and_then(|k| k.strip_prefix("album:")).and_then(|id| id.parse::<i64>().ok());
-                let album = id.and_then(|id| lib.album(id).ok().flatten()).map(|(a, _)| a);
-                let source = b.key.as_deref().and_then(|key| source_key(key, "source:"))
-                    .and_then(|(source_id, reference)| {
-                        let (provider, plugin) = lib.listening_source(source_id).ok().flatten()?;
-                        if provider != crate::source_opener::PROVIDER { return None; }
-                        catalog.card_by_identity(&plugin, reference).and_then(|card| catalog.card(card.id))
-                    });
-                let art = album.as_ref().and_then(|a| a.artwork_path.clone()).filter(|art| !art.is_empty())
-                    .or_else(|| source.as_ref().map(|c| c.art.clone()).filter(|art| !art.is_empty()))
-                    .or_else(|| b.key.as_deref().and_then(|key| source_key(key, "source:"))
-                        .and_then(|(source_id, reference)| lib.listening_source_art(source_id, reference, true).ok().flatten()))
-                    .unwrap_or_default();
-                json!({
-                    "title": album.as_ref().map(|a| a.title.clone()).or_else(|| source.as_ref().map(|c| c.title.clone())).unwrap_or(b.label.clone()),
-                    "artist": album.as_ref().map(|a| a.album_artist.clone()).or_else(|| source.as_ref().map(|c| c.artist.clone())).unwrap_or_default(),
-                    "art": art,
-                    "id": id.or_else(|| source.as_ref().map(|c| c.id)).unwrap_or(0),
-                    "plays": b.metrics.plays,
-                })
-            })
-            .collect();
-        let top_tracks: Vec<Value> = top(ListenDimension::Track)
-            .into_iter()
-            .filter(|b| b.key.is_some())
-            .map(|b| {
-                let id = b.key.as_deref().and_then(|k| k.strip_prefix("track:")).and_then(|id| id.parse::<i64>().ok());
-                let track = id.and_then(|id| lib.tracks_by_ids(&[id]).ok()).and_then(|mut rows| rows.pop());
-                let source = b.key.as_deref().and_then(|key| source_key(key, ""))
-                    .and_then(|(source_id, reference)| {
-                        let (provider, plugin) = lib.listening_source(source_id).ok().flatten()?;
-                        (provider == crate::source_opener::PROVIDER).then(|| {
-                            let path = crate::source_opener::entry_of(&plugin, reference);
-                            let track = catalog.track_by_path(&path);
-                            if track.as_ref().is_none_or(|(_, art)| art.is_empty()) { catalog.want_art_of(&path); }
-                            track
-                        }).flatten()
-                    });
-                let art = track.as_ref().and_then(|t| t.artwork_path.clone()).filter(|art| !art.is_empty())
-                    .or_else(|| source.as_ref().map(|(_, art)| art.clone()).filter(|art| !art.is_empty()))
-                    .or_else(|| b.key.as_deref().and_then(|key| source_key(key, ""))
-                        .and_then(|(source_id, reference)| lib.listening_source_art(source_id, reference, false).ok().flatten()))
-                    .unwrap_or_default();
-                json!({
-                    "title": b.label,
-                    "artist": track.as_ref().map(|t| t.artist.clone()).or_else(|| source.as_ref().map(|(t, _)| t.artist.clone())).unwrap_or_default(),
-                    "art": art,
-                    "plays": b.metrics.plays,
-                })
-            })
-            .collect();
+        let top_artists = tops::artists(lib, &now, TOP);
+        let top_albums = tops::albums(lib, &catalog, &now, TOP);
+        let top_tracks = tops::tracks(lib, &catalog, &now, TOP);
         let by_key = |dimension, limit| plays_of(&lib.listening_buckets(&now, dimension, ListenOrder::Key, limit).unwrap_or_default());
         let hours = by_key(ListenDimension::Hour, 24);
         let weekdays = by_key(ListenDimension::Weekday, 7);
@@ -400,14 +331,6 @@ fn kind_name(kind: Kind) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn source_keys_keep_the_plugin_reference_intact() {
-        assert_eq!(source_key("source:3:10:album:mx:ñ", "source:"), Some((3, "album:mx:ñ")));
-        assert_eq!(source_key("3:8:track:42", ""), Some((3, "track:42")));
-        assert_eq!(source_key("source:3:9:album:mx:ñ", "source:"), None);
-        assert_eq!(source_key("track:12", ""), None);
-    }
 
     #[test]
     fn a_change_is_a_whole_percent_and_nothing_before_is_no_change() {

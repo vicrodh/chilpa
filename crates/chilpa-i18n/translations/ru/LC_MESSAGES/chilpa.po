@@ -1009,6 +1009,9 @@ msgstr ""
 msgid "Barcode"
 msgstr "Штрихкод"
 
+msgid "Bars"
+msgstr "Полосы"
+
 msgid "Based on {artist} · {genres}"
 msgstr "На основе: {artist} · {genres}"
 
@@ -2740,6 +2743,9 @@ msgstr "Раньше"
 msgid "Earlier tabs"
 msgstr "Предыдущие вкладки"
 
+msgid "Earlier year"
+msgstr "Предыдущий год"
+
 msgid "Edit"
 msgstr "Редактировать"
 
@@ -4090,6 +4096,9 @@ msgstr "Позже"
 msgid "Later tabs"
 msgstr "Следующие вкладки"
 
+msgid "Later year"
+msgstr "Следующий год"
+
 msgid "Latest release"
 msgstr "Последний релиз"
 
@@ -4477,6 +4486,9 @@ msgstr "Вид мини-плеера по умолчанию"
 msgid "Minimize"
 msgstr "Свернуть"
 
+msgid "Minutes"
+msgstr "Минуты"
+
 msgid "Missing"
 msgstr "Отсутствует"
 
@@ -4512,6 +4524,9 @@ msgstr "Моно светлый"
 
 msgid "Month"
 msgstr "Месяц"
+
+msgid "Monthly"
+msgstr "По месяцам"
 
 msgid "Mood"
 msgstr "Настроение"
@@ -4557,6 +4572,9 @@ msgstr "Больше 16 бит"
 
 msgid "More than 48 kHz"
 msgstr "Больше 48 кГц"
+
+msgid "Mosaic"
+msgstr "Мозаика"
 
 msgid "Most albums"
 msgstr ""
@@ -4738,8 +4756,14 @@ msgstr "Ни разу не воспроизводились; plays:1.. озна�
 msgid "New Tab"
 msgstr "Новая вкладка"
 
+msgid "New albums"
+msgstr "Новые альбомы"
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "Новые запуски анализа появятся здесь. Сохранённые результаты по трекам доступны в разделе «Треки»."
+
+msgid "New artists"
+msgstr "Новые исполнители"
 
 msgid "New conditions go into this group"
 msgstr "Новые условия попадают в эту группу"
@@ -4767,6 +4791,9 @@ msgstr "Новая вкладка"
 
 msgid "New third-party plugin"
 msgstr "Новый сторонний плагин"
+
+msgid "New tracks"
+msgstr "Новые треки"
 
 msgid "New, saved with the next save"
 msgstr "Новая, сохранится при следующем сохранении"
@@ -5055,6 +5082,9 @@ msgstr "Ещё не проверено"
 
 msgid "Not compatible"
 msgstr "Несовместим"
+
+msgid "Not enough was played in this period for a recap."
+msgstr "За этот период прослушано слишком мало для итогов."
 
 msgid "Not for me"
 msgstr "Не для меня"
@@ -6199,6 +6229,9 @@ msgstr "Пересобирает счётчики и поисковый инде
 msgid "Recalculate usage"
 msgstr "Пересчитать использование"
 
+msgid "Recap"
+msgstr "Итоги"
+
 msgid "Receiver"
 msgstr "Приёмник"
 
@@ -7146,6 +7179,9 @@ msgstr "Показать запрос как текст консоли"
 
 msgid "Show the sidebar"
 msgstr "Показать боковую панель"
+
+msgid "Show time listened"
+msgstr "Показывать время прослушивания"
 
 msgid "Show token"
 msgstr "Показать токен"
@@ -8656,11 +8692,20 @@ msgstr ""
 msgid "Tools"
 msgstr "Инструменты"
 
+msgid "Top album"
+msgstr "Главный альбом"
+
+msgid "Top artist"
+msgstr "Главный исполнитель"
+
 msgid "Top level"
 msgstr "Верхний уровень"
 
 msgid "Top result"
 msgstr "Лучший результат"
+
+msgid "Top track"
+msgstr "Главный трек"
 
 msgid "Trace"
 msgstr "Трассировка"
@@ -9343,6 +9388,9 @@ msgstr "ВАМ ТАКЖЕ МОЖЕТ ПОНРАВИТЬСЯ"
 msgid "Year"
 msgstr "Год"
 
+msgid "Yearly"
+msgstr "По годам"
+
 msgid "Yes"
 msgstr "Да"
 
@@ -9399,6 +9447,12 @@ msgstr "Ваши подкасты"
 
 msgid "Your {} of them are removed too."
 msgstr "Также удаляются ваши {} для них."
+
+msgid "Your {} recap"
+msgstr "Ваши итоги за {} год"
+
+msgid "Your {} {} recap"
+msgstr "Ваши итоги: {1} {2}"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "манифест DASH, который Chilpa пока не умеет читать"

@@ -1007,6 +1007,9 @@ msgstr ""
 msgid "Barcode"
 msgstr "バーコード"
 
+msgid "Bars"
+msgstr "バー"
+
 msgid "Based on {artist} · {genres}"
 msgstr "{artist} · {genres}に基づく"
 
@@ -2736,6 +2739,9 @@ msgstr "前の期間"
 msgid "Earlier tabs"
 msgstr "以前のタブ"
 
+msgid "Earlier year"
+msgstr "前の年"
+
 msgid "Edit"
 msgstr "編集"
 
@@ -4080,6 +4086,9 @@ msgstr "次の期間"
 msgid "Later tabs"
 msgstr "以降のタブ"
 
+msgid "Later year"
+msgstr "次の年"
+
 msgid "Latest release"
 msgstr "最新リリース"
 
@@ -4467,6 +4476,9 @@ msgstr "ミニプレーヤーの既定の表示"
 msgid "Minimize"
 msgstr "最小化"
 
+msgid "Minutes"
+msgstr "分"
+
 msgid "Missing"
 msgstr "見つかりません"
 
@@ -4502,6 +4514,9 @@ msgstr "モノ・ライト"
 
 msgid "Month"
 msgstr "月"
+
+msgid "Monthly"
+msgstr "月別"
 
 msgid "Mood"
 msgstr "ムード"
@@ -4547,6 +4562,9 @@ msgstr "16 ビットより上"
 
 msgid "More than 48 kHz"
 msgstr "48 kHz より上"
+
+msgid "Mosaic"
+msgstr "モザイク"
 
 msgid "Most albums"
 msgstr ""
@@ -4728,8 +4746,14 @@ msgstr "未再生。plays:1.. は1回以上再生した曲を表します"
 msgid "New Tab"
 msgstr "新しいタブ"
 
+msgid "New albums"
+msgstr "新しいアルバム"
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "新しい解析の実行がここに表示されます。保存済みのトラックの結果は「トラック」で確認できます。"
+
+msgid "New artists"
+msgstr "新しいアーティスト"
 
 msgid "New conditions go into this group"
 msgstr "新しい条件はこのグループに入ります"
@@ -4757,6 +4781,9 @@ msgstr "新しいタブ"
 
 msgid "New third-party plugin"
 msgstr "新しいサードパーティ製プラグイン"
+
+msgid "New tracks"
+msgstr "新しいトラック"
 
 msgid "New, saved with the next save"
 msgstr "新規、次回の保存時に保存されます"
@@ -5045,6 +5072,9 @@ msgstr "未確認"
 
 msgid "Not compatible"
 msgstr "互換性なし"
+
+msgid "Not enough was played in this period for a recap."
+msgstr "この期間は再生が少なく、まとめを作成できません。"
 
 msgid "Not for me"
 msgstr "興味なし"
@@ -6189,6 +6219,9 @@ msgstr "トラックと再生ログから件数と検索インデックスを再
 msgid "Recalculate usage"
 msgstr "使用量を再計算"
 
+msgid "Recap"
+msgstr "まとめ"
+
 msgid "Receiver"
 msgstr "レシーバー"
 
@@ -7132,6 +7165,9 @@ msgstr "クエリをコンソールのテキストで表示"
 
 msgid "Show the sidebar"
 msgstr "サイドバーを表示"
+
+msgid "Show time listened"
+msgstr "再生時間を表示"
 
 msgid "Show token"
 msgstr "トークンを表示"
@@ -8634,11 +8670,20 @@ msgstr ""
 msgid "Tools"
 msgstr "ツール"
 
+msgid "Top album"
+msgstr "トップアルバム"
+
+msgid "Top artist"
+msgstr "トップアーティスト"
+
 msgid "Top level"
 msgstr "最上位"
 
 msgid "Top result"
 msgstr "トップ結果"
+
+msgid "Top track"
+msgstr "トップトラック"
 
 msgid "Trace"
 msgstr "トレース"
@@ -9319,6 +9364,9 @@ msgstr "こちらもおすすめ"
 msgid "Year"
 msgstr "年"
 
+msgid "Yearly"
+msgstr "年別"
+
 msgid "Yes"
 msgstr "はい"
 
@@ -9375,6 +9423,12 @@ msgstr "あなたの番組"
 
 msgid "Your {} of them are removed too."
 msgstr "それらの{}も削除されます。"
+
+msgid "Your {} recap"
+msgstr "{}年のまとめ"
+
+msgid "Your {} {} recap"
+msgstr "{2}年{1}のまとめ"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "DASHマニフェスト（Chilpaはまだ読み取れません）"

@@ -1015,6 +1015,9 @@ msgstr ""
 msgid "Barcode"
 msgstr "條碼"
 
+msgid "Bars"
+msgstr "長條"
+
 msgid "Based on {artist} · {genres}"
 msgstr "基於 {artist} · {genres}"
 
@@ -2744,6 +2747,9 @@ msgstr "更早之前"
 msgid "Earlier tabs"
 msgstr "較早的分頁"
 
+msgid "Earlier year"
+msgstr "上一年"
+
 msgid "Edit"
 msgstr "編輯"
 
@@ -4088,6 +4094,9 @@ msgstr "稍後"
 msgid "Later tabs"
 msgstr "較後的分頁"
 
+msgid "Later year"
+msgstr "下一年"
+
 msgid "Latest release"
 msgstr "最新發行"
 
@@ -4475,6 +4484,9 @@ msgstr "迷你播放器預設檢視"
 msgid "Minimize"
 msgstr "最小化"
 
+msgid "Minutes"
+msgstr "分鐘"
+
 msgid "Missing"
 msgstr "遺失"
 
@@ -4510,6 +4522,9 @@ msgstr "單色淺色"
 
 msgid "Month"
 msgstr "月"
+
+msgid "Monthly"
+msgstr "按月"
 
 msgid "Mood"
 msgstr "心情"
@@ -4555,6 +4570,9 @@ msgstr ""
 
 msgid "More than 48 kHz"
 msgstr ""
+
+msgid "Mosaic"
+msgstr "馬賽克"
 
 msgid "Most albums"
 msgstr ""
@@ -4736,8 +4754,14 @@ msgstr "從未播放；plays:1.. 表示至少播放過一次"
 msgid "New Tab"
 msgstr "新分頁"
 
+msgid "New albums"
+msgstr "新專輯"
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "新的分析執行將顯示於此。已儲存的曲目結果可在「曲目」中取得。"
+
+msgid "New artists"
+msgstr "新藝人"
 
 msgid "New conditions go into this group"
 msgstr "新條件將放入此群組"
@@ -4765,6 +4789,9 @@ msgstr "新分頁"
 
 msgid "New third-party plugin"
 msgstr "新第三方外掛"
+
+msgid "New tracks"
+msgstr "新曲目"
 
 msgid "New, saved with the next save"
 msgstr "新建，將於下次儲存時存檔"
@@ -5053,6 +5080,9 @@ msgstr "尚未檢查"
 
 msgid "Not compatible"
 msgstr "不相容"
+
+msgid "Not enough was played in this period for a recap."
+msgstr "這段期間的播放量不足以產生回顧。"
 
 msgid "Not for me"
 msgstr "不感興趣"
@@ -6197,6 +6227,9 @@ msgstr "從曲目與播放紀錄重建計數與搜尋索引。不會遺失任何
 msgid "Recalculate usage"
 msgstr "重新計算使用量"
 
+msgid "Recap"
+msgstr "回顧"
+
 msgid "Receiver"
 msgstr "接收端"
 
@@ -7140,6 +7173,9 @@ msgstr "將查詢顯示為主控台文字"
 
 msgid "Show the sidebar"
 msgstr "顯示側邊欄"
+
+msgid "Show time listened"
+msgstr "顯示聆聽時間"
 
 msgid "Show token"
 msgstr "顯示權杖"
@@ -8642,11 +8678,20 @@ msgstr ""
 msgid "Tools"
 msgstr "工具"
 
+msgid "Top album"
+msgstr "最常聽的專輯"
+
+msgid "Top artist"
+msgstr "最常聽的藝人"
+
 msgid "Top level"
 msgstr "最上層"
 
 msgid "Top result"
 msgstr "最佳結果"
+
+msgid "Top track"
+msgstr "最常聽的曲目"
 
 msgid "Trace"
 msgstr "追蹤（Trace）"
@@ -9327,6 +9372,9 @@ msgstr "你可能也會喜歡"
 msgid "Year"
 msgstr "年份"
 
+msgid "Yearly"
+msgstr "按年"
+
 msgid "Yes"
 msgstr "是"
 
@@ -9383,6 +9431,12 @@ msgstr "你的節目"
 
 msgid "Your {} of them are removed too."
 msgstr "你的 {} 中的該項目也會一併移除。"
+
+msgid "Your {} recap"
+msgstr "你的 {} 年回顧"
+
+msgid "Your {} {} recap"
+msgstr "你的 {2} 年{1}回顧"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "DASH 清單檔，Chilpa 目前尚無法讀取"

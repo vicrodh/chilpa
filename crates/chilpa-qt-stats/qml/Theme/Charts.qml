@@ -20,6 +20,31 @@ QtObject {
     readonly property int barLabel: 20
     // The narrowest a bar's label may be before only some bars get one.
     readonly property int barLabelWide: 28
+    // The hero's chart: its tools above it, and the mosaic's squares, a
+    // day each, with the months named above and the days beside.
+    readonly property int chartTools: Metrics.button28
+    readonly property int mosaicCell: 16
+    readonly property int mosaicApart: 3
+    readonly property int mosaicRound: 3
+    readonly property int mosaicMonths: 18
+    readonly property int mosaicDays: 34
+    // The faintest a played day is drawn; the busiest is whole.
+    readonly property real mosaicFaint: 0.3
+    // The recap: its periods beside the card while both fit, the card's
+    // cover of the first of each, its title and its figures.
+    readonly property int recapWidest: 980
+    readonly property int recapPeriods: 220
+    readonly property int recapStacks: 720
+    readonly property int recapCover: 168
+    readonly property int recapPad: 28
+    readonly property real recapTitle: 30 * Type.pointsPerPixel
+    readonly property real recapLead: 26 * Type.pointsPerPixel
+    readonly property real recapLeadLong: 20 * Type.pointsPerPixel
+    readonly property int recapLongName: 28
+    readonly property int recapRule: 2
+    readonly property int recapRuleWide: 56
+    readonly property int recapFigure: 96
+    readonly property int recapCell: 220
     // The tiles of artists, records and tracks; the first of each is
     // larger.
     readonly property int tileMin: 280
