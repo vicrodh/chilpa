@@ -99,12 +99,19 @@ pub fn run(library: &Path, observer: &mut dyn FnMut(&Progress), stop: &Stop) -> 
     if let Some(dir) = library.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
-    let steps = {
+    let applied = {
         let db = Connection::open(library)?;
         stop.watch(&db);
         crate::store::query::register(&db)?;
         super::apply_pragmas(&db)?;
-        apply(&db, library, observer, stop)?
+        apply(&db, library, observer, stop)
+    };
+    let steps = match applied {
+        Ok(steps) => steps,
+        Err(error) => {
+            seal(library);
+            return Err(error);
+        }
     };
     stop.check()?;
     drop(crate::Library::open(library)?);
@@ -130,7 +137,10 @@ fn apply(db: &Connection, library: &Path, observer: &mut dyn FnMut(&Progress), s
         return Ok(0);
     }
     let copy = on_disk && from > 0 && !copy_at_hand(library, from);
-    if copy { clear_staging(library); }
+    if copy {
+        keep_earlier_copy(library, from)?;
+        clear_staging(library);
+    }
     let steps = (VERSION - from) as usize;
     let total = usize::from(copy) + super::parts_between(from, VERSION + 1) + 1;
     let mut tell = |phase, step, version, done: usize| {
@@ -199,8 +209,9 @@ fn lock_reporting(library: &Path, observer: &mut dyn FnMut(&Progress), patience:
 }
 
 /// Written beside the library once its copy is published, holding the
-/// version the copy was taken from and the one the upgrade leads to, and
-/// removed when the upgrade completes. A later attempt of that same upgrade
+/// version the copy was taken from and the one the upgrade leads to, and,
+/// once the upgrade stops without finishing, the library as it left it
+/// (`seal`); removed when the upgrade completes. A later attempt of that same upgrade
 /// that finds it, and a copy at that version, keeps that copy: replacing it
 /// would put a half-upgraded library where the one from before the upgrade
 /// was. One left behind by an upgrade that did complete (the process died
@@ -236,7 +247,7 @@ pub fn interrupted(library: &Path) -> bool {
 /// library is no longer what the copy holds, or the library is missing.
 pub fn restorable(library: &Path) -> bool {
     let Some((copied, _)) = unfinished_copy(library) else { return false };
-    interrupted(library) || pending(library).is_some_and(|now| now.from > copied)
+    interrupted(library) || (pending(library).is_some_and(|now| now.from > copied) && untouched(library))
 }
 
 /// Where a library that failed its upgrade is kept once its copy is put back.
@@ -293,6 +304,11 @@ pub fn restore(library: &Path) -> rusqlite::Result<()> {
                 return Err(rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_BUSY), None));
             }
         }
+        // Something that wrote while the copy was staged is folded in now,
+        // and moves the file: the copy is no longer this library's.
+        if !untouched(library) {
+            return Err(rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE), None));
+        }
         match std::fs::remove_file(&aside) {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(io_error(&aside, error)),
             _ => {}
@@ -336,7 +352,62 @@ fn clear_restoring(library: &Path) {
 }
 
 fn copy_at_hand(library: &Path, from: i64) -> bool {
-    unfinished_copy(library).is_some_and(|(copied, target)| copied <= from && from < target)
+    unfinished_copy(library).is_some_and(|(copied, target)| copied <= from && from < target) && untouched(library)
+}
+
+/// A copy this upgrade took earlier that is no longer trusted (the library
+/// was written since) stays, under its own name, before a new one replaces
+/// it: `library.db.before-upgrade-54` for one taken at 54.
+fn keep_earlier_copy(library: &Path, from: i64) -> rusqlite::Result<()> {
+    let Some((copied, target)) = unfinished_copy(library) else { return Ok(()) };
+    if copied > from || from >= target { return Ok(()); }
+    let copy = backup_path(library);
+    let mut name = copy.file_name().unwrap_or_default().to_os_string();
+    name.push(format!("-{copied}"));
+    let kept = copy.with_file_name(name);
+    std::fs::rename(&copy, &kept).map_err(|error| io_error(&kept, error))
+}
+
+/// After an upgrade that did not finish, its marker also records the library
+/// as that upgrade left it: its length and modification time once its log is
+/// folded in and emptied. A later write by anyone, an older build among them,
+/// changes one or the other or leaves frames in the log, and the copy from
+/// before is then no longer taken for this library's: a new one is taken
+/// and the old one kept aside, and it is never offered back. Length and
+/// time and not a hash of the contents: reading a large library whole costs
+/// seconds, and any write that reaches the file moves its time.
+fn seal(library: &Path) {
+    let path = marker_path(library);
+    let Ok(marked) = std::fs::read_to_string(&path) else { return };
+    let mut numbers = marked.split_whitespace();
+    let (Some(copied), Some(target)) = (numbers.next(), numbers.next()) else { return };
+    let emptied = Connection::open(library).and_then(|db| db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| row.get::<_, i64>(0)));
+    if !emptied.is_ok_and(|busy| busy == 0) { return; }
+    let Some((length, modified)) = fingerprint(library) else { return };
+    let sealed = File::create(&path).and_then(|mut file| {
+        file.write_all(format!("{copied} {target} {length} {modified}").as_bytes())?;
+        file.sync_all()
+    });
+    if let Err(error) = sealed {
+        eprintln!("library: the marker of the unfinished upgrade could not record the library: {error}");
+    }
+}
+
+fn fingerprint(library: &Path) -> Option<(u64, u128)> {
+    let metadata = std::fs::metadata(library).ok()?;
+    let modified = metadata.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_nanos();
+    Some((metadata.len(), modified))
+}
+
+/// The library is as its unfinished upgrade left it: nothing wrote to it.
+fn untouched(library: &Path) -> bool {
+    let Ok(marked) = std::fs::read_to_string(marker_path(library)) else { return false };
+    let fields: Vec<&str> = marked.split_whitespace().collect();
+    let [_, _, length, modified] = fields[..] else { return false };
+    let mut log = library.as_os_str().to_os_string();
+    log.push("-wal");
+    let log_empty = std::fs::metadata(PathBuf::from(log)).map_or(true, |metadata| metadata.len() == 0);
+    log_empty && fingerprint(library).is_some_and(|(now, then)| now.to_string() == length && then.to_string() == modified)
 }
 
 fn mark(library: &Path, version: i64) -> rusqlite::Result<()> {

@@ -272,15 +272,15 @@ fn a_failed_step_keeps_the_copy_from_before_the_upgrade_for_the_next_attempt() {
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("library.db");
     at(&path, 54);
-    // Step 56 creates this table: the upgrade commits 55 and stops at 56.
-    Connection::open(&path).unwrap().execute_batch("CREATE TABLE local_release_members(planted INTEGER);").unwrap();
+    // The last step fails: 55 and 56 commit, and nothing else writes after.
+    rebuild::TROUBLE.with(|cell| cell.set(Some("SELECT missing FROM a_table_that_is_not_there;")));
     let (result, _) = heard(&path, &upgrade::Stop::default(), |_| {});
-    assert!(result.unwrap_err().to_string().contains("local_release_members"));
-    assert_eq!(version_of(&path), 55, "the step before the failure is kept");
+    rebuild::TROUBLE.with(|cell| cell.set(None));
+    assert!(result.unwrap_err().to_string().contains("a_table_that_is_not_there"));
+    assert_eq!(version_of(&path), 56, "the steps before the failure are kept");
     assert_eq!(version_of(&backup_path(&path)), 54);
     assert_eq!(upgrade::unfinished_copy(&path), Some((54, VERSION)));
     let copy = std::fs::read(backup_path(&path)).unwrap();
-    Connection::open(&path).unwrap().execute_batch("DROP TABLE local_release_members;").unwrap();
     let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
     result.unwrap();
     assert!(seen.iter().all(|p| p.phase != upgrade::Phase::BackingUp), "the copy at hand is not taken again");
@@ -555,4 +555,30 @@ fn a_busy_checkpoint_stops_the_restore_before_anything_moves() {
     drop(reader);
     assert_eq!(version_of(&path), 55);
     assert!(intact(&path));
+}
+
+#[test]
+fn a_library_written_after_its_upgrade_failed_gets_a_new_copy() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    rebuild::TROUBLE.with(|cell| cell.set(Some("SELECT missing FROM a_table_that_is_not_there;")));
+    let failed = heard(&path, &upgrade::Stop::default(), |_| {}).0;
+    rebuild::TROUBLE.with(|cell| cell.set(None));
+    failed.unwrap_err();
+    assert_eq!(version_of(&path), 56);
+    assert!(upgrade::restorable(&path));
+    // An older build opens it and writes, for days.
+    Connection::open(&path).unwrap().execute("INSERT INTO sources(provider, instance) VALUES ('local', 'later')", []).unwrap();
+    assert!(!upgrade::restorable(&path), "a copy older than what the library now holds is never offered");
+    let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
+    result.unwrap();
+    assert!(seen.iter().any(|p| p.phase == upgrade::Phase::BackingUp), "a new copy is taken");
+    let copy = Connection::open_with_flags(backup_path(&path), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+    assert_eq!(copy.query_row("SELECT count(*) FROM sources WHERE instance = 'later'", [], |row| row.get::<_, i64>(0)).unwrap(), 1, "with what was written");
+    assert_eq!(copy.query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0)).unwrap(), 56);
+    drop(copy);
+    let kept = directory.path().join("library.db.before-upgrade-54");
+    assert_eq!(version_of(&kept), 54, "the copy from before the first attempt stays under its own name");
+    assert_eq!(version_of(&path), VERSION);
 }
