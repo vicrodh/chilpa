@@ -238,23 +238,26 @@ impl TrackListRust {
 
     fn track(&self, row: usize) -> Option<TrackRow> {
         match self.at(row)? {
-            At::Track(page, i) => Some(page[i].clone()),
+            At::Track(page, i) => page[i].clone(),
             At::Loaded(t) => Some(t.clone()),
-            At::Header(..) => None,
+            At::Header(..) | At::Missing => None,
         }
     }
 
-    /// Whether the row's track can play now. A row not loaded yet, or a
-    /// header, counts as one that can.
-    fn available(&self, row: usize) -> bool {
-        self.track(row).is_none_or(|t| t.available)
-    }
+    /// Whether the row's track can play now. Headers remain actionable, but
+    /// a missing snapshot slot cannot act as a neighboring track.
+    fn available(&self, row: usize) -> bool { match self.at(row) {
+        Some(At::Track(page, at)) => page[at].as_ref().is_some_and(|track| track.available),
+        Some(At::Loaded(track)) => track.available,
+        Some(At::Header(_)) => true,
+        Some(At::Missing) | None => false,
+    } }
 
     fn track_id(&self, row: usize) -> Option<i64> {
         match self.at(row)? {
-            At::Track(page, i) => Some(page[i].id),
+            At::Track(page, i) => page[i].as_ref().map(|track| track.id),
             At::Loaded(t) => Some(t.id),
-            At::Header(..) => None,
+            At::Header(..) | At::Missing => None,
         }
     }
 
@@ -285,8 +288,9 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         At::Header(header) => {
             return chilpa_qt_kit::track_roles::header(header, role);
         }
-        At::Track(page, i) => &page[*i],
+        At::Track(page, i) => page[*i].as_ref().expect("a hydrated track slot"),
         At::Loaded(t) => *t,
+        At::Missing => return QVariant::default(),
     };
     let number = if list.by_track_number { i32::from(track.number) } else { list.queue_numbers.get(row).copied().unwrap_or(row as i32 + 1) };
     let playing = role == ROLE_PLAYING && if let Some(key) = list.queue_keys.get(row) { app::with(|api| api.listen_is_playing(key)) } else { !list.playing.is_empty() && track.path == list.playing };
@@ -321,6 +325,7 @@ impl qobject::TrackListModel {
             app::with(|api| api.listen_row_action(key, "play", ""));
             return;
         }
+        if matches!(self.rust().rows, Rows::Snapshot { .. }) && self.rust().track(row).is_none() { return; }
         // A row that cannot play now does not play, by click or by key (ADR-017).
         if self.rust().track(row).is_some_and(|t| !t.available) {
             return;
@@ -340,8 +345,10 @@ impl qobject::TrackListModel {
                 let thread = self.qt_thread();
                 let origin = app::with(|api| api.browse_origin());
                 worker::submit(move |reader| {
-                    let paths = reader.paths(&ids);
-                    let _ = thread.queue(move |_| app::with(|api| api.with_queue_origin(origin, |api| api.play_from(&paths, row))));
+                    let (paths, start) = reader.paths_with_start(&ids, row);
+                    let _ = thread.queue(move |_| if let Some(start) = start {
+                        app::with(|api| api.with_queue_origin(origin, |api| api.play_from(&paths, start)));
+                    });
                 });
             }
         }
