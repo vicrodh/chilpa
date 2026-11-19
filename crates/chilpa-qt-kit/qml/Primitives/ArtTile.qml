@@ -42,6 +42,7 @@ Item {
     readonly property int decode: Math.ceil(Math.max(width, height) * Screen.devicePixelRatio / Metrics.artDecodeStep) * Metrics.artDecodeStep
 
     Rectangle {
+        objectName: "artPlaceholder"
         anchors.fill: parent
         visible: image.status !== Image.Ready
         topLeftRadius: root.corners.x
@@ -53,13 +54,13 @@ Item {
 
     Image {
         id: image
+        objectName: "artImage"
         anchors.fill: parent
         visible: !root.shaded && status === Image.Ready
         // A file comes through the covers' provider, made the size it is
         // drawn; anything else as it is.
         source: root.local ? (root.contain ? "image://contained/" : "image://cover/") + root.decode + "/" + encodeURIComponent(root.source.toString()) : root.source
         asynchronous: true
-        retainWhileLoading: true
         fillMode: Image.PreserveAspectCrop
         // The smallest decode is still several times a tile of a mosaic:
         // drawn that much smaller without its reductions, a cover is noise.
