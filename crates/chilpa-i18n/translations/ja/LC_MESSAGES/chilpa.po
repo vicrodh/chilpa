@@ -6000,6 +6000,9 @@ msgstr "購入"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "プラグインのフォルダーをChilpaのプラグインディレクトリに置き、アプリを開き直してください。"
 
+msgid "Put the copy back and quit"
+msgstr "コピーを戻して終了"
+
 msgid "Q"
 msgstr ""
 
@@ -7735,6 +7738,9 @@ msgstr "チェックは完了しましたが、以前のサンプルレートを
 
 msgid "The connection is not encrypted."
 msgstr "接続は暗号化されていません。"
+
+msgid "The copy could not be put back: {}"
+msgstr "コピーを戻せませんでした: {}"
 
 msgid "The current track has no such destination."
 msgstr "現在のトラックにはそのような移動先がありません。"

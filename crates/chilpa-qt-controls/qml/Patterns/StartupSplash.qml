@@ -128,6 +128,7 @@ Rectangle {
             upgrade: splash.upgrade
             onRetry: LibraryUpgrade.retry()
             onQuit: LibraryUpgrade.quit()
+            onRestore: LibraryUpgrade.restore()
         }
     }
 }

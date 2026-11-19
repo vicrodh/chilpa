@@ -16,7 +16,7 @@ enum State {
     Current,
     Pending,
     Running,
-    Failed { message: String, detail: String },
+    Failed { message: String, detail: String, can_restore: bool },
 }
 
 pub(crate) struct LibraryUpgrade {
@@ -66,7 +66,7 @@ impl LibraryUpgrade {
             ),
             None => chilpa_i18n::t("Nothing was lost: the library is as it was before this step."),
         };
-        self.state = State::Failed { message, detail };
+        self.state = State::Failed { message, detail, can_restore: upgrade::restorable(&self.path) };
     }
 
     /// True once, when the upgrade has just ended well.
@@ -97,12 +97,13 @@ impl LibraryUpgrade {
     pub(crate) fn view(&self) -> Value {
         match &self.state {
             State::Current => json!({ "active": false }),
-            State::Failed { message, detail } => json!({
+            State::Failed { message, detail, can_restore } => json!({
                 "active": true,
                 "failed": true,
                 "title": chilpa_i18n::t("The library could not be updated"),
                 "message": message,
                 "detail": detail,
+                "canRestore": can_restore,
             }),
             State::Pending | State::Running => {
                 let heard = *self.heard.lock().unwrap_or_else(|error| error.into_inner());
@@ -180,6 +181,16 @@ impl crate::Chilpa {
     pub fn retry_library_upgrade(&mut self) {
         if matches!(self.upgrade.state, State::Failed { .. }) {
             self.upgrade.start();
+        }
+    }
+
+    /// Puts the copy from before a failed upgrade back and quits. The next
+    /// start upgrades the library again from that copy.
+    pub fn restore_library_copy(&mut self) {
+        if !matches!(self.upgrade.state, State::Failed { can_restore: true, .. }) { return; }
+        match upgrade::restore(&self.upgrade.path) {
+            Ok(()) => self.desktop.requests.push_back(crate::WindowRequest::Quit),
+            Err(error) => self.upgrade.fail(chilpa_i18n::t_args("The copy could not be put back: {}", &[&error.to_string()])),
         }
     }
 

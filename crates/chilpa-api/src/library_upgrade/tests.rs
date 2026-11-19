@@ -147,3 +147,39 @@ fn an_older_library_is_upgraded_before_anything_reads_it_and_then_everything_sta
     assert!(api.library_changed(), "the window reads the library again");
     assert!(api.library().is_some());
 }
+
+#[test]
+fn a_failure_after_a_committed_step_offers_the_copy_and_puts_it_back() {
+    const CHILD: &str = "CHILPA_TEST_LIBRARY_UPGRADE_RESTORE";
+    if std::env::var(CHILD).as_deref() != Ok("1") {
+        let profile = tempfile::tempdir().unwrap();
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "library_upgrade::tests::a_failure_after_a_committed_step_offers_the_copy_and_puts_it_back", "--nocapture"])
+            .env(CHILD, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
+        assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+        return;
+    }
+    let path = chilpa_library::Library::default_path();
+    older(&path, 54);
+    Connection::open(&path).unwrap().execute_batch("CREATE TABLE local_release_members(planted INTEGER);").unwrap();
+    let mut api = crate::Chilpa::new();
+    api.start_services();
+    let view = wait_for_the_upgrade(&mut api);
+    assert_eq!((view["failed"].as_bool(), view["canRestore"].as_bool()), (Some(true), Some(true)), "{view}");
+    assert!(api.servers.keys.is_none(), "nothing that reads the library started");
+    assert!(api.window_request().is_none());
+    api.restore_library_copy();
+    assert_eq!(api.window_request(), Some(crate::WindowRequest::Quit), "and Chilpa quits");
+    assert_eq!(version_of(&path), 54, "the library is the copy from before");
+    assert!(schema::upgrade::failed_path(&path).exists());
+}
+
+#[test]
+fn a_failure_before_any_step_committed_does_not_offer_the_copy() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    older(&path, 54);
+    let mut upgrade = LibraryUpgrade::detect(path.clone());
+    upgrade.fail("disk I/O error".into());
+    assert_eq!(upgrade.view()["canRestore"], false);
+}

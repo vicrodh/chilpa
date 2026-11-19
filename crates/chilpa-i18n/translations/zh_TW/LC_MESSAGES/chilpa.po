@@ -6008,6 +6008,9 @@ msgstr "購買項目"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "將外掛資料夾放入 Chilpa 的 plugins 目錄並重新開啟應用程式。"
 
+msgid "Put the copy back and quit"
+msgstr "還原副本並結束"
+
 msgid "Q"
 msgstr ""
 
@@ -7743,6 +7746,9 @@ msgstr "檢查已完成，但無法還原先前的取樣率。"
 
 msgid "The connection is not encrypted."
 msgstr "此連線未加密。"
+
+msgid "The copy could not be put back: {}"
+msgstr "無法還原副本：{}"
 
 msgid "The current track has no such destination."
 msgstr "目前曲目沒有此目的地。"

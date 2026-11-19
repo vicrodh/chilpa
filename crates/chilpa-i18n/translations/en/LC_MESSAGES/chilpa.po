@@ -6005,6 +6005,9 @@ msgstr ""
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr ""
 
+msgid "Put the copy back and quit"
+msgstr ""
+
 msgid "Q"
 msgstr ""
 
@@ -7744,6 +7747,9 @@ msgid "The check finished, but the previous sample rate could not be restored."
 msgstr ""
 
 msgid "The connection is not encrypted."
+msgstr ""
+
+msgid "The copy could not be put back: {}"
 msgstr ""
 
 msgid "The current track has no such destination."

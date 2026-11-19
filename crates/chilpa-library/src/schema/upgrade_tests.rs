@@ -403,3 +403,40 @@ fn every_opener_refuses_an_older_library_and_leaves_it_alone() {
     assert_eq!(listing(directory.path()), files, "no copy, marker or lock file");
     assert_eq!(std::fs::read(&path).unwrap(), bytes);
 }
+
+#[test]
+fn the_copy_from_before_a_failed_upgrade_can_be_put_back() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    // Step 56 creates this table: the upgrade commits 55 and stops at 56.
+    Connection::open(&path).unwrap().execute_batch("CREATE TABLE local_release_members(planted INTEGER);").unwrap();
+    assert!(!upgrade::restorable(&path), "nothing to put back before an upgrade");
+    heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap_err();
+    assert!(upgrade::restorable(&path));
+    let copy = std::fs::read(backup_path(&path)).unwrap();
+    upgrade::restore(&path).unwrap();
+    assert_eq!(std::fs::read(&path).unwrap(), copy, "the library is the copy again");
+    assert_eq!(version_of(&path), 54);
+    assert_eq!(version_of(&upgrade::failed_path(&path)), 55, "the half-upgraded library is kept aside");
+    assert!(backup_path(&path).exists(), "and the copy stays where it was");
+    assert!(!upgrade::marker_path(&path).exists());
+    assert!(!directory.path().join("library.db-wal").exists());
+    assert!(!staging_left(directory.path()));
+    assert!(!upgrade::restorable(&path));
+    assert_eq!(upgrade::pending(&path), Some(upgrade::Pending { from: 54, to: VERSION }), "the next start upgrades it again");
+}
+
+#[test]
+fn a_copy_is_not_put_back_over_a_library_no_step_changed() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    let stop = upgrade::Stop::default();
+    heard(&path, &stop, |progress| if progress.phase == upgrade::Phase::Step { stop.request() }).0.unwrap_err();
+    assert_eq!(upgrade::unfinished_copy(&path), Some((54, VERSION)));
+    assert!(!upgrade::restorable(&path), "the library already is the copy");
+    assert!(upgrade::restore(&path).is_err());
+    assert_eq!(version_of(&path), 54);
+    assert!(!upgrade::failed_path(&path).exists());
+}

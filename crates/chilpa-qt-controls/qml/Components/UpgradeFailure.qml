@@ -13,6 +13,7 @@ Column {
     property var upgrade: ({})
     signal retry()
     signal quit()
+    signal restore()
 
     spacing: Metrics.gap12
 
@@ -50,5 +51,17 @@ Column {
         spacing: Metrics.gap8
         PillButton { objectName: "upgradeQuit"; text: I18n.tr("Quit", I18n.rev); onClicked: failure.quit() }
         PillButton { objectName: "upgradeRetry"; kind: "primary"; text: I18n.tr("Try again", I18n.rev); onClicked: failure.retry() }
+    }
+    // Only once a step has committed: before that the library already is
+    // the copy.
+    PillButton {
+        objectName: "upgradeRestore"
+        anchors.horizontalCenter: parent.horizontalCenter
+        visible: failure.upgrade.canRestore === true
+        kind: "ghost"
+        wrapText: true
+        maximumWidth: parent.width
+        text: I18n.tr("Put the copy back and quit", I18n.rev)
+        onClicked: failure.restore()
     }
 }

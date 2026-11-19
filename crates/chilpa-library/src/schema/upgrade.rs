@@ -218,6 +218,59 @@ pub fn unfinished_copy(library: &Path) -> Option<(i64, i64)> {
     (version == copied).then_some((copied, target))
 }
 
+/// Whether the copy from before a failed upgrade can be put back: it is that
+/// upgrade's copy, and at least one step committed since, so the library is
+/// no longer what the copy holds.
+pub fn restorable(library: &Path) -> bool {
+    let Some((copied, _)) = unfinished_copy(library) else { return false };
+    pending(library).is_some_and(|now| now.from > copied)
+}
+
+/// Where a library that failed its upgrade is kept once its copy is put back.
+pub fn failed_path(library: &Path) -> PathBuf {
+    let mut name = library.file_name().unwrap_or_default().to_os_string();
+    name.push(".failed-upgrade");
+    library.with_file_name(name)
+}
+
+/// Puts the copy from before a failed upgrade back in the library's place.
+///
+/// Nothing could write to the library since the copy was taken except the
+/// upgrade itself, so nothing is lost. The half-upgraded library is moved
+/// aside, not deleted, and the copy stays where it was: what is put back is a
+/// copy of it, synced before it takes the library's name. The next start
+/// finds the library older than this Chilpa and upgrades it again.
+pub fn restore(library: &Path) -> rusqlite::Result<()> {
+    if !restorable(library) {
+        return Err(rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE), None));
+    }
+    let _file = lock(library)?;
+    {
+        let db = Connection::open(library)?;
+        db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))?;
+    }
+    let aside = failed_path(library);
+    std::fs::rename(library, &aside).map_err(|error| io_error(library, error))?;
+    for suffix in ["-wal", "-shm"] {
+        let mut name = library.as_os_str().to_os_string();
+        name.push(suffix);
+        match std::fs::remove_file(PathBuf::from(name)) {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(io_error(library, error)),
+            _ => {}
+        }
+    }
+    let copy = backup_path(library);
+    let parent = library.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
+    let mut staged = tempfile::Builder::new().prefix(STAGING).tempfile_in(parent).map_err(|error| io_error(library, error))?;
+    let mut source = File::open(&copy).map_err(|error| io_error(&copy, error))?;
+    std::io::copy(&mut source, staged.as_file_mut()).map_err(|error| io_error(library, error))?;
+    // The library's own permissions, not the private ones of a temporary file.
+    let permissions = std::fs::metadata(&aside).map_err(|error| io_error(&aside, error))?.permissions();
+    staged.as_file().set_permissions(permissions).and_then(|()| staged.as_file().sync_all()).map_err(|error| io_error(library, error))?;
+    staged.persist(library).map_err(|error| io_error(library, error.error))?;
+    unmark(library)
+}
+
 fn copy_at_hand(library: &Path, from: i64) -> bool {
     unfinished_copy(library).is_some_and(|(copied, target)| copied <= from && from < target)
 }

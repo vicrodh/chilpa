@@ -24,6 +24,9 @@ pub mod qobject {
         /// Quits without the window's question.
         #[qinvokable]
         fn quit(self: Pin<&mut LibraryUpgrade>);
+        /// Puts the copy from before a failed upgrade back, and quits.
+        #[qinvokable]
+        fn restore(self: Pin<&mut LibraryUpgrade>);
     }
 }
 use chilpa_qt_kit::app;
@@ -53,5 +56,10 @@ impl qobject::LibraryUpgrade {
 
     pub fn quit(self: Pin<&mut Self>) {
         app::with(|api| api.leave_library_upgrade());
+    }
+
+    pub fn restore(self: Pin<&mut Self>) {
+        app::with(|api| api.restore_library_copy());
+        self.refresh();
     }
 }

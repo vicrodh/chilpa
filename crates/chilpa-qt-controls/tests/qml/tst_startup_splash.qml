@@ -26,6 +26,7 @@ TestCase {
         LibraryUpgrade.state = { active: false }
         LibraryUpgrade.retried = 0
         LibraryUpgrade.left = 0
+        LibraryUpgrade.restored = 0
         Sources.state = Object.assign({}, before, { starting: true, startup: { total: 2, done: 1, name: "Radio" } })
         Library.rev = 0
         Library.busy = true
@@ -169,6 +170,17 @@ TestCase {
         compare(LibraryUpgrade.retried, 1)
         mouseClick(findChild(failure, "upgradeQuit"))
         compare(LibraryUpgrade.left, 1)
+        verify(!findChild(failure, "upgradeRestore").visible, "before a step committed, the library already is the copy")
+    }
+
+    function test_a_copy_that_can_be_put_back_is_offered() {
+        failing({ canRestore: true })
+        const splash = createTemporaryObject(factory, test)
+        const restore = findChild(splash, "upgradeRestore")
+        verify(restore.visible)
+        compare(restore.text, "Put the copy back and quit")
+        mouseClick(restore)
+        compare(LibraryUpgrade.restored, 1)
     }
 
     // Each line of an upgrade, and its failure, fits the cover in every
@@ -188,7 +200,7 @@ TestCase {
             for (const bar of tasks(splash))
                 verify(!findChild(bar, "startupTaskText").truncated, "a line is never cut")
         }
-        failing({ title: I18n.tr("The library could not be updated", I18n.rev), message: "database or disk is full",
+        failing({ canRestore: true, title: I18n.tr("The library could not be updated", I18n.rev), message: "database or disk is full",
                   detail: I18n.trArgs("Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}.",
                                       ["/home/listener/.local/share/chilpa/library.db.before-upgrade"], I18n.rev) })
         const splash = createTemporaryObject(factory, test)

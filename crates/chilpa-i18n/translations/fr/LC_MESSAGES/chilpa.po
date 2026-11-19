@@ -6005,6 +6005,9 @@ msgstr "Achats"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Placez un dossier de plugin dans le dossier des plugins de Chilpa, puis rouvrez l'application."
 
+msgid "Put the copy back and quit"
+msgstr "Remettre la copie et quitter"
+
 msgid "Q"
 msgstr ""
 
@@ -7745,6 +7748,9 @@ msgstr "La vérification est terminée, mais la fréquence d’échantillonnage 
 
 msgid "The connection is not encrypted."
 msgstr "La connexion n'est pas chiffrée."
+
+msgid "The copy could not be put back: {}"
+msgstr "La copie n'a pas pu être remise en place : {}"
 
 msgid "The current track has no such destination."
 msgstr "La piste en cours n'a pas cette destination."

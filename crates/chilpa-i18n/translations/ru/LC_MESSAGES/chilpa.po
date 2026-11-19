@@ -6010,6 +6010,9 @@ msgstr "Покупки"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Поместите папку плагина в каталог плагинов Chilpa и снова откройте приложение."
 
+msgid "Put the copy back and quit"
+msgstr "Вернуть копию и выйти"
+
 msgid "Q"
 msgstr ""
 
@@ -7755,6 +7758,9 @@ msgstr "Проверка завершена, но восстановить пр�
 
 msgid "The connection is not encrypted."
 msgstr "Соединение не зашифровано."
+
+msgid "The copy could not be put back: {}"
+msgstr "Не удалось вернуть копию: {}"
 
 msgid "The current track has no such destination."
 msgstr "У текущего трека нет такого назначения."

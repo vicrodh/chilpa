@@ -6005,6 +6005,9 @@ msgstr "Aankopen"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Plaats een plug-inmap in de plug-inmap van Chilpa en open de app opnieuw."
 
+msgid "Put the copy back and quit"
+msgstr "Kopie terugzetten en afsluiten"
+
 msgid "Q"
 msgstr ""
 
@@ -7745,6 +7748,9 @@ msgstr "De controle is voltooid, maar de vorige samplefrequentie kon niet worden
 
 msgid "The connection is not encrypted."
 msgstr "De verbinding is niet versleuteld."
+
+msgid "The copy could not be put back: {}"
+msgstr "De kopie kon niet worden teruggezet: {}"
 
 msgid "The current track has no such destination."
 msgstr "Het huidige nummer heeft zo'n bestemming niet."

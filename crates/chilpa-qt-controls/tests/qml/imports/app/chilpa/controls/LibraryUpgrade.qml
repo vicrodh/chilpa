@@ -8,7 +8,9 @@ QtObject {
     property int refreshed: 0
     property int retried: 0
     property int left: 0
+    property int restored: 0
     function refresh() { refreshed++ }
     function retry() { retried++ }
     function quit() { left++ }
+    function restore() { restored++ }
 }
