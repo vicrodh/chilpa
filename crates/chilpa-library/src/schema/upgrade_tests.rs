@@ -239,10 +239,12 @@ fn the_observer_hears_every_step_in_order_and_ends_at_one() {
     let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
     result.unwrap();
     assert_eq!(seen[0].phase, upgrade::Phase::BackingUp);
-    let steps: Vec<_> = seen.iter().filter(|p| p.phase == upgrade::Phase::Step).collect();
-    assert_eq!(steps.iter().map(|p| p.version).collect::<Vec<_>>(), (51..=VERSION).collect::<Vec<_>>(), "every step, in order");
-    assert_eq!(steps.iter().map(|p| p.step).collect::<Vec<_>>(), (1..=steps.len()).collect::<Vec<_>>());
-    assert!(steps.iter().all(|p| p.steps == steps.len()));
+    // A step in parts is heard once a part.
+    let mut steps: Vec<_> = seen.iter().filter(|p| p.phase == upgrade::Phase::Step).map(|p| (p.version, p.step, p.steps)).collect();
+    steps.dedup();
+    assert_eq!(steps.iter().map(|p| p.0).collect::<Vec<_>>(), (51..=VERSION).collect::<Vec<_>>(), "every step, in order");
+    assert_eq!(steps.iter().map(|p| p.1).collect::<Vec<_>>(), (1..=steps.len()).collect::<Vec<_>>());
+    assert!(steps.iter().all(|p| p.2 == steps.len()));
     assert!(seen.windows(2).all(|pair| pair[0].fraction <= pair[1].fraction), "the bar never goes back: {seen:?}");
     let last = seen.last().unwrap();
     assert_eq!((last.phase, last.fraction), (upgrade::Phase::Finishing, 1.0));

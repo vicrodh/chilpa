@@ -9736,6 +9736,9 @@ msgstr "vanaf"
 msgid "from a file"
 msgstr "uit een bestand"
 
+msgid "giving every track a number that is never used again"
+msgstr "elke track een nummer geven dat nooit opnieuw wordt gebruikt"
+
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "je account zelf afhandelen, buiten Chilpa: de plug-in zegt je inloggegevens onder een eigen naam in de systeemsleutelhanger te bewaren. Chilpa ziet ze niet, kan ze niet verwijderen en kan hier niets van controleren"
 

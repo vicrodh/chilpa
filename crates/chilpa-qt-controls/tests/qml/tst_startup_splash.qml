@@ -177,7 +177,8 @@ TestCase {
     function test_the_upgrade_lines_fit(data) {
         I18n.choose(data.language)
         const step = I18n.trArgs("Step {} of {}: {}", ["12", "12", I18n.tr("changing how the library is stored", I18n.rev)], I18n.rev)
-        const lines = [I18n.tr("Updating the library…", I18n.rev), I18n.tr("Saving a copy of the library first…", I18n.rev), step,
+        const ids = I18n.trArgs("Step {} of {}: {}", ["12", "12", I18n.tr("giving every track a number that is never used again", I18n.rev)], I18n.rev)
+        const lines = [I18n.tr("Updating the library…", I18n.rev), I18n.tr("Saving a copy of the library first…", I18n.rev), step, ids,
                        I18n.tr("Checking the result…", I18n.rev), I18n.tr("Another Chilpa is updating this library. Waiting for it…", I18n.rev)]
         for (const line of lines) {
             upgrading({ text: line, note: I18n.tr("This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done.", I18n.rev) })

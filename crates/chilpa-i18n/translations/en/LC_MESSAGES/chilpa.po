@@ -9736,6 +9736,9 @@ msgstr ""
 msgid "from a file"
 msgstr ""
 
+msgid "giving every track a number that is never used again"
+msgstr ""
+
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr ""
 

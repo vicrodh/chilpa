@@ -9736,6 +9736,9 @@ msgstr "desde"
 msgid "from a file"
 msgstr "de um arquivo"
 
+msgid "giving every track a number that is never used again"
+msgstr "dando a cada faixa um número que nunca é reutilizado"
+
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "gerenciar sua conta por conta própria, fora do Chilpa: diz guardar sua credencial no chaveiro do sistema, com nome próprio. O Chilpa não a vê, não pode excluí-la e não consegue verificar nada disso"
 

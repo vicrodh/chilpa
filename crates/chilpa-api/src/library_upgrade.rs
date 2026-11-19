@@ -135,8 +135,11 @@ fn said(progress: Option<&Progress>) -> (String, f64) {
 }
 
 /// What a step does, in words. Each one that takes long says it.
-fn label(_version: i64) -> String {
-    chilpa_i18n::t("changing how the library is stored")
+fn label(version: i64) -> String {
+    match version {
+        57 => chilpa_i18n::t("giving every track a number that is never used again"),
+        _ => chilpa_i18n::t("changing how the library is stored"),
+    }
 }
 
 impl Drop for LibraryUpgrade {

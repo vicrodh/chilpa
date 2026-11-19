@@ -36,6 +36,7 @@ fn the_cover_says_each_part_of_the_upgrade() {
     assert_eq!(at(Phase::WaitingForOther, 0, 0, 0, 0.0), ("Another Chilpa is updating this library. Waiting for it…".to_string(), -1.0));
     assert_eq!(at(Phase::BackingUp, 0, 3, 54, 0.0).0, "Saving a copy of the library first…");
     assert_eq!(at(Phase::Step, 2, 3, 56, 0.4), ("Step 2 of 3: changing how the library is stored".to_string(), 0.4));
+    assert_eq!(at(Phase::Step, 3, 3, 57, 0.6).0, "Step 3 of 3: giving every track a number that is never used again");
     assert_eq!(at(Phase::Finishing, 3, 3, VERSION, 0.8), ("Checking the result…".to_string(), 0.8));
 }
 

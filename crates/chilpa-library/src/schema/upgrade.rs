@@ -36,8 +36,8 @@ pub struct Progress {
     pub steps: usize,
     /// The version the step under way leads to.
     pub version: i64,
-    /// Done units over all units, from 0 to 1. The copy, each step and the
-    /// finishing open are one unit each.
+    /// Done units over all units, from 0 to 1. The copy, each plain step and
+    /// the finishing open are one unit each; a rebuilt table is one per part.
     pub fraction: f64,
 }
 
@@ -131,7 +131,7 @@ fn apply(db: &Connection, library: &Path, observer: &mut dyn FnMut(&Progress), s
     let copy = on_disk && from > 0 && !copy_at_hand(library, from);
     if copy { clear_staging(library); }
     let steps = (VERSION - from) as usize;
-    let total = usize::from(copy) + steps + 1;
+    let total = usize::from(copy) + super::parts_between(from, VERSION + 1) + 1;
     let mut tell = |phase, step, version, done: usize| {
         observer(&Progress { phase, step, steps, version, fraction: done as f64 / total as f64 });
     };
@@ -142,9 +142,9 @@ fn apply(db: &Connection, library: &Path, observer: &mut dyn FnMut(&Progress), s
         mark(library, from)?;
     }
     let before = usize::from(copy);
-    super::steps_locked(db, &mut |target| {
+    super::steps_locked(db, &mut |target, part| {
         let step = (target - from) as usize;
-        tell(Phase::Step, step, target, before + step - 1);
+        tell(Phase::Step, step, target, before + super::parts_between(from, target) + part);
         stop.check()
     })?;
     if on_disk {

@@ -9732,6 +9732,9 @@ msgstr "來自"
 msgid "from a file"
 msgstr "來自檔案"
 
+msgid "giving every track a number that is never used again"
+msgstr "正在為每首曲目指定不會再重複使用的編號"
+
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "在 Chilpa 之外自行處理你的帳號：該外掛表示會在系統金鑰圈中以其自身名稱保存你的憑證。Chilpa 無法看見、無法刪除亦無法檢查該過程"
 

@@ -9748,6 +9748,9 @@ msgstr "с"
 msgid "from a file"
 msgstr "из файла"
 
+msgid "giving every track a number that is never used again"
+msgstr "присвоение каждому треку номера, который больше не используется повторно"
+
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "самостоятельно управлять вашей учётной записью вне Chilpa: плагин сообщает, что хранит ваши учётные данные в системной связке ключей под своим именем. Chilpa их не видит, не может удалить и не может ничего из этого проверить"
 

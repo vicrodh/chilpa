@@ -9724,6 +9724,9 @@ msgstr "以降"
 msgid "from a file"
 msgstr "ファイルから"
 
+msgid "giving every track a number that is never used again"
+msgstr "各トラックに二度と使われない番号を割り当てています"
+
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "アカウントをChilpaの外部で自分で管理する: 認証情報をシステムのキーリングに独自の名前で保存すると主張しています。Chilpaはそれを確認できず、削除もできず、これらのいずれも検証できません"
 
