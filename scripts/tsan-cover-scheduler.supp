@@ -2,3 +2,19 @@
 race:QWaitCondition::~QWaitCondition
 # Qt's meta-object type assertion reads Qt static type data during QML teardown; the reported storage is not owned by Chilpa.
 race:assertObjectType
+# Qt allocates queued callable events on the sender and deletes them in qobjectdefs_impl.h on the receiver through synchronization inside uninstrumented Qt; Chilpa never owns the event.
+race:qobjectdefs_impl.h
+# Qt's posted-event receiver frees queued event storage after uninstrumented Qt synchronizes the queue; the allocation and storage belong to Qt.
+race:QCoreApplicationPrivate::sendPostedEvents
+# Qt allocates a thread-pool queue node in enqueueTask and frees it on a worker through synchronization inside uninstrumented Qt; Chilpa owns only the QRunnable payload.
+race:QThreadPoolPrivate::enqueueTask
+# This stripped QtCore build reports conflicting accesses with no symbol above the module offset; suppress stacks inside uninstrumented QtCore, not Chilpa or the harness.
+race:libQt6Core.so.6
+# QtQml's uninstrumented asynchronous loader allocates on the caller and frees on QQmlThread with only stripped module offsets; no Chilpa object owns that storage.
+race:libQt6Qml.so.6
+# QtQuick's uninstrumented pixmap reader allocates on QQuickPixmapReader and frees its own buffer during engine teardown; Chilpa never owns that buffer.
+race:libQt6Quick.so.6
+# GLib's uninstrumented event dispatcher creates and writes its own eventfd for QQuickPixmapReader; the descriptor storage is not owned by Chilpa.
+race:libglib-2.0.so.0
+# Qt joins finished pool threads inside the uninstrumented QThreadPool destructor after CoverScheduler::waitForDone; TSAN cannot observe that join.
+thread:QThread::start

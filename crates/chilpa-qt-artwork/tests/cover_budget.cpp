@@ -236,8 +236,14 @@ private:
     std::vector<QPointer<QQuickImageResponse>> pointers;
 };
 
+std::shared_ptr<CoverScheduler> schedulerForTests()
+{
+    static auto scheduler = std::make_shared<CoverScheduler>();
+    return scheduler;
+}
+
 struct Providers {
-    std::shared_ptr<CoverScheduler> scheduler = std::make_shared<CoverScheduler>();
+    std::shared_ptr<CoverScheduler> scheduler = schedulerForTests();
     CoverProvider cover{scheduler};
     CoverProvider contained{scheduler, CoverClass::Contained};
     CoverProvider atmosphere{scheduler, CoverClass::Atmosphere};
@@ -292,7 +298,7 @@ void waitForScheduler(const std::shared_ptr<CoverScheduler> &scheduler)
 void destroyEngineInState(const char *state, const QByteArray &qml, const std::function<void()> &waitForState,
                           const std::function<void()> &releaseState, int expectedResponses)
 {
-    auto scheduler = std::make_shared<CoverScheduler>();
+    auto scheduler = schedulerForTests();
     auto engine = std::make_unique<QQmlEngine>();
     addProviders(*engine, scheduler);
     createQml(*engine, qml);
@@ -309,7 +315,7 @@ void destroyEngineInState(const char *state, const QByteArray &qml, const std::f
 
 void testConcurrentSubscription()
 {
-    auto scheduler = std::make_shared<CoverScheduler>();
+    auto scheduler = schedulerForTests();
     auto *first = scheduler->request(CoverClass::Contained, coverId(QStringLiteral("race")));
     std::vector<std::thread> askers;
     for (int thread = 0; thread < 4; ++thread) {
@@ -353,13 +359,26 @@ int main(int argc, char **argv)
     require(pictures.isValid(), "the test image directory exists");
     successfulImage = pictures.filePath(QStringLiteral("success.png")).toStdString();
     require(QImage(8, 8, QImage::Format_RGB32).save(QString::fromStdString(successfulImage)), "the test image is written");
+    const QByteArray isolatedCase = qgetenv("CHILPA_TSAN_CASE");
+    const auto runs = [&](const char *name) { return isolatedCase.isEmpty() || isolatedCase == name; };
 
+    if (runs("core")) {
+    {
+        Providers providers;
+        Responses responses(application);
+        automatic = true;
+        responses.add(&providers.cover, coverId(QStringLiteral("pool-warmup")));
+        responses.wait();
+        waitForScheduler(providers.scheduler);
+    }
+
+    reset();
     {
         Providers providers;
         Responses responses(application);
         responses.add(&providers.cover, coverId(QStringLiteral("block-a")));
-        responses.add(&providers.cover, coverId(QStringLiteral("block-b")));
         waitEntered("c:/block-a");
+        responses.add(&providers.cover, coverId(QStringLiteral("block-b")));
         waitEntered("c:/block-b");
         responses.add(&providers.cover, coverId(QStringLiteral("old")));
         responses.add(&providers.cover, coverId(QStringLiteral("middle")));
@@ -544,6 +563,9 @@ int main(int argc, char **argv)
     }
 
     reset();
+    testConcurrentSubscription();
+
+    reset();
     {
         Providers providers;
         successful = true;
@@ -598,49 +620,53 @@ int main(int argc, char **argv)
         responses.wait();
         require(calls == 1, "running work is not started twice");
     }
-
-    reset();
-    testConcurrentSubscription();
-
-    reset();
-    destroyEngineInState("pending engine teardown releases every response", QByteArrayLiteral(R"(
-        import QtQuick
-        Item { Repeater { model: 3; delegate: Image { asynchronous: true; cache: false; source: "image://cover/64/file:///pending-" + index } } }
-    )"), [] {
-        waitUntil([] { return active == 2; }, "two engine requests are running");
-    }, [] { allowAllEntered(); }, 3);
-
-    reset();
-    destroyEngineInState("running engine teardown releases every response", QByteArrayLiteral(R"(
-        import QtQuick
-        Image { asynchronous: true; cache: false; source: "image://cover/64/file:///running-destruction" }
-    )"), [] { waitEntered("c:/running-destruction"); }, [] { allowAllEntered(); }, 1);
-
-    reset();
-    successful = true;
-    automatic = true;
-    {
-        std::lock_guard lock(gateMutex);
-        holdBeforeDelivery = true;
     }
-    destroyEngineInState("delivery engine teardown releases every response", QByteArrayLiteral(R"(
-        import QtQuick
-        Image { asynchronous: true; cache: false; source: "image://cover/64/file:///delivery-destruction" }
-    )"), [] {
-        std::unique_lock lock(gateMutex);
-        require(gateChanged.wait_for(lock, std::chrono::seconds(5), [] { return beforeDeliveryEntered; }),
-                "the response reaches the delivery registry");
-    }, [] {
-        std::lock_guard lock(gateMutex);
-        releaseDelivery = true;
-        gateChanged.notify_all();
-    }, 1);
 
-    reset();
-    successful = true;
-    automatic = true;
-    {
-        auto scheduler = std::make_shared<CoverScheduler>();
+    if (runs("pending")) {
+        reset();
+        destroyEngineInState("pending engine teardown releases every response", QByteArrayLiteral(R"(
+            import QtQuick
+            Item { Repeater { model: 3; delegate: Image { asynchronous: true; cache: false; source: "image://cover/64/file:///pending-" + index } } }
+        )"), [] {
+            waitUntil([] { return active == 2; }, "two engine requests are running");
+        }, [] { allowAllEntered(); }, 3);
+    }
+
+    if (runs("running")) {
+        reset();
+        destroyEngineInState("running engine teardown releases every response", QByteArrayLiteral(R"(
+            import QtQuick
+            Image { asynchronous: true; cache: false; source: "image://cover/64/file:///running-destruction" }
+        )"), [] { waitEntered("c:/running-destruction"); }, [] { allowAllEntered(); }, 1);
+    }
+
+    if (runs("delivery")) {
+        reset();
+        successful = true;
+        automatic = true;
+        {
+            std::lock_guard lock(gateMutex);
+            holdBeforeDelivery = true;
+        }
+        destroyEngineInState("delivery engine teardown releases every response", QByteArrayLiteral(R"(
+            import QtQuick
+            Image { asynchronous: true; cache: false; source: "image://cover/64/file:///delivery-destruction" }
+        )"), [] {
+            std::unique_lock lock(gateMutex);
+            require(gateChanged.wait_for(lock, std::chrono::seconds(5), [] { return beforeDeliveryEntered; }),
+                    "the response reaches the delivery registry");
+        }, [] {
+            std::lock_guard lock(gateMutex);
+            releaseDelivery = true;
+            gateChanged.notify_all();
+        }, 1);
+    }
+
+    if (runs("queued")) {
+        reset();
+        successful = true;
+        automatic = true;
+        auto scheduler = schedulerForTests();
         QueuedDeliveryThread reader(scheduler);
         reader.start();
         {
@@ -655,8 +681,8 @@ int main(int argc, char **argv)
         require(responsesDestroyed == 1, "thread shutdown destroys the queued response");
     }
 
-    if (qEnvironmentVariableIsSet("CHILPA_TSAN"))
-        std::puts("PASS full cover scheduler suite under ThreadSanitizer");
+    if (!isolatedCase.isEmpty())
+        std::printf("PASS cover scheduler ThreadSanitizer case %s\n", isolatedCase.constData());
     else
         std::puts("PASS cover scheduling, live demand, successful delivery, concurrency, and engine teardown");
 }

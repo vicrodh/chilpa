@@ -20,7 +20,13 @@ c++ -std=c++17 -O1 -g -fPIC -no-pie -pthread \
     -o "$temporary/cover_budget" \
     $(pkg-config --cflags --libs Qt6Quick Qt6Qml Qt6Network)
 case "$sanitizer" in
-    thread) QT_QPA_PLATFORM=offscreen CHILPA_TSAN=1 TSAN_OPTIONS="halt_on_error=1:suppressions=$repo/scripts/tsan-cover-scheduler.supp" "$temporary/cover_budget" ;;
+    thread)
+        for scheduler_case in core pending running delivery queued; do
+            QT_QPA_PLATFORM=offscreen CHILPA_TSAN=1 CHILPA_TSAN_CASE=$scheduler_case \
+                TSAN_OPTIONS="halt_on_error=1:suppressions=$repo/scripts/tsan-cover-scheduler.supp" \
+                "$temporary/cover_budget"
+        done
+        ;;
     address) QT_QPA_PLATFORM=offscreen ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 "$temporary/cover_budget" ;;
     none) QT_QPA_PLATFORM=offscreen "$temporary/cover_budget" ;;
 esac
