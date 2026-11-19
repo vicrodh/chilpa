@@ -11,11 +11,11 @@ Item {
     id: tips
 
     required property Item watching
-    // The line saying itself whole while TipState holds it, and the one it let go of when it hid, looked at again when shown.
+    // The line saying itself whole, kept until the pointer leaves it when TipState lets go of it still shown (a menu hid the tooltip on purpose), and the one let go of when it hid, looked at again when shown.
     property Item showing: null
     property Item hid: null
     onShowingChanged: if (!showing) rest.restart()
-    Connections { target: TipState; function onTargetChanged() { if (tips.showing && TipState.target !== tips.showing) { tips.hid = tips.showing; tips.showing = null } } }
+    Connections { target: TipState; function onTargetChanged() { if (tips.showing && TipState.target !== tips.showing && !tips.showing.visible) { tips.hid = tips.showing; tips.showing = null } } }
     Connections { target: tips.hid; function onVisibleChanged() { if (tips.hid && tips.hid.visible) rest.restart() } }
 
     width: 0
