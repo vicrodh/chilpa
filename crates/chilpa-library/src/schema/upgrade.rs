@@ -262,10 +262,11 @@ pub fn failed_path(library: &Path) -> PathBuf {
 /// An error leaves the library where it was, unless the second of those
 /// two renames failed and the first could not be undone.
 pub fn restore(library: &Path) -> rusqlite::Result<()> {
+    let _file = lock(library)?;
+    // Asked under the lock: nothing else can upgrade it from here.
     if !restorable(library) {
         return Err(rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE), None));
     }
-    let _file = lock(library)?;
     clear_restoring(library);
     let copy = backup_path(library);
     let parent = library.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
@@ -282,9 +283,15 @@ pub fn restore(library: &Path) -> rusqlite::Result<()> {
     let aside = failed_path(library);
     let mut renamed = false;
     if library.exists() {
+        // The log is folded into the file and emptied, or nothing moves: a
+        // reader still holding it would keep frames that belong to the file
+        // set aside.
         {
             let db = Connection::open(library)?;
-            db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))?;
+            let busy: i64 = db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| row.get(0))?;
+            if busy != 0 {
+                return Err(rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_BUSY), None));
+            }
         }
         match std::fs::remove_file(&aside) {
             Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(io_error(&aside, error)),

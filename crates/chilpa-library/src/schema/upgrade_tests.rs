@@ -535,3 +535,24 @@ fn a_missing_library_beside_its_marker_is_never_created_anew() {
     upgrade::restore(&path).unwrap();
     assert_eq!(version_of(&path), 54);
 }
+
+#[test]
+fn a_busy_checkpoint_stops_the_restore_before_anything_moves() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    Connection::open(&path).unwrap().execute_batch("CREATE TABLE local_release_members(planted INTEGER);").unwrap();
+    // A reader that began before the upgrade keeps the steps' frames in the
+    // log: they cannot be folded into the file while it reads.
+    let reader = Connection::open(&path).unwrap();
+    reader.execute_batch("BEGIN").unwrap();
+    let _: i64 = reader.query_row("SELECT count(*) FROM tracks", [], |row| row.get(0)).unwrap();
+    heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap_err();
+    assert!(upgrade::restore(&path).is_err(), "a log that cannot be emptied is not deleted from under its reader");
+    assert!(!upgrade::failed_path(&path).exists(), "nothing was moved");
+    assert_eq!(reader.query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0)).unwrap(), 54);
+    reader.execute_batch("COMMIT").unwrap();
+    drop(reader);
+    assert_eq!(version_of(&path), 55);
+    assert!(intact(&path));
+}
