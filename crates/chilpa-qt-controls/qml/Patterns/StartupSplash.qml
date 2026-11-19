@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 import "../Theme"
 
@@ -59,7 +60,13 @@ Rectangle {
     opacity: waiting ? 1 : 0
     Behavior on opacity { NumberAnimation { duration: Motion.panel } }
 
-    Component.onCompleted: { look(); seeLibrary() }
+    // While it covers the window it is a layer that blocks what is under
+    // it: a bubble or a shortcut that steps aside for a modal steps aside.
+    readonly property bool blocksBackground: true
+    QtObject { id: layer; readonly property var window: splash.Window.window; readonly property var surface: splash }
+    onWaitingChanged: InputLayers.set(layer, waiting)
+    Component.onDestruction: InputLayers.set(layer, false)
+    Component.onCompleted: { look(); seeLibrary(); InputLayers.set(layer, waiting) }
     Timer { interval: Motion.poll; repeat: true; running: splash.waiting; onTriggered: splash.look() }
     Timer {
         interval: splash.limit

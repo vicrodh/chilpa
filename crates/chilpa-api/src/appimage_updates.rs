@@ -443,6 +443,11 @@ impl Chilpa {
         state.to_string()
     }
     pub fn appimage_updates_check(&mut self, automatic: bool) {
+        // The start's own check waits for the library, and runs after it.
+        if automatic && self.library_upgrading() {
+            self.upgrade.update_check_waits = true;
+            return;
+        }
         if automatic && !self.updates().claim_launch_check() { return; }
         self.updates().start(false);
     }

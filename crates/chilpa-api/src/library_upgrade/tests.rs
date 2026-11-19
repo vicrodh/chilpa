@@ -299,3 +299,30 @@ fn nothing_that_reads_the_library_starts_before_its_upgrade_ends() {
     assert!(api.plugins_starting() || api.plugins.is_some(), "they start once it ends");
     assert!(api.scrobbler.is_some() && api.servers.keys.is_some());
 }
+
+fn onboarding_open(api: &crate::Chilpa) -> bool {
+    let (_, text) = api.onboarding_doc(0).expect("a document");
+    serde_json::from_str::<serde_json::Value>(&text).unwrap()["open"] == true
+}
+
+#[test]
+fn nothing_opens_over_the_splash_while_the_library_is_upgraded() {
+    if !in_own_profile("library_upgrade::tests::nothing_opens_over_the_splash_while_the_library_is_upgraded", "CHILPA_TEST_NOTHING_OPENS") { return; }
+    older(&chilpa_library::Library::default_path(), 50);
+    let mut api = crate::Chilpa::new();
+    api.start_services();
+    api.onboarding_start();
+    assert!(!onboarding_open(&api), "the Welcome would open over the splash");
+    api.appimage_updates_check(true);
+    assert!(api.appimage_updates.is_none(), "the start's update check waits for the library");
+    wait_for_the_upgrade(&mut api);
+    assert!(api.appimage_updates.is_some(), "and runs once it is current");
+    // The Welcome of a new library waits for the plugins, which start now.
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while !onboarding_open(&api) {
+        assert!(Instant::now() < deadline, "the Welcome never opened after the upgrade");
+        api.poll();
+        api.onboarding_start();
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}

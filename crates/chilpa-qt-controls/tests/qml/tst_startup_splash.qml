@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../../qml/Patterns"
 
 // The window's cover while it starts: the logo over the name, and a bar for
@@ -189,6 +190,20 @@ TestCase {
         compare(restore.text, "Put the copy back and quit")
         mouseClick(restore)
         compare(LibraryUpgrade.restored, 1)
+    }
+
+    // A bubble, or a shortcut, that steps aside for a modal steps aside for
+    // the cover too, and comes back when it goes.
+    function test_the_cover_blocks_what_steps_aside_for_a_modal() {
+        upgrading()
+        const splash = createTemporaryObject(factory, test)
+        verify(InputLayers.blocks(splash.Window.window))
+        verify(InputLayers.blocksShortcuts(splash.Window.window))
+        LibraryUpgrade.state = { active: false }
+        up()
+        Library.busy = false
+        tryCompare(splash, "waiting", false)
+        verify(!InputLayers.blocks(splash.Window.window))
     }
 
     // Each line of an upgrade, and its failure, fits the cover in every

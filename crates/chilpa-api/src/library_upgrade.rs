@@ -28,6 +28,8 @@ pub(crate) struct LibraryUpgrade {
     outcome: Option<mpsc::Receiver<Result<(), String>>>,
     stop: Arc<Stop>,
     worker: Option<std::thread::JoinHandle<()>>,
+    /// The start's update check, asked for while the library was upgraded.
+    pub(crate) update_check_waits: bool,
 }
 
 impl LibraryUpgrade {
@@ -36,7 +38,7 @@ impl LibraryUpgrade {
             upgrade::forget_finished(&path);
             State::Current
         };
-        let mut upgrade = Self { path, state, heard: Default::default(), outcome: None, stop: Default::default(), worker: None };
+        let mut upgrade = Self { path, state, heard: Default::default(), outcome: None, stop: Default::default(), worker: None, update_check_waits: false };
         // Putting the copy back was cut off with the library moved aside: it
         // is finished from here, and nothing creates a library in its place.
         if upgrade::interrupted(&upgrade.path) {
@@ -253,6 +255,9 @@ impl crate::Chilpa {
         }
         self.start_services();
         self.mark_library_changed();
+        if std::mem::take(&mut self.upgrade.update_check_waits) {
+            self.appimage_updates_check(true);
+        }
     }
 
     pub(crate) fn library_upgrading(&self) -> bool {
