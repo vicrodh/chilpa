@@ -591,6 +591,9 @@ msgstr "Geef Chilpa toestemming op Discogs en plak de code hieronder."
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Sta Chilpa toe op Last.fm; dit wordt vanzelf bijgewerkt."
 
+msgid "Allow Chilpa on the page that opened; this updates by itself."
+msgstr "Sta Chilpa toe op de geopende pagina; dit werkt zichzelf bij."
+
 msgid "Allow metadata sidecars"
 msgstr "Sidecars voor metadata toestaan"
 
@@ -2738,6 +2741,9 @@ msgstr "Eerder"
 msgid "Earlier tabs"
 msgstr "Eerdere tabbladen"
 
+msgid "Earlier year"
+msgstr "Eerder jaar"
+
 msgid "Edit"
 msgstr "Bewerken"
 
@@ -3235,6 +3241,15 @@ msgstr "Volledige breedte, bovenaan"
 
 msgid "Fullscreen"
 msgstr "Volledig scherm"
+
+msgid "GNU FM API key"
+msgstr "GNU FM-API-sleutel"
+
+msgid "GNU FM account"
+msgstr "GNU FM-account"
+
+msgid "GNU FM server"
+msgstr "GNU FM-server"
 
 msgid "GPU"
 msgstr "GPU"
@@ -4016,6 +4031,12 @@ msgstr "Soort"
 msgid "Knee"
 msgstr ""
 
+msgid "Koito account"
+msgstr "Koito-account"
+
+msgid "Koito server"
+msgstr "Koito-server"
+
 msgid "LABELS"
 msgstr "LABELS"
 
@@ -4069,6 +4090,9 @@ msgstr "Later"
 
 msgid "Later tabs"
 msgstr "Latere tabbladen"
+
+msgid "Later year"
+msgstr "Later jaar"
 
 msgid "Latest release"
 msgstr "Nieuwste uitgave"
@@ -4132,6 +4156,12 @@ msgstr "Bibliotheek scannen"
 
 msgid "Library selection"
 msgstr "Bibliotheekselectie"
+
+msgid "Libre.fm account"
+msgstr "Libre.fm-account"
+
+msgid "Libre.fm opens in the browser to allow Chilpa."
+msgstr "Libre.fm opent in de browser om Chilpa toe te staan."
 
 msgid "Light"
 msgstr "Licht"
@@ -4451,6 +4481,9 @@ msgstr "Standaardweergave minispeler"
 msgid "Minimize"
 msgstr "Minimaliseren"
 
+msgid "Minutes"
+msgstr "Minuten"
+
 msgid "Missing"
 msgstr "Ontbreekt"
 
@@ -4486,6 +4519,9 @@ msgstr "Mono licht"
 
 msgid "Month"
 msgstr "Maand"
+
+msgid "Monthly"
+msgstr "Per maand"
 
 msgid "Mood"
 msgstr "Stemming"
@@ -4531,6 +4567,9 @@ msgstr "Meer dan 16 bits"
 
 msgid "More than 48 kHz"
 msgstr "Meer dan 48 kHz"
+
+msgid "Mosaic"
+msgstr "Mozaïek"
 
 msgid "Most albums"
 msgstr ""
@@ -4712,8 +4751,14 @@ msgstr "Nooit afgespeeld; plays:1.. betekent minstens één keer afgespeeld"
 msgid "New Tab"
 msgstr "Nieuw tabblad"
 
+msgid "New albums"
+msgstr "Nieuwe albums"
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "Nieuwe analyses verschijnen hier. Je opgeslagen nummerresultaten vind je onder Nummers."
+
+msgid "New artists"
+msgstr "Nieuwe artiesten"
 
 msgid "New conditions go into this group"
 msgstr "Nieuwe voorwaarden komen in deze groep"
@@ -4741,6 +4786,9 @@ msgstr "Nieuw tabblad"
 
 msgid "New third-party plugin"
 msgstr "Nieuwe plug-in van derden"
+
+msgid "New tracks"
+msgstr "Nieuwe nummers"
 
 msgid "New, saved with the next save"
 msgstr "Nieuw, wordt opgeslagen bij de volgende keer opslaan"
@@ -5029,6 +5077,9 @@ msgstr "Nog niet gecontroleerd"
 
 msgid "Not compatible"
 msgstr "Niet compatibel"
+
+msgid "Not enough was played in this period for a recap."
+msgstr "In deze periode is niet genoeg afgespeeld voor een terugblik."
 
 msgid "Not for me"
 msgstr "Niet voor mij"
@@ -5351,6 +5402,9 @@ msgstr "Open de map voor wegwerpbestanden."
 msgid "Open the offline folder"
 msgstr "Offlinemap openen"
 
+msgid "Open the page"
+msgstr "Pagina openen"
+
 msgid "Open the selection again"
 msgstr ""
 
@@ -5497,6 +5551,12 @@ msgstr "Plak een persoonlijk toegangstoken van discogs.com/settings/developers."
 
 msgid "Paste a valid HTTPS music link"
 msgstr ""
+
+msgid "Paste an API key made in Koito under Settings, API Keys."
+msgstr "Plak een API-sleutel die in Koito is gemaakt onder Settings, API Keys."
+
+msgid "Paste the API key's shared secret. The server opens in the browser to allow Chilpa."
+msgstr "Plak het gedeelde geheim van de API-sleutel. De server opent in de browser om Chilpa toe te staan."
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Plak de code die Discogs toont nadat je Chilpa toestemming hebt gegeven."
@@ -6163,6 +6223,9 @@ msgstr "Bouwt de tellers en de zoekindex opnieuw op uit de nummers en het afspee
 
 msgid "Recalculate usage"
 msgstr "Gebruik herberekenen"
+
+msgid "Recap"
+msgstr "Terugblik"
 
 msgid "Receiver"
 msgstr "Ontvanger"
@@ -6933,8 +6996,17 @@ msgstr "Geselecteerde uitvoer"
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr "Stuurt de hoes van het album vanaf deze computer naar litterbox.catbox.moe, een openbare bestandshost, zodat Discord hem kan tonen. Iedereen met de link kan hem openen tot hij verloopt. Alleen de afbeelding gaat mee: geen naam, geen bestandspad."
 
+msgid "Send to GNU FM"
+msgstr "Naar GNU FM sturen"
+
+msgid "Send to Koito"
+msgstr "Naar Koito sturen"
+
 msgid "Send to Last.fm"
 msgstr "Naar Last.fm sturen"
+
+msgid "Send to Libre.fm"
+msgstr "Naar Libre.fm sturen"
 
 msgid "Send to ListenBrainz"
 msgstr "Naar ListenBrainz sturen"
@@ -7100,6 +7172,9 @@ msgstr "De zoekopdracht als consoletekst tonen"
 
 msgid "Show the sidebar"
 msgstr "De zijbalk tonen"
+
+msgid "Show time listened"
+msgstr "Luistertijd tonen"
 
 msgid "Show token"
 msgstr "Token tonen"
@@ -7572,6 +7647,9 @@ msgstr "Dat bestand is geen JPEG-, PNG- of WebP-afbeelding"
 msgid "That saved query no longer exists."
 msgstr "Die opgeslagen zoekopdracht bestaat niet meer."
 
+msgid "The API key the server knows Chilpa by."
+msgstr "De API-sleutel waaraan de server Chilpa herkent."
+
 msgid "The Discogs account changed. Search again."
 msgstr "Het Discogs-account is gewijzigd. Zoek opnieuw."
 
@@ -7604,6 +7682,12 @@ msgstr "Het account kon niet worden verbonden. Je kunt dit tabblad sluiten."
 
 msgid "The account expired; connect it again."
 msgstr "Het account is verlopen; verbind het opnieuw."
+
+msgid "The address of a GNU FM server of your own, like https://gnufm.example.com."
+msgstr "Het adres van je eigen GNU FM-server, zoals https://gnufm.example.com."
+
+msgid "The address of your Koito server, like https://koito.example.com."
+msgstr "Het adres van je Koito-server, zoals https://koito.example.com."
 
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "Het adres waarop je de server in een browser opent, met de poort, en de gebruiker waarmee Chilpa zich aanmeldt."
@@ -8597,11 +8681,20 @@ msgstr ""
 msgid "Tools"
 msgstr "Hulpmiddelen"
 
+msgid "Top album"
+msgstr "Topalbum"
+
+msgid "Top artist"
+msgstr "Topartiest"
+
 msgid "Top level"
 msgstr "Bovenste niveau"
 
 msgid "Top result"
 msgstr "Topresultaat"
+
+msgid "Top track"
+msgstr "Topnummer"
 
 msgid "Trace"
 msgstr "Trace"
@@ -9253,6 +9346,15 @@ msgstr ""
 msgid "Write the external SACD XML?"
 msgstr "De externe SACD-XML schrijven?"
 
+msgid "Write the server's API key and its shared secret first."
+msgstr "Vul eerst de API-sleutel van de server en het gedeelde geheim in."
+
+msgid "Write the server's address first, like https://gnufm.example.com."
+msgstr "Vul eerst het adres van de server in, zoals https://gnufm.example.com."
+
+msgid "Write the server's address first, like https://koito.example.com."
+msgstr "Vul eerst het adres van de server in, zoals https://koito.example.com."
+
 msgid "Write to a file"
 msgstr "Naar een bestand schrijven"
 
@@ -9273,6 +9375,9 @@ msgstr "DIT VIND JE MISSCHIEN OOK LEUK"
 
 msgid "Year"
 msgstr "Jaar"
+
+msgid "Yearly"
+msgstr "Per jaar"
 
 msgid "Yes"
 msgstr "Ja"
@@ -9330,6 +9435,12 @@ msgstr "Jouw shows"
 
 msgid "Your {} of them are removed too."
 msgstr "Ook je {} ervan worden verwijderd."
+
+msgid "Your {} recap"
+msgstr "Jouw terugblik op {}"
+
+msgid "Your {} {} recap"
+msgstr "Jouw terugblik op {1} {2}"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "een DASH-manifest, dat Chilpa nog niet kan lezen"

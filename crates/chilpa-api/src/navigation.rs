@@ -52,6 +52,8 @@ pub enum Screen {
     /// What was listened to, a period at a time, and the history whole.
     Stats,
     ListeningHistory,
+    /// A month or a year gone by, as a card to look back at.
+    ListeningRecap,
     /// A plugin's own tree, browsed. The route's key is the plugin's id.
     Source,
     /// The page of one entry of a source: a station, an episode. The key
@@ -88,6 +90,7 @@ impl Screen {
             Screen::ListenList => "listenlist",
             Screen::Stats => "stats",
             Screen::ListeningHistory => "listeningHistory",
+            Screen::ListeningRecap => "listeningRecap",
             Screen::Search => "search",
             Screen::Source => "source",
             Screen::SourceEntry => "sourceEntry",
@@ -95,7 +98,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Genres, Screen::Composers, Screen::Compositions, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::FolderMetadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Genres, Screen::Composers, Screen::Compositions, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::FolderMetadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::ListeningRecap, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -338,6 +341,7 @@ impl crate::Chilpa {
             Screen::FolderMetadata => (self.t("Folder metadata"), "listDetails"),
             Screen::Stats => (self.t("Listening stats"), "chartBar"),
             Screen::ListeningHistory => (self.t("Listening history"), "history"),
+            Screen::ListeningRecap => (self.t("Recap"), "calendar"),
             Screen::Search => (r.key.clone(), "search"),
             Screen::Source | Screen::SourceEntry => {
                 let (plugin, entry) = r.key.split_once(' ').unwrap_or((r.key.as_str(), ""));

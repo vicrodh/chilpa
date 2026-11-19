@@ -28,7 +28,7 @@ const LATER_SECONDS: u64 = 60;
 pub(super) const SERVICE: Service = Service { label: "Last.fm", batch: BATCH, begin: Some(begin), check, submit };
 
 /// A request token and the page where the person allows Chilpa.
-fn begin() -> Result<(String, String), Failure> {
+fn begin(_: &str) -> Result<(String, String), Failure> {
     let reply = call("auth.getToken", Map::new())?;
     let token = reply.get("token").and_then(Value::as_str).unwrap_or_default();
     let link = reply.get("authUrl").and_then(Value::as_str).unwrap_or_default();
@@ -59,7 +59,7 @@ fn submit(session: &str, kind: Kind, listens: &[Listen]) -> Result<(), Failure> 
 
 /// The method and its parameters for a submission. A scrobble of several
 /// numbers each field: `artist[0]`, `artist[1]`...
-fn request(session: &str, kind: Kind, listens: &[Listen]) -> (&'static str, Map<String, Value>) {
+pub(super) fn request(session: &str, kind: Kind, listens: &[Listen]) -> (&'static str, Map<String, Value>) {
     let mut params = Map::new();
     params.insert("sk".into(), json!(session));
     let playing = kind == Kind::PlayingNow;
@@ -216,7 +216,7 @@ mod tests {
     #[test]
     #[ignore = "goes out to the proxy and Last.fm"]
     fn the_proxy_hands_out_a_request_token_and_the_page_to_allow_it() {
-        let (token, link) = begin().expect("the proxy answered");
+        let (token, link) = begin("").expect("the proxy answered");
         assert!(!token.is_empty());
         assert!(link.starts_with("https://www.last.fm/api/auth/"), "{link}");
         // Asking for the account before it is allowed is "not yet".

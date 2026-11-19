@@ -6,7 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Theme"
 
 // The stats screen's head: its title and what the period is compared
-// with, the history and the export; under them the kind of period, and the
+// with, the history, the recap and the export; under them the kind of period, and the
 // arrows and the calendar that walk through them, with a Today when the
 // period shown is not today's.
 Column {
@@ -20,6 +20,7 @@ Column {
     signal kindChosen(string kind)
     signal dayChosen(string date)
     signal historyAsked()
+    signal recapAsked()
     signal tableAsked()
     signal pictureAsked()
 
@@ -72,6 +73,13 @@ Column {
                 glyph: Icons.history
                 text: I18n.tr("Listening history", I18n.rev)
                 onClicked: head.historyAsked()
+            }
+            PillButton {
+                objectName: "openRecap"
+                anchors.verticalCenter: parent.verticalCenter
+                glyph: Icons.calendar
+                text: I18n.tr("Recap", I18n.rev)
+                onClicked: head.recapAsked()
             }
             PillButton {
                 id: exporter

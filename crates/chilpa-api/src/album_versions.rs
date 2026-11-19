@@ -7,7 +7,7 @@ mod writes;
 pub(crate) use writes::{Change, Writes};
 
 /// How a month is named in a record's release date.
-const MONTH_NAMES: [&str; 12] = [
+pub(crate) const MONTH_NAMES: [&str; 12] = [
     i18n::mark("January"), i18n::mark("February"), i18n::mark("March"), i18n::mark("April"),
     i18n::mark("May"), i18n::mark("June"), i18n::mark("July"), i18n::mark("August"),
     i18n::mark("September"), i18n::mark("October"), i18n::mark("November"), i18n::mark("December"),

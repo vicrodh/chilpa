@@ -598,6 +598,9 @@ msgstr "在 Discogs 允許 Chilpa，然後貼上下方的代碼。"
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "在 Last.fm 允許 Chilpa；此項目會自動更新。"
 
+msgid "Allow Chilpa on the page that opened; this updates by itself."
+msgstr "請在開啟的頁面上允許 Chilpa；這裡會自動更新。"
+
 msgid "Allow metadata sidecars"
 msgstr "允許中繼資料附屬檔案"
 
@@ -2744,6 +2747,9 @@ msgstr "更早之前"
 msgid "Earlier tabs"
 msgstr "較早的分頁"
 
+msgid "Earlier year"
+msgstr "上一年"
+
 msgid "Edit"
 msgstr "編輯"
 
@@ -3241,6 +3247,15 @@ msgstr "全寬，頂部"
 
 msgid "Fullscreen"
 msgstr "Fullscreen"
+
+msgid "GNU FM API key"
+msgstr "GNU FM API 金鑰"
+
+msgid "GNU FM account"
+msgstr "GNU FM 帳號"
+
+msgid "GNU FM server"
+msgstr "GNU FM 伺服器"
 
 msgid "GPU"
 msgstr "GPU"
@@ -4019,6 +4034,12 @@ msgstr "種類"
 msgid "Knee"
 msgstr ""
 
+msgid "Koito account"
+msgstr "Koito 帳號"
+
+msgid "Koito server"
+msgstr "Koito 伺服器"
+
 msgid "LABELS"
 msgstr "廠牌"
 
@@ -4072,6 +4093,9 @@ msgstr "稍後"
 
 msgid "Later tabs"
 msgstr "較後的分頁"
+
+msgid "Later year"
+msgstr "下一年"
 
 msgid "Latest release"
 msgstr "最新發行"
@@ -4135,6 +4159,12 @@ msgstr "音樂庫掃描中"
 
 msgid "Library selection"
 msgstr "音樂庫選取內容"
+
+msgid "Libre.fm account"
+msgstr "Libre.fm 帳號"
+
+msgid "Libre.fm opens in the browser to allow Chilpa."
+msgstr "Libre.fm 會在瀏覽器中開啟，以允許 Chilpa。"
 
 msgid "Light"
 msgstr "淺色"
@@ -4454,6 +4484,9 @@ msgstr "迷你播放器預設檢視"
 msgid "Minimize"
 msgstr "最小化"
 
+msgid "Minutes"
+msgstr "分鐘"
+
 msgid "Missing"
 msgstr "遺失"
 
@@ -4489,6 +4522,9 @@ msgstr "單色淺色"
 
 msgid "Month"
 msgstr "月"
+
+msgid "Monthly"
+msgstr "按月"
 
 msgid "Mood"
 msgstr "心情"
@@ -4534,6 +4570,9 @@ msgstr ""
 
 msgid "More than 48 kHz"
 msgstr ""
+
+msgid "Mosaic"
+msgstr "馬賽克"
 
 msgid "Most albums"
 msgstr ""
@@ -4715,8 +4754,14 @@ msgstr "從未播放；plays:1.. 表示至少播放過一次"
 msgid "New Tab"
 msgstr "新分頁"
 
+msgid "New albums"
+msgstr "新專輯"
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "新的分析執行將顯示於此。已儲存的曲目結果可在「曲目」中取得。"
+
+msgid "New artists"
+msgstr "新藝人"
 
 msgid "New conditions go into this group"
 msgstr "新條件將放入此群組"
@@ -4744,6 +4789,9 @@ msgstr "新分頁"
 
 msgid "New third-party plugin"
 msgstr "新第三方外掛"
+
+msgid "New tracks"
+msgstr "新曲目"
 
 msgid "New, saved with the next save"
 msgstr "新建，將於下次儲存時存檔"
@@ -5032,6 +5080,9 @@ msgstr "尚未檢查"
 
 msgid "Not compatible"
 msgstr "不相容"
+
+msgid "Not enough was played in this period for a recap."
+msgstr "這段期間的播放量不足以產生回顧。"
 
 msgid "Not for me"
 msgstr "不感興趣"
@@ -5354,6 +5405,9 @@ msgstr "開啟用於一次性檔案的資料夾。"
 msgid "Open the offline folder"
 msgstr ""
 
+msgid "Open the page"
+msgstr "開啟頁面"
+
 msgid "Open the selection again"
 msgstr ""
 
@@ -5500,6 +5554,12 @@ msgstr "貼上來自 discogs.com/settings/developers 的個人存取權杖。"
 
 msgid "Paste a valid HTTPS music link"
 msgstr "貼上有效的 HTTPS 音樂連結"
+
+msgid "Paste an API key made in Koito under Settings, API Keys."
+msgstr "貼上在 Koito 的 Settings、API Keys 中建立的 API 金鑰。"
+
+msgid "Paste the API key's shared secret. The server opens in the browser to allow Chilpa."
+msgstr "貼上 API 金鑰的共用密鑰。伺服器會在瀏覽器中開啟，以允許 Chilpa。"
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "貼上允許 Chilpa 後 Discogs 顯示的代碼。"
@@ -6166,6 +6226,9 @@ msgstr "從曲目與播放紀錄重建計數與搜尋索引。不會遺失任何
 
 msgid "Recalculate usage"
 msgstr "重新計算使用量"
+
+msgid "Recap"
+msgstr "回顧"
 
 msgid "Receiver"
 msgstr "接收端"
@@ -6934,8 +6997,17 @@ msgstr "選取的輸出"
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr ""
 
+msgid "Send to GNU FM"
+msgstr "傳送至 GNU FM"
+
+msgid "Send to Koito"
+msgstr "傳送至 Koito"
+
 msgid "Send to Last.fm"
 msgstr "傳送至 Last.fm"
+
+msgid "Send to Libre.fm"
+msgstr "傳送至 Libre.fm"
 
 msgid "Send to ListenBrainz"
 msgstr "傳送至 ListenBrainz"
@@ -7101,6 +7173,9 @@ msgstr "將查詢顯示為主控台文字"
 
 msgid "Show the sidebar"
 msgstr "顯示側邊欄"
+
+msgid "Show time listened"
+msgstr "顯示聆聽時間"
 
 msgid "Show token"
 msgstr "顯示權杖"
@@ -7570,6 +7645,9 @@ msgstr "該檔案不是 JPEG、PNG 或 WebP 圖片"
 msgid "That saved query no longer exists."
 msgstr "該儲存的查詢已不存在。"
 
+msgid "The API key the server knows Chilpa by."
+msgstr "伺服器用來識別 Chilpa 的 API 金鑰。"
+
 msgid "The Discogs account changed. Search again."
 msgstr "Discogs 帳號已變更。請重新搜尋。"
 
@@ -7602,6 +7680,12 @@ msgstr "帳號未連線。你可以關閉此分頁。"
 
 msgid "The account expired; connect it again."
 msgstr "帳號已過期；請重新連線。"
+
+msgid "The address of a GNU FM server of your own, like https://gnufm.example.com."
+msgstr "你自己的 GNU FM 伺服器位址，例如 https://gnufm.example.com。"
+
+msgid "The address of your Koito server, like https://koito.example.com."
+msgstr "你的 Koito 伺服器位址，例如 https://koito.example.com。"
 
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "你在瀏覽器中開啟伺服器的位址（包括連接埠）以及 Chilpa 登入的使用者名稱。"
@@ -8594,11 +8678,20 @@ msgstr ""
 msgid "Tools"
 msgstr "工具"
 
+msgid "Top album"
+msgstr "最常聽的專輯"
+
+msgid "Top artist"
+msgstr "最常聽的藝人"
+
 msgid "Top level"
 msgstr "最上層"
 
 msgid "Top result"
 msgstr "最佳結果"
+
+msgid "Top track"
+msgstr "最常聽的曲目"
 
 msgid "Trace"
 msgstr "追蹤（Trace）"
@@ -9249,6 +9342,15 @@ msgstr ""
 msgid "Write the external SACD XML?"
 msgstr "要寫入外部 SACD XML 嗎？"
 
+msgid "Write the server's API key and its shared secret first."
+msgstr "請先輸入伺服器的 API 金鑰與共用密鑰。"
+
+msgid "Write the server's address first, like https://gnufm.example.com."
+msgstr "請先輸入伺服器位址，例如 https://gnufm.example.com。"
+
+msgid "Write the server's address first, like https://koito.example.com."
+msgstr "請先輸入伺服器位址，例如 https://koito.example.com。"
+
 msgid "Write to a file"
 msgstr "寫入至檔案"
 
@@ -9269,6 +9371,9 @@ msgstr "你可能也會喜歡"
 
 msgid "Year"
 msgstr "年份"
+
+msgid "Yearly"
+msgstr "按年"
 
 msgid "Yes"
 msgstr "是"
@@ -9326,6 +9431,12 @@ msgstr "你的節目"
 
 msgid "Your {} of them are removed too."
 msgstr "你的 {} 中的該項目也會一併移除。"
+
+msgid "Your {} recap"
+msgstr "你的 {} 年回顧"
+
+msgid "Your {} {} recap"
+msgstr "你的 {2} 年{1}回顧"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "DASH 清單檔，Chilpa 目前尚無法讀取"

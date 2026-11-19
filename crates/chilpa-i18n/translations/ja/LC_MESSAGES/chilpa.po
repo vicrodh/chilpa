@@ -590,6 +590,9 @@ msgstr "DiscogsでChilpaを許可し、以下にコードを貼り付けてく�
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Last.fmでChilpaを許可してください。この表示は自動で更新されます。"
 
+msgid "Allow Chilpa on the page that opened; this updates by itself."
+msgstr "開いたページでChilpaを許可してください。ここは自動で更新されます。"
+
 msgid "Allow metadata sidecars"
 msgstr "メタデータのサイドカーを許可"
 
@@ -2736,6 +2739,9 @@ msgstr "前の期間"
 msgid "Earlier tabs"
 msgstr "以前のタブ"
 
+msgid "Earlier year"
+msgstr "前の年"
+
 msgid "Edit"
 msgstr "編集"
 
@@ -3233,6 +3239,15 @@ msgstr "全幅、上"
 
 msgid "Fullscreen"
 msgstr "全画面表示"
+
+msgid "GNU FM API key"
+msgstr "GNU FMのAPIキー"
+
+msgid "GNU FM account"
+msgstr "GNU FMアカウント"
+
+msgid "GNU FM server"
+msgstr "GNU FMサーバー"
 
 msgid "GPU"
 msgstr "GPU"
@@ -4011,6 +4026,12 @@ msgstr "種類"
 msgid "Knee"
 msgstr ""
 
+msgid "Koito account"
+msgstr "Koitoアカウント"
+
+msgid "Koito server"
+msgstr "Koitoサーバー"
+
 msgid "LABELS"
 msgstr "レーベル"
 
@@ -4064,6 +4085,9 @@ msgstr "次の期間"
 
 msgid "Later tabs"
 msgstr "以降のタブ"
+
+msgid "Later year"
+msgstr "次の年"
 
 msgid "Latest release"
 msgstr "最新リリース"
@@ -4127,6 +4151,12 @@ msgstr "ライブラリのスキャン"
 
 msgid "Library selection"
 msgstr "ライブラリの選択"
+
+msgid "Libre.fm account"
+msgstr "Libre.fmアカウント"
+
+msgid "Libre.fm opens in the browser to allow Chilpa."
+msgstr "ブラウザでLibre.fmが開き、Chilpaを許可できます。"
 
 msgid "Light"
 msgstr "ライト"
@@ -4446,6 +4476,9 @@ msgstr "ミニプレーヤーの既定の表示"
 msgid "Minimize"
 msgstr "最小化"
 
+msgid "Minutes"
+msgstr "分"
+
 msgid "Missing"
 msgstr "見つかりません"
 
@@ -4481,6 +4514,9 @@ msgstr "モノ・ライト"
 
 msgid "Month"
 msgstr "月"
+
+msgid "Monthly"
+msgstr "月別"
 
 msgid "Mood"
 msgstr "ムード"
@@ -4526,6 +4562,9 @@ msgstr "16 ビットより上"
 
 msgid "More than 48 kHz"
 msgstr "48 kHz より上"
+
+msgid "Mosaic"
+msgstr "モザイク"
 
 msgid "Most albums"
 msgstr ""
@@ -4707,8 +4746,14 @@ msgstr "未再生。plays:1.. は1回以上再生した曲を表します"
 msgid "New Tab"
 msgstr "新しいタブ"
 
+msgid "New albums"
+msgstr "新しいアルバム"
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
 msgstr "新しい解析の実行がここに表示されます。保存済みのトラックの結果は「トラック」で確認できます。"
+
+msgid "New artists"
+msgstr "新しいアーティスト"
 
 msgid "New conditions go into this group"
 msgstr "新しい条件はこのグループに入ります"
@@ -4736,6 +4781,9 @@ msgstr "新しいタブ"
 
 msgid "New third-party plugin"
 msgstr "新しいサードパーティ製プラグイン"
+
+msgid "New tracks"
+msgstr "新しいトラック"
 
 msgid "New, saved with the next save"
 msgstr "新規、次回の保存時に保存されます"
@@ -5024,6 +5072,9 @@ msgstr "未確認"
 
 msgid "Not compatible"
 msgstr "互換性なし"
+
+msgid "Not enough was played in this period for a recap."
+msgstr "この期間は再生が少なく、まとめを作成できません。"
 
 msgid "Not for me"
 msgstr "興味なし"
@@ -5346,6 +5397,9 @@ msgstr "使い捨てファイルに使うフォルダーを開きます。"
 msgid "Open the offline folder"
 msgstr "オフライン用フォルダーを開く"
 
+msgid "Open the page"
+msgstr "ページを開く"
+
 msgid "Open the selection again"
 msgstr ""
 
@@ -5492,6 +5546,12 @@ msgstr "discogs.com/settings/developersで発行した個人用アクセスト�
 
 msgid "Paste a valid HTTPS music link"
 msgstr ""
+
+msgid "Paste an API key made in Koito under Settings, API Keys."
+msgstr "KoitoのSettings、API Keysで作成したAPIキーを貼り付けてください。"
+
+msgid "Paste the API key's shared secret. The server opens in the browser to allow Chilpa."
+msgstr "APIキーの共有シークレットを貼り付けてください。ブラウザでサーバーが開き、Chilpaを許可できます。"
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Chilpaのアクセスを許可した後にDiscogsが表示するコードを貼り付けてください。"
@@ -6158,6 +6218,9 @@ msgstr "トラックと再生ログから件数と検索インデックスを再
 
 msgid "Recalculate usage"
 msgstr "使用量を再計算"
+
+msgid "Recap"
+msgstr "まとめ"
 
 msgid "Receiver"
 msgstr "レシーバー"
@@ -6926,8 +6989,17 @@ msgstr "選択中の出力"
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr "Discord で表示できるように、このコンピューターからアルバムのカバーを公開ファイルホスティングの litterbox.catbox.moe に送信します。リンクを知っている人は期限が切れるまで開けます。送られるのは画像だけで、名前やファイルパスは送られません。"
 
+msgid "Send to GNU FM"
+msgstr "GNU FMに送信"
+
+msgid "Send to Koito"
+msgstr "Koitoに送信"
+
 msgid "Send to Last.fm"
 msgstr "Last.fmに送信"
+
+msgid "Send to Libre.fm"
+msgstr "Libre.fmに送信"
 
 msgid "Send to ListenBrainz"
 msgstr "ListenBrainzに送信"
@@ -7093,6 +7165,9 @@ msgstr "クエリをコンソールのテキストで表示"
 
 msgid "Show the sidebar"
 msgstr "サイドバーを表示"
+
+msgid "Show time listened"
+msgstr "再生時間を表示"
 
 msgid "Show token"
 msgstr "トークンを表示"
@@ -7562,6 +7637,9 @@ msgstr "そのファイルはJPEG、PNG、WebPのいずれの画像でもあり�
 msgid "That saved query no longer exists."
 msgstr "この保存済みクエリはもう存在しません。"
 
+msgid "The API key the server knows Chilpa by."
+msgstr "サーバーがChilpaを識別するためのAPIキー。"
+
 msgid "The Discogs account changed. Search again."
 msgstr "Discogsアカウントが変わりました。もう一度検索してください。"
 
@@ -7594,6 +7672,12 @@ msgstr "アカウントに接続できませんでした。このタブは閉じ
 
 msgid "The account expired; connect it again."
 msgstr "アカウントの有効期限が切れました。もう一度接続してください。"
+
+msgid "The address of a GNU FM server of your own, like https://gnufm.example.com."
+msgstr "自分のGNU FMサーバーのアドレス（例: https://gnufm.example.com）。"
+
+msgid "The address of your Koito server, like https://koito.example.com."
+msgstr "Koitoサーバーのアドレス（例: https://koito.example.com）。"
 
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "ブラウザでサーバーを開くときのアドレス（ポートを含む）と、Chilpa がサインインするユーザーです。"
@@ -8586,11 +8670,20 @@ msgstr ""
 msgid "Tools"
 msgstr "ツール"
 
+msgid "Top album"
+msgstr "トップアルバム"
+
+msgid "Top artist"
+msgstr "トップアーティスト"
+
 msgid "Top level"
 msgstr "最上位"
 
 msgid "Top result"
 msgstr "トップ結果"
+
+msgid "Top track"
+msgstr "トップトラック"
 
 msgid "Trace"
 msgstr "トレース"
@@ -9241,6 +9334,15 @@ msgstr ""
 msgid "Write the external SACD XML?"
 msgstr "外部のSACD XMLを書き込みますか？"
 
+msgid "Write the server's API key and its shared secret first."
+msgstr "先にサーバーのAPIキーと共有シークレットを入力してください。"
+
+msgid "Write the server's address first, like https://gnufm.example.com."
+msgstr "先にサーバーのアドレスを入力してください（例: https://gnufm.example.com）。"
+
+msgid "Write the server's address first, like https://koito.example.com."
+msgstr "先にサーバーのアドレスを入力してください（例: https://koito.example.com）。"
+
 msgid "Write to a file"
 msgstr "ファイルに書き出す"
 
@@ -9261,6 +9363,9 @@ msgstr "こちらもおすすめ"
 
 msgid "Year"
 msgstr "年"
+
+msgid "Yearly"
+msgstr "年別"
 
 msgid "Yes"
 msgstr "はい"
@@ -9318,6 +9423,12 @@ msgstr "あなたの番組"
 
 msgid "Your {} of them are removed too."
 msgstr "それらの{}も削除されます。"
+
+msgid "Your {} recap"
+msgstr "{}年のまとめ"
+
+msgid "Your {} {} recap"
+msgstr "{2}年{1}のまとめ"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "DASHマニフェスト（Chilpaはまだ読み取れません）"

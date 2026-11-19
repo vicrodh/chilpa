@@ -465,6 +465,7 @@ dependencies = [
  "flate2",
  "image",
  "libc",
+ "md-5",
  "native-tls",
  "rand 0.10.3",
  "roxmltree",

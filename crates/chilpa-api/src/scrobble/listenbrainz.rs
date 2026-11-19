@@ -37,12 +37,18 @@ fn kind_name(kind: Kind) -> &'static str {
 
 /// A pasted token: its user, and the token itself to send with.
 fn check(token: &str) -> Result<(String, String), Failure> {
-    validate(token).map(|user| (user, token.to_string()))
+    validate(API, token).map(|user| (user, token.to_string()))
 }
 
-/// Checks a token. Answers with the user name it belongs to.
-fn validate(token: &str) -> Result<String, Failure> {
-    let (status, _, body) = request("GET", &format!("{API}/validate-token"), token, "")?;
+fn submit(token: &str, kind: Kind, listens: &[Listen]) -> Result<(), Failure> {
+    submit_to(API, token, kind, listens)
+}
+
+/// Checks a token against the API at `api`: a server that speaks this
+/// protocol under its own address is asked the same way. Answers with the
+/// user name the token belongs to.
+pub(super) fn validate(api: &str, token: &str) -> Result<String, Failure> {
+    let (status, _, body) = request("GET", &format!("{api}/validate-token"), token, "")?;
     let reply: Value = serde_json::from_str(&body).unwrap_or_default();
     let valid = reply.get("valid").and_then(Value::as_bool).unwrap_or(false);
     match reply.get("user_name").and_then(Value::as_str) {
@@ -54,9 +60,9 @@ fn validate(token: &str) -> Result<String, Failure> {
 
 /// Sends listens: one for `PlayingNow` and `Single`, up to `BATCH` for an
 /// `Import`.
-fn submit(token: &str, kind: Kind, listens: &[Listen]) -> Result<(), Failure> {
+pub(super) fn submit_to(api: &str, token: &str, kind: Kind, listens: &[Listen]) -> Result<(), Failure> {
     let body = payload(kind, listens).to_string();
-    let (status, headers, reply) = request("POST", &format!("{API}/submit-listens"), token, &body)?;
+    let (status, headers, reply) = request("POST", &format!("{api}/submit-listens"), token, &body)?;
     if status == 200 {
         Ok(())
     } else {
@@ -188,7 +194,7 @@ mod tests {
     #[test]
     #[ignore = "goes out to ListenBrainz; run it on purpose"]
     fn a_made_up_token_is_refused_by_the_real_api() {
-        assert_eq!(validate("not-a-real-token"), Err(Failure::Token));
+        assert_eq!(validate(API, "not-a-real-token"), Err(Failure::Token));
     }
 
     #[test]

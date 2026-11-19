@@ -4,7 +4,6 @@ import app.chilpa.sources
 import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/immersive/qml/Components"
 import "Screens"
-import "Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
 import app.chilpa.pages
 import "qrc:/qt/qml/app/chilpa/discovery/qml/Screens"
@@ -71,6 +70,7 @@ PageTransition {
         case "search": return searchResults
         case "stats": return stats
         case "listeningHistory": return listeningHistory
+        case "listeningRecap": return listeningRecap
         case "source": return source
         case "sourceEntry": return medium ? mediaDetail : sourceEntry
         default: return pending
@@ -108,6 +108,7 @@ PageTransition {
     Component { id: folderMetadata; FolderMetadataScreen { routeKey:host.routeKeyOf(parent) } }
     Component { id: stats; StatsScreen {} }
     Component { id: listeningHistory; HistoryScreen {} }
+    Component { id: listeningRecap; RecapScreen {} }
     Component { id: source; SourceScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: mediaSource; MediaSourceScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: mediaDetail; MediaDetailScreen { key: host.routeKeyOf(parent) } }

@@ -308,6 +308,44 @@ impl Library {
             .collect()
     }
 
+    /// The local day of the first listen there is, "2026-10-09"; none in a
+    /// log with nothing in it.
+    pub fn listening_first_day(&self) -> rusqlite::Result<Option<String>> {
+        self.db.query_row(
+            "SELECT (SELECT date(p.started_at + coalesce(c.utc_offset_seconds, unixepoch(p.started_at, 'unixepoch', 'localtime') - p.started_at), 'unixepoch')
+                FROM play_events p LEFT JOIN play_context c ON c.event_id = p.id
+                ORDER BY p.started_at, p.id LIMIT 1)",
+            [],
+            |r| r.get(0),
+        )
+    }
+
+    /// How many tracks, records and artists were heard for the first time
+    /// ever inside the period: the first listen of each, in the whole log,
+    /// falls in it.
+    pub fn listening_firsts(&self, filter: &ListenFilter) -> rusqlite::Result<(u64, u64, u64)> {
+        let offset = offset(filter)?;
+        let first = "HAVING min(started_at) >= ?1 AND min(started_at) < ?2";
+        // The whole log, whatever the period: a first listen is the first
+        // anywhere in it.
+        let all = ListenFilter { from: None, until: None, ..filter.clone() };
+        let sql = format!(
+            "{} SELECT
+                (SELECT count(*) FROM (SELECT 1 FROM listens WHERE identity IS NOT NULL GROUP BY identity {first})),
+                (SELECT count(*) FROM (SELECT 1 FROM listens WHERE release_id IS NOT NULL GROUP BY release_id {first})),
+                (SELECT count(*) FROM (SELECT 1 FROM listens WHERE nullif(artist, '') IS NOT NULL GROUP BY lower(artist) {first}))",
+            listens(&all)
+        );
+        self.db.query_row(
+            &sql,
+            params![filter.from.unwrap_or(i64::MIN), filter.until.unwrap_or(i64::MAX), filter.source_id, filter.genre, offset],
+            |r| {
+                let count = |i| r.get::<_, i64>(i).map(|v| v.max(0) as u64);
+                Ok((count(0)?, count(1)?, count(2)?))
+            },
+        )
+    }
+
     pub fn listening_summary(&self, filter: &ListenFilter) -> rusqlite::Result<ListenMetrics> {
         let offset = offset(filter)?;
         self.db.query_row(

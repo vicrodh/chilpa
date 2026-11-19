@@ -591,6 +591,9 @@ msgstr "Allow Chilpa on Discogs, then paste the code below."
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr ""
 
+msgid "Allow Chilpa on the page that opened; this updates by itself."
+msgstr ""
+
 msgid "Allow metadata sidecars"
 msgstr "Allow metadata sidecars"
 
@@ -2738,6 +2741,9 @@ msgstr ""
 msgid "Earlier tabs"
 msgstr ""
 
+msgid "Earlier year"
+msgstr ""
+
 msgid "Edit"
 msgstr ""
 
@@ -3235,6 +3241,15 @@ msgstr ""
 
 msgid "Fullscreen"
 msgstr "Fullscreen"
+
+msgid "GNU FM API key"
+msgstr ""
+
+msgid "GNU FM account"
+msgstr ""
+
+msgid "GNU FM server"
+msgstr ""
 
 msgid "GPU"
 msgstr ""
@@ -4016,6 +4031,12 @@ msgstr ""
 msgid "Knee"
 msgstr ""
 
+msgid "Koito account"
+msgstr ""
+
+msgid "Koito server"
+msgstr ""
+
 msgid "LABELS"
 msgstr ""
 
@@ -4068,6 +4089,9 @@ msgid "Later"
 msgstr ""
 
 msgid "Later tabs"
+msgstr ""
+
+msgid "Later year"
 msgstr ""
 
 msgid "Latest release"
@@ -4131,6 +4155,12 @@ msgid "Library scanning"
 msgstr "Library scanning"
 
 msgid "Library selection"
+msgstr ""
+
+msgid "Libre.fm account"
+msgstr ""
+
+msgid "Libre.fm opens in the browser to allow Chilpa."
 msgstr ""
 
 msgid "Light"
@@ -4451,6 +4481,9 @@ msgstr ""
 msgid "Minimize"
 msgstr ""
 
+msgid "Minutes"
+msgstr ""
+
 msgid "Missing"
 msgstr ""
 
@@ -4485,6 +4518,9 @@ msgid "Mono light"
 msgstr ""
 
 msgid "Month"
+msgstr ""
+
+msgid "Monthly"
 msgstr ""
 
 msgid "Mood"
@@ -4531,6 +4567,9 @@ msgstr "More than 16 bits"
 
 msgid "More than 48 kHz"
 msgstr "More than 48 kHz"
+
+msgid "Mosaic"
+msgstr ""
 
 msgid "Most albums"
 msgstr ""
@@ -4712,7 +4751,13 @@ msgstr "Never played; plays:1.. means played at least once"
 msgid "New Tab"
 msgstr ""
 
+msgid "New albums"
+msgstr ""
+
 msgid "New analysis runs will appear here. Your saved track results are available in Tracks."
+msgstr ""
+
+msgid "New artists"
 msgstr ""
 
 msgid "New conditions go into this group"
@@ -4741,6 +4786,9 @@ msgstr ""
 
 msgid "New third-party plugin"
 msgstr "New third-party plugin"
+
+msgid "New tracks"
+msgstr ""
 
 msgid "New, saved with the next save"
 msgstr ""
@@ -5029,6 +5077,9 @@ msgstr ""
 
 msgid "Not compatible"
 msgstr "Not compatible"
+
+msgid "Not enough was played in this period for a recap."
+msgstr ""
 
 msgid "Not for me"
 msgstr ""
@@ -5351,6 +5402,9 @@ msgstr ""
 msgid "Open the offline folder"
 msgstr ""
 
+msgid "Open the page"
+msgstr ""
+
 msgid "Open the selection again"
 msgstr ""
 
@@ -5496,6 +5550,12 @@ msgid "Paste a personal access token from discogs.com/settings/developers."
 msgstr "Paste a personal access token from discogs.com/settings/developers."
 
 msgid "Paste a valid HTTPS music link"
+msgstr ""
+
+msgid "Paste an API key made in Koito under Settings, API Keys."
+msgstr ""
+
+msgid "Paste the API key's shared secret. The server opens in the browser to allow Chilpa."
 msgstr ""
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
@@ -6162,6 +6222,9 @@ msgid "Rebuilds the counts and the search index from the tracks and the play log
 msgstr ""
 
 msgid "Recalculate usage"
+msgstr ""
+
+msgid "Recap"
 msgstr ""
 
 msgid "Receiver"
@@ -6933,7 +6996,16 @@ msgstr "Selected output"
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 
+msgid "Send to GNU FM"
+msgstr ""
+
+msgid "Send to Koito"
+msgstr ""
+
 msgid "Send to Last.fm"
+msgstr ""
+
+msgid "Send to Libre.fm"
 msgstr ""
 
 msgid "Send to ListenBrainz"
@@ -7099,6 +7171,9 @@ msgid "Show the query as console text"
 msgstr ""
 
 msgid "Show the sidebar"
+msgstr ""
+
+msgid "Show time listened"
 msgstr ""
 
 msgid "Show token"
@@ -7572,6 +7647,9 @@ msgstr ""
 msgid "That saved query no longer exists."
 msgstr "That saved query no longer exists."
 
+msgid "The API key the server knows Chilpa by."
+msgstr ""
+
 msgid "The Discogs account changed. Search again."
 msgstr "The Discogs account changed. Search again."
 
@@ -7603,6 +7681,12 @@ msgid "The account did not connect. You can close this tab."
 msgstr ""
 
 msgid "The account expired; connect it again."
+msgstr ""
+
+msgid "The address of a GNU FM server of your own, like https://gnufm.example.com."
+msgstr ""
+
+msgid "The address of your Koito server, like https://koito.example.com."
 msgstr ""
 
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
@@ -8597,10 +8681,19 @@ msgstr ""
 msgid "Tools"
 msgstr "Tools"
 
+msgid "Top album"
+msgstr ""
+
+msgid "Top artist"
+msgstr ""
+
 msgid "Top level"
 msgstr ""
 
 msgid "Top result"
+msgstr ""
+
+msgid "Top track"
 msgstr ""
 
 msgid "Trace"
@@ -9253,6 +9346,15 @@ msgstr ""
 msgid "Write the external SACD XML?"
 msgstr ""
 
+msgid "Write the server's API key and its shared secret first."
+msgstr ""
+
+msgid "Write the server's address first, like https://gnufm.example.com."
+msgstr ""
+
+msgid "Write the server's address first, like https://koito.example.com."
+msgstr ""
+
 msgid "Write to a file"
 msgstr ""
 
@@ -9272,6 +9374,9 @@ msgid "YOU MAY ALSO LIKE"
 msgstr ""
 
 msgid "Year"
+msgstr ""
+
+msgid "Yearly"
 msgstr ""
 
 msgid "Yes"
@@ -9329,6 +9434,12 @@ msgid "Your shows"
 msgstr ""
 
 msgid "Your {} of them are removed too."
+msgstr ""
+
+msgid "Your {} recap"
+msgstr ""
+
+msgid "Your {} {} recap"
 msgstr ""
 
 msgid "a DASH manifest, which Chilpa cannot read yet"

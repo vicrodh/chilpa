@@ -83,7 +83,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     for test in tests:
         # I share the prepared files, while each suite keeps its own Qt process.
         result = subprocess.run([str(qt / "qmltestrunner"), "-import", str(imports), "-input", str(test)], env=environment,
-                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
         print(result.stdout, end="", flush=True)
         incubation_error = arguments.strict_incubation and re.search(
             r"Object or context destroyed during incubation|Cannot create delegate|items in the process of being created", result.stdout)

@@ -12,8 +12,10 @@ import "../Patterns"
 // Last.fm's weekly report as the model: the day, the week, the month or
 // the year that holds a chosen date, or all of it, against the one of its
 // kind before; its artists, records and tracks, when and what it was, and
-// a few facts. The history, listen by listen, is a page of its own; the
-// history goes out as CSV and the report as a picture.
+// a few facts. The hero's chart is the period's bars or the year's mosaic,
+// whichever was chosen last. The history, listen by listen, and the recap
+// are pages of their own; the history goes out as CSV and the report as a
+// picture.
 Flickable {
     id: page
 
@@ -21,6 +23,12 @@ Flickable {
     property string kind: kinds.indexOf(SettingsModel.kept("ui.stats.period")) >= 0 ? SettingsModel.kept("ui.stats.period") : "week"
     // The chosen date; empty is today.
     property string anchor
+    readonly property var charts: ["bars", "mosaic"]
+    property string chart: charts.indexOf(SettingsModel.kept("ui.stats.chart")) >= 0 ? SettingsModel.kept("ui.stats.chart") : "bars"
+    // How many years before the chosen date's the mosaic shows.
+    property int yearsBack: 0
+    // Asked only while it is the chart shown.
+    readonly property var mosaic: chart === "mosaic" ? JSON.parse(Stats.mosaic(anchor, yearsBack, Qt.locale().firstDayOfWeek, I18n.rev + Library.contentRev + Library.remoteRev) || "{}") : ({})
     readonly property var report: JSON.parse(Stats.report(kind, anchor, Qt.locale().firstDayOfWeek, I18n.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev) || "{}")
     readonly property real wide: Math.min(width - 2 * Metrics.contentX, Charts.widest) // derived: padding on both sides
     // While the report is drawn into a picture: its caption and its ground.
@@ -30,6 +38,18 @@ Flickable {
         kind = next
         SettingsModel.keep("ui.stats.period", kind)
     }
+    function draw(next) {
+        chart = next
+        SettingsModel.keep("ui.stats.chart", chart)
+    }
+    // The chart's arrows: a year for the mosaic, a period for the bars.
+    function walk(years, date) {
+        if (chart === "mosaic")
+            yearsBack += years
+        else
+            anchor = date
+    }
+    onAnchorChanged: yearsBack = 0
     // The caption and the ground change the board's size, so the picture
     // waits for the frame that has laid them out.
     function picture() {
@@ -86,6 +106,7 @@ Flickable {
             onKindChosen: (next) => page.choose(next)
             onDayChosen: (date) => page.anchor = date
             onHistoryAsked: Navigation.go("listeningHistory", 0)
+            onRecapAsked: Navigation.go("listeningRecap", 0)
             onTableAsked: Stats.exportHistory()
             onPictureAsked: page.picture()
         }
@@ -127,8 +148,15 @@ Flickable {
                     }
                 }
                 StatsHero {
+                    objectName: "statsHero"
                     width: parent.width
                     report: page.report
+                    chart: page.chart
+                    mosaic: page.mosaic
+                    onChartChosen: (next) => page.draw(next)
+                    onEarlierAsked: page.walk(1, page.report.earlier || "")
+                    onLaterAsked: page.walk(-1, page.report.later || "")
+                    onDayChosen: (date) => page.anchor = date
                 }
                 StatsTops {
                     width: parent.width
