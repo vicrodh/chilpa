@@ -1,0 +1,2 @@
+race:QWaitCondition::~QWaitCondition
+race:assertObjectType
