@@ -196,7 +196,8 @@ fn said(progress: Option<&Progress>) -> (String, f64) {
     let Some(progress) = progress else { return (chilpa_i18n::t("Updating the library…"), -1.0) };
     match progress.phase {
         Phase::WaitingForOther => (chilpa_i18n::t("Another Chilpa is updating this library. Waiting for it…"), -1.0),
-        Phase::BackingUp => (chilpa_i18n::t("Saving a copy of the library first…"), progress.fraction),
+        // The copy says nothing of how far it is until it ends.
+        Phase::BackingUp => (chilpa_i18n::t("Saving a copy of the library first…"), -1.0),
         Phase::Step => {
             let (step, steps) = (progress.step.to_string(), progress.steps.to_string());
             (chilpa_i18n::t_args("Step {} of {}: {}", &[&step, &steps, &label(progress.version)]), progress.fraction)

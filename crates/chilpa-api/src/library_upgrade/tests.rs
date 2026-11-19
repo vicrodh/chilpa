@@ -360,3 +360,11 @@ fn a_library_swapped_for_an_older_one_while_running_is_said() {
     assert!(api.library().is_none());
     assert!(api.now.error.contains("has to be updated first"), "the window says why the library is empty: {:?}", api.now.error);
 }
+
+#[test]
+fn a_part_whose_length_cannot_be_told_sweeps() {
+    let at = |phase| said(Some(&Progress { phase, step: 0, steps: 3, version: 54, fraction: 0.25 })).1;
+    assert_eq!(at(Phase::BackingUp), -1.0, "the copy says nothing of how far it is until it ends");
+    assert_eq!(at(Phase::WaitingForOther), -1.0);
+    assert_eq!(at(Phase::Step), 0.25);
+}
