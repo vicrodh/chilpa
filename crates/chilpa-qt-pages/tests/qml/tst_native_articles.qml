@@ -75,7 +75,9 @@ TestCase {
         const page=createTemporaryObject(pageFactory,test)
         const model=findChild(page,"nativeArticleModel")
         tryCompare(page,"count",21)
-        tryVerify(()=>Math.abs(page.contentY-(page.headerItem.y-page.topMargin))<1)
+        // The page places the view a turn after the document arrives: the start counts once the header holds its cover.
+        const cover=findChild(page,"articleCover")
+        tryVerify(()=>cover.height>0 && page.headerItem.height>cover.height && Math.abs(page.contentY-(page.headerItem.y-page.topMargin))<1)
         tryVerify(()=>Object.values(model.leases).includes("https://example.test/cover.jpg"))
         page.contentY=0
         tryVerify(()=>!Object.values(model.leases).includes("https://example.test/cover.jpg"))

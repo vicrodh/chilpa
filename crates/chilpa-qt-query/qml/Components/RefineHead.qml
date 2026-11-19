@@ -96,6 +96,8 @@ Item {
                 color: head.countWord === "0" ? Theme.color.statusNegative : Theme.color.textPrimary
             }
             Text {
+                // Without room it is not drawn: a text of no width is laid out whole.
+                visible: width > 0
                 text: head.summary.slice(head.countWord.length)
                 width: Math.min(implicitWidth, Math.max(0, head.width - Refine.headLeft - Refine.headRight
                     - left.implicitWidth - actions.width - countNumber.width - Refine.headApart * 3

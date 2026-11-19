@@ -28,9 +28,11 @@ ListView {
     }
     function showStart() {
         if(!activePage || !document.article)return
+        // The header's columns place their rows on the next frame, which may come
+        // after this: placed now, the list knows the header's whole height.
+        headerItem.settle()
         forceLayout()
-        // The header's text and image frame settle after the list's first layout.
-        Qt.callLater(() => { if(page.activePage && page.document.article)page.contentY=page.headerItem.y-page.topMargin })
+        contentY=headerItem.y-topMargin
     }
     onDocumentChanged:if(completed && activePage && document.article)Qt.callLater(showStart)
     onSourceChanged:if(completed && activePage)Qt.callLater(activate)
@@ -51,9 +53,11 @@ ListView {
     boundsBehavior:Flickable.StopAtBounds
     ScrollBar.vertical:ViewportScrollBar {}
     header:Column {
+        function settle() { head.forceLayout();forceLayout() }
         x:page.readingX;width:page.readingWidth
         spacing:Metrics.gap16
         ArticleHeader {
+            id:head
             width:parent.width
             document:page.document;reader:articleModel;viewport:page;rowY:parent.y+y
             pageActive:page.activePage;pageVisible:page.visible
