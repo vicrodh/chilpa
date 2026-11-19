@@ -33,6 +33,8 @@ impl Startup {
 impl Chilpa {
     pub fn start_plugins(&mut self) {
         if self.plugins.is_some() { return; }
+        // Not before the library is current: `start_services` starts it then.
+        if self.library_upgrading() { return; }
         let root = Self::plugins_dir();
         let progress = self.plugin_startup.progress.clone();
         self.plugin_startup.start(move || {

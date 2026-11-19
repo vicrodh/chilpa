@@ -274,3 +274,28 @@ fn a_marker_left_beside_a_current_library_is_removed_when_it_is_found() {
     assert!(!upgrade.holds());
     assert!(!schema::upgrade::marker_path(&path).exists(), "a stale marker is not left to be taken for an unfinished upgrade");
 }
+
+#[test]
+fn nothing_that_reads_the_library_starts_before_its_upgrade_ends() {
+    if !in_own_profile("library_upgrade::tests::nothing_that_reads_the_library_starts_before_its_upgrade_ends", "CHILPA_TEST_NOTHING_STARTS") { return; }
+    older(&chilpa_library::Library::default_path(), 50);
+    let mut api = crate::Chilpa::new();
+    api.start_services();
+    assert!(api.library_upgrading());
+    // What the window asks for by itself while the splash covers it.
+    assert!(api.plugin_notifications(0).is_none(), "the plugin centre waits");
+    api.plugin_updates_command("refresh", "{}");
+    api.start_plugins();
+    api.start_scrobbling();
+    api.start_servers();
+    api.start_media_controls();
+    assert!(!api.plugins_starting() && api.plugins.is_none(), "no plugin starts");
+    assert!(api.plugin_center.is_none());
+    assert!(api.scrobbler.is_none());
+    assert!(api.servers.keys.is_none());
+    #[cfg(target_os = "linux")]
+    assert!(!api.media_controls_started());
+    wait_for_the_upgrade(&mut api);
+    assert!(api.plugins_starting() || api.plugins.is_some(), "they start once it ends");
+    assert!(api.scrobbler.is_some() && api.servers.keys.is_some());
+}

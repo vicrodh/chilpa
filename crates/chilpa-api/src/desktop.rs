@@ -123,9 +123,16 @@ impl Chilpa {
         true
     }
 
+    #[cfg(all(test, target_os = "linux"))]
+    pub(crate) fn media_controls_started(&self) -> bool {
+        self.desktop.tell.is_some()
+    }
+
     /// Puts Chilpa on the desktop's media controls, where there are any,
     /// and its icon on the panel, if that is wanted.
     pub fn start_media_controls(&mut self) {
+        // Not before the library is current: `start_services` starts it then.
+        if self.library_upgrading() { return; }
         #[cfg(target_os = "linux")]
         {
             let (tx, rx) = async_channel::unbounded();
