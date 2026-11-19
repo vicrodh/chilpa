@@ -414,6 +414,43 @@ TestCase {
         tryVerify(() => TipState.shown && TipState.target === under.sourceBadge && TipState.text === "Source 11", 2000, "it says the new track's source: " + TipState.text)
     }
 
+    function test_the_pool_holds_at_most_a_band_of_bodies() {
+        list.height = 676
+        view.forceLayout(); wait(0)
+        warm()
+        const held = slots().length
+        list.height = 176
+        wait(0)
+        const budget = 3 * Math.ceil(view.height / Metrics.rowCompact)
+        const pooled = slots().filter(row => !row.visible).length
+        verify(pooled <= budget, pooled + " rows in the pool for a budget of " + budget + ", after holding " + held)
+        // Within its budget the pool keeps its bodies: rich rows and back to compact build none.
+        list.height = 300
+        view.forceLayout(); wait(0)
+        warm()
+        const before = built()
+        list.rich = true; view.forceLayout(); wait(0)
+        list.rich = false; view.forceLayout(); wait(0)
+        compare(built() - before, 0, "rich and back to compact built no body")
+        // A warm pool scrolls at any speed without building: two screens a frame.
+        const fast = built()
+        for (const to of [lastY(), view.originY]) {
+            const step = (to > view.contentY ? 2 : -2) * view.height
+            while (Math.abs(to - view.contentY) > Math.abs(step)) { view.contentY += step; view.forceLayout() }
+            view.contentY = to; view.forceLayout()
+        }
+        compare(built() - fast, 0, "two screens a frame built no body")
+        // A list a search empties keeps its pool, and filled again builds nothing.
+        const kept = slots().length, again = built()
+        verify(kept <= 3 * Math.ceil(view.height / Metrics.rowCompact), kept + " rows held")
+        tracks.clear()
+        wait(0)
+        compare(slots().length, kept, "the emptied list keeps the rows it pooled")
+        fill(400)
+        view.positionViewAtBeginning(); view.forceLayout(); wait(0)
+        compare(built() - again, 0, "filled again, it built no body")
+    }
+
     // A body is built for the first time only once its row is placed: on the screen at once, in the
     // margin asynchronously. Nothing is built for a row the list lets go in the same turn, and the
     // first frame shows every row on the screen with its body. Each case logs what it built, when.

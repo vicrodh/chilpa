@@ -1,4 +1,5 @@
 import QtQuick
+import "../Theme"
 
 // The visible row and its offset survive a reset of the same track list.
 QtObject {
@@ -6,6 +7,13 @@ QtObject {
     required property var model
     required property var view
     property var place: null
+    // A list that scrolls itself pools at most three screens of compact rows, more than it holds at once at one size; past that, once laid out, its whole pool goes.
+    readonly property var band: view ? [view.height, view.cacheBuffer, view.contentHeight] : []
+    onBandChanged: if (view && view.interactive) Qt.callLater(viewport.trim)
+    function trim() {
+        view.forceLayout()
+        if (view.visible && view.contentItem.children.filter(slot => slot.resident && !slot.visible).length > 3 * Math.ceil(view.height / Metrics.rowCompact)) { view.reuseItems = false; view.reuseItems = true }
+    }
     // One reset restoration per turn, cancelled with the owning list.
     readonly property Timer pending: Timer {
         interval: 0

@@ -5,7 +5,7 @@ import "../Theme"
 Item {
     id: slot
     property bool inViewport: true
-    // In a list that scrolls itself I keep the body I built through the pool.
+    // In a list that scrolls itself I keep the body I built through the pool, up to its budget (TrackListViewport).
     // A body never built waits for my placement, as in any list, and off the screen it is built asynchronously.
     property bool resident: false
     property bool layoutReady: false
