@@ -211,7 +211,7 @@ Item {
             ListView.onPooled: pooled = true; ListView.onReused: pooled = false
         }
 
-        onContentYChanged: pointer.track()
+        onContentYChanged: pointer.scrolled()
     }
 
     TrackListPointer {

@@ -665,6 +665,38 @@ TestCase {
         verify(slots().filter(row => !row.visible).length <= budget(), slots().filter(row => !row.visible).length + " rows in the pool")
     }
 
+    // A scroll under a still pointer resolves it once a step: at once, or a turn later when the step's layout changed the
+    // estimated height and asked for a look then. Counted by the turn-later looks, with the pointer's row checked each time.
+    Connections { id: later; target: null; property int runs: 0; function onTriggered() { runs++ } }
+    function test_a_scroll_under_a_still_pointer_resolves_it_once_a_step_data() {
+        return [{ tag: "ungrouped" }, { tag: "grouped", grouped: true }]
+    }
+    function test_a_scroll_under_a_still_pointer_resolves_it_once_a_step(data) {
+        if (data.grouped) { view.section.property = "group"; fill(400); view.positionViewAtBeginning(); view.forceLayout() }
+        warm()
+        const pointer = list.children.find(child => typeof child.track === "function" && child.rows === view)
+        later.target = pointer.resources.find(object => object.interval === 0 && object.triggeredOnStart !== undefined)
+        verify(later.target !== null, "the pointer's turn-later look")
+        const y = 100
+        mouseMove(view, view.width / 2, y)
+        wait(0)
+        let grown = 0
+        for (let step = 0; step < 60; ++step) {
+            const was = view.hovered, height = heights.changes
+            later.runs = 0
+            view.contentY += Metrics.rowCompact * 1.5
+            const now = view.indexAt(Metrics.gap2, y + view.contentY), grew = heights.changes > height
+            if (!grew) compare(view.hovered, now, "step " + step + ": the pointer is resolved at once")
+            else if (now !== was) compare(view.hovered, was, "step " + step + ": its layout asked for a look a turn later, and that one is the look")
+            wait(0)
+            compare(view.hovered, now, "step " + step + ": the row under the pointer")
+            compare(later.runs, grew ? 1 : 0, "step " + step + ": resolved once")
+            if (grew) grown++
+        }
+        verify(grown > 0 && grown < 60, grown + " of 60 steps changed the estimated height")
+        later.target = null
+    }
+
     // What schedules a look at the pool, and what one costs: a scroll through groups, whose estimated content height
     // moves with every step, a flick, and a model that grows a row at a time, as a scan adds them.
     function test_scrolling_and_growing_leave_the_pool_alone() {

@@ -12,6 +12,7 @@ MouseArea {
     readonly property var shape: rows && host ? [rows.contentHeight, host.rowsRev, pointed && [pointed.trackId, pointed.sourceName, pointed.sourceBadge, pointed.available, pointed.header]] : []
     onShapeChanged: again.start()
     Timer { id: again; interval: 0; onTriggered: pointer.track() }
+    function scrolled() { if (!again.running) track() } // a scroll step whose layout asked for a look a turn later leaves it to that one
     property Item host
     property ListView rows
     property TrackColumns cols
@@ -43,14 +44,13 @@ MouseArea {
     preventStealing: pressedRow >= 0
     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-    function rowAt(y) {
-        return rows.indexAt(Metrics.gap2, y + rows.contentY)
-    }
+    function rowAt(y) { return rows.indexAt(Metrics.gap2, y + rows.contentY) }
     function track() {
         rows.hovered = containsMouse ? rowAt(mouseY) : -1
         rows.artistHovered = containsMouse && onArtist(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
         rows.albumHovered = containsMouse && onAlbum(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
-        const item = pointed = rows.hovered >= 0 ? rows.itemAtIndex(rows.hovered) : null
+        const pending = again.running, item = pointed = rows.hovered >= 0 ? rows.itemAtIndex(rows.hovered) : null
+        if (!pending) again.stop() // the row it points at now was read with it: one look a scroll step
         const badge = item && !item.header && cols.sourceWidth > 0 && mouseX >= cols.sourceX && mouseX < cols.sourceX + cols.sourceWidth ? item.sourceBadge : null
         if (sourceTip && sourceTip !== badge) TipState.hide(sourceTip)
         sourceTip = badge
