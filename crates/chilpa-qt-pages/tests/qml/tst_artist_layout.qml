@@ -87,6 +87,51 @@ TestCase {
             verify(Math.abs(y - before) <= 1, "Albums moved in a frame after Popular Tracks changed height: " + before + " -> " + frames.seen.join(", "))
         verify(Math.abs(albums.mapToItem(page, 0, 0).y - before) <= 1, "Albums moved: " + before + " -> " + albums.mapToItem(page, 0, 0).y)
     }
+    // Grows Popular Tracks on the first frame of a wheel step; its layout lands on a later frame, mid-step.
+    Component {
+        id: growMaker
+        Connections {
+            property Item popular
+            function onContentYChanged() { enabled = false; popular.loadMore() }
+        }
+    }
+    function test_a_block_that_settles_during_a_wheel_step_keeps_the_step_data() {
+        // Before the step's first frame, settle() moves the offset and stops the step. Mid-step the offset sits between two
+        // pixels, and the viewport rounds it to the new height and stops the step first.
+        return [{tag:"before_the_first_frame", early:true}, {tag:"mid_step", early:false}]
+    }
+    function test_a_block_that_settles_during_a_wheel_step_keeps_the_step(data) {
+        const page = createTemporaryObject(pageMaker, test)
+        ready(page)
+        const albums = page.blockOf(artistKey + "|album")
+        const popular = settledPopular(page)
+        page.jump(artistKey + "|album")
+        waitForRendering(page)
+        mouseMove(page.scrollView, 10, 100)
+        // One notch on a still page says how far a step moves the releases.
+        let start = albums.mapToItem(page, 0, 0).y
+        mouseWheel(page.scrollView, 10, 100, 0, -120, Qt.NoButton, Qt.NoModifier, 20)
+        tryCompare(page.scrollView, "moving", false)
+        const step = start - albums.mapToItem(page, 0, 0).y
+        verify(step > 1, "a notch moved the releases: " + step)
+        start = albums.mapToItem(page, 0, 0).y
+        const rows = popular.height
+        const frames = createTemporaryObject(framesMaker, test, {target:test.Window.window, item:albums, page:page})
+        if (!data.early) createTemporaryObject(growMaker, test, {target:page.scrollView, popular:popular.item})
+        mouseWheel(page.scrollView, 10, 100, 0, -120, Qt.NoButton, Qt.NoModifier, 20)
+        verify(page.scrollView.moving, "the second step is under way")
+        if (data.early) {
+            popular.item.loadMore()
+            findChild(popular.item, "trackListView").forceLayout(); popular.item.forceLayout(); popular.parent.forceLayout()
+        }
+        tryVerify(() => popular.height !== rows, 2000, "Popular Tracks changed its height during the step")
+        tryCompare(page.scrollView, "moving", false)
+        waitForRendering(page)
+        for (const y of frames.seen)
+            verify(y <= start + 1 && y >= start - step - 1, "Albums left the step's path in a frame: " + start + " -> " + frames.seen.join(", "))
+        const moved = start - albums.mapToItem(page, 0, 0).y
+        verify(Math.abs(moved - step) <= 1, "the step moved the releases " + moved + " px; on a still page it moves them " + step + " px")
+    }
     function test_delayed_preview_keeps_the_visible_release_section_in_place_data() {
         return [
             {tag:"compact", density:"compact", width:1400},
