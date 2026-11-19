@@ -23,7 +23,13 @@ const QUALITY: u8 = 88;
 const ENCODED_BYTES: u64 = 128 * 1024 * 1024;
 const DECODE_BYTES: u64 = 128 * 1024 * 1024;
 const DECODE_JOBS: usize = 2;
+const DERIVATIVE_STEP: u32 = 128;
 static DECODE_BUDGET: DecodeBudget = DecodeBudget::new();
+
+#[cfg(test)]
+thread_local! {
+    static OPENED_COVERS: std::cell::RefCell<Vec<PathBuf>> = const { std::cell::RefCell::new(Vec::new()) };
+}
 
 struct DecodeBudget { used: Mutex<(usize, u64)>, wake: Condvar }
 
@@ -149,6 +155,8 @@ pub(crate) fn with_cover<T>(path: &Path, use_picture: impl FnOnce(image::Dynamic
 fn with_cover_size<T>(path: &Path, size: Option<u32>, use_picture: impl FnOnce(image::DynamicImage) -> T) -> Option<T> {
     use std::io::{Read, Seek};
     let mut permit = DECODE_BUDGET.acquire();
+    #[cfg(test)]
+    OPENED_COVERS.with(|opened| opened.borrow_mut().push(path.to_path_buf()));
     let file = std::fs::File::open(path).ok()?;
     if file.metadata().ok()?.len() > ENCODED_BYTES { return None; }
     let reader = image::ImageReader::new(std::io::BufReader::new(file)).with_guessed_format().ok()?;
@@ -265,7 +273,7 @@ fn contain_image(art: &image::RgbImage, size: u32) -> image::RgbImage {
     field
 }
 
-fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
+pub(crate) fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     let size = size.clamp(32, 2048);
     // The file's own date is in the name, so a cover replaced on disk gets
     // a new derivative instead of the old one forever.
@@ -281,12 +289,47 @@ fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     MAKING.once(&out, || {
         // A cover smaller than asked is kept at its size: making it bigger
         // only makes it blurrier and heavier.
-        let pixels = with_cover_size(path, Some(size), |cover| {
+        let pixels = cached_derivative(dir, key(path, modified), size).or_else(|| with_cover_size(path, Some(size), |cover| {
             let small = if cover.width().max(cover.height()) > size { cover.thumbnail(size, size) } else { cover };
             small.into_rgb8()
-        })?;
+        }))?;
         written(&out, |writer| image::codecs::jpeg::JpegEncoder::new_with_quality(writer, QUALITY).encode_image(&pixels).ok())
     })
+}
+
+fn cached_derivative(dir: &Path, fingerprint: u64, target: u32) -> Option<image::RgbImage> {
+    cached_derivative_candidates(dir, fingerprint, target).into_iter().find_map(|path| with_cover(&path, |cover| {
+        (cover.width().max(cover.height()) >= target).then(|| {
+            cover.resize(target, target, image::imageops::FilterType::Lanczos3).into_rgb8()
+        })
+    }).flatten())
+}
+
+fn cached_derivative_candidates(dir: &Path, fingerprint: u64, target: u32) -> Vec<PathBuf> {
+    cached_derivative_candidates_with(dir, fingerprint, target, Path::is_file)
+}
+
+fn cached_derivative_candidates_with(
+    dir: &Path, fingerprint: u64, target: u32, mut is_file: impl FnMut(&Path) -> bool,
+) -> Vec<PathBuf> {
+    // Non-step derivatives remain exact hits in `derivative_in`. Reuse probes only
+    // the bounded step names, so a request never enumerates a library-sized cache.
+    let mut sizes = Vec::new();
+    let twice = target.saturating_mul(2);
+    let mut size = twice.div_ceil(DERIVATIVE_STEP) * DERIVATIVE_STEP;
+    while size <= 2048 {
+        sizes.push(size);
+        size = size.saturating_add(DERIVATIVE_STEP);
+    }
+    size = target.div_ceil(DERIVATIVE_STEP) * DERIVATIVE_STEP;
+    while size < twice && size <= 2048 {
+        sizes.push(size);
+        size = size.saturating_add(DERIVATIVE_STEP);
+    }
+    sizes.into_iter().filter_map(|size| {
+        let path = dir.join(format!("{fingerprint:016x}-{size}.jpg"));
+        is_file(&path).then_some(path)
+    }).collect()
 }
 
 fn atmosphere_in(dir: &Path, path: &Path) -> Option<PathBuf> {
@@ -436,6 +479,168 @@ mod tests {
         let made = image::open(derivative_in(&dir.join("cache"), &original, 512).unwrap()).unwrap();
         assert_eq!(made.width(), 200);
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_missing_small_derivative_uses_the_smallest_cached_one_at_least_twice_its_size() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = cover(dir.path(), "cover.png", 600);
+        let cache = dir.path().join("cache");
+        let medium = derivative_in(&cache, &original, 256).unwrap();
+        let large = derivative_in(&cache, &original, 512).unwrap();
+        OPENED_COVERS.with(|opened| opened.borrow_mut().clear());
+        let small = derivative_in(&cache, &original, 128).unwrap();
+        let made = image::open(&small).unwrap();
+        assert_eq!((made.width(), made.height()), (128, 128));
+        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[medium]));
+        assert!(large.exists());
+    }
+
+    #[test]
+    fn candidate_lookup_probes_only_bounded_step_names() {
+        let dir = tempfile::tempdir().unwrap();
+        let fingerprint = 0x1234_u64;
+        for index in 0..9_700 {
+            std::fs::File::create(dir.path().join(format!("unrelated-{index}.jpg"))).unwrap();
+        }
+        std::fs::File::create(dir.path().join(format!("{fingerprint:016x}-512.jpg"))).unwrap();
+        let mut probes = Vec::new();
+        let candidates = cached_derivative_candidates_with(dir.path(), fingerprint, 128, |path| {
+            probes.push(path.to_path_buf());
+            path.is_file()
+        });
+        assert_eq!(candidates, [dir.path().join(format!("{fingerprint:016x}-512.jpg"))]);
+        assert_eq!(probes.len(), 16, "lookup cost is independent of unrelated directory entries");
+        assert!(probes.iter().all(|path| path.parent() == Some(dir.path())));
+    }
+
+    #[test]
+    fn non_step_derivatives_are_exact_hits_but_not_reuse_candidates() {
+        let dir = tempfile::tempdir().unwrap();
+        let fingerprint = 0x4321_u64;
+        let non_step = dir.path().join(format!("{fingerprint:016x}-192.jpg"));
+        let stepped = dir.path().join(format!("{fingerprint:016x}-256.jpg"));
+        std::fs::File::create(&non_step).unwrap();
+        std::fs::File::create(&stepped).unwrap();
+        assert_eq!(cached_derivative_candidates(dir.path(), fingerprint, 128), [stepped]);
+        assert!(non_step.is_file(), "the non-step derivative remains available to an exact request");
+    }
+
+    #[test]
+    #[ignore = "release-mode derivative source measurement"]
+    fn measure_128_derivative_sources() {
+        fn encode(image: &image::RgbImage, path: &Path) {
+            let file = std::fs::File::create(path).unwrap();
+            image::codecs::jpeg::JpegEncoder::new_with_quality(file, QUALITY).encode_image(image).unwrap();
+        }
+        fn make_128(path: &Path, original: bool) -> image::RgbImage {
+            let pixels = if original {
+                with_cover_size(path, Some(128), |cover| {
+                    let small = if cover.width().max(cover.height()) > 128 { cover.thumbnail(128, 128) } else { cover };
+                    small.into_rgb8()
+                }).unwrap()
+            } else {
+                with_cover(path, |cover| cover.resize(128, 128, image::imageops::FilterType::Lanczos3).into_rgb8()).unwrap()
+            };
+            let mut encoded = Vec::new();
+            image::codecs::jpeg::JpegEncoder::new_with_quality(&mut encoded, QUALITY).encode_image(&pixels).unwrap();
+            image::load_from_memory(&encoded).unwrap().into_rgb8()
+        }
+        fn median_time(path: &Path, original: bool) -> (image::RgbImage, std::time::Duration) {
+            let mut times = Vec::new();
+            let mut result = image::RgbImage::new(1, 1);
+            for _ in 0..7 {
+                let started = std::time::Instant::now();
+                result = std::hint::black_box(make_128(path, original));
+                times.push(started.elapsed());
+            }
+            times.sort_unstable();
+            (result, times[times.len() / 2])
+        }
+        fn difference(actual: &image::RgbImage, reference: &image::RgbImage) -> (f64, f64) {
+            let squared: f64 = actual.as_raw().iter().zip(reference.as_raw()).map(|(left, right)| {
+                let delta = f64::from(*left) - f64::from(*right);
+                delta * delta
+            }).sum();
+            let absolute: u64 = actual.as_raw().iter().zip(reference.as_raw())
+                .map(|(left, right)| u64::from(left.abs_diff(*right))).sum();
+            let samples = actual.as_raw().len() as f64;
+            let mean_squared_error = squared / samples;
+            (absolute as f64 / samples, 10.0 * (255.0 * 255.0 / mean_squared_error).log10())
+        }
+
+        let dir = tempfile::tempdir().unwrap();
+        let original = dir.path().join("detailed-original.jpg");
+        let detailed = image::RgbImage::from_fn(2048, 2048, |x, y| image::Rgb([
+            ((x * 17 + y * 31 + (x ^ y)) % 256) as u8,
+            ((x * 7 + y * 13 + x * y) % 251) as u8,
+            (((x / 3) ^ (y * 19)) % 256) as u8,
+        ]));
+        encode(&detailed, &original);
+        let source = image::open(&original).unwrap().into_rgb8();
+        let source_256 = image::imageops::resize(&source, 256, 256, image::imageops::FilterType::Lanczos3);
+        let source_2048 = image::imageops::resize(&source, 2048, 2048, image::imageops::FilterType::Lanczos3);
+        let path_256 = dir.path().join("detailed-256.jpg");
+        let path_2048 = dir.path().join("detailed-2048.jpg");
+        encode(&source_256, &path_256);
+        encode(&source_2048, &path_2048);
+
+        let (direct, direct_time) = median_time(&original, true);
+        let (from_256, time_256) = median_time(&path_256, false);
+        let (from_2048, time_2048) = median_time(&path_2048, false);
+        let (mean_absolute_256, peak_signal_to_noise_256) = difference(&from_256, &direct);
+        let (mean_absolute_2048, peak_signal_to_noise_2048) = difference(&from_2048, &direct);
+        eprintln!("128 derivative source measurement: 256={time_256:?} mad={mean_absolute_256:.4} psnr={peak_signal_to_noise_256:.2}dB; 2048={time_2048:?} mad={mean_absolute_2048:.4} psnr={peak_signal_to_noise_2048:.2}dB; original={direct_time:?}");
+        assert_eq!(direct.dimensions(), (128, 128));
+        assert_eq!(from_256.dimensions(), direct.dimensions());
+        assert_eq!(from_2048.dimensions(), direct.dimensions());
+    }
+
+    #[test]
+    fn a_cached_derivative_is_never_upscaled() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = cover(dir.path(), "cover.png", 96);
+        let cache = dir.path().join("cache");
+        let nominally_large = derivative_in(&cache, &original, 256).unwrap();
+        OPENED_COVERS.with(|opened| opened.borrow_mut().clear());
+        let requested = derivative_in(&cache, &original, 128).unwrap();
+        let made = image::open(&requested).unwrap();
+        assert_eq!((made.width(), made.height()), (96, 96));
+        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[nominally_large, original]));
+    }
+
+    #[test]
+    fn a_missing_derivative_falls_back_to_the_original() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = cover(dir.path(), "cover.png", 300);
+        let cache = dir.path().join("cache");
+        OPENED_COVERS.with(|opened| opened.borrow_mut().clear());
+        let requested = derivative_in(&cache, &original, 128).unwrap();
+        let made = image::open(&requested).unwrap();
+        assert_eq!((made.width(), made.height()), (128, 128));
+        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[original]));
+    }
+
+    #[test]
+    fn lanczos_and_the_existing_original_resize_have_a_measurable_pixel_difference() {
+        let source = image::RgbImage::from_fn(1024, 1024, |x, y| {
+            image::Rgb([((x * 17 + y * 3) % 256) as u8, ((x ^ y) % 256) as u8, ((x * y) % 251) as u8])
+        });
+        let measure = |filter| {
+            let started = std::time::Instant::now();
+            let mut last = image::RgbImage::new(1, 1);
+            for _ in 0..20 {
+                last = std::hint::black_box(image::imageops::resize(&source, 128, 128, filter));
+            }
+            (last, started.elapsed())
+        };
+        let (triangle, triangle_time) = measure(image::imageops::FilterType::Triangle);
+        let (lanczos, lanczos_time) = measure(image::imageops::FilterType::Lanczos3);
+        let difference: u64 = triangle.as_raw().iter().zip(lanczos.as_raw())
+            .map(|(left, right)| u64::from(left.abs_diff(*right))).sum();
+        let mean = difference as f64 / triangle.as_raw().len() as f64;
+        eprintln!("resample comparison: triangle={triangle_time:?} lanczos3={lanczos_time:?} mean_abs={mean:.3}");
+        assert!(mean > 0.1, "changing the original path would change existing derivative pixels");
     }
 
     #[test]

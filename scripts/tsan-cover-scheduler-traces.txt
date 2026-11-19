@@ -1,0 +1,188 @@
+The system Qt libraries are not instrumented and are stripped. These trace
+signatures justify the scheduler suite suppressions without matching a whole
+module. Addresses and process ids vary between runs.
+
+QWaitCondition::~QWaitCondition
+  Main-thread destruction:
+    pthread_mutex_destroy
+    QWaitCondition::~QWaitCondition
+    CoverScheduler shared_ptr destruction at process shutdown
+  Finished pooled-thread access:
+    pthread_cond_timedwait
+    QWaitCondition::wait
+  Allocation:
+    QWaitCondition::QWaitCondition
+    CoverScheduler::request dispatching its first pool job
+
+assertObjectType
+  Main-thread queued-call dispatch:
+    assertObjectType<CoverResponse> at qobjectdefs_impl.h:106
+    QObject::event
+  Pooled-thread allocation:
+    invokeMethodCallableHelper at qobjectdefs.h:645
+    CoverResponse::finish at covers.cpp
+  The system Qt reads its callable type metadata before CoverResponse can
+  acquire the explicit delivery handoff mutex.
+
+memmove
+  Removing race:memmove produced this complete report:
+
+==================
+WARNING: ThreadSanitizer: data race (pid=3338509)
+  Write of size 8 at 0x720800003190 by thread T1:
+    #0 memmove <null> (libtsan.so.2+0x8cdd3) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Core.so.6+0x2d1191) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+
+  Previous write of size 8 at 0x720800003190 by thread T2:
+    #0 memmove <null> (libtsan.so.2+0x8cdd3) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Core.so.6+0x2d1191) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+
+  Location is heap block of size 32 at 0x720800003180 allocated by thread T1:
+    #0 malloc <null> (libtsan.so.2+0x8b40b) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Core.so.6+0x2d0cec) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+
+  Thread T1 'Thread (pooled)' (tid=3338513, running) created by main thread at:
+    #0 pthread_create <null> (libtsan.so.2+0x598c7) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 QThread::start(QThread::Priority) <null> (libQt6Core.so.6+0x235124) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+    #2 request /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/../src/covers.cpp:228 (cover_budget+0x418ccf) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+    #3 requestImageResponse /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/../src/covers.cpp:550 (cover_budget+0x419303) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+    #4 add /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:243 (cover_budget+0x4122ca) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+    #5 main /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:420 (cover_budget+0x41caf2) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+
+  Thread T2 'Thread (pooled)' (tid=3338514, running) created by main thread at:
+    #0 pthread_create <null> (libtsan.so.2+0x598c7) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 QThread::start(QThread::Priority) <null> (libQt6Core.so.6+0x235124) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+    #2 request /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/../src/covers.cpp:228 (cover_budget+0x418ccf) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+    #3 requestImageResponse /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/../src/covers.cpp:550 (cover_budget+0x419303) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+    #4 add /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:243 (cover_budget+0x4122ca) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+    #5 main /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:431 (cover_budget+0x41cd33) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+
+SUMMARY: ThreadSanitizer: data race (/usr/lib64/libQt6Core.so.6+0x2d1191) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+==================
+
+  race:memmove must stay generic because both caller frames are stripped QtCore offsets.
+
+operator delete
+  Removing race:operator delete(void*, unsigned long) produced this complete report:
+
+==================
+WARNING: ThreadSanitizer: data race (pid=3343244)
+  Write of size 8 at 0x721000016480 by thread T7:
+    #0 operator delete(void*, unsigned long) <null> (libtsan.so.2+0xa9766) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Core.so.6+0x29013d) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+
+  Previous write of size 8 at 0x721000016480 by main thread:
+    #0 operator new(unsigned long) <null> (libtsan.so.2+0xaa143) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Core.so.6+0x2901da) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+    #2 main /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:701 (cover_budget+0x420efe) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+
+  Thread T7 'QQmlThread' (tid=3343264, running) created by main thread at:
+    #0 pthread_create <null> (libtsan.so.2+0x598c7) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 QThread::start(QThread::Priority) <null> (libQt6Core.so.6+0x235124) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+    #2 main /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:701 (cover_budget+0x420efe) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+
+SUMMARY: ThreadSanitizer: data race (/usr/lib64/libQt6Core.so.6+0x29013d) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+==================
+
+  race:operator delete(void*, unsigned long) must stay generic because the access caller is a stripped QtCore frame.
+
+libglib-2.0.so.0+0xbcd49
+  Main-thread access:
+    write
+    libglib-2.0.so.0+0xbcd49
+  QQuickPixmapReader access and allocation:
+    eventfd
+    libglib-2.0.so.0+0xbcb4b
+  GLib is stripped and uninstrumented. The required eventfd suppression can
+  hide other races reported through that interceptor. The scalar negative
+  control does not use file descriptors.
+
+memcpy
+  Removing race:memcpy produced this complete report:
+
+==================
+WARNING: ThreadSanitizer: data race (pid=3340883)
+  Read of size 8 at 0x721000034b50 by thread T8:
+    #0 memcpy <null> (libtsan.so.2+0x8cf73) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Core.so.6+0x2af2e6) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+
+  Previous write of size 8 at 0x721000034b50 by main thread:
+    #0 memcpy <null> (libtsan.so.2+0x8cf73) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Core.so.6+0x2af2e6) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+    #2 main /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:701 (cover_budget+0x420efe) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+
+  Location is heap block of size 64 at 0x721000034b40 allocated by main thread:
+    #0 malloc <null> (libtsan.so.2+0x8b40b) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Core.so.6+0x2c9ec6) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+    #2 main /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:701 (cover_budget+0x420efe) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+
+  Thread T8 'QQuickPixmapRea' (tid=3340892, running) created by main thread at:
+    #0 pthread_create <null> (libtsan.so.2+0x598c7) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 QThread::start(QThread::Priority) <null> (libQt6Core.so.6+0x235124) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+    #2 main crates/chilpa-qt-artwork/tests/cover_budget.cpp:701
+
+SUMMARY: ThreadSanitizer: data race (/usr/lib64/libQt6Core.so.6+0x2af2e6) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+==================
+
+  race:memcpy must stay generic because both access callers are stripped QtCore frames.
+
+operator delete[]
+  Removing race:operator delete[](void*) produced this complete report:
+
+==================
+WARNING: ThreadSanitizer: data race (pid=3346065)
+  Write of size 8 at 0x72580001fe00 by main thread:
+    #0 operator delete[](void*) <null> (libtsan.so.2+0xa93a6) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Quick.so.6+0x3aceda) (BuildId: bca8fdfdeb6a88f385d83f6e5fe6c9b4e70c1d87)
+    #2 main /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:753 (cover_budget+0x421575) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+
+  Previous write of size 8 at 0x72580001fe00 by thread T2:
+    #0 operator new[](unsigned long) <null> (libtsan.so.2+0xaa2b3) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 <null> <null> (libQt6Quick.so.6+0x400687) (BuildId: bca8fdfdeb6a88f385d83f6e5fe6c9b4e70c1d87)
+
+  Thread T2 'QQuickPixmapRea' (tid=3346068, finished) created by main thread at:
+    #0 pthread_create <null> (libtsan.so.2+0x598c7) (BuildId: df96ef2d61571ef10a7d6a6114aa440731c618cc)
+    #1 QThread::start(QThread::Priority) <null> (libQt6Core.so.6+0x235124) (BuildId: 4d6b1825be2ee8a7f41001b6a10d41a12eaad17a)
+    #2 destroyEngineInState /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:354 (cover_budget+0x41c595) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+    #3 main /home/blitzkriegfc/Personal/chilpa/worktrees/cover-scheduling/crates/chilpa-qt-artwork/tests/cover_budget.cpp:753 (cover_budget+0x421575) (BuildId: 7eb026486b8a581893210b7c43bf6a958b58b390)
+
+SUMMARY: ThreadSanitizer: data race (/usr/lib64/libQt6Quick.so.6+0x3aceda) (BuildId: bca8fdfdeb6a88f385d83f6e5fe6c9b4e70c1d87)
+==================
+
+  race:operator delete[](void*) must stay generic because both access callers are stripped QtQuick frames.
+
+CoverJob constructor
+  Pooled-thread read:
+    CoverJob::run at covers.cpp
+    libQt6Core.so.6+0x2c2da4
+  Main-thread write:
+    CoverJob::CoverJob at covers.cpp:178
+    CoverScheduler::dispatchLocked at covers.cpp
+  The reported storage is the CoverJob shared_ptr member handed to the worker
+  by the system Qt thread pool. The race:CoverJob::CoverJob suppression matches
+  the constructor and does not match CoverJob::run.
+
+Negative controls with the final suppression file
+  The callback control reported these conflicting frames and exited 66:
+    operator() at cover_budget.cpp:827
+    coverTestTsanNegativeCallback at cover_budget.cpp:225
+    CoverResponse::deliverPending at covers.cpp:127
+  PASS ThreadSanitizer negative control negative exited 66
+
+  The worker control reported these conflicting frames and exited 66:
+    operator() at cover_budget.cpp:827
+    coverTestTsanWorkerNegative at cover_budget.cpp:234
+    CoverScheduler::execute at covers.cpp:287
+    CoverJob::run at covers.cpp:518
+  PASS ThreadSanitizer negative control worker-negative exited 66
+
+QThread::start
+  Reported finished thread:
+    pthread_create
+    QThread::start
+    CoverScheduler::request
+  TSAN reports the pooled thread as leaked at process exit because the join in
+  the system QThreadPool destructor is uninstrumented.
+
+An instrumented Qt build is out of scope and remains the blind spot for races
+whose access stacks contain only stripped Qt frames.

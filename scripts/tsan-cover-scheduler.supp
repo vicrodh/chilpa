@@ -1,0 +1,18 @@
+# Qt destroys an internal QWaitCondition after waitForDone while uninstrumented pool bookkeeping still appears to wait; see tsan-cover-scheduler-traces.txt.
+race:QWaitCondition::~QWaitCondition
+# Qt reads its queued member-call type metadata before the receiver can acquire the handoff mutex; see tsan-cover-scheduler-traces.txt.
+race:assertObjectType
+# Stripped QtCore exposes only memmove for its pooled-thread bookkeeping race. This can hide other races reported through memmove; see tsan-cover-scheduler-traces.txt.
+race:memmove
+# Stripped QtCore exposes only memcpy for a QQuickPixmapReader buffer handoff. This can hide other memcpy reports; see tsan-cover-scheduler-traces.txt.
+race:memcpy
+# Stripped QtCore exposes only delete for its QQmlThread handoff race. This can hide other deallocation races; see tsan-cover-scheduler-traces.txt.
+race:operator delete(void*, unsigned long)
+# Stripped QtQuick exposes only array deletion for its pixmap-reader teardown race. This can hide other array-deallocation races; see tsan-cover-scheduler-traces.txt.
+race:operator delete[](void*)
+# Stripped GLib exposes only eventfd for its QQuickPixmapReader wakeup race. This can hide other eventfd reports; see tsan-cover-scheduler-traces.txt.
+race:eventfd
+# QThreadPool's uninstrumented queue hides the handoff from the CoverJob constructor; see tsan-cover-scheduler-traces.txt.
+race:CoverJob::CoverJob
+# Qt joins finished pool threads inside its uninstrumented pool destructor; see tsan-cover-scheduler-traces.txt.
+thread:QThread::start

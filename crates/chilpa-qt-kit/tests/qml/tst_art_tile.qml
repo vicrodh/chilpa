@@ -29,9 +29,15 @@ TestCase {
 
     function test_a_cover_is_drawn_without_shaders() {
         compare(tile.GraphicsInfo.api, GraphicsInfo.Software, "the suite runs where no shader draws")
+        compare(findChild(tile, "artImage").retainWhileLoading, false,
+                "a hidden old cover is not retained during loading")
         waitForRendering(picture)
         tile.source = picture.toDataURL("image/png")
         tryVerify(() => tile.ready, 2000, "the cover loads")
         tryVerify(() => grabImage(stage).green(60, 60) > 200, 1000, "the cover is on screen: " + grabImage(stage).green(60, 60))
+        tile.source = ""
+        tryCompare(tile, "ready", false)
+        waitForRendering(tile)
+        verify(grabImage(stage).green(60, 60) < 200, "the placeholder replaces the old cover")
     }
 }
