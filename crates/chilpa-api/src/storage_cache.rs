@@ -279,4 +279,19 @@ mod tests {
         assert!(pinned.exists());
         assert!(newest.exists());
     }
+
+    #[test]
+    fn a_derivative_made_from_another_derivative_is_counted_and_swept() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = dir.path().join("cover.png");
+        image::RgbImage::from_pixel(512, 512, image::Rgb([20, 80, 140])).save(&original).unwrap();
+        let covers = dir.path().join("covers");
+        let large = crate::covers::derivative_in(&covers, &original, 256).unwrap();
+        let small = crate::covers::derivative_in(&covers, &original, 128).unwrap();
+        let expected = std::fs::metadata(&large).unwrap().len() + std::fs::metadata(&small).unwrap().len();
+        let usage = scan_usage(dir.path(), &dir.path().join("missing-library.db"));
+        assert_eq!((usage.derivatives.files, usage.derivatives.bytes), (2, expected));
+        assert_eq!(prune(&derivative_dirs(dir.path()), 0, &Default::default()), expected);
+        assert!(!large.exists() && !small.exists());
+    }
 }

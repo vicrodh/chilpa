@@ -25,6 +25,11 @@ const DECODE_BYTES: u64 = 128 * 1024 * 1024;
 const DECODE_JOBS: usize = 2;
 static DECODE_BUDGET: DecodeBudget = DecodeBudget::new();
 
+#[cfg(test)]
+thread_local! {
+    static OPENED_COVERS: std::cell::RefCell<Vec<PathBuf>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
 struct DecodeBudget { used: Mutex<(usize, u64)>, wake: Condvar }
 
 /// Files being made now, by target. A second asker for the same file waits
@@ -149,6 +154,8 @@ pub(crate) fn with_cover<T>(path: &Path, use_picture: impl FnOnce(image::Dynamic
 fn with_cover_size<T>(path: &Path, size: Option<u32>, use_picture: impl FnOnce(image::DynamicImage) -> T) -> Option<T> {
     use std::io::{Read, Seek};
     let mut permit = DECODE_BUDGET.acquire();
+    #[cfg(test)]
+    OPENED_COVERS.with(|opened| opened.borrow_mut().push(path.to_path_buf()));
     let file = std::fs::File::open(path).ok()?;
     if file.metadata().ok()?.len() > ENCODED_BYTES { return None; }
     let reader = image::ImageReader::new(std::io::BufReader::new(file)).with_guessed_format().ok()?;
@@ -265,7 +272,7 @@ fn contain_image(art: &image::RgbImage, size: u32) -> image::RgbImage {
     field
 }
 
-fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
+pub(crate) fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     let size = size.clamp(32, 2048);
     // The file's own date is in the name, so a cover replaced on disk gets
     // a new derivative instead of the old one forever.
@@ -281,12 +288,28 @@ fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     MAKING.once(&out, || {
         // A cover smaller than asked is kept at its size: making it bigger
         // only makes it blurrier and heavier.
-        let pixels = with_cover_size(path, Some(size), |cover| {
+        let pixels = cached_derivative(dir, key(path, modified), size).or_else(|| with_cover_size(path, Some(size), |cover| {
             let small = if cover.width().max(cover.height()) > size { cover.thumbnail(size, size) } else { cover };
             small.into_rgb8()
-        })?;
+        }))?;
         written(&out, |writer| image::codecs::jpeg::JpegEncoder::new_with_quality(writer, QUALITY).encode_image(&pixels).ok())
     })
+}
+
+fn cached_derivative(dir: &Path, fingerprint: u64, target: u32) -> Option<image::RgbImage> {
+    let prefix = format!("{fingerprint:016x}-");
+    let mut candidates = std::fs::read_dir(dir).ok()?.flatten().filter_map(|entry| {
+        let name = entry.file_name();
+        let name = name.to_str()?;
+        let size = name.strip_prefix(&prefix)?.strip_suffix(".jpg")?.parse::<u32>().ok()?;
+        (size >= target && entry.file_type().is_ok_and(|kind| kind.is_file())).then_some((size, entry.path()))
+    }).collect::<Vec<_>>();
+    candidates.sort_unstable_by_key(|(size, _)| *size);
+    candidates.into_iter().find_map(|(_, path)| with_cover(&path, |cover| {
+        (cover.width().max(cover.height()) >= target).then(|| {
+            cover.resize(target, target, image::imageops::FilterType::Lanczos3).into_rgb8()
+        })
+    }).flatten())
 }
 
 fn atmosphere_in(dir: &Path, path: &Path) -> Option<PathBuf> {
@@ -436,6 +459,68 @@ mod tests {
         let made = image::open(derivative_in(&dir.join("cache"), &original, 512).unwrap()).unwrap();
         assert_eq!(made.width(), 200);
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_missing_small_derivative_uses_the_smallest_cached_larger_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = cover(dir.path(), "cover.png", 600);
+        let cache = dir.path().join("cache");
+        let medium = derivative_in(&cache, &original, 256).unwrap();
+        let large = derivative_in(&cache, &original, 512).unwrap();
+        OPENED_COVERS.with(|opened| opened.borrow_mut().clear());
+        let small = derivative_in(&cache, &original, 128).unwrap();
+        let made = image::open(&small).unwrap();
+        assert_eq!((made.width(), made.height()), (128, 128));
+        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[medium]));
+        assert!(large.exists());
+    }
+
+    #[test]
+    fn a_cached_derivative_is_never_upscaled() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = cover(dir.path(), "cover.png", 96);
+        let cache = dir.path().join("cache");
+        let nominally_large = derivative_in(&cache, &original, 256).unwrap();
+        OPENED_COVERS.with(|opened| opened.borrow_mut().clear());
+        let requested = derivative_in(&cache, &original, 128).unwrap();
+        let made = image::open(&requested).unwrap();
+        assert_eq!((made.width(), made.height()), (96, 96));
+        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[nominally_large, original]));
+    }
+
+    #[test]
+    fn a_missing_derivative_falls_back_to_the_original() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = cover(dir.path(), "cover.png", 300);
+        let cache = dir.path().join("cache");
+        OPENED_COVERS.with(|opened| opened.borrow_mut().clear());
+        let requested = derivative_in(&cache, &original, 128).unwrap();
+        let made = image::open(&requested).unwrap();
+        assert_eq!((made.width(), made.height()), (128, 128));
+        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[original]));
+    }
+
+    #[test]
+    fn lanczos_and_the_existing_original_resize_have_a_measurable_pixel_difference() {
+        let source = image::RgbImage::from_fn(1024, 1024, |x, y| {
+            image::Rgb([((x * 17 + y * 3) % 256) as u8, ((x ^ y) % 256) as u8, ((x * y) % 251) as u8])
+        });
+        let measure = |filter| {
+            let started = std::time::Instant::now();
+            let mut last = image::RgbImage::new(1, 1);
+            for _ in 0..20 {
+                last = std::hint::black_box(image::imageops::resize(&source, 128, 128, filter));
+            }
+            (last, started.elapsed())
+        };
+        let (triangle, triangle_time) = measure(image::imageops::FilterType::Triangle);
+        let (lanczos, lanczos_time) = measure(image::imageops::FilterType::Lanczos3);
+        let difference: u64 = triangle.as_raw().iter().zip(lanczos.as_raw())
+            .map(|(left, right)| u64::from(left.abs_diff(*right))).sum();
+        let mean = difference as f64 / triangle.as_raw().len() as f64;
+        eprintln!("resample comparison: triangle={triangle_time:?} lanczos3={lanczos_time:?} mean_abs={mean:.3}");
+        assert!(mean > 0.1, "changing the original path would change existing derivative pixels");
     }
 
     #[test]
