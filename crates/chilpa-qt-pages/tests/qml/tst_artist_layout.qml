@@ -131,6 +131,13 @@ TestCase {
         }
         const albums = page.blockOf(artistKey + "|album")
         const latest = page.blockOf(artistKey + "|latest")
+        // Popular Tracks, above the releases, loads on a turn of its own and takes a few frames to lay out. Settled before the
+        // scroll, it cannot move the releases during the wheel, which took the wheel's motion with it.
+        const popular = page.blockOf(artistKey + "|tracks")
+        tryVerify(() => popular?.ready === true && findChild(page, "artistHeaderLoader").status === Loader.Ready, 2000, "the header and Popular Tracks are loaded")
+        const popularRows = findChild(popular.item, "trackListView")
+        tryVerify(() => popularRows.count > 0 && Array.from({length:popularRows.count}, (_, i) => popularRows.itemAtIndex(i)).every(row => row !== null), 2000, "every popular track has its row")
+        popularRows.forceLayout(); popular.item.forceLayout(); albums.parent.forceLayout()
         const tracks = findChild(latest, "latestReleaseTracks").model
         const rows = []
         for (let i = 0; i < tracks.count; i++) rows.push(Object.assign({}, tracks.get(i)))
