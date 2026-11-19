@@ -6014,6 +6014,9 @@ msgstr "還原副本並結束"
 msgid "Putting the copy back did not finish."
 msgstr "還原副本未完成。"
 
+msgid "Putting the copy back…"
+msgstr "正在還原副本…"
+
 msgid "Q"
 msgstr ""
 

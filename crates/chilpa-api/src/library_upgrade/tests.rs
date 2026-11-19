@@ -169,7 +169,7 @@ fn a_failure_after_a_committed_step_offers_the_copy_and_puts_it_back() {
     assert!(api.servers.keys.is_none(), "nothing that reads the library started");
     assert!(api.window_request().is_none());
     api.restore_library_copy();
-    assert_eq!(api.window_request(), Some(crate::WindowRequest::Quit), "and Chilpa quits");
+    assert_eq!(wait_for_a_request(&mut api), crate::WindowRequest::Quit, "and Chilpa quits once the copy is back");
     assert_eq!(version_of(&path), 54, "the library is the copy from before");
     assert!(schema::upgrade::failed_path(&path).exists());
 }
@@ -325,4 +325,22 @@ fn nothing_opens_over_the_splash_while_the_library_is_upgraded() {
         api.onboarding_start();
         std::thread::sleep(Duration::from_millis(20));
     }
+}
+
+#[test]
+fn putting_the_copy_back_runs_behind_a_line_that_says_so() {
+    if !in_own_profile("library_upgrade::tests::putting_the_copy_back_runs_behind_a_line_that_says_so", "CHILPA_TEST_RESTORE_BEHIND") { return; }
+    let path = chilpa_library::Library::default_path();
+    failed_at_56(&path);
+    let mut api = crate::Chilpa::new();
+    api.start_services();
+    assert_eq!(wait_for_the_upgrade(&mut api)["canRestore"], true);
+    api.restore_library_copy();
+    assert!(api.window_request().is_none(), "Chilpa quits once the copy is back, not before");
+    let view = api.upgrade.view();
+    assert_eq!((view["active"].as_bool(), view["failed"].as_bool()), (Some(true), Some(false)), "{view}");
+    assert_eq!(view["text"], "Putting the copy back…");
+    assert_eq!(view["progress"], -1.0, "how long a copy takes cannot be told");
+    assert_eq!(wait_for_a_request(&mut api), crate::WindowRequest::Quit);
+    assert_eq!(version_of(&path), 54);
 }

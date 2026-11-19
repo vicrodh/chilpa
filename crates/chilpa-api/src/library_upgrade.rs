@@ -16,6 +16,8 @@ enum State {
     Current,
     Pending,
     Running,
+    /// The copy from before is being put back, on the worker thread.
+    Restoring,
     /// `can_retry` is false while the library is missing, waiting for its
     /// copy: running the upgrade then would create an empty one.
     Failed { message: String, detail: String, can_restore: bool, can_retry: bool },
@@ -30,6 +32,8 @@ pub(crate) struct LibraryUpgrade {
     worker: Option<std::thread::JoinHandle<()>>,
     /// The start's update check, asked for while the library was upgraded.
     pub(crate) update_check_waits: bool,
+    /// The copy is back: the window quits.
+    restored: bool,
 }
 
 impl LibraryUpgrade {
@@ -38,7 +42,7 @@ impl LibraryUpgrade {
             upgrade::forget_finished(&path);
             State::Current
         };
-        let mut upgrade = Self { path, state, heard: Default::default(), outcome: None, stop: Default::default(), worker: None, update_check_waits: false };
+        let mut upgrade = Self { path, state, heard: Default::default(), outcome: None, stop: Default::default(), worker: None, update_check_waits: false, restored: false };
         // Putting the copy back was cut off with the library moved aside: it
         // is finished from here, and nothing creates a library in its place.
         if upgrade::interrupted(&upgrade.path) {
@@ -67,14 +71,21 @@ impl LibraryUpgrade {
         self.state = State::Failed { message, detail, can_restore: upgrade::restorable(&self.path), can_retry: present };
     }
 
-    /// Puts the copy back. True when it is back.
-    fn restore(&mut self) -> bool {
-        match upgrade::restore(&self.path) {
-            Ok(()) => true,
-            Err(error) => {
-                self.fail_restore(chilpa_i18n::t_args("The copy could not be put back: {}", &[&error.to_string()]));
-                false
+    /// Puts the copy back on a thread of its own, as the upgrade runs: it
+    /// copies a whole library and the window goes on drawing meanwhile.
+    fn start_restore(&mut self) {
+        let path = self.path.clone();
+        let (tell, outcome) = mpsc::channel();
+        let spawned = std::thread::Builder::new().name("chilpa-library-restore".into()).spawn(move || {
+            let _ = tell.send(upgrade::restore(&path).map_err(|error| error.to_string()));
+        });
+        match spawned {
+            Ok(worker) => {
+                self.worker = Some(worker);
+                self.outcome = Some(outcome);
+                self.state = State::Restoring;
             }
+            Err(error) => self.fail_restore(chilpa_i18n::t_args("The copy could not be put back: {}", &[&error.to_string()])),
         }
     }
 
@@ -125,6 +136,13 @@ impl LibraryUpgrade {
         if let Some(worker) = self.worker.take() {
             let _ = worker.join();
         }
+        if matches!(self.state, State::Restoring) {
+            match result {
+                Ok(()) => self.restored = true,
+                Err(message) => self.fail_restore(chilpa_i18n::t_args("The copy could not be put back: {}", &[&message])),
+            }
+            return false;
+        }
         match result {
             Ok(()) => {
                 self.state = State::Current;
@@ -149,6 +167,13 @@ impl LibraryUpgrade {
                 "detail": detail,
                 "canRestore": can_restore,
                 "canRetry": can_retry,
+            }),
+            State::Restoring => json!({
+                "active": true,
+                "failed": false,
+                "text": chilpa_i18n::t("Putting the copy back…"),
+                "progress": -1.0,
+                "note": "",
             }),
             State::Pending | State::Running => {
                 let heard = *self.heard.lock().unwrap_or_else(|error| error.into_inner());
@@ -233,9 +258,7 @@ impl crate::Chilpa {
     /// start upgrades the library again from that copy.
     pub fn restore_library_copy(&mut self) {
         if !matches!(self.upgrade.state, State::Failed { can_restore: true, .. }) { return; }
-        if self.upgrade.restore() {
-            self.desktop.requests.push_back(crate::WindowRequest::Quit);
-        }
+        self.upgrade.start_restore();
     }
 
     /// Quits from the startup cover, without the window's question.
@@ -249,7 +272,11 @@ impl crate::Chilpa {
     /// the tabs restored before it read their lists, and the window reads
     /// the library again.
     pub(crate) fn advance_library_upgrade(&mut self) {
-        if !self.upgrade.advance() { return; }
+        let upgraded = self.upgrade.advance();
+        if std::mem::take(&mut self.upgrade.restored) {
+            self.desktop.requests.push_back(crate::WindowRequest::Quit);
+        }
+        if !upgraded { return; }
         if let Some(tabs) = self.restored_tabs() {
             self.protect_tabs(&tabs);
         }

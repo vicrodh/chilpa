@@ -6011,6 +6011,9 @@ msgstr ""
 msgid "Putting the copy back did not finish."
 msgstr ""
 
+msgid "Putting the copy back…"
+msgstr ""
+
 msgid "Q"
 msgstr ""
 

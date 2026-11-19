@@ -6006,6 +6006,9 @@ msgstr "コピーを戻して終了"
 msgid "Putting the copy back did not finish."
 msgstr "コピーを戻す処理が完了しませんでした。"
 
+msgid "Putting the copy back…"
+msgstr "コピーを戻しています…"
+
 msgid "Q"
 msgstr ""
 

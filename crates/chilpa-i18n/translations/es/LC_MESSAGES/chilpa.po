@@ -6011,6 +6011,9 @@ msgstr "Restaurar la copia y salir"
 msgid "Putting the copy back did not finish."
 msgstr "No se terminó de restaurar la copia."
 
+msgid "Putting the copy back…"
+msgstr "Restaurando la copia…"
+
 msgid "Q"
 msgstr "Q"
 

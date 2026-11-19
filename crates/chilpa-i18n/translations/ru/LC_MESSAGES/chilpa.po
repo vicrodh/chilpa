@@ -6016,6 +6016,9 @@ msgstr "Вернуть копию и выйти"
 msgid "Putting the copy back did not finish."
 msgstr "Возврат копии не был завершён."
 
+msgid "Putting the copy back…"
+msgstr "Возврат копии…"
+
 msgid "Q"
 msgstr ""
 

@@ -6011,6 +6011,9 @@ msgstr "Remettre la copie et quitter"
 msgid "Putting the copy back did not finish."
 msgstr "La remise en place de la copie ne s'est pas terminée."
 
+msgid "Putting the copy back…"
+msgstr "Remise en place de la copie…"
+
 msgid "Q"
 msgstr ""
 

@@ -6011,6 +6011,9 @@ msgstr "Kopie terugzetten en afsluiten"
 msgid "Putting the copy back did not finish."
 msgstr "Het terugzetten van de kopie is niet voltooid."
 
+msgid "Putting the copy back…"
+msgstr "Kopie terugzetten…"
+
 msgid "Q"
 msgstr ""
 

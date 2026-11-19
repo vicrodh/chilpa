@@ -6011,6 +6011,9 @@ msgstr "Kopie wiederherstellen und beenden"
 msgid "Putting the copy back did not finish."
 msgstr "Das Wiederherstellen der Kopie wurde nicht abgeschlossen."
 
+msgid "Putting the copy back…"
+msgstr "Kopie wird wiederhergestellt…"
+
 msgid "Q"
 msgstr ""
 
