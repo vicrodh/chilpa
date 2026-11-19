@@ -233,10 +233,13 @@ impl PluginCenter {
 
 impl Chilpa {
     pub fn plugin_notifications(&mut self, revision: u64) -> Option<(u64, String)> {
+        // The plugin centre would start the plugins under the startup cover.
+        if self.library_upgrading() { return None; }
         self.ensure_plugin_center();
         self.plugin_center.as_ref()?.inbox.lock().ok()?.snapshot(revision)
     }
     pub fn plugin_updates_command(&mut self, action: &str, input: &str) {
+        if self.library_upgrading() { return; }
         self.ensure_plugin_center();
         self.plugin_center_command(action, input);
     }

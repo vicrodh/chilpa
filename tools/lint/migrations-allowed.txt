@@ -1,0 +1,6 @@
+# Files of chilpa-library that create, alter or drop a table, index, trigger
+# or view outside the schema steps, and why that does not change a library's
+# shape. One per line: path | reason.
+crates/chilpa-library/src/genre_index.rs | a scratch database of its own, rebuilt for each scan, never the library
+crates/chilpa-library/src/metadata_manifest.rs | a scratch database of its own for a metadata batch, never the library
+crates/chilpa-library/src/store/releases/metadata.rs | temporary tables of the connection and their indexes, gone when it closes

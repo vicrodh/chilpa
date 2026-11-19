@@ -63,7 +63,10 @@ impl Chilpa {
     /// Neither a failed initialization nor a failed spawn is cached.
     pub fn query_worker(&mut self) -> Option<QueryWorker> {
         if self.library().is_none() {
-            eprintln!("chilpa-queries: {}; will retry on the next job", self.now.error);
+            // An upgrade under way is the startup cover's to say, not a fault.
+            if !self.library_upgrading() {
+                eprintln!("chilpa-queries: {}; will retry on the next job", self.now.error);
+            }
             return None;
         }
         QueryWorker::start(chilpa_library::Library::default_path(), self.catalog.clone())

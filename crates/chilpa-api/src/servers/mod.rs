@@ -138,6 +138,8 @@ impl Chilpa {
     /// the sync, the watcher. The window calls it once, at startup, like
     /// `start_scrobbling`; a test never does.
     pub fn start_servers(&mut self) {
+        // Not before the library is current: `start_services` starts it then.
+        if self.library_upgrading() { return; }
         if self.servers.keys.is_some() {
             return;
         }

@@ -26,7 +26,11 @@ mod offline_audio;
 mod rating_sync;
 mod favorite_sync;
 mod local_presentation;
-mod upgrade;
+mod rebuild;
+mod track_ids;
+#[cfg(test)]
+mod track_ids_tests;
+pub mod upgrade;
 #[cfg(test)]
 mod upgrade_tests;
 
@@ -36,7 +40,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 56;
+pub const VERSION: i64 = 57;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -44,7 +48,29 @@ pub const VERSION: i64 = 56;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30, MIGRATION_V31, MIGRATION_V32, MIGRATION_V33, MIGRATION_V34, MIGRATION_V35, MIGRATION_V36, MIGRATION_V37, MIGRATION_V38, MIGRATION_V39, MIGRATION_V40, MIGRATION_V41, MIGRATION_V42, revisions::MIGRATION_V43, metadata::MIGRATION_V44, device_sync::MIGRATION_V45, revisions::MIGRATION_V46, MIGRATION_V47, MIGRATION_V48, MIGRATION_V49, MIGRATION_V50, server_sessions::MIGRATION_V51, server_storage::MIGRATION_V52, offline_audio::MIGRATION_V53, rating_sync::MIGRATION_V54, favorite_sync::MIGRATION_V55, local_presentation::MIGRATION_V56];
+const STEPS: &[Step] = &[Step::Sql(SCHEMA_V1), Step::Sql(MIGRATION_V2), Step::Sql(MIGRATION_V3), Step::Sql(MIGRATION_V4), Step::Sql(MIGRATION_V5), Step::Sql(MIGRATION_V6), Step::Sql(MIGRATION_V7), Step::Sql(MIGRATION_V8), Step::Sql(MIGRATION_V9), Step::Sql(MIGRATION_V10), Step::Sql(MIGRATION_V11), Step::Sql(MIGRATION_V12), Step::Sql(MIGRATION_V13), Step::Sql(MIGRATION_V14), Step::Sql(MIGRATION_V15), Step::Sql(MIGRATION_V16), Step::Sql(MIGRATION_V17), Step::Sql(MIGRATION_V18), Step::Sql(MIGRATION_V19), Step::Sql(MIGRATION_V20), Step::Sql(MIGRATION_V21), Step::Sql(MIGRATION_V22), Step::Sql(MIGRATION_V23), Step::Sql(MIGRATION_V24), Step::Sql(MIGRATION_V25), Step::Sql(MIGRATION_V26), Step::Sql(MIGRATION_V27), Step::Sql(MIGRATION_V28), Step::Sql(MIGRATION_V29), Step::Sql(MIGRATION_V30), Step::Sql(MIGRATION_V31), Step::Sql(MIGRATION_V32), Step::Sql(MIGRATION_V33), Step::Sql(MIGRATION_V34), Step::Sql(MIGRATION_V35), Step::Sql(MIGRATION_V36), Step::Sql(MIGRATION_V37), Step::Sql(MIGRATION_V38), Step::Sql(MIGRATION_V39), Step::Sql(MIGRATION_V40), Step::Sql(MIGRATION_V41), Step::Sql(MIGRATION_V42), Step::Sql(revisions::MIGRATION_V43), Step::Sql(metadata::MIGRATION_V44), Step::Sql(device_sync::MIGRATION_V45), Step::Sql(revisions::MIGRATION_V46), Step::Sql(MIGRATION_V47), Step::Sql(MIGRATION_V48), Step::Sql(MIGRATION_V49), Step::Sql(MIGRATION_V50), Step::Sql(server_sessions::MIGRATION_V51), Step::Sql(server_storage::MIGRATION_V52), Step::Sql(offline_audio::MIGRATION_V53), Step::Sql(rating_sync::MIGRATION_V54), Step::Sql(favorite_sync::MIGRATION_V55), Step::Sql(local_presentation::MIGRATION_V56), Step::Rebuild(&track_ids::TRACKS)];
+
+/// One step: SQL run in a transaction of its own, or a table rebuilt
+/// (`rebuild`), which needs settings a transaction cannot change.
+pub(crate) enum Step {
+    Sql(&'static str),
+    Rebuild(&'static rebuild::Rebuild),
+}
+
+impl Step {
+    /// How many parts it reports while it runs.
+    fn parts(&self) -> usize {
+        match self {
+            Step::Sql(_) => 1,
+            Step::Rebuild(_) => rebuild::PARTS,
+        }
+    }
+}
+
+/// The parts of the steps after `from` and before `target`.
+pub(crate) fn parts_between(from: i64, target: i64) -> usize {
+    STEPS.iter().enumerate().filter(|(i, _)| (from + 1..target).contains(&(*i as i64 + 1))).map(|(_, step)| step.parts()).sum()
+}
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -83,26 +109,52 @@ pub fn back_up_before_upgrading(db: &Connection, library: &Path) -> rusqlite::Re
     upgrade::backup(db, library)
 }
 
-pub(crate) fn upgrade(db: &Connection, library: &Path) -> rusqlite::Result<()> {
-    upgrade::run(db, library)
+/// What an opener does before it touches the file: a library that is
+/// missing beside the marker of an unfinished upgrade is waiting for its copy
+/// to be put back (`upgrade::interrupted`), and creating it would make an
+/// empty library over the one being put back.
+pub(crate) fn refuse_interrupted(library: &Path) -> rusqlite::Result<()> {
+    if !upgrade::interrupted(library) { return Ok(()); }
+    Err(rusqlite::Error::SqliteFailure(
+        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISMATCH),
+        Some(chilpa_i18n::t("this library has to be updated first; start Chilpa to update it")),
+    ))
+}
+
+/// What an opener does before anything else: a library older than this code
+/// is refused as it is. Only `upgrade::run` changes a library's version,
+/// under the startup cover; an opener only creates a new library or opens a
+/// current one.
+pub(crate) fn refuse_older(db: &Connection) -> rusqlite::Result<()> {
+    db.busy_timeout(std::time::Duration::from_secs(5))?;
+    let actual: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    if actual == 0 || actual >= VERSION { return Ok(()); }
+    Err(rusqlite::Error::SqliteFailure(
+        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISMATCH),
+        Some(chilpa_i18n::t("this library has to be updated first; start Chilpa to update it")),
+    ))
 }
 
 /// Builds a database stopped at an older version, as a shipped Chilpa would
 /// have left it.
 ///
-/// It is here and not in a test module because two of them need it: the one
-/// that walks every version forward, and the one that checks a library is
-/// copied before it is upgraded.
-#[cfg(test)]
-pub(crate) fn stop_at(db: &Connection, version: usize) {
-    for step in STEPS.iter().take(version) {
-        db.execute_batch(step).unwrap();
+/// It is here and not in a test module because the tests of this crate and
+/// of the facade need it: the ones that walk every version forward, and the
+/// ones that bring an older library up.
+#[doc(hidden)]
+pub fn stop_at(db: &Connection, version: usize) {
+    for (i, step) in STEPS.iter().take(version).enumerate() {
+        match step {
+            Step::Sql(sql) => db.execute_batch(sql).unwrap(),
+            Step::Rebuild(rebuild) => rebuild::run(db, i as i64 + 1, rebuild, &mut |_| Ok(())).unwrap(),
+        }
     }
     db.execute_batch(&format!("PRAGMA user_version = {version}")).unwrap();
 }
 
-/// Creates or upgrades the schema.
-pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
+/// Creates the schema, or brings a database up in place: what a new library
+/// and the tests need. A library on disk is upgraded by `upgrade::run` alone.
+pub(crate) fn migrate(db: &Connection) -> rusqlite::Result<()> {
     let gate = migration_gate(db);
     let _migration = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner()));
     let actual: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
@@ -112,6 +164,13 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
 }
 
 fn migrate_locked(db: &Connection) -> rusqlite::Result<()> {
+    steps_locked(db, &mut |_, _| Ok(()))
+}
+
+/// Applies every step the file still needs, each in its own transaction.
+/// `before` hears the version a step leads to and the part of it about to
+/// begin, and an error from it stops there, with the steps before it kept.
+fn steps_locked(db: &Connection, before: &mut dyn FnMut(i64, usize) -> rusqlite::Result<()>) -> rusqlite::Result<()> {
     let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
     if actual > VERSION {
         // A database from a newer version is left alone: downgrading loses
@@ -134,6 +193,14 @@ fn migrate_locked(db: &Connection) -> rusqlite::Result<()> {
         if actual >= target {
             continue;
         }
+        before(target, 0)?;
+        let step = match step {
+            Step::Sql(sql) => sql,
+            Step::Rebuild(rebuild) => {
+                rebuild::run(db, target, rebuild, &mut |part| before(target, part))?;
+                continue;
+            }
+        };
         // Each step goes in its own transaction: if it blows up halfway, the
         // version does not advance and the database stays as it was.
         let tx = rusqlite::Transaction::new_unchecked(db, rusqlite::TransactionBehavior::Immediate)?;
@@ -471,6 +538,7 @@ mod tests {
         assert_eq!(tables(&db), 0, "version 47 did not have it");
         drop(db);
 
+        upgrade::run(&path, &mut |_| {}, &upgrade::Stop::default()).unwrap();
         let lib = crate::Library::open(&path).unwrap();
         let backup = backup_path(&path);
         assert!(backup.is_file(), "a copy is kept before the shape of the file changes");

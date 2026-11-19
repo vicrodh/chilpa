@@ -8,3 +8,4 @@ singleton Queues 1.0 Queues.qml
 SearchModel 1.0 SearchModel.qml
 singleton NowAbout 1.0 NowAbout.qml
 singleton AudioOutput 1.0 AudioOutput.qml
+singleton LibraryUpgrade 1.0 LibraryUpgrade.qml

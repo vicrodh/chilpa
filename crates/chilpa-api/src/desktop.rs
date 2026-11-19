@@ -62,9 +62,9 @@ pub(crate) struct Desktop {
     /// What the menu-bar item and the Dock ask of a Mac.
     #[cfg(target_os = "macos")]
     mac: MacDesktop,
-    requests: VecDeque<WindowRequest>,
+    pub(crate) requests: VecDeque<WindowRequest>,
     /// Paths a launch asked to open, until the window takes them.
-    opening: Vec<String>,
+    pub(crate) opening: Vec<String>,
 }
 
 /// What the menu-bar item or the Dock asked, until the facade takes it.
@@ -123,9 +123,16 @@ impl Chilpa {
         true
     }
 
+    #[cfg(all(test, target_os = "linux"))]
+    pub(crate) fn media_controls_started(&self) -> bool {
+        self.desktop.tell.is_some()
+    }
+
     /// Puts Chilpa on the desktop's media controls, where there are any,
     /// and its icon on the panel, if that is wanted.
     pub fn start_media_controls(&mut self) {
+        // Not before the library is current: `start_services` starts it then.
+        if self.library_upgrading() { return; }
         #[cfg(target_os = "linux")]
         {
             let (tx, rx) = async_channel::unbounded();
@@ -236,12 +243,19 @@ impl Chilpa {
                 self.desktop.requests.push_back(WindowRequest::Raise);
             }
         }
+        // Files asked for while the library is upgraded open once it is
+        // current: opening one plays it, behind the startup cover.
+        if self.library_upgrading() {
+            let at = self.desktop.requests.iter().position(|request| *request != WindowRequest::Open)?;
+            return self.desktop.requests.remove(at);
+        }
         self.desktop.requests.pop_front()
     }
 
     /// The paths a launch asked to open, as `open_media::read` takes them
     /// under the kind `launch`: one per line. Said once.
     pub fn take_open_request(&mut self) -> Option<String> {
+        if self.library_upgrading() { return None; }
         let paths = std::mem::take(&mut self.desktop.opening);
         (!paths.is_empty()).then(|| paths.join("\n"))
     }

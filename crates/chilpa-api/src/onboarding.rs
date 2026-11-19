@@ -230,9 +230,10 @@ fn release_date(iso: &str) -> String {
 
 impl crate::Chilpa {
     /// Opens what this start has to show, once a session. The window asks
-    /// until the plugins are up: the splash covers it until then.
+    /// until the plugins are up, and the library is current: the splash
+    /// covers it until then, and a modal would open over the splash.
     pub fn onboarding_start(&mut self) {
-        if self.plugins_starting() {
+        if self.plugins_starting() || self.library_upgrading() {
             return;
         }
         let mut first = false;
