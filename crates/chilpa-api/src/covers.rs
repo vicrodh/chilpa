@@ -307,7 +307,7 @@ fn cached_derivative(dir: &Path, fingerprint: u64, target: u32) -> Option<image:
 
 fn cached_derivative_candidates(dir: &Path, fingerprint: u64, target: u32) -> Vec<PathBuf> {
     let first = target.div_ceil(DERIVATIVE_STEP) * DERIVATIVE_STEP;
-    (first..=2048).step_by(DERIVATIVE_STEP as usize).rev().filter_map(|size| {
+    (first..=2048).rev().step_by(DERIVATIVE_STEP as usize).filter_map(|size| {
         let path = dir.join(format!("{fingerprint:016x}-{size}.jpg"));
         path.is_file().then_some(path)
     }).collect()
