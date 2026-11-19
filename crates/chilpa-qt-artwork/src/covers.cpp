@@ -58,7 +58,7 @@ public:
 
 enum class CoverClass : int { Cover = 0, Contained = 1, Atmosphere = 2 };
 enum class WorkOperation { Derivative, Contained, Atmosphere };
-enum class WorkPhase { Base, Contained, Completing };
+enum class WorkPhase { Base, Contained };
 class CoverScheduler;
 
 #ifdef CHILPA_COVER_SCHEDULER_TEST
@@ -67,6 +67,8 @@ void coverTestResponseCreated();
 void coverTestResponseDestroyed();
 void coverTestResponseFinished();
 void coverTestWorkCompleted();
+void coverTestBeforeImageLoad();
+void coverTestDeliveryQueued();
 #endif
 
 class CoverResponse : public QQuickImageResponse
@@ -106,6 +108,9 @@ public:
             m_pendingError = std::move(error);
         }
         QMetaObject::invokeMethod(this, &CoverResponse::deliverPending, Qt::QueuedConnection);
+#ifdef CHILPA_COVER_SCHEDULER_TEST
+        coverTestDeliveryQueued();
+#endif
     }
 
 private:
@@ -153,6 +158,7 @@ struct CoverWork {
     WorkOperation operation;
     CoverClass priority;
     WorkPhase phase = WorkPhase::Base;
+    QString coverPath;
     quint64 firstSeen = 0;
     quint64 lastDemand = 0;
     std::vector<Subscriber> subscribers;
@@ -185,19 +191,11 @@ public:
             QString key = kind == CoverClass::Atmosphere ? QStringLiteral("atmosphere:") + id
                                                          : QStringLiteral("derivative:") + id;
             if (const auto existing = m_byKey.value(key)) {
-                if (kind != CoverClass::Contained || existing->phase != WorkPhase::Completing) {
-                    existing->subscribers.push_back({response, kind});
-                    existing->lastDemand = ++m_demandSequence;
-                    if (kind == CoverClass::Cover)
-                        existing->priority = CoverClass::Cover;
-                    return response;
-                }
-                key = QStringLiteral("contained:") + id;
-                if (const auto contained = m_byKey.value(key)) {
-                    contained->subscribers.push_back({response, kind});
-                    contained->lastDemand = ++m_demandSequence;
-                    return response;
-                }
+                existing->subscribers.push_back({response, kind});
+                existing->lastDemand = ++m_demandSequence;
+                if (kind == CoverClass::Cover && existing->phase == WorkPhase::Base)
+                    existing->priority = CoverClass::Cover;
+                return response;
             }
             auto work = std::make_shared<CoverWork>();
             work->key = key;
@@ -286,22 +284,13 @@ public:
             complete(work, {}, made ? QString::fromUtf8(containedOut.constData()) : QString());
             return;
         }
+        if (work->phase == WorkPhase::Contained) {
+            const bool made = make(work, CoverClass::Contained, containedOut);
+            complete(work, work->coverPath, made ? QString::fromUtf8(containedOut.constData()) : QString());
+            return;
+        }
         const bool coverMade = make(work, CoverClass::Cover, coverOut);
-        bool makeContained = false;
-        {
-            QMutexLocker lock(&m_mutex);
-            makeContained = std::any_of(work->subscribers.begin(), work->subscribers.end(), [](const auto &entry) {
-                return entry.kind == CoverClass::Contained;
-            });
-            work->phase = makeContained ? WorkPhase::Contained : WorkPhase::Completing;
-        }
-        const bool containedMade = makeContained && make(work, CoverClass::Contained, containedOut);
-        {
-            QMutexLocker lock(&m_mutex);
-            work->phase = WorkPhase::Completing;
-        }
-        complete(work, coverMade ? QString::fromUtf8(coverOut.constData()) : QString(),
-                 containedMade ? QString::fromUtf8(containedOut.constData()) : QString());
+        continueAfterBase(work, coverMade ? QString::fromUtf8(coverOut.constData()) : QString());
     }
 
     qsizetype pendingCount() const
@@ -310,7 +299,38 @@ public:
         return m_pending.size();
     }
 
+    bool idle() const
+    {
+        QMutexLocker lock(&m_mutex);
+        return m_pending.empty() && m_running.empty() && m_delivering.empty()
+            && m_pool.activeThreadCount() == 0;
+    }
+
 private:
+    void continueAfterBase(const std::shared_ptr<CoverWork> &work, QString coverPath)
+    {
+        bool coverWanted = false;
+        bool containedWanted = false;
+        bool atmosphereWanted = false;
+        {
+            QMutexLocker lock(&m_mutex);
+            const bool makeContained = std::any_of(work->subscribers.begin(), work->subscribers.end(), [](const auto &entry) {
+                return entry.kind == CoverClass::Contained;
+            });
+            if (makeContained) {
+                work->coverPath = std::move(coverPath);
+                work->phase = WorkPhase::Contained;
+                work->priority = CoverClass::Contained;
+                m_running.erase(std::find(m_running.begin(), m_running.end(), work));
+                m_pending.push_back(work);
+                dispatchLocked();
+                return;
+            }
+            closeForDeliveryLocked(work, coverWanted, containedWanted, atmosphereWanted);
+        }
+        deliverClosed(work, coverPath, {}, coverWanted, containedWanted, atmosphereWanted);
+    }
+
     bool make(const std::shared_ptr<CoverWork> &work, CoverClass operation, QByteArray &out)
     {
         const qsizetype slash = operation == CoverClass::Atmosphere ? -1 : work->id.indexOf(QLatin1Char('/'));
@@ -334,21 +354,34 @@ private:
         bool atmosphereWanted = false;
         {
             QMutexLocker lock(&m_mutex);
-            for (const auto &entry : work->subscribers) {
-                coverWanted |= entry.kind == CoverClass::Cover;
-                containedWanted |= entry.kind == CoverClass::Contained;
-                atmosphereWanted |= entry.kind == CoverClass::Atmosphere;
-            }
+            closeForDeliveryLocked(work, coverWanted, containedWanted, atmosphereWanted);
         }
+        deliverClosed(work, coverPath, containedPath, coverWanted, containedWanted, atmosphereWanted);
+    }
+
+    void closeForDeliveryLocked(const std::shared_ptr<CoverWork> &work, bool &coverWanted,
+                                bool &containedWanted, bool &atmosphereWanted)
+    {
+        for (const auto &entry : work->subscribers) {
+            coverWanted |= entry.kind == CoverClass::Cover;
+            containedWanted |= entry.kind == CoverClass::Contained;
+            atmosphereWanted |= entry.kind == CoverClass::Atmosphere;
+        }
+        m_byKey.remove(work->key);
+        m_running.erase(std::find(m_running.begin(), m_running.end(), work));
+        m_delivering.push_back(work);
+        dispatchLocked();
+    }
+
+    void deliverClosed(const std::shared_ptr<CoverWork> &work, const QString &coverPath,
+                       const QString &containedPath, bool coverWanted, bool containedWanted,
+                       bool atmosphereWanted)
+    {
+#ifdef CHILPA_COVER_SCHEDULER_TEST
+        coverTestBeforeImageLoad();
+#endif
         const QImage coverImage = (coverWanted || atmosphereWanted) && !coverPath.isEmpty() ? QImage(coverPath) : QImage();
         const QImage containedImage = containedWanted && !containedPath.isEmpty() ? QImage(containedPath) : QImage();
-        {
-            QMutexLocker lock(&m_mutex);
-            m_byKey.remove(work->key);
-            m_running.erase(std::find(m_running.begin(), m_running.end(), work));
-            m_delivering.push_back(work);
-            dispatchLocked();
-        }
 #ifdef CHILPA_COVER_SCHEDULER_TEST
         coverTestBeforeDelivery();
 #endif

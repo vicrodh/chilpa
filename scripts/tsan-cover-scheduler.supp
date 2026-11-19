@@ -1,2 +1,4 @@
+# Qt destroys an internal QWaitCondition while its own thread-pool bookkeeping still reads it; no Chilpa frame owns that condition.
 race:QWaitCondition::~QWaitCondition
+# Qt's meta-object type assertion reads Qt static type data during QML teardown; the reported storage is not owned by Chilpa.
 race:assertObjectType

@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <functional>
+#include <iterator>
 #include <mutex>
 #include <set>
 #include <string>
@@ -41,6 +42,11 @@ std::atomic_bool engineDestroyed{false};
 bool holdBeforeDelivery = false;
 bool beforeDeliveryEntered = false;
 bool releaseDelivery = false;
+bool holdBeforeImageLoad = false;
+bool beforeImageLoadEntered = false;
+bool releaseImageLoad = false;
+bool deliveryQueuedEntered = false;
+bool readerRequestCreated = false;
 
 void require(bool condition, const char *message)
 {
@@ -132,6 +138,11 @@ void reset()
     holdBeforeDelivery = false;
     beforeDeliveryEntered = false;
     releaseDelivery = false;
+    holdBeforeImageLoad = false;
+    beforeImageLoadEntered = false;
+    releaseImageLoad = false;
+    deliveryQueuedEntered = false;
+    readerRequestCreated = false;
     engineDestroyed = false;
     responsesCreated = 0;
     responsesDestroyed = 0;
@@ -161,6 +172,23 @@ void coverTestResponseFinished()
 void coverTestWorkCompleted()
 {
     ++workCompleted;
+}
+
+void coverTestBeforeImageLoad()
+{
+    std::unique_lock lock(gateMutex);
+    if (!holdBeforeImageLoad)
+        return;
+    beforeImageLoadEntered = true;
+    gateChanged.notify_all();
+    gateChanged.wait(lock, [] { return releaseImageLoad; });
+}
+
+void coverTestDeliveryQueued()
+{
+    std::lock_guard lock(gateMutex);
+    deliveryQueuedEntered = true;
+    gateChanged.notify_all();
 }
 
 class Responses {
@@ -215,6 +243,24 @@ struct Providers {
     CoverProvider atmosphere{scheduler, CoverClass::Atmosphere};
 };
 
+class QueuedDeliveryThread : public QThread {
+public:
+    explicit QueuedDeliveryThread(std::shared_ptr<CoverScheduler> scheduler) : scheduler(std::move(scheduler)) {}
+
+protected:
+    void run() override
+    {
+        scheduler->request(CoverClass::Cover, QStringLiteral("64/file:///queued-delivery"));
+        std::unique_lock lock(gateMutex);
+        readerRequestCreated = true;
+        gateChanged.notify_all();
+        gateChanged.wait(lock, [] { return deliveryQueuedEntered; });
+    }
+
+private:
+    std::shared_ptr<CoverScheduler> scheduler;
+};
+
 QString coverId(const QString &name) { return QStringLiteral("64/file:///") + name; }
 QString atmosphereId(const QString &name) { return QStringLiteral("file:///") + name; }
 
@@ -239,7 +285,7 @@ void addProviders(QQmlEngine &engine, const std::shared_ptr<CoverScheduler> &sch
 
 void waitForScheduler(const std::shared_ptr<CoverScheduler> &scheduler)
 {
-    waitUntil([&] { return scheduler->pendingCount() == 0 && active == 0; }, "the scheduler becomes idle");
+    waitUntil([&] { return scheduler->idle(); }, "the scheduler becomes idle");
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
@@ -308,12 +354,6 @@ int main(int argc, char **argv)
     successfulImage = pictures.filePath(QStringLiteral("success.png")).toStdString();
     require(QImage(8, 8, QImage::Format_RGB32).save(QString::fromStdString(successfulImage)), "the test image is written");
 
-    if (qEnvironmentVariableIsSet("CHILPA_TSAN")) {
-        testConcurrentSubscription();
-        std::puts("PASS concurrent cover subscriptions under ThreadSanitizer");
-        return 0;
-    }
-
     {
         Providers providers;
         Responses responses(application);
@@ -359,7 +399,9 @@ int main(int argc, char **argv)
             const std::string name = "c:/burst-" + std::to_string(index);
             return int(std::find(order.begin(), order.end(), name) - order.begin()) + 1;
         };
-        require(positionOf(0) <= 9, "the oldest request gets one of every nine dispatches");
+        require(positionOf(0) <= 9, "the first aged request gets one of every nine dispatches");
+        require(positionOf(1) <= 18, "the second aged request gets the next reserved dispatch");
+        require(positionOf(2) <= 27, "the third aged request gets the following reserved dispatch");
         for (int index = 460; index < 500; ++index)
             require(positionOf(index) <= 45, "the last forty requests stay near the front of a burst");
     }
@@ -393,21 +435,42 @@ int main(int argc, char **argv)
         responses.add(&providers.cover, coverId(QStringLiteral("block-b")));
         waitEntered("c:/block-a");
         waitEntered("c:/block-b");
-        for (int index = 0; index < 20; ++index)
+        constexpr int perClass = 27;
+        for (int index = 0; index < perClass; ++index)
             responses.add(&providers.cover, coverId(QStringLiteral("cover-%1").arg(index)));
-        responses.add(&providers.contained, coverId(QStringLiteral("contained")));
-        responses.add(&providers.atmosphere, atmosphereId(QStringLiteral("atmosphere")));
+        for (int index = 0; index < perClass; ++index)
+            responses.add(&providers.contained, coverId(QStringLiteral("contained-%1").arg(index)));
+        for (int index = 0; index < perClass; ++index)
+            responses.add(&providers.atmosphere, atmosphereId(QStringLiteral("atmosphere-%1").arg(index)));
         allow("c:/block-a");
-        waitEntered("c:/contained");
-        allow("c:/contained");
-        waitEntered("n:/contained");
-        allow("n:/contained");
-        waitEntered("a:/atmosphere");
-        allow("a:/atmosphere");
-        for (int index = 0; index < 20; ++index)
-            allow("c:/cover-" + std::to_string(index));
+        std::vector<std::string> order;
+        for (int position = 0; position < perClass * 4; ++position) {
+            const std::string name = enteredAt(position + 2);
+            order.push_back(name);
+            allow(name);
+        }
         allow("c:/block-b");
         responses.wait();
+        const auto classOrder = [&](const std::string &needle) {
+            std::vector<std::string> matching;
+            std::copy_if(order.begin(), order.end(), std::back_inserter(matching), [&](const auto &name) {
+                return name.find(needle) != std::string::npos;
+            });
+            return matching;
+        };
+        const auto positionOf = [](const std::vector<std::string> &withinClass, const std::string &name) {
+            return int(std::find(withinClass.begin(), withinClass.end(), name) - withinClass.begin()) + 1;
+        };
+        const auto covers = classOrder("/cover-");
+        require(positionOf(covers, "c:/cover-0") <= 9, "the cover class dispatches its first aged request");
+        require(positionOf(covers, "c:/cover-1") <= 18, "the cover class dispatches successive aged requests");
+        const auto atmospheres = classOrder("/atmosphere-");
+        require(positionOf(atmospheres, "a:/atmosphere-0") <= 9, "the atmosphere class dispatches its first aged request");
+        require(positionOf(atmospheres, "a:/atmosphere-1") <= 18, "the atmosphere class dispatches successive aged requests");
+        const auto contained = classOrder("/contained-");
+        require(positionOf(contained, "c:/contained-0") <= 9, "the contained class dispatches its first aged base phase");
+        require(positionOf(contained, "n:/contained-0") <= 18, "the contained class dispatches the aged continuation");
+        require(positionOf(contained, "c:/contained-1") <= 27, "the contained class dispatches its next aged base phase");
     }
 
     reset();
@@ -438,8 +501,53 @@ int main(int argc, char **argv)
     reset();
     {
         Providers providers;
-        automatic = true;
+        Responses responses(application);
         successful = true;
+        automatic = true;
+        {
+            std::lock_guard lock(gateMutex);
+            holdBeforeImageLoad = true;
+        }
+        responses.add(&providers.contained, coverId(QStringLiteral("closed-admission")), true);
+        {
+            std::unique_lock lock(gateMutex);
+            require(gateChanged.wait_for(lock, std::chrono::seconds(5), [] { return beforeImageLoadEntered; }),
+                    "the contained producer closes admission before loading images");
+        }
+        responses.add(&providers.cover, coverId(QStringLiteral("closed-admission")), true);
+        {
+            std::lock_guard lock(gateMutex);
+            releaseImageLoad = true;
+            gateChanged.notify_all();
+        }
+        responses.wait();
+        require(calls == 3, "a request after admission closes creates a new cover producer");
+    }
+
+    reset();
+    {
+        Providers providers;
+        Responses responses(application);
+        responses.add(&providers.atmosphere, atmosphereId(QStringLiteral("blocked-atmosphere")));
+        waitEntered("a:/blocked-atmosphere");
+        responses.add(&providers.contained, coverId(QStringLiteral("mixed")));
+        responses.add(&providers.cover, coverId(QStringLiteral("mixed")));
+        waitEntered("c:/mixed");
+        responses.add(&providers.cover, coverId(QStringLiteral("waiting-cover")));
+        allow("c:/mixed");
+        require(enteredAt(2) == "c:/waiting-cover", "a pending cover enters before a mixed contained continuation");
+        allow("c:/waiting-cover");
+        waitEntered("n:/mixed");
+        allow("n:/mixed");
+        allow("a:/blocked-atmosphere");
+        responses.wait();
+    }
+
+    reset();
+    {
+        Providers providers;
+        successful = true;
+        automatic = true;
         Responses responses(application);
         responses.add(&providers.cover, coverId(QStringLiteral("successful")), true);
         responses.wait();
@@ -448,7 +556,6 @@ int main(int argc, char **argv)
     reset();
     {
         Providers providers;
-        automatic = true;
         successful = true;
         constexpr int count = 140;
         QQmlEngine engine;
@@ -468,8 +575,12 @@ int main(int argc, char **argv)
                 }
             }
         )"));
+        waitUntil([&] { return responsesCreated == count; }, "every live QML Image owns a response");
+        waitUntil([&] { return active == 2 && providers.scheduler->pendingCount() >= count - 2; },
+                  "two workers block while at least 138 live producers stay pending");
+        automatic = true;
+        allowAllEntered();
         waitUntil([&] { return root->property("readyCount").toInt() == count; }, "more than 128 live QML Images reach Ready");
-        require(responsesCreated == count, "every live QML Image owns a response");
         waitForScheduler(providers.scheduler);
     }
 
@@ -525,5 +636,27 @@ int main(int argc, char **argv)
         gateChanged.notify_all();
     }, 1);
 
-    std::puts("PASS cover scheduling, live demand, successful delivery, concurrency, and engine teardown");
+    reset();
+    successful = true;
+    automatic = true;
+    {
+        auto scheduler = std::make_shared<CoverScheduler>();
+        QueuedDeliveryThread reader(scheduler);
+        reader.start();
+        {
+            std::unique_lock lock(gateMutex);
+            require(gateChanged.wait_for(lock, std::chrono::seconds(5), [] {
+                return readerRequestCreated && deliveryQueuedEntered;
+            }), "a delivery is queued before its reader thread stops");
+        }
+        require(reader.wait(5'000), "the reader thread stops with a queued delivery");
+        waitForScheduler(scheduler);
+        require(responsesFinished == 1, "thread shutdown finishes the queued response once");
+        require(responsesDestroyed == 1, "thread shutdown destroys the queued response");
+    }
+
+    if (qEnvironmentVariableIsSet("CHILPA_TSAN"))
+        std::puts("PASS full cover scheduler suite under ThreadSanitizer");
+    else
+        std::puts("PASS cover scheduling, live demand, successful delivery, concurrency, and engine teardown");
 }
