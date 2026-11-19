@@ -66,6 +66,7 @@ void coverTestBeforeDelivery();
 void coverTestResponseCreated();
 void coverTestResponseDestroyed();
 void coverTestResponseFinished();
+void coverTestWorkCompleted();
 #endif
 
 class CoverResponse : public QQuickImageResponse
@@ -73,6 +74,7 @@ class CoverResponse : public QQuickImageResponse
 public:
     explicit CoverResponse(std::weak_ptr<CoverScheduler> scheduler) : m_scheduler(std::move(scheduler))
     {
+        QObject::connect(thread(), &QThread::finished, this, [this] { shutdown(); }, Qt::DirectConnection);
 #ifdef CHILPA_COVER_SCHEDULER_TEST
         coverTestResponseCreated();
 #endif
@@ -107,6 +109,8 @@ public:
     }
 
 private:
+    void shutdown();
+
     void deliverPending()
     {
         QImage image;
@@ -428,7 +432,13 @@ private:
     int m_nextClass = 0;
 };
 
-void CoverJob::run() { m_scheduler->execute(m_work); }
+void CoverJob::run()
+{
+    m_scheduler->execute(m_work);
+#ifdef CHILPA_COVER_SCHEDULER_TEST
+    coverTestWorkCompleted();
+#endif
+}
 
 void CoverResponse::cancel()
 {
@@ -437,6 +447,15 @@ void CoverResponse::cancel()
     if (const auto scheduler = m_scheduler.lock())
         scheduler->cancel(this);
     finish({}, QStringLiteral("cover request cancelled"));
+}
+
+void CoverResponse::shutdown()
+{
+    m_cancelled.store(true, std::memory_order_release);
+    if (const auto scheduler = m_scheduler.lock())
+        scheduler->cancel(this);
+    deliver({}, QStringLiteral("cover request cancelled"));
+    delete this;
 }
 
 class CoverProvider : public QQuickAsyncImageProvider

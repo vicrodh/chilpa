@@ -35,6 +35,7 @@ std::atomic_int maximum{0};
 std::atomic_int responsesCreated{0};
 std::atomic_int responsesDestroyed{0};
 std::atomic_int responsesFinished{0};
+std::atomic_int workCompleted{0};
 std::atomic_int emissionsAfterEngineDestruction{0};
 std::atomic_bool engineDestroyed{false};
 bool holdBeforeDelivery = false;
@@ -135,6 +136,7 @@ void reset()
     responsesCreated = 0;
     responsesDestroyed = 0;
     responsesFinished = 0;
+    workCompleted = 0;
     emissionsAfterEngineDestruction = 0;
 }
 
@@ -155,6 +157,10 @@ void coverTestResponseFinished()
     ++responsesFinished;
     if (engineDestroyed.load())
         ++emissionsAfterEngineDestruction;
+}
+void coverTestWorkCompleted()
+{
+    ++workCompleted;
 }
 
 class Responses {
@@ -237,7 +243,7 @@ void waitForScheduler(const std::shared_ptr<CoverScheduler> &scheduler)
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
-void destroyEngineInState(const QByteArray &qml, const std::function<void()> &waitForState,
+void destroyEngineInState(const char *state, const QByteArray &qml, const std::function<void()> &waitForState,
                           const std::function<void()> &releaseState, int expectedResponses)
 {
     auto scheduler = std::make_shared<CoverScheduler>();
@@ -250,7 +256,7 @@ void destroyEngineInState(const QByteArray &qml, const std::function<void()> &wa
     engineDestroyed = true;
     releaseState();
     waitForScheduler(scheduler);
-    waitUntil([&] { return responsesDestroyed == expectedResponses; }, "engine teardown releases every response");
+    waitUntil([&] { return responsesDestroyed == expectedResponses; }, state);
     require(responsesFinished == expectedResponses, "engine teardown finishes every response once");
     require(emissionsAfterEngineDestruction == 0, "no response emits after engine destruction");
 }
@@ -276,6 +282,7 @@ void testConcurrentSubscription()
     delete first;
     allow("c:/race");
     waitForScheduler(scheduler);
+    waitUntil([] { return workCompleted >= 1; }, "the concurrent worker returns before test teardown");
 }
 }
 
@@ -485,7 +492,7 @@ int main(int argc, char **argv)
     testConcurrentSubscription();
 
     reset();
-    destroyEngineInState(QByteArrayLiteral(R"(
+    destroyEngineInState("pending engine teardown releases every response", QByteArrayLiteral(R"(
         import QtQuick
         Item { Repeater { model: 3; delegate: Image { asynchronous: true; cache: false; source: "image://cover/64/file:///pending-" + index } } }
     )"), [] {
@@ -493,7 +500,7 @@ int main(int argc, char **argv)
     }, [] { allowAllEntered(); }, 3);
 
     reset();
-    destroyEngineInState(QByteArrayLiteral(R"(
+    destroyEngineInState("running engine teardown releases every response", QByteArrayLiteral(R"(
         import QtQuick
         Image { asynchronous: true; cache: false; source: "image://cover/64/file:///running-destruction" }
     )"), [] { waitEntered("c:/running-destruction"); }, [] { allowAllEntered(); }, 1);
@@ -505,7 +512,7 @@ int main(int argc, char **argv)
         std::lock_guard lock(gateMutex);
         holdBeforeDelivery = true;
     }
-    destroyEngineInState(QByteArrayLiteral(R"(
+    destroyEngineInState("delivery engine teardown releases every response", QByteArrayLiteral(R"(
         import QtQuick
         Image { asynchronous: true; cache: false; source: "image://cover/64/file:///delivery-destruction" }
     )"), [] {
