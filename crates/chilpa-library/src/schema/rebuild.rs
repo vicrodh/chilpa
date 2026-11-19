@@ -32,6 +32,13 @@ pub(crate) const PARTS: usize = 4;
 
 #[cfg(test)]
 thread_local! {
+    /// How many times a rebuild checked the foreign keys, and ran ANALYZE.
+    pub(crate) static FOREIGN_KEY_CHECKS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    pub(crate) static ANALYZED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+thread_local! {
     /// What a test makes go wrong inside the transaction, after the copy.
     pub(crate) static TROUBLE: std::cell::Cell<Option<&'static str>> = const { std::cell::Cell::new(None) };
 }
@@ -73,17 +80,22 @@ fn children(db: &Connection, table: &str) -> rusqlite::Result<Vec<(String, Strin
         .query_map([table], |row| Ok((row.get(0)?, row.get(1)?)))?.collect()
 }
 
-fn shape(db: &Connection, table: &str) -> rusqlite::Result<Shape> {
+/// `checked` asks for the foreign keys too; an empty table has nothing to
+/// check, and a new library is mostly empty tables.
+fn shape(db: &Connection, table: &str, checked: bool) -> rusqlite::Result<Shape> {
     let rows = db.query_row(&format!("SELECT count(*) FROM \"{table}\""), [], |row| row.get(0))?;
     let columns = db.prepare(&format!("PRAGMA table_info(\"{table}\")"))?
         .query_map([], |row| Ok((row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?)))?.collect::<rusqlite::Result<_>>()?;
     let mut objects = objects(db, table)?;
     objects.sort();
-    let mut checked: Vec<String> = children(db, table)?.into_iter().map(|(child, _)| child).collect();
-    checked.push(table.to_string());
-    checked.dedup();
     let mut broken = Vec::new();
-    for name in checked {
+    if !checked { return Ok(Shape { rows, columns, objects, broken }); }
+    let mut tables: Vec<String> = children(db, table)?.into_iter().map(|(child, _)| child).collect();
+    tables.push(table.to_string());
+    tables.dedup();
+    #[cfg(test)]
+    FOREIGN_KEY_CHECKS.with(|cell| cell.set(cell.get() + 1));
+    for name in tables {
         let mut check = db.prepare(&format!("PRAGMA foreign_key_check(\"{name}\")"))?;
         let rows = check.query_map([], |row| Ok((row.get(0)?, row.get::<_, Option<i64>>(1)?.unwrap_or(-1), row.get(2)?, row.get(3)?)))?;
         broken.extend(rows.collect::<rusqlite::Result<Vec<_>>>()?);
@@ -115,7 +127,8 @@ pub(crate) fn run(db: &Connection, target: i64, rebuild: &Rebuild, part: &mut dy
         return tx.commit();
     }
     let table = rebuild.table;
-    let before = shape(&tx, table)?;
+    let filled = tx.query_row(&format!("SELECT EXISTS (SELECT 1 FROM \"{table}\")"), [], |row| row.get::<_, bool>(0))?;
+    let before = shape(&tx, table, filled)?;
     if before.columns.iter().map(|column| column.0.as_str()).ne(rebuild.columns.iter().copied()) {
         return Err(refused(format!("{table} has the columns {:?}, not the ones this step rebuilds", before.columns)));
     }
@@ -156,8 +169,13 @@ pub(crate) fn run(db: &Connection, target: i64, rebuild: &Rebuild, part: &mut dy
     if rebuild.create.contains("AUTOINCREMENT") {
         keep_ids(&tx, table)?;
     }
-    tx.execute_batch("ANALYZE;")?;
-    let after = shape(&tx, table)?;
+    // Statistics of an empty table are what it already had.
+    if filled {
+        tx.execute_batch("ANALYZE;")?;
+        #[cfg(test)]
+        ANALYZED.with(|cell| cell.set(cell.get() + 1));
+    }
+    let after = shape(&tx, table, filled)?;
     if after != before {
         return Err(refused(format!("rebuilding {table} changed it: {before:?} became {after:?}")));
     }

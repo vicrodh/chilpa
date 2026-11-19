@@ -316,3 +316,15 @@ fn a_kill_between_the_copy_and_the_commit_leaves_fifty_six() {
     assert_eq!(version(&db), 57);
     assert_eq!(db.query_row("PRAGMA integrity_check", [], |row| row.get::<_, String>(0)).unwrap(), "ok");
 }
+
+#[test]
+fn an_empty_table_is_rebuilt_without_analyze_or_foreign_key_checks() {
+    let counts = || (rebuild::FOREIGN_KEY_CHECKS.with(|cell| cell.get()), rebuild::ANALYZED.with(|cell| cell.get()));
+    let before = counts();
+    drop(crate::Library::in_memory().unwrap());
+    assert_eq!(counts(), before, "a new library has no rows to check");
+    let db = filled();
+    migrate(&db).unwrap();
+    let (checks, analyzed) = counts();
+    assert!(checks > before.0 && analyzed > before.1, "a library with tracks is checked and analyzed");
+}
