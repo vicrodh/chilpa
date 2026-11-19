@@ -35,6 +35,58 @@ TestCase {
         tryVerify(() => page.blockOf(artistKey + "|latest")?.ready === true)
         waitForRendering(page)
     }
+    // Popular Tracks, above the releases, loads on a turn of its own and takes a few frames to lay out. Settled before the
+    // scroll, it cannot move the releases during the wheel, which took the wheel's motion with it.
+    function settledPopular(page) {
+        const popular = page.blockOf(artistKey + "|tracks")
+        tryVerify(() => popular?.ready === true && findChild(page, "artistHeaderLoader").status === Loader.Ready, 2000, "the header and Popular Tracks are loaded")
+        const popularRows = findChild(popular.item, "trackListView")
+        tryVerify(() => popularRows.count > 0 && Array.from({length:popularRows.count}, (_, i) => popularRows.itemAtIndex(i)).every(row => row !== null), 2000, "every popular track has its row")
+        popularRows.forceLayout(); popular.item.forceLayout(); popular.parent.forceLayout()
+        return popular
+    }
+    // Where the section stands in every frame, read after the frame's layout and before it is drawn.
+    Component {
+        id: framesMaker
+        Connections {
+            property Item item
+            property Item page
+            property var seen: []
+            function onAfterAnimating() { seen.push(item.mapToItem(page, 0, 0).y) }
+        }
+    }
+    function test_a_layout_pass_that_rounds_the_offset_keeps_the_section_in_place_data() {
+        return [{tag:"grows", expanded:false}, {tag:"shrinks", expanded:true}]
+    }
+    // A wheel step or a compensation leaves the offset between two pixels. When a block above changes height, the viewport
+    // rounds the offset inside the page column's layout pass, before the column reports it is done: that change of position
+    // is the layout's, not the listener's, and cannot choose the anchor from blocks that have moved but are not compensated.
+    function test_a_layout_pass_that_rounds_the_offset_keeps_the_section_in_place(data) {
+        const page = createTemporaryObject(pageMaker, test)
+        ready(page)
+        const albums = page.blockOf(artistKey + "|album")
+        const popular = settledPopular(page)
+        if (data.expanded) {
+            const rows = popular.height
+            popular.item.loadMore()
+            tryVerify(() => popular.height > rows, 2000, "Popular Tracks shows every row")
+            waitForRendering(page)
+        }
+        page.jump(artistKey + "|album")
+        waitForRendering(page)
+        page.scrollView.contentY += 0.4
+        verify(page.scrollView.contentY % 1 !== 0, "the offset sits between two pixels")
+        const before = albums.mapToItem(page, 0, 0).y
+        const rows = popular.height
+        const frames = createTemporaryObject(framesMaker, test, {target:test.Window.window, item:albums, page:page})
+        popular.item.loadMore()
+        tryVerify(() => popular.height !== rows, 2000, "Popular Tracks changed its height: " + rows)
+        waitForRendering(page)
+        verify(frames.seen.length > 0)
+        for (const y of frames.seen)
+            verify(Math.abs(y - before) <= 1, "Albums moved in a frame after Popular Tracks changed height: " + before + " -> " + frames.seen.join(", "))
+        verify(Math.abs(albums.mapToItem(page, 0, 0).y - before) <= 1, "Albums moved: " + before + " -> " + albums.mapToItem(page, 0, 0).y)
+    }
     function test_delayed_preview_keeps_the_visible_release_section_in_place_data() {
         return [
             {tag:"compact", density:"compact", width:1400},
@@ -131,13 +183,7 @@ TestCase {
         }
         const albums = page.blockOf(artistKey + "|album")
         const latest = page.blockOf(artistKey + "|latest")
-        // Popular Tracks, above the releases, loads on a turn of its own and takes a few frames to lay out. Settled before the
-        // scroll, it cannot move the releases during the wheel, which took the wheel's motion with it.
-        const popular = page.blockOf(artistKey + "|tracks")
-        tryVerify(() => popular?.ready === true && findChild(page, "artistHeaderLoader").status === Loader.Ready, 2000, "the header and Popular Tracks are loaded")
-        const popularRows = findChild(popular.item, "trackListView")
-        tryVerify(() => popularRows.count > 0 && Array.from({length:popularRows.count}, (_, i) => popularRows.itemAtIndex(i)).every(row => row !== null), 2000, "every popular track has its row")
-        popularRows.forceLayout(); popular.item.forceLayout(); albums.parent.forceLayout()
+        settledPopular(page)
         const tracks = findChild(latest, "latestReleaseTracks").model
         const rows = []
         for (let i = 0; i < tracks.count; i++) rows.push(Object.assign({}, tracks.get(i)))

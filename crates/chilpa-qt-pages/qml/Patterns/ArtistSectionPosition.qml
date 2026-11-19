@@ -24,8 +24,15 @@ Item {
     // Follow a section only once the listener starts navigating this page.
     function follow() { following = true; capture() }
 
-    function capture() {
+    // How far the column moved the anchor since it was captured. It is not
+    // zero only inside the column's layout pass, before settle().
+    function drift() { return anchor && anchor.visible ? column.y + anchor.y - anchorY : 0 }
+    function capture(settled) {
         if (applying || !enabled || !following) return
+        // The viewport rounds or clamps its offset to the column's new height
+        // inside the layout pass. That change is not the listener's: the
+        // anchor stays until settle() compensates the blocks that moved.
+        if (!settled && Math.abs(drift()) > 0.001) return
         anchor = null
         if (viewport.contentY <= 0) return
         const edge = viewport.contentY + Metrics.jumpOffset
@@ -47,16 +54,14 @@ Item {
     }
     function settle() {
         if (!enabled) return
-        if (anchor && anchor.visible && identity === (anchor.section.key || anchor.section.id)) {
-            const delta = column.y + anchor.y - anchorY
-            if (Math.abs(delta) > 0.001) {
-                applying = true
-                viewport.contentY = Math.max(0, Math.min(viewport.contentY + delta,
-                    viewport.contentHeight - viewport.height))
-                applying = false
-            }
+        const delta = anchor && identity === (anchor.section.key || anchor.section.id) ? drift() : 0
+        if (Math.abs(delta) > 0.001) {
+            applying = true
+            viewport.contentY = Math.max(0, Math.min(viewport.contentY + delta,
+                viewport.contentHeight - viewport.height))
+            applying = false
         }
-        capture()
+        capture(true)
     }
     Connections {
         target: position.enabled ? position.viewport : null
