@@ -23,6 +23,7 @@ const QUALITY: u8 = 88;
 const ENCODED_BYTES: u64 = 128 * 1024 * 1024;
 const DECODE_BYTES: u64 = 128 * 1024 * 1024;
 const DECODE_JOBS: usize = 2;
+const DERIVATIVE_STEP: u32 = 128;
 static DECODE_BUDGET: DecodeBudget = DecodeBudget::new();
 
 #[cfg(test)]
@@ -297,19 +298,19 @@ pub(crate) fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBu
 }
 
 fn cached_derivative(dir: &Path, fingerprint: u64, target: u32) -> Option<image::RgbImage> {
-    let prefix = format!("{fingerprint:016x}-");
-    let mut candidates = std::fs::read_dir(dir).ok()?.flatten().filter_map(|entry| {
-        let name = entry.file_name();
-        let name = name.to_str()?;
-        let size = name.strip_prefix(&prefix)?.strip_suffix(".jpg")?.parse::<u32>().ok()?;
-        (size >= target && entry.file_type().is_ok_and(|kind| kind.is_file())).then_some((size, entry.path()))
-    }).collect::<Vec<_>>();
-    candidates.sort_unstable_by_key(|(size, _)| *size);
-    candidates.into_iter().find_map(|(_, path)| with_cover(&path, |cover| {
+    cached_derivative_candidates(dir, fingerprint, target).into_iter().find_map(|path| with_cover(&path, |cover| {
         (cover.width().max(cover.height()) >= target).then(|| {
             cover.resize(target, target, image::imageops::FilterType::Lanczos3).into_rgb8()
         })
     }).flatten())
+}
+
+fn cached_derivative_candidates(dir: &Path, fingerprint: u64, target: u32) -> Vec<PathBuf> {
+    let first = target.div_ceil(DERIVATIVE_STEP) * DERIVATIVE_STEP;
+    (first..=2048).step_by(DERIVATIVE_STEP as usize).rev().filter_map(|size| {
+        let path = dir.join(format!("{fingerprint:016x}-{size}.jpg"));
+        path.is_file().then_some(path)
+    }).collect()
 }
 
 fn atmosphere_in(dir: &Path, path: &Path) -> Option<PathBuf> {
@@ -462,7 +463,7 @@ mod tests {
     }
 
     #[test]
-    fn a_missing_small_derivative_uses_the_smallest_cached_larger_one() {
+    fn a_missing_small_derivative_uses_the_largest_cached_one() {
         let dir = tempfile::tempdir().unwrap();
         let original = cover(dir.path(), "cover.png", 600);
         let cache = dir.path().join("cache");
@@ -472,8 +473,32 @@ mod tests {
         let small = derivative_in(&cache, &original, 128).unwrap();
         let made = image::open(&small).unwrap();
         assert_eq!((made.width(), made.height()), (128, 128));
-        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[medium]));
-        assert!(large.exists());
+        OPENED_COVERS.with(|opened| assert_eq!(&*opened.borrow(), &[large]));
+        assert!(medium.exists());
+    }
+
+    #[test]
+    fn candidate_lookup_does_not_list_a_library_sized_cache() {
+        let dir = tempfile::tempdir().unwrap();
+        let fingerprint = 0x1234_u64;
+        for index in 0..9_700 {
+            std::fs::File::create(dir.path().join(format!("unrelated-{index}.jpg"))).unwrap();
+        }
+        std::fs::File::create(dir.path().join(format!("{fingerprint:016x}-512.jpg"))).unwrap();
+        let prefix = format!("{fingerprint:016x}-");
+        let measure = |lookup: &dyn Fn() -> usize| {
+            let started = std::time::Instant::now();
+            let found: usize = (0..20).map(|_| std::hint::black_box(lookup())).sum();
+            (found, started.elapsed())
+        };
+        let scan = || std::fs::read_dir(dir.path()).unwrap().flatten().filter(|entry| {
+            entry.file_name().to_str().is_some_and(|name| name.starts_with(&prefix))
+        }).count();
+        let direct = || cached_derivative_candidates(dir.path(), fingerprint, 128).len();
+        let (scanned, scan_time) = measure(&scan);
+        let (looked_up, lookup_time) = measure(&direct);
+        eprintln!("candidate lookup over 9700 unrelated files, 20 requests: scan={scan_time:?} direct={lookup_time:?}");
+        assert_eq!((scanned, looked_up), (20, 20));
     }
 
     #[test]
