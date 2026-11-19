@@ -15,6 +15,27 @@ Column {
     signal quit()
     signal restore()
 
+    // The keyboard: Tab and Shift+Tab go round these buttons only, Enter or
+    // Space press the one in focus, and Escape quits.
+    function buttons() { return [retryButton, restoreButton, quitButton].filter(button => button.visible) }
+    function focusFirst() {
+        const shown = buttons()
+        if (shown.length > 0) shown[0].forceActiveFocus()
+    }
+    function step(by) {
+        const shown = buttons()
+        if (shown.length === 0) return
+        const at = shown.findIndex(button => button.activeFocus)
+        shown[(Math.max(at, 0) + by + shown.length) % shown.length].forceActiveFocus()
+    }
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Tab) step(1)
+        else if (event.key === Qt.Key_Backtab) step(-1)
+        else if (event.key === Qt.Key_Escape) failure.quit()
+        else return
+        event.accepted = true
+    }
+
     spacing: Metrics.gap12
 
     Text {
@@ -49,13 +70,14 @@ Column {
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
         spacing: Metrics.gap8
-        PillButton { objectName: "upgradeQuit"; text: I18n.tr("Quit", I18n.rev); onClicked: failure.quit() }
+        PillButton { id: quitButton; objectName: "upgradeQuit"; text: I18n.tr("Quit", I18n.rev); onClicked: failure.quit() }
         // Not while the library is missing: running the update would make an empty one.
-        PillButton { objectName: "upgradeRetry"; kind: "primary"; visible: failure.upgrade.canRetry !== false; text: I18n.tr("Try again", I18n.rev); onClicked: failure.retry() }
+        PillButton { id: retryButton; objectName: "upgradeRetry"; kind: "primary"; visible: failure.upgrade.canRetry !== false; text: I18n.tr("Try again", I18n.rev); onClicked: failure.retry() }
     }
     // Only once a step has committed: before that the library already is
     // the copy.
     PillButton {
+        id: restoreButton
         objectName: "upgradeRestore"
         anchors.horizontalCenter: parent.horizontalCenter
         visible: failure.upgrade.canRestore === true

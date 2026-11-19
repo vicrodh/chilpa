@@ -49,6 +49,8 @@ Rectangle {
     function seeLibrary() { if (!upgrading && (!Library.busy || Library.rev > 0)) libraryRead = true }
     function look() { LibraryUpgrade.refresh(); Sources.refresh() }
     onUpgradingChanged: seeLibrary()
+    // A failure takes the keyboard to its buttons.
+    onFailedChanged: if (failed) failurePanel.focusFirst()
     Connections {
         target: Library
         function onBusyChanged() { splash.seeLibrary() }
@@ -66,7 +68,7 @@ Rectangle {
     QtObject { id: layer; readonly property var window: splash.Window.window; readonly property var surface: splash }
     onWaitingChanged: InputLayers.set(layer, waiting)
     Component.onDestruction: InputLayers.set(layer, false)
-    Component.onCompleted: { look(); seeLibrary(); InputLayers.set(layer, waiting) }
+    Component.onCompleted: { look(); seeLibrary(); InputLayers.set(layer, waiting); if (failed) failurePanel.focusFirst() }
     Timer { interval: Motion.poll; repeat: true; running: splash.waiting; onTriggered: splash.look() }
     Timer {
         interval: splash.limit
@@ -129,6 +131,7 @@ Rectangle {
             color: Theme.color.textSecondary
         }
         UpgradeFailure {
+            id: failurePanel
             objectName: "upgradeFailure"
             width: parent.width
             visible: splash.failed

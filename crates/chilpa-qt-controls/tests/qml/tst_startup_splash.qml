@@ -206,6 +206,40 @@ TestCase {
         verify(!InputLayers.blocks(splash.Window.window))
     }
 
+    // The failure answers the keyboard: Try again first, Tab and Shift+Tab
+    // go round its own buttons only, Enter or Space press one, Escape quits,
+    // and nothing else reaches the window.
+    function test_the_failure_answers_the_keyboard() {
+        failing({ canRestore: true })
+        const splash = createTemporaryObject(factory, test)
+        const button = (name) => findChild(splash, name)
+        tryVerify(() => button("upgradeRetry").activeFocus, 2000, "Try again is where the keyboard starts")
+        keyClick(Qt.Key_Return)
+        compare(LibraryUpgrade.retried, 1)
+        keyClick(Qt.Key_Tab)
+        verify(button("upgradeRestore").activeFocus)
+        keyClick(Qt.Key_Tab)
+        verify(button("upgradeQuit").activeFocus)
+        keyClick(Qt.Key_Tab)
+        verify(button("upgradeRetry").activeFocus, "Tab stays inside the panel")
+        keyClick(Qt.Key_Backtab)
+        verify(button("upgradeQuit").activeFocus)
+        keyClick(Qt.Key_Space)
+        compare(LibraryUpgrade.left, 1)
+        keyClick(Qt.Key_Escape)
+        compare(LibraryUpgrade.left, 2, "Escape quits")
+        keyClick(Qt.Key_K, Qt.ControlModifier)
+        compare(LibraryUpgrade.retried, 1)
+        compare(LibraryUpgrade.restored, 0)
+        verify(button("upgradeQuit").activeFocus, "a key the panel does not use goes nowhere")
+    }
+
+    function test_without_try_again_the_keyboard_starts_on_the_copy() {
+        failing({ canRestore: true, canRetry: false })
+        const splash = createTemporaryObject(factory, test)
+        tryVerify(() => findChild(splash, "upgradeRestore").activeFocus, 2000)
+    }
+
     // Each line of an upgrade, and its failure, fits the cover in every
     // language, also a tenth wider.
     function test_the_upgrade_lines_fit_data() { return TextAudit.cases() }
