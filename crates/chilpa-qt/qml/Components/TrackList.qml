@@ -133,6 +133,7 @@ Item {
         property int actionHovered: 0
         // 1 the arrow up, 2 the arrow down, of the row under the pointer.
         property int moveHovered: 0
+        readonly property bool scrollbarHeld: !!ScrollBar.vertical && ScrollBar.vertical.pressed // a drag, for the pool (TrackListViewport)
 
         anchors.top: head.bottom
         anchors.bottom: parent.bottom
@@ -230,10 +231,7 @@ Item {
     // Measures where each artist of a row's credit is; one for the list.
     CreditLine { id: credit; visible: false }
 
-    TrackMenu {
-        id: actions
-        model: list.model
-    }
+    TrackMenu { id: actions; model: list.model }
 
     QueueMenu { id: discMenu; model: list.model; z: 3 }
 

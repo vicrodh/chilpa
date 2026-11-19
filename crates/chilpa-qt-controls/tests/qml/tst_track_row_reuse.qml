@@ -641,6 +641,30 @@ TestCase {
         wait(0)
     }
 
+    // A list that shrinks while its scrollbar is held lets its pool go when the scrollbar is let go, not during the drag.
+    function test_a_list_that_shrinks_while_its_scrollbar_is_held_lets_its_pool_go_when_let_go() {
+        list.height = 676
+        view.forceLayout(); wait(0)
+        warm()
+        const bar = findChild(list, "trackListScrollbar")
+        mouseMove(view, view.width / 2, 50)
+        tryVerify(() => bar.visible, 1000, "the scrollbar shows")
+        const at = bar.mapToItem(test, bar.width / 2, bar.height * (bar.position + bar.size / 2))
+        mouseMove(test, at.x, at.y)
+        mousePress(test, at.x, at.y)
+        tryVerify(() => bar.pressed, 1000, "the scrollbar is held")
+        drains.toggles = 0
+        list.height = 176
+        wait(0); wait(0)
+        compare(drains.toggles, 0, "the list did not drain its pool while its scrollbar was held")
+        verify(slots().filter(row => !row.visible).length > budget(), "the pool is over its budget meanwhile")
+        mouseRelease(test, at.x, at.y)
+        tryVerify(() => !bar.pressed, 1000, "the scrollbar is let go")
+        wait(0)
+        compare(drains.toggles, 2, "let go, it drained its pool once")
+        verify(slots().filter(row => !row.visible).length <= budget(), slots().filter(row => !row.visible).length + " rows in the pool")
+    }
+
     // What schedules a look at the pool, and what one costs: a scroll through groups, whose estimated content height
     // moves with every step, a flick, and a model that grows a row at a time, as a scan adds them.
     function test_scrolling_and_growing_leave_the_pool_alone() {
