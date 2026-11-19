@@ -665,6 +665,61 @@ TestCase {
         verify(slots().filter(row => !row.visible).length <= budget(), slots().filter(row => !row.visible).length + " rows in the pool")
     }
 
+    // A scrollbar dragged a screen and a half a step, with a frame between steps: every step lands past the rows the list
+    // holds, so the view lets them all go to its pool and takes the screen back from it, the oldest first. The rows on the
+    // screen show their own tracks before any frame, nothing is built, destroyed or made, and the pool keeps to its budget.
+    // Each step logs what it cost: rows bound again, covers asked, rating and offline reads.
+    function test_a_scrollbar_drag_binds_the_screen_again_and_builds_nothing_data() {
+        return [{ tag: "compact" }, { tag: "rich", rich: true }, { tag: "grouped", grouped: true }]
+    }
+    function test_a_scrollbar_drag_binds_the_screen_again_and_builds_nothing(data) {
+        list.rich = !!data.rich
+        if (data.grouped) view.section.property = "group"
+        fill(1000)
+        compare(view.cacheBuffer === 0, !!data.grouped, "grouped, the list keeps no margin")
+        view.positionViewAtBeginning(); view.forceLayout()
+        warm()
+        const bar = findChild(list, "trackListScrollbar")
+        mouseMove(view, view.width / 2, 50)
+        tryVerify(() => bar.visible, 1000, "the scrollbar shows")
+        const grip = bar.mapToItem(test, bar.width / 2, bar.height * (bar.position + bar.size / 2))
+        mouseMove(test, grip.x, grip.y)
+        mousePress(test, grip.x, grip.y)
+        tryVerify(() => bar.pressed, 1000, "the scrollbar is held")
+        const px = Math.ceil(1.5 * view.height * bar.height * (1 - bar.size) / (view.contentHeight - view.height))
+        const reads = [], kept = [Ratings.tracks, Ratings.favorites, Offline.marks]
+        Ratings.tracks = counting(kept[0], reads); Ratings.favorites = counting(kept[1], reads); Offline.marks = counting(kept[2], reads)
+        Ratings.pendingTracks = counting({}, reads); Ratings.sources = counting({}, reads)
+        const held = slots(), bodies = surfaces(), log = [], screen = held.filter(row => row.visible && row.immediate).length
+        let y = grip.y
+        for (let step = 0; step < 12 && view.contentY < lastY() - view.height * 2; ++step) {
+            const before = built(), top = view.contentY, was = new Map(held.map(row => [row, [row.index, String(row.art)]]))
+            reads.length = 0; frames.made = 0; frames.emptiest = 0
+            y += px
+            mouseMove(test, grip.x, y, 0, Qt.LeftButton)
+            const read = reads.length, empty = emptyRows()
+            verify(view.contentY - top > view.height, "step " + step + " went " + (view.contentY - top) + " px, more than a screen")
+            compare(empty, 0, "step " + step + ": every row on the screen has its body before any frame")
+            for (const row of slots().filter(row => row.visible && row.immediate)) checkRow(row)
+            wait(16)
+            compare(frames.emptiest, 0, "step " + step + ": no frame showed a row on the screen without its body")
+            compare(built() - before, 0, "step " + step + " built no body")
+            compare(slots().filter(row => held.indexOf(row) < 0).length + held.filter(row => slots().indexOf(row) < 0).length, 0, "step " + step + " made and destroyed no row")
+            compare(bodies.filter(surface => surfaces().indexOf(surface) < 0).length, 0, "step " + step + " threw no body away")
+            const rebound = slots().filter(row => row.visible && was.get(row)[0] !== row.index)
+            const asked = slots().filter(row => String(row.art) !== "" && String(row.art) !== was.get(row)[1])
+            const pooled = slots().filter(row => !row.visible).length
+            verify(pooled <= budget(), "step " + step + ": " + pooled + " rows in the pool for a budget of " + budget())
+            log.push(Math.round(view.contentY - top) + " px: " + rebound.length + " rows bound again (" + rebound.filter(row => row.immediate).length + " on the screen), "
+                + asked.length + " covers asked, " + read + " reads, " + pooled + " pooled")
+        }
+        mouseRelease(test, grip.x, y)
+        tryVerify(() => !bar.pressed, 1000, "the scrollbar is let go")
+        Ratings.tracks = kept[0]; Ratings.favorites = kept[1]; Offline.marks = kept[2]
+        verify(log.length >= 8, log.length + " steps")
+        console.log(data.tag + " scrollbar drag, " + px + " handle px a step, " + screen + " rows on the screen: " + log.join("; "))
+    }
+
     // A scroll under a still pointer resolves it once a step: at once, or a turn later when the step's layout changed the
     // estimated height and asked for a look then. Counted by the turn-later looks, with the pointer's row checked each time.
     Connections { id: later; target: null; property int runs: 0; function onTriggered() { runs++ } }
