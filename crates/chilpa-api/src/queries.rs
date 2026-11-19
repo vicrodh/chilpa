@@ -26,12 +26,16 @@ impl QueryWorker {
                         }
                         Err(e) => {
                             eprintln!("chilpa-queries: {e}; will retry on the next job");
-                            job(Err(&e));
+                            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job(Err(&e))));
                             continue;
                         }
                     }
                 }
-                if let Some(reader) = &reader { job(Ok(reader)); }
+                if let Some(reader) = &reader {
+                    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job(Ok(reader)))).is_err() {
+                        eprintln!("chilpa-queries: a query panicked; continuing with the next job");
+                    }
+                }
             }
         })?;
         Ok(Self { jobs })

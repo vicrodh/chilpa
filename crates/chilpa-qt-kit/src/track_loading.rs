@@ -14,6 +14,17 @@ pub struct QueryCompletion {
     pub restart: bool,
 }
 
+struct Delivery<F: FnOnce(Option<(FoundTracks, Timing)>)>(Option<F>);
+impl<F: FnOnce(Option<(FoundTracks, Timing)>)> Delivery<F> {
+    fn new(deliver: F) -> Self { Self(Some(deliver)) }
+    fn finish(mut self, result: Option<(FoundTracks, Timing)>) { self.0.take().expect("one query completion")(result); }
+}
+impl<F: FnOnce(Option<(FoundTracks, Timing)>)> Drop for Delivery<F> {
+    fn drop(&mut self) {
+        if let Some(deliver) = self.0.take() { deliver(None); }
+    }
+}
+
 impl LatestQuery {
     /// Starts now when idle. While a query runs, the model itself retains the
     /// latest request and this records that it must replace the pending one.
@@ -54,6 +65,7 @@ impl Timing {
 
 /// Reuses the existing reader queue; the callback returns its result to Qt.
 pub fn submit(query: String, extras: Filter, arrived: impl FnOnce(Option<(FoundTracks, Timing)>) + Send + 'static) {
+    let delivery = Delivery::new(arrived);
     let timing = Timing::start();
     app::with(|api| api.prepare_track_libraries());
     let timing = timing.next("prepare");
@@ -66,7 +78,7 @@ pub fn submit(query: String, extras: Filter, arrived: impl FnOnce(Option<(FoundT
             reader.tracks_progressive(&query, &extras, |value| found = Some(value));
             (found.unwrap_or_default(), timing.next("read"))
         });
-        arrived(result);
+        delivery.finish(result);
     });
 }
 
@@ -74,13 +86,14 @@ pub fn submit(query: String, extras: Filter, arrived: impl FnOnce(Option<(FoundT
 pub fn submit_collection(kind: String, query: String, extras: Filter, arrived: impl FnOnce(Option<(FoundTracks, Timing)>) + Send + 'static) {
     if kind == "tracks" { return submit(query, extras, arrived); }
     let timing = Timing::start();
+    let delivery = Delivery::new(arrived);
     worker::submit_checked(move |reader| {
         let result = reader.ok().map(|reader| {
             let mut found = None;
             reader.collection_tracks(&kind, &query, &extras, |value| found = Some(value));
             (found.unwrap_or_default(), timing.next("read"))
         });
-        arrived(result);
+        delivery.finish(result);
     });
 }
 
@@ -126,5 +139,34 @@ mod tests {
         if stale.publish { resets += 1; }
         assert_eq!(resets, 0);
         assert!(stale.restart);
+    }
+
+    /// A query that panics, or that a dying worker drops before it runs, still
+    /// completes once as a failure, and the model's next request runs.
+    #[test]
+    fn a_query_lost_to_a_panic_or_a_dropped_job_reopens_the_model() {
+        for lost in ["panic", "dropped unrun", "finished"] {
+            let queries = std::sync::Arc::new(std::sync::Mutex::new(LatestQuery::default()));
+            let (sent, received) = std::sync::mpsc::channel();
+            assert!(queries.lock().unwrap().start(1));
+            let model = queries.clone();
+            let delivery = Delivery::new(move |result: Option<(FoundTracks, Timing)>| {
+                sent.send(result.is_some()).unwrap();
+                let _ = model.lock().unwrap().finish(1, 2);
+            });
+            assert!(!queries.lock().unwrap().start(2), "a newer request waits behind the running one");
+            let job: Box<dyn FnOnce() + Send> = Box::new(move || match lost {
+                "panic" => { let _held = delivery; panic!("the query panics") }
+                _ => delivery.finish(Some((FoundTracks::default(), Timing(None)))),
+            });
+            match lost {
+                "panic" => assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(job)).is_err()),
+                "dropped unrun" => drop(job),
+                _ => job(),
+            }
+            assert_eq!(received.recv().unwrap(), lost == "finished", "{lost}: the completion says whether rows came back");
+            assert_eq!(received.try_recv(), Err(std::sync::mpsc::TryRecvError::Disconnected), "{lost}: exactly one completion");
+            assert!(queries.lock().unwrap().start(2), "{lost}: the latest request runs after the lost one");
+        }
     }
 }
