@@ -3,6 +3,7 @@ import QtTest
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.offline
+import app.chilpa.testing
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
@@ -120,6 +121,8 @@ TestCase {
         list.cursorRow = -1
         bands.target = null
         test.forceActiveFocus()
+        // Every held cover arrives, so that nothing waits for the test once it is over.
+        HeldImages.open = "*"; HeldImages.open = ""
     }
 
     function slots() { return view.contentItem.children.filter(item => item.contentBuilds !== undefined && item.rowKind !== undefined) }
@@ -384,13 +387,20 @@ TestCase {
         compare(mark.item.fraction, 0.5)
     }
 
+    function picture(row) { return tile(row).children.find(child => child.retainWhileLoading !== undefined) }
+    function pixelIn(shot, item) {
+        const point = item.mapToItem(null, item.width / 2, item.height / 2)
+        return shot.pixel(point.x, point.y)
+    }
+    // The green and the blue covers, also drawn through the dimmed opacity of a row that cannot play.
+    function greenish(color) { return color.g > 0.9 && color.r < 0.7 && color.b < 0.7 }
+    function bluish(color) { return color.b > 0.9 && color.r < 0.7 && color.g < 0.7 }
     function test_a_reused_row_never_draws_the_cover_it_had() {
         waitForRendering(green)
         const cover = green.toDataURL("image/png")
-        // The first screens show one cover; every row past them has a cover of its own, never asked for before.
-        const run = Date.now()
+        // The first screens show one cover; every row past them has a blue cover of its own, held on its way until the test lets it come.
         for (let i = 0; i < 400; ++i)
-            tracks.setProperty(i, "art", i < 40 ? cover : "qrc:/qt/qml/app/chilpa/kit/assets/app-icon-dark.png?row=" + i + "&run=" + run)
+            tracks.setProperty(i, "art", i < 40 ? cover : "image://held/row" + i + "/#0000ff")
         list.rich = true
         view.forceLayout()
         warm()
@@ -412,21 +422,29 @@ TestCase {
         const again = slots().filter(row => row.visible && row.index < 40 && was.get(row) !== row.index && body(row) !== null)
         verify(again.length > 0, "rows came back from the pool with their bodies")
         for (const row of again) verify(tile(row).ready, "row " + row.index + " has the cover its neighbours hold")
-        // Rows that come back as tracks whose covers are still on their way draw the placeholder, not the green:
-        // the ones with a body on this very frame, and every one on the next.
+        // Rows that come back as tracks whose covers are still on their way draw the placeholder, not the green,
+        // for as long as their covers take: here, until the test lets them come.
         view.contentY = view.originY + Metrics.rowRich * 50; view.forceLayout()
-        const now = slots().filter(row => row.visible && row.immediate && body(row) !== null)
+        const now = slots().filter(row => row.visible && row.immediate)
         verify(now.every(row => row.index >= 40), "the screen shows only rows past the green ones")
-        verify(now.length > 0, "rows came back with their bodies, as tracks with other covers")
+        verify(now.length > 0 && now.every(row => body(row) !== null), "rows came back with their bodies, as tracks with other covers")
         for (const row of now) {
-            verify(String(tile(row).source).includes("row=" + row.index + "&"), "row " + row.index + " asks for its own cover")
-            verify(!Qt.colorEqual(pixelAt(tile(row)), "#00ff00"), "row " + row.index + " does not draw the cover its slot had")
+            compare(String(tile(row).source), "image://held/row" + row.index + "/#0000ff", "row " + row.index + " asks for its own cover")
+            compare(picture(row).status, Image.Loading, "the cover of row " + row.index + " is on its way")
         }
-        wait(0)
-        const arriving = slots().filter(row => row.visible && row.immediate)
-        for (const row of arriving) verify(!Qt.colorEqual(pixelAt(tile(row)), "#00ff00"), "row " + row.index + " on the first frame")
-        tryVerify(() => arriving.every(row => tile(row).ready), 2000, "their own covers arrive")
-        for (const row of arriving) verify(!Qt.colorEqual(pixelAt(tile(row)), "#00ff00"))
+        for (const pause of [0, 100]) {
+            wait(pause)
+            const shot = grabImage(test)
+            for (const row of now) {
+                compare(picture(row).status, Image.Loading, "the cover of row " + row.index + " is still on its way")
+                const drawn = pixelIn(shot, tile(row))
+                verify(!greenish(drawn) && !bluish(drawn), "row " + row.index + " draws its placeholder: " + drawn)
+            }
+        }
+        for (const row of now) { HeldImages.open = "row" + row.index; HeldImages.open = "" }
+        tryVerify(() => now.every(row => tile(row).ready), 2000, "their own covers arrive")
+        const shot = grabImage(test)
+        for (const row of now) verify(bluish(pixelIn(shot, tile(row))), "row " + row.index + " draws its own cover: " + pixelIn(shot, tile(row)))
     }
 
     // Where the source tooltip is now: on the badge under the pointer, saying that row's source, or nowhere.
