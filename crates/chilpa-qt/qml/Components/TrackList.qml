@@ -166,7 +166,7 @@ Item {
 
         delegate: TrackRow {
             required property var model
-            // Hidden columns and pooled rows read no optional roles, a pooled row answers no pointer, and a list that scrolls itself keeps each body through its pool.
+            // Hidden columns and pooled rows read no optional roles, a pooled row answers no pointer and lets its cover go, and a list that scrolls itself keeps each built body through its pool.
             resident: !list.fitContent && !list.viewport
             rowKind: list.snapshotRows ? 0 : model.rowKind
             number: list.snapshotRows ? index + 1 : model.number || 0
@@ -184,7 +184,7 @@ Item {
             qualityDetail: columns.sheet && columns.qualityShown ? model.qualityDetail || "" : ""
             duration: columns.timeShown ? model.duration || "" : ""
             plays: columns.playsShown ? model.plays || 0 : 0
-            art: rowKind !== 0 || columns.artShown ? model.art || "" : ""
+            art: inViewport && (rowKind !== 0 || columns.artShown) ? model.art || "" : ""
             credits: inViewport ? JSON.parse(model.credits || "{}") : ({})
             explicitContent: model.explicitContent === true
             aiGenerated: model.aiGenerated === true

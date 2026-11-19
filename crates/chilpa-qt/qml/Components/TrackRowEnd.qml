@@ -21,11 +21,11 @@ Item {
     property var columns: null
     property real favoriteWidth: showFavorite ? Metrics.rowAction : 0
     property bool inViewport: true
-    readonly property bool busy: Ratings.pending("track", trackId, Ratings.rev)
+    readonly property bool busy: inViewport && Ratings.pending("track", trackId, Ratings.rev)
     // 1 the heart, 2 the menu button, 0 neither: the one under the pointer.
     property int hovered: 0
 
-    readonly property bool canMark: Ratings.markable("track", trackId, Ratings.rev)
+    readonly property bool canMark: inViewport && Ratings.markable("track", trackId, Ratings.rev)
 
     // The action at that point of the row's end.
     function actionAt(x, y) {
@@ -97,10 +97,10 @@ Item {
     Loader {
         id: offline
         objectName: "trackOfflineMark"
-        readonly property string phase: Offline.state(end.trackId, Offline.rev)
+        readonly property string phase: end.inViewport ? Offline.state(end.trackId, Offline.rev) : ""
         x: end.favoriteWidth + (Metrics.rowAction - width) / 2 // derived: centred on the menu's cell
         anchors.verticalCenter: parent.verticalCenter
-        active: phase !== ""
-        sourceComponent: OfflineMark { clock: Pulse; phase: offline.phase; fraction: Offline.fraction(end.trackId, Offline.rev); inViewport: end.inViewport && (!end.columns || end.columns.inView(end.x + offline.x, offline.width)) }
+        active: end.inViewport ? phase !== "" : item !== null
+        sourceComponent: OfflineMark { clock: Pulse; phase: offline.phase; fraction: end.inViewport ? Offline.fraction(end.trackId, Offline.rev) : -1; inViewport: end.inViewport && (!end.columns || end.columns.inView(end.x + offline.x, offline.width)) }
     }
 }

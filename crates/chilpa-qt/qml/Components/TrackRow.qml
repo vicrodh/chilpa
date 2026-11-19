@@ -128,9 +128,9 @@ TrackRowSlot {
             }
 
             // Only a rich row with covers builds one: a compact row carries no
-            // image and no shader at all.
+            // image and no shader at all, and a pooled row keeps what it had.
             Loader {
-                active: row.cols.art > 0 && row.cols.inView(row.cols.artX, Metrics.artRow)
+                active: row.inViewport ? row.cols.art > 0 && row.cols.inView(row.cols.artX, Metrics.artRow) : item !== null
                 x: row.cols.artX
                 anchors.verticalCenter: parent.verticalCenter
                 sourceComponent: ArtTile {

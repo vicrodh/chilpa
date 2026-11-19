@@ -22,6 +22,12 @@ TestCase {
     TrackList { id: list; width: 1000; height: 300; model: tracks; rich: false; showPlays: true }
     readonly property Item view: findChild(list, "trackListView")
     readonly property var covers: ["", "qrc:/qt/qml/app/chilpa/kit/assets/logo.png", "qrc:/qt/qml/app/chilpa/kit/assets/app-icon-dark.png"]
+    // A cover no other picture in the suite shares: one green square.
+    Canvas {
+        id: green
+        x: 1050; y: 350; width: 40; height: 40
+        onPaint: { const context = getContext("2d"); context.fillStyle = "#00ff00"; context.fillRect(0, 0, width, height) }
+    }
 
     // What the fixture's row at position i holds; every visible value names its row.
     function entry(i) {
@@ -60,9 +66,10 @@ TestCase {
     }
     function cleanup() {
         view.hovered = -1; view.actionHovered = 0
-        Ratings.pendingTracks = ({})
+        Ratings.pendingTracks = ({}); Ratings.sources = ({})
         Prefs.animatedIndicator = false
         Motion.reduced = false
+        list.height = 300
     }
 
     function slots() { return view.contentItem.children.filter(item => item.contentBuilds !== undefined && item.rowKind !== undefined) }
@@ -93,6 +100,8 @@ TestCase {
         wait(0)
     }
     function lastY() { return view.originY + view.contentHeight - view.height }
+    // That share of the way down, wherever the view's origin is.
+    function at(share) { return view.originY + (lastY() - view.originY) * share }
 
     // Every cell shows the row it is now, and nothing names another one.
     function checkRow(row) {
@@ -251,5 +260,107 @@ TestCase {
         view.forceLayout(); wait(50)
         compare(surfaces().length, slots().length, "no surface outlives its row")
         compare(surfaces().filter(surface => surface.visible).length, 0)
+    }
+
+    // A reader that writes down each key it is asked for.
+    function counting(target, into) {
+        return new Proxy(target, { get(object, key) { if (typeof key === "string") into.push(key); return object[key] } })
+    }
+    function tile(row) { return findItem(row, item => item.fallbackGlyph !== undefined && item.edged !== undefined) }
+    // The color the window draws at the middle of an item, rendered now.
+    function pixelAt(item) {
+        const point = item.mapToItem(null, item.width / 2, item.height / 2)
+        return grabImage(test).pixel(point.x, point.y)
+    }
+    // A scroll with a frame between its steps, as a listener's: the rows coming
+    // in through the margin have the time to build their bodies.
+    function stroll(to) {
+        const step = (to > view.contentY ? 1 : -1) * view.height / 3
+        while (Math.abs(to - view.contentY) > Math.abs(step)) { view.contentY += step; view.forceLayout(); wait(20) }
+        view.contentY = to; view.forceLayout(); wait(20)
+    }
+    function warm() {
+        stroll(at(0.25)); stroll(view.originY)
+        tryVerify(() => slots().every(row => body(row) !== null), 2000, "every row the list holds has built its body")
+    }
+
+    function test_a_pooled_row_reads_nothing_when_revisions_change() {
+        warm()
+        list.rich = true
+        view.forceLayout(); wait(0)
+        const pooled = slots().filter(row => !row.visible && body(row) !== null)
+        verify(pooled.length > 0, "the compact rows past the rich ones wait in the pool")
+        const away = pooled.map(row => String(row.trackId))
+        const reads = { pending: [], markable: [], stars: [], favorite: [], offline: [] }
+        Ratings.pendingTracks = counting({}, reads.pending)
+        Ratings.sources = counting({}, reads.markable)
+        Ratings.tracks = counting(Ratings.tracks, reads.stars)
+        Ratings.favorites = counting(Ratings.favorites, reads.favorite)
+        Offline.marks = counting(Offline.marks, reads.offline)
+        for (const kind in reads) reads[kind].length = 0
+        Ratings.rev++; Offline.rev++
+        for (const kind in reads)
+            compare(reads[kind].filter(key => away.indexOf(key.replace("track:", "")) >= 0), [], "a pooled row reads no " + kind)
+        verify(reads.pending.length > 0 && reads.markable.length > 0 && reads.offline.length > 0, "the rows on the screen read theirs")
+        // While its row waited, the track changed; the first frame it is back on says so.
+        const back = pooled.filter(row => row.index < Math.floor(view.height / Metrics.rowCompact))[0]
+        verify(back !== undefined, "a pooled row that compact rows show again")
+        const id = back.trackId
+        Ratings.pendingTracks[id] = true
+        Offline.marks[id] = { state: "downloading", fraction: 0.5 }
+        Ratings.rev++; Offline.rev++
+        list.rich = false
+        view.forceLayout()
+        const shown = slots().find(row => row.visible && row.immediate && row.trackId === id)
+        verify(shown !== undefined, "track " + id + " is on the screen again")
+        compare(shown.end.busy, true, "its heart waits for the change")
+        const mark = findChild(shown, "trackOfflineMark")
+        verify(mark.active && mark.item.phase === "downloading", "its offline state is the new one")
+        compare(mark.item.fraction, 0.5)
+    }
+
+    function test_a_reused_row_never_draws_the_cover_it_had() {
+        waitForRendering(green)
+        const cover = green.toDataURL("image/png")
+        // The first screens show one cover; every row past them has a cover of its own, never asked for before.
+        const run = Date.now()
+        for (let i = 0; i < 400; ++i)
+            tracks.setProperty(i, "art", i < 40 ? cover : "qrc:/qt/qml/app/chilpa/kit/assets/app-icon-dark.png?row=" + i + "&run=" + run)
+        list.rich = true
+        view.forceLayout()
+        warm()
+        tryVerify(() => slots().filter(row => row.visible).every(row => tile(row) && tile(row).ready), 2000, "the first covers are drawn")
+        const ownCover = pixelAt(tile(view.itemAtIndex(1)))
+        verify(Qt.colorEqual(ownCover, "#00ff00"), "the first rows draw the green cover: " + ownCover)
+        // Rows that go to the pool let their covers go.
+        list.height = 150
+        view.forceLayout()
+        const pooled = slots().filter(row => !row.visible && tile(row) !== null)
+        verify(pooled.length > 0, "rows with covers wait in the pool")
+        for (const row of pooled) compare(String(tile(row).source), "", "pooled row " + row.index + " holds no cover")
+        list.height = 300
+        view.forceLayout()
+        warm()
+        // A row that comes back from the pool as a track of the same cover has it at once.
+        const was = new Map(slots().map(row => [row, row.index]))
+        view.contentY += Metrics.rowRich * 3; view.forceLayout()
+        const again = slots().filter(row => row.visible && row.index < 40 && was.get(row) !== row.index && body(row) !== null)
+        verify(again.length > 0, "rows came back from the pool with their bodies")
+        for (const row of again) verify(tile(row).ready, "row " + row.index + " has the cover its neighbours hold")
+        // Rows that come back as tracks whose covers are still on their way draw the placeholder, not the green:
+        // the ones with a body on this very frame, and every one on the next.
+        view.contentY = view.originY + Metrics.rowRich * 50; view.forceLayout()
+        const now = slots().filter(row => row.visible && row.immediate && body(row) !== null)
+        verify(now.every(row => row.index >= 40), "the screen shows only rows past the green ones")
+        verify(now.length > 0, "rows came back with their bodies, as tracks with other covers")
+        for (const row of now) {
+            verify(String(tile(row).source).includes("row=" + row.index + "&"), "row " + row.index + " asks for its own cover")
+            verify(!Qt.colorEqual(pixelAt(tile(row)), "#00ff00"), "row " + row.index + " does not draw the cover its slot had")
+        }
+        wait(0)
+        const arriving = slots().filter(row => row.visible && row.immediate)
+        for (const row of arriving) verify(!Qt.colorEqual(pixelAt(tile(row)), "#00ff00"), "row " + row.index + " on the first frame")
+        tryVerify(() => arriving.every(row => tile(row).ready), 2000, "their own covers arrive")
+        for (const row of arriving) verify(!Qt.colorEqual(pixelAt(tile(row)), "#00ff00"))
     }
 }
