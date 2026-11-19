@@ -32,7 +32,10 @@ pub(crate) struct LibraryUpgrade {
 
 impl LibraryUpgrade {
     pub(crate) fn detect(path: PathBuf) -> Self {
-        let state = if upgrade::pending(&path).is_some() { State::Pending } else { State::Current };
+        let state = if upgrade::pending(&path).is_some() { State::Pending } else {
+            upgrade::forget_finished(&path);
+            State::Current
+        };
         let mut upgrade = Self { path, state, heard: Default::default(), outcome: None, stop: Default::default(), worker: None };
         // Putting the copy back was cut off with the library moved aside: it
         // is finished from here, and nothing creates a library in its place.

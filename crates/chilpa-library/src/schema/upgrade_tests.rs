@@ -597,3 +597,14 @@ fn the_copy_its_marker_and_a_restored_library_are_synced_into_their_folder() {
     upgrade::restore(&path).unwrap();
     assert!(syncs() > failed, "and the library put back");
 }
+
+#[test]
+fn running_over_a_current_library_removes_a_marker_left_beside_it() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    drop(crate::Library::open(&path).unwrap());
+    // An upgrade died between its last step and removing its marker.
+    std::fs::write(upgrade::marker_path(&path), "54 57").unwrap();
+    heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap();
+    assert!(!upgrade::marker_path(&path).exists());
+}

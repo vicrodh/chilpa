@@ -263,3 +263,14 @@ fn a_restore_that_fails_says_the_library_was_not_changed() {
     assert!(api.window_request().is_none());
     assert_eq!(version_of(&path), 55, "the library is where it was");
 }
+
+#[test]
+fn a_marker_left_beside_a_current_library_is_removed_when_it_is_found() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    drop(chilpa_library::Library::open(&path).unwrap());
+    std::fs::write(schema::upgrade::marker_path(&path), "54 57").unwrap();
+    let upgrade = LibraryUpgrade::detect(path.clone());
+    assert!(!upgrade.holds());
+    assert!(!schema::upgrade::marker_path(&path).exists(), "a stale marker is not left to be taken for an unfinished upgrade");
+}

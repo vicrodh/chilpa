@@ -123,10 +123,13 @@ pub fn run(library: &Path, observer: &mut dyn FnMut(&Progress), stop: &Stop) -> 
 /// `observer`. Another process holding the lock is waited for as long as it
 /// takes. Returns how many steps it applied.
 fn apply(db: &Connection, library: &Path, observer: &mut dyn FnMut(&Progress), stop: &Stop) -> rusqlite::Result<usize> {
-    if version(db)? >= VERSION { super::migrate(db)?; return Ok(0); }
+    // A current library with a marker beside it goes on, under the lock, to
+    // have the marker removed.
+    let marked = marker_path(library).exists();
+    if version(db)? >= VERSION && !marked { super::migrate(db)?; return Ok(0); }
     let gate = super::migration_gate(db);
     let _process = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|error| error.into_inner()));
-    if version(db)? >= VERSION { super::migrate_locked(db)?; return Ok(0); }
+    if version(db)? >= VERSION && !marked { super::migrate_locked(db)?; return Ok(0); }
     let on_disk = db.path().is_some_and(|path| !path.is_empty());
     let _file = if on_disk { Some(lock_reporting(library, observer, None, stop)?) } else { None };
     // Another process may have completed the upgrade while this one waited.
@@ -232,6 +235,25 @@ pub fn unfinished_copy(library: &Path) -> Option<(i64, i64)> {
     let copy = Connection::open_with_flags(backup_path(library), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
     let version: i64 = copy.query_row("PRAGMA user_version", [], |row| row.get(0)).ok()?;
     (version == copied).then_some((copied, target))
+}
+
+/// Removes a marker left beside a library that is already current: the
+/// process died between the upgrade's last step and removing it. Left there,
+/// it would be taken for an unfinished upgrade. Nothing happens when there is
+/// no marker, which is all a current library pays.
+pub fn forget_finished(library: &Path) {
+    if !marker_path(library).exists() || !current(library) { return; }
+    let Ok(_file) = lock(library) else { return };
+    if current(library) {
+        if let Err(error) = unmark(library) {
+            eprintln!("library: the marker of a finished upgrade stayed: {error}");
+        }
+    }
+}
+
+fn current(library: &Path) -> bool {
+    library.is_file() && Connection::open_with_flags(library, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+        .and_then(|db| version(&db)).is_ok_and(|version| version == VERSION)
 }
 
 /// A library that is missing while its marker says an upgrade did not
