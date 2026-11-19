@@ -6,9 +6,10 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // A line cut short slides to show its end while the pointer rests on it,
-// besides saying itself whole in the tooltip. It is the line the window's
-// tooltip is about, so one at a time: a copy slides over the line, which
-// hides meanwhile. Nothing is built and nothing runs while no line is held.
+// in place of saying itself whole in the tooltip, which would cover it. It
+// is the line the window's tooltip is about, so one at a time: a copy slides
+// over the line, which hides meanwhile. Nothing is built and nothing runs
+// while no line is held.
 Item {
     id: ticker
 
@@ -22,6 +23,8 @@ Item {
     // The line hides under its copy and is given back as it was, its own bindings included.
     property Item hidden: null
     onSlidingChanged: { hide.when = false; hidden = sliding; hide.when = sliding !== null }
+    // One or the other: the tooltip would cover the line that slides.
+    Binding { target: TipState; property: "quiet"; value: ticker.sliding !== null }
     Binding { id: hide; target: ticker.hidden; property: "opacity"; value: 0; when: false; restoreMode: Binding.RestoreBindingOrValue }
 
     Loader {

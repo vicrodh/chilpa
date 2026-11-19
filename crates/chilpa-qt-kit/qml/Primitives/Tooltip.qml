@@ -17,7 +17,7 @@ Rectangle {
     readonly property Item target: TipState.target
     readonly property point at: target ? target.mapToItem(parent, 0, target.height) : Qt.point(0, 0)
 
-    visible: TipState.shown && target !== null
+    visible: TipState.shown && !TipState.quiet && target !== null
     // As wide as its words, up to the window less its margins; a longer line
     // wraps there instead of running past the window's edge.
     width: Math.min(label.implicitWidth, parent.width - Metrics.spaceWindow * 2 - Metrics.gap16) + Metrics.gap16 // derived: the padding on both sides

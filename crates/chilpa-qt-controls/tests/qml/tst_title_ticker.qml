@@ -68,6 +68,7 @@ TestCase {
         const copy = slide()
         const words = findChild(copy, "titleTickerWords")
         compare(made.cut.opacity, 0, "the line hides under its sliding copy")
+        verify(TipState.quiet, "the tooltip stays out while the line shows itself by sliding")
         compare(copy.width, made.cut.width)
         compare(copy.mapToItem(test, 0, 0).x, made.cut.mapToItem(test, 0, 0).x)
         compare(words.text, test.longTitle)
@@ -77,6 +78,7 @@ TestCase {
         TipState.hide(made.cut)
         tryVerify(() => slide() === null)
         compare(made.cut.opacity, 1, "let go, the line is drawn again as it was")
+        verify(!TipState.quiet)
     }
 
     function test_a_line_that_fits_is_left_alone() {
@@ -108,6 +110,7 @@ TestCase {
         compare(slide(), null)
         compare(made.cut.opacity, 1)
         compare(TipState.target, made.cut, "the tooltip is not the ticker's to turn off")
+        verify(!TipState.quiet, "with nothing sliding the tooltip says the line")
         TipState.hide(made.cut)
         SettingsModel.preferences = {}
         Prefs.rev++

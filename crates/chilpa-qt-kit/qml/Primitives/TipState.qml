@@ -11,6 +11,8 @@ QtObject {
     property string text
     property Item target: null
     property bool shown: false
+    // Set by what already shows the asked line whole another way: the tooltip stays out of its way.
+    property bool quiet: false
 
     readonly property Timer delay: Timer {
         interval: Metrics.tooltipDelay
