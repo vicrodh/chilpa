@@ -7939,6 +7939,9 @@ msgstr ""
 msgid "The library was not changed, and the copy from before the update is still at {}."
 msgstr "Библиотека не изменилась, а копия, сделанная до обновления, по-прежнему находится в {}."
 
+msgid "The library was updated, but the check after it failed"
+msgstr "Библиотека обновлена, но последующая проверка не удалась"
+
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""
 

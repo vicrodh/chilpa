@@ -7927,6 +7927,9 @@ msgstr ""
 msgid "The library was not changed, and the copy from before the update is still at {}."
 msgstr "音樂庫沒有變更，更新前的副本仍位於 {}。"
 
+msgid "The library was updated, but the check after it failed"
+msgstr "音樂庫已更新，但之後的檢查失敗"
+
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""
 

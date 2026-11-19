@@ -7929,6 +7929,9 @@ msgstr "La actualización de la biblioteca se detuvo al preparar su copia de seg
 msgid "The library was not changed, and the copy from before the update is still at {}."
 msgstr "La biblioteca no cambió, y la copia de antes de la actualización sigue en {}."
 
+msgid "The library was updated, but the check after it failed"
+msgstr "La biblioteca se actualizó, pero falló la revisión posterior"
+
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr "El limitador no añade retardo. El margen automático del EQ no anula la ganancia previa ni la ganancia de compensación del compresor."
 

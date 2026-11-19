@@ -7919,6 +7919,9 @@ msgstr ""
 msgid "The library was not changed, and the copy from before the update is still at {}."
 msgstr "ライブラリは変更されておらず、更新前のコピーは引き続き {} にあります。"
 
+msgid "The library was updated, but the check after it failed"
+msgstr "ライブラリは更新されましたが、その後の確認に失敗しました"
+
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""
 

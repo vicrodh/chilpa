@@ -368,3 +368,17 @@ fn a_part_whose_length_cannot_be_told_sweeps() {
     assert_eq!(at(Phase::WaitingForOther), -1.0);
     assert_eq!(at(Phase::Step), 0.25);
 }
+
+#[test]
+fn a_failure_after_the_last_step_says_the_library_was_updated() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    drop(chilpa_library::Library::open(&path).unwrap());
+    let mut upgrade = LibraryUpgrade::detect(path.clone());
+    // What the open after the steps, or removing the marker, would report.
+    upgrade.fail("database is locked".into());
+    let view = upgrade.view();
+    assert_eq!(view["title"], "The library was updated, but the check after it failed", "{view}");
+    assert!(!view["detail"].as_str().unwrap().contains("Nothing was lost"), "it is not as it was before: {view}");
+    assert_eq!((view["canRestore"].as_bool(), view["canRetry"].as_bool()), (Some(false), Some(true)));
+}

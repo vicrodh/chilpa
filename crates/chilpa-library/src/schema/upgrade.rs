@@ -253,7 +253,8 @@ pub fn forget_finished(library: &Path) {
     }
 }
 
-fn current(library: &Path) -> bool {
+/// The library is at the version this code understands.
+pub fn current(library: &Path) -> bool {
     library.is_file() && Connection::open_with_flags(library, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
         .and_then(|db| version(&db)).is_ok_and(|version| version == VERSION)
 }

@@ -20,7 +20,7 @@ enum State {
     Restoring,
     /// `can_retry` is false while the library is missing, waiting for its
     /// copy: running the upgrade then would create an empty one.
-    Failed { message: String, detail: String, can_restore: bool, can_retry: bool },
+    Failed { title: String, message: String, detail: String, can_restore: bool, can_retry: bool },
 }
 
 pub(crate) struct LibraryUpgrade {
@@ -47,6 +47,7 @@ impl LibraryUpgrade {
         // is finished from here, and nothing creates a library in its place.
         if upgrade::interrupted(&upgrade.path) {
             upgrade.state = State::Failed {
+                title: chilpa_i18n::t("The library could not be updated"),
                 message: chilpa_i18n::t("Putting the copy back did not finish."),
                 detail: upgrade.copy_is_at(),
                 can_restore: upgrade::restorable(&upgrade.path),
@@ -68,7 +69,10 @@ impl LibraryUpgrade {
             chilpa_i18n::t_args("The library was not changed, and the copy from before the update is still at {}.",
                 &[&chilpa_library::schema::backup_path(&self.path).display().to_string()])
         } else { self.copy_is_at() };
-        self.state = State::Failed { message, detail, can_restore: upgrade::restorable(&self.path), can_retry: present };
+        self.state = State::Failed {
+            title: chilpa_i18n::t("The library could not be updated"),
+            message, detail, can_restore: upgrade::restorable(&self.path), can_retry: present,
+        };
     }
 
     /// Puts the copy back on a thread of its own, as the upgrade runs: it
@@ -114,6 +118,16 @@ impl LibraryUpgrade {
     }
 
     fn fail(&mut self, message: String) {
+        // Every step committed and what failed came after: the open that
+        // runs the repairs, or removing the marker. Trying again repeats
+        // only that.
+        if upgrade::current(&self.path) {
+            self.state = State::Failed {
+                title: chilpa_i18n::t("The library was updated, but the check after it failed"),
+                message, detail: String::new(), can_restore: false, can_retry: true,
+            };
+            return;
+        }
         let detail = match upgrade::unfinished_copy(&self.path) {
             Some(_) => chilpa_i18n::t_args(
                 "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}.",
@@ -121,7 +135,10 @@ impl LibraryUpgrade {
             ),
             None => chilpa_i18n::t("Nothing was lost: the library is as it was before this step."),
         };
-        self.state = State::Failed { message, detail, can_restore: upgrade::restorable(&self.path), can_retry: true };
+        self.state = State::Failed {
+            title: chilpa_i18n::t("The library could not be updated"),
+            message, detail, can_restore: upgrade::restorable(&self.path), can_retry: true,
+        };
     }
 
     /// True once, when the upgrade has just ended well.
@@ -159,10 +176,10 @@ impl LibraryUpgrade {
     pub(crate) fn view(&self) -> Value {
         match &self.state {
             State::Current => json!({ "active": false }),
-            State::Failed { message, detail, can_restore, can_retry } => json!({
+            State::Failed { title, message, detail, can_restore, can_retry } => json!({
                 "active": true,
                 "failed": true,
-                "title": chilpa_i18n::t("The library could not be updated"),
+                "title": title,
                 "message": message,
                 "detail": detail,
                 "canRestore": can_restore,
