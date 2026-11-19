@@ -424,6 +424,11 @@ lastfm
 # The loudness tags players write, REPLAYGAIN_TRACK_GAIN and its peak.
 replaygain
 listenbrainz
+# The servers somebody chooses or runs themselves, and the API they share.
+audioscrobbler
+gnufm
+koito
+librefm
 scrobble
 scrobbled
 scrobbler

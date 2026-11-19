@@ -34,8 +34,9 @@ pub(crate) struct Service {
     /// Listens in one request.
     pub batch: usize,
     /// For a service whose account is allowed on its own site: asks for a
-    /// request token and the page where it is allowed.
-    pub begin: Option<fn() -> Result<(String, String), Failure>>,
+    /// request token and the page where it is allowed, with whatever the
+    /// person typed to reach it -- a server's address -- or nothing.
+    pub begin: Option<fn(&str) -> Result<(String, String), Failure>>,
     /// Turns what is being connected with -- a pasted token, an allowed
     /// request token -- into the account's user and what is kept to send.
     pub check: fn(&str) -> Result<(String, String), Failure>,
@@ -45,8 +46,9 @@ pub(crate) struct Service {
 pub(crate) enum Order {
     Playing(Listen),
     Listened(Listen),
-    /// Connect with a pasted token, or -- empty -- start connecting on the
-    /// service's own site.
+    /// Connect with what was typed: a pasted token for a service that
+    /// takes one, and for a service allowed on its own site, where to reach
+    /// it, if anything.
     Connect(String),
     Disconnect,
     Enable(bool),
@@ -160,9 +162,8 @@ impl Worker {
                 self.save_pending();
                 self.publish(String::new());
             }
-            Order::Connect(token) if token.is_empty() => {
-                let Some(begin) = self.service.begin else { return self.checked(String::new()) };
-                match begin() {
+            Order::Connect(typed) => match self.service.begin {
+                Some(begin) => match begin(&typed) {
                     Ok((token, link)) => {
                         self.connecting = Some(Connecting { token, until: Instant::now() + CONNECTING });
                         if let Ok(mut s) = self.status.lock() {
@@ -171,9 +172,10 @@ impl Worker {
                     }
                     Err(Failure::Refused(why)) => self.checked(why),
                     Err(_) => self.checked(chilpa_i18n::t_args("{} could not be reached; try again", &[self.service.label])),
-                }
-            }
-            Order::Connect(token) => self.check(&token),
+                },
+                None if typed.is_empty() => self.checked(String::new()),
+                None => self.check(&typed),
+            },
             Order::Disconnect => {
                 self.credential = None;
                 self.connecting = None;
@@ -232,6 +234,8 @@ impl Worker {
             Err(Failure::Token) => {
                 self.checked(chilpa_i18n::t_args("{} did not accept the account", &[self.service.label]))
             }
+            // What was typed cannot be an account: the reason is the answer.
+            Err(Failure::Refused(why)) if !why.is_empty() => self.checked(why),
             Err(_) => self.checked(chilpa_i18n::t_args("{} could not be reached; try again", &[self.service.label])),
         }
     }
@@ -420,7 +424,7 @@ mod tests {
         static ASKED: Mutex<u32> = Mutex::new(0);
         let mut w = worker("chilpa-scrobble-allow", |_, _, _| Ok(()), 0);
         w.credential = None;
-        w.service.begin = Some(|| Ok(("request".into(), "https://example.org/allow".into())));
+        w.service.begin = Some(|_| Ok(("request".into(), "https://example.org/allow".into())));
         // Not allowed the first time it is asked, allowed the second, and
         // the token does not answer a third: it is used up.
         w.service.check = |token| {

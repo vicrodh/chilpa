@@ -141,7 +141,7 @@ impl Chilpa {
         if let Some(said) = self.library_maintenance(key) {
             return Some(said);
         }
-        self.beets_maintenance(key).or_else(|| self.lyrics_maintenance(key)).or_else(|| self.updates_maintenance(key)).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(||self.discogs_maintenance(key))
+        self.beets_maintenance(key).or_else(|| self.lyrics_maintenance(key)).or_else(|| self.updates_maintenance(key)).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(||self.discogs_maintenance(key)).or_else(|| self.scrobble_maintenance(key))
     }
 
     /// A setting's new value, for the feature it belongs to. Like
@@ -149,7 +149,7 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
-        if self.beets_setting(key,value) || self.discogs_setting(key,value) || self.updates_setting(key,value) {return true;}
+        if self.beets_setting(key,value) || self.discogs_setting(key,value) || self.updates_setting(key,value) || self.scrobble_setting(key, value) {return true;}
         if key == "storage.remoteLimitMb" {
             if !crate::storage_cache::set_limit(value) { return false }
             self.remember_preference(key, value);
@@ -250,7 +250,7 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
-        if self.beets_settings_row(row) || self.discogs_row(row) || self.updates_settings_row(row) || self.discord_row(row) || self.rating_switch_row(row) || self.sidebar_entries_row(row) || self.library_protection_row(row) {return;}
+        if self.beets_settings_row(row) || self.discogs_row(row) || self.scrobble_row(row) || self.updates_settings_row(row) || self.discord_row(row) || self.rating_switch_row(row) || self.sidebar_entries_row(row) || self.library_protection_row(row) {return;}
         if self.offline_limit_row(row) || self.graphics_row(row) || self.normalization_row(row) || self.back_button_row(row) || self.favorites_sync_row(row) || self.device_lock_row(row) || self.channel_mode_row(row) || self.wizard_row(row) || self.theme_row(row) {
             return;
         }
@@ -641,7 +641,7 @@ impl Chilpa {
 
 /// An account's row: checking it, or who it is with a way out and how many
 /// listens wait, or what went wrong.
-fn account(row: &mut Row, status: &crate::ScrobbleStatus) {
+pub(crate) fn account(row: &mut Row, status: &crate::ScrobbleStatus) {
     if status.checking {
         row.description = chilpa_i18n::t("Checking the account…");
     } else if !status.user.is_empty() {

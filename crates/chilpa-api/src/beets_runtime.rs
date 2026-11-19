@@ -39,7 +39,7 @@ impl Chilpa {
         self.beets_runtime.as_ref().is_some_and(Managed::busy)
     }
     pub fn settings_working(&self, section: &str) -> bool {
-        section == "library" && self.beets_runtime_busy()
+        section == "library" && self.beets_runtime_busy() || section == "integrations" && self.scrobble_working()
     }
     pub(crate) fn advance_beets_runtime(&mut self) {
         let Some(result) = self.beets_runtime.as_mut().and_then(Managed::poll) else { return };

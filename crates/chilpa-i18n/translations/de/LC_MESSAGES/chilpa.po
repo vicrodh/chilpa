@@ -591,6 +591,9 @@ msgstr "Erlaube Chilpa den Zugriff auf Discogs und füge den Code unten ein."
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Chilpa bei Last.fm zulassen; das wird automatisch aktualisiert."
 
+msgid "Allow Chilpa on the page that opened; this updates by itself."
+msgstr "Erlaube Chilpa auf der geöffneten Seite; dies aktualisiert sich von selbst."
+
 msgid "Allow metadata sidecars"
 msgstr "Begleitdateien für Metadaten erlauben"
 
@@ -1004,9 +1007,6 @@ msgstr ""
 
 msgid "Barcode"
 msgstr "Barcode"
-
-msgid "Bars"
-msgstr "Balken"
 
 msgid "Based on {artist} · {genres}"
 msgstr "Basierend auf {artist} · {genres}"
@@ -3236,6 +3236,15 @@ msgstr "Volle Breite, oben"
 msgid "Fullscreen"
 msgstr "Vollbild"
 
+msgid "GNU FM API key"
+msgstr "GNU-FM-API-Schlüssel"
+
+msgid "GNU FM account"
+msgstr "GNU-FM-Konto"
+
+msgid "GNU FM server"
+msgstr "GNU-FM-Server"
+
 msgid "GPU"
 msgstr "GPU"
 
@@ -4016,6 +4025,12 @@ msgstr "Art"
 msgid "Knee"
 msgstr ""
 
+msgid "Koito account"
+msgstr "Koito-Konto"
+
+msgid "Koito server"
+msgstr "Koito-Server"
+
 msgid "LABELS"
 msgstr "LABELS"
 
@@ -4132,6 +4147,12 @@ msgstr "Bibliotheks-Scan"
 
 msgid "Library selection"
 msgstr "Bibliotheksauswahl"
+
+msgid "Libre.fm account"
+msgstr "Libre.fm-Konto"
+
+msgid "Libre.fm opens in the browser to allow Chilpa."
+msgstr "Libre.fm öffnet sich im Browser, um Chilpa zu erlauben."
 
 msgid "Light"
 msgstr "Hell"
@@ -5351,6 +5372,9 @@ msgstr "Den Ordner für entbehrliche Dateien öffnen."
 msgid "Open the offline folder"
 msgstr "Offline-Ordner öffnen"
 
+msgid "Open the page"
+msgstr "Seite öffnen"
+
 msgid "Open the selection again"
 msgstr ""
 
@@ -5497,6 +5521,12 @@ msgstr "Füge einen persönlichen Zugriffstoken von discogs.com/settings/develop
 
 msgid "Paste a valid HTTPS music link"
 msgstr ""
+
+msgid "Paste an API key made in Koito under Settings, API Keys."
+msgstr "Füge einen API-Schlüssel ein, der in Koito unter Settings, API Keys erstellt wurde."
+
+msgid "Paste the API key's shared secret. The server opens in the browser to allow Chilpa."
+msgstr "Füge das gemeinsame Geheimnis des API-Schlüssels ein. Der Server öffnet sich im Browser, um Chilpa zu erlauben."
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Füge den Code ein, den Discogs nach der Freigabe für Chilpa anzeigt."
@@ -6933,8 +6963,17 @@ msgstr "Ausgewählte Ausgabe"
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr "Sendet das Cover des Albums von diesem Computer an litterbox.catbox.moe, einen öffentlichen Dateihoster, damit Discord es anzeigen kann. Wer den Link hat, kann es öffnen, bis es abläuft. Nur das Bild geht raus: kein Name, kein Dateipfad."
 
+msgid "Send to GNU FM"
+msgstr "An GNU FM senden"
+
+msgid "Send to Koito"
+msgstr "An Koito senden"
+
 msgid "Send to Last.fm"
 msgstr "An Last.fm senden"
+
+msgid "Send to Libre.fm"
+msgstr "An Libre.fm senden"
 
 msgid "Send to ListenBrainz"
 msgstr "An ListenBrainz senden"
@@ -7572,6 +7611,9 @@ msgstr "Diese Datei ist kein JPEG-, PNG- oder WebP-Bild"
 msgid "That saved query no longer exists."
 msgstr "Diese gespeicherte Abfrage existiert nicht mehr."
 
+msgid "The API key the server knows Chilpa by."
+msgstr "Der API-Schlüssel, unter dem der Server Chilpa kennt."
+
 msgid "The Discogs account changed. Search again."
 msgstr "Das Discogs-Konto hat sich geändert. Suche erneut."
 
@@ -7604,6 +7646,12 @@ msgstr "Das Konto wurde nicht verbunden. Du kannst diesen Tab schließen."
 
 msgid "The account expired; connect it again."
 msgstr "Das Konto ist abgelaufen; verbinde es erneut."
+
+msgid "The address of a GNU FM server of your own, like https://gnufm.example.com."
+msgstr "Die Adresse deines eigenen GNU-FM-Servers, etwa https://gnufm.example.com."
+
+msgid "The address of your Koito server, like https://koito.example.com."
+msgstr "Die Adresse deines Koito-Servers, etwa https://koito.example.com."
 
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "Die Adresse, unter der du den Server im Browser öffnest, mit Port, und der Benutzer, mit dem Chilpa sich anmeldet."
@@ -9252,6 +9300,15 @@ msgstr ""
 
 msgid "Write the external SACD XML?"
 msgstr "Die externe SACD-XML-Datei schreiben?"
+
+msgid "Write the server's API key and its shared secret first."
+msgstr "Gib zuerst den API-Schlüssel des Servers und sein gemeinsames Geheimnis ein."
+
+msgid "Write the server's address first, like https://gnufm.example.com."
+msgstr "Gib zuerst die Adresse des Servers ein, etwa https://gnufm.example.com."
+
+msgid "Write the server's address first, like https://koito.example.com."
+msgstr "Gib zuerst die Adresse des Servers ein, etwa https://koito.example.com."
 
 msgid "Write to a file"
 msgstr "In eine Datei schreiben"

@@ -43,6 +43,8 @@ turbojpeg = { version = "1.5.1", default-features = false, features = ["cmake"] 
 rand = "0.10"
 tempfile = "3"
 sha1 = "0.10"
+# The signature the Audioscrobbler API asks for; the build chilpa-servers has.
+md-5 = "0.10"
 sha2 = "0.10"
 url = "2"
 # The one request with a binary body: the Discord presence's cover upload.

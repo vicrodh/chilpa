@@ -590,6 +590,9 @@ msgstr "DiscogsでChilpaを許可し、以下にコードを貼り付けてく�
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Last.fmでChilpaを許可してください。この表示は自動で更新されます。"
 
+msgid "Allow Chilpa on the page that opened; this updates by itself."
+msgstr "開いたページでChilpaを許可してください。ここは自動で更新されます。"
+
 msgid "Allow metadata sidecars"
 msgstr "メタデータのサイドカーを許可"
 
@@ -1003,9 +1006,6 @@ msgstr ""
 
 msgid "Barcode"
 msgstr "バーコード"
-
-msgid "Bars"
-msgstr "バー"
 
 msgid "Based on {artist} · {genres}"
 msgstr "{artist} · {genres}に基づく"
@@ -3234,6 +3234,15 @@ msgstr "全幅、上"
 msgid "Fullscreen"
 msgstr "全画面表示"
 
+msgid "GNU FM API key"
+msgstr "GNU FMのAPIキー"
+
+msgid "GNU FM account"
+msgstr "GNU FMアカウント"
+
+msgid "GNU FM server"
+msgstr "GNU FMサーバー"
+
 msgid "GPU"
 msgstr "GPU"
 
@@ -4011,6 +4020,12 @@ msgstr "種類"
 msgid "Knee"
 msgstr ""
 
+msgid "Koito account"
+msgstr "Koitoアカウント"
+
+msgid "Koito server"
+msgstr "Koitoサーバー"
+
 msgid "LABELS"
 msgstr "レーベル"
 
@@ -4127,6 +4142,12 @@ msgstr "ライブラリのスキャン"
 
 msgid "Library selection"
 msgstr "ライブラリの選択"
+
+msgid "Libre.fm account"
+msgstr "Libre.fmアカウント"
+
+msgid "Libre.fm opens in the browser to allow Chilpa."
+msgstr "ブラウザでLibre.fmが開き、Chilpaを許可できます。"
 
 msgid "Light"
 msgstr "ライト"
@@ -5346,6 +5367,9 @@ msgstr "使い捨てファイルに使うフォルダーを開きます。"
 msgid "Open the offline folder"
 msgstr "オフライン用フォルダーを開く"
 
+msgid "Open the page"
+msgstr "ページを開く"
+
 msgid "Open the selection again"
 msgstr ""
 
@@ -5492,6 +5516,12 @@ msgstr "discogs.com/settings/developersで発行した個人用アクセスト�
 
 msgid "Paste a valid HTTPS music link"
 msgstr ""
+
+msgid "Paste an API key made in Koito under Settings, API Keys."
+msgstr "KoitoのSettings、API Keysで作成したAPIキーを貼り付けてください。"
+
+msgid "Paste the API key's shared secret. The server opens in the browser to allow Chilpa."
+msgstr "APIキーの共有シークレットを貼り付けてください。ブラウザでサーバーが開き、Chilpaを許可できます。"
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "Chilpaのアクセスを許可した後にDiscogsが表示するコードを貼り付けてください。"
@@ -6926,8 +6956,17 @@ msgstr "選択中の出力"
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr "Discord で表示できるように、このコンピューターからアルバムのカバーを公開ファイルホスティングの litterbox.catbox.moe に送信します。リンクを知っている人は期限が切れるまで開けます。送られるのは画像だけで、名前やファイルパスは送られません。"
 
+msgid "Send to GNU FM"
+msgstr "GNU FMに送信"
+
+msgid "Send to Koito"
+msgstr "Koitoに送信"
+
 msgid "Send to Last.fm"
 msgstr "Last.fmに送信"
+
+msgid "Send to Libre.fm"
+msgstr "Libre.fmに送信"
 
 msgid "Send to ListenBrainz"
 msgstr "ListenBrainzに送信"
@@ -7562,6 +7601,9 @@ msgstr "そのファイルはJPEG、PNG、WebPのいずれの画像でもあり�
 msgid "That saved query no longer exists."
 msgstr "この保存済みクエリはもう存在しません。"
 
+msgid "The API key the server knows Chilpa by."
+msgstr "サーバーがChilpaを識別するためのAPIキー。"
+
 msgid "The Discogs account changed. Search again."
 msgstr "Discogsアカウントが変わりました。もう一度検索してください。"
 
@@ -7594,6 +7636,12 @@ msgstr "アカウントに接続できませんでした。このタブは閉じ
 
 msgid "The account expired; connect it again."
 msgstr "アカウントの有効期限が切れました。もう一度接続してください。"
+
+msgid "The address of a GNU FM server of your own, like https://gnufm.example.com."
+msgstr "自分のGNU FMサーバーのアドレス（例: https://gnufm.example.com）。"
+
+msgid "The address of your Koito server, like https://koito.example.com."
+msgstr "Koitoサーバーのアドレス（例: https://koito.example.com）。"
 
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "ブラウザでサーバーを開くときのアドレス（ポートを含む）と、Chilpa がサインインするユーザーです。"
@@ -9240,6 +9288,15 @@ msgstr ""
 
 msgid "Write the external SACD XML?"
 msgstr "外部のSACD XMLを書き込みますか？"
+
+msgid "Write the server's API key and its shared secret first."
+msgstr "先にサーバーのAPIキーと共有シークレットを入力してください。"
+
+msgid "Write the server's address first, like https://gnufm.example.com."
+msgstr "先にサーバーのアドレスを入力してください（例: https://gnufm.example.com）。"
+
+msgid "Write the server's address first, like https://koito.example.com."
+msgstr "先にサーバーのアドレスを入力してください（例: https://koito.example.com）。"
 
 msgid "Write to a file"
 msgstr "ファイルに書き出す"

@@ -598,6 +598,9 @@ msgstr "在 Discogs 允許 Chilpa，然後貼上下方的代碼。"
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "在 Last.fm 允許 Chilpa；此項目會自動更新。"
 
+msgid "Allow Chilpa on the page that opened; this updates by itself."
+msgstr "請在開啟的頁面上允許 Chilpa；這裡會自動更新。"
+
 msgid "Allow metadata sidecars"
 msgstr "允許中繼資料附屬檔案"
 
@@ -1011,9 +1014,6 @@ msgstr ""
 
 msgid "Barcode"
 msgstr "條碼"
-
-msgid "Bars"
-msgstr "長條"
 
 msgid "Based on {artist} · {genres}"
 msgstr "基於 {artist} · {genres}"
@@ -3242,6 +3242,15 @@ msgstr "全寬，頂部"
 msgid "Fullscreen"
 msgstr "Fullscreen"
 
+msgid "GNU FM API key"
+msgstr "GNU FM API 金鑰"
+
+msgid "GNU FM account"
+msgstr "GNU FM 帳號"
+
+msgid "GNU FM server"
+msgstr "GNU FM 伺服器"
+
 msgid "GPU"
 msgstr "GPU"
 
@@ -4019,6 +4028,12 @@ msgstr "種類"
 msgid "Knee"
 msgstr ""
 
+msgid "Koito account"
+msgstr "Koito 帳號"
+
+msgid "Koito server"
+msgstr "Koito 伺服器"
+
 msgid "LABELS"
 msgstr "廠牌"
 
@@ -4135,6 +4150,12 @@ msgstr "音樂庫掃描中"
 
 msgid "Library selection"
 msgstr "音樂庫選取內容"
+
+msgid "Libre.fm account"
+msgstr "Libre.fm 帳號"
+
+msgid "Libre.fm opens in the browser to allow Chilpa."
+msgstr "Libre.fm 會在瀏覽器中開啟，以允許 Chilpa。"
 
 msgid "Light"
 msgstr "淺色"
@@ -5354,6 +5375,9 @@ msgstr "開啟用於一次性檔案的資料夾。"
 msgid "Open the offline folder"
 msgstr ""
 
+msgid "Open the page"
+msgstr "開啟頁面"
+
 msgid "Open the selection again"
 msgstr ""
 
@@ -5500,6 +5524,12 @@ msgstr "貼上來自 discogs.com/settings/developers 的個人存取權杖。"
 
 msgid "Paste a valid HTTPS music link"
 msgstr "貼上有效的 HTTPS 音樂連結"
+
+msgid "Paste an API key made in Koito under Settings, API Keys."
+msgstr "貼上在 Koito 的 Settings、API Keys 中建立的 API 金鑰。"
+
+msgid "Paste the API key's shared secret. The server opens in the browser to allow Chilpa."
+msgstr "貼上 API 金鑰的共用密鑰。伺服器會在瀏覽器中開啟，以允許 Chilpa。"
 
 msgid "Paste the code Discogs shows after you allow Chilpa."
 msgstr "貼上允許 Chilpa 後 Discogs 顯示的代碼。"
@@ -6934,8 +6964,17 @@ msgstr "選取的輸出"
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr ""
 
+msgid "Send to GNU FM"
+msgstr "傳送至 GNU FM"
+
+msgid "Send to Koito"
+msgstr "傳送至 Koito"
+
 msgid "Send to Last.fm"
 msgstr "傳送至 Last.fm"
+
+msgid "Send to Libre.fm"
+msgstr "傳送至 Libre.fm"
 
 msgid "Send to ListenBrainz"
 msgstr "傳送至 ListenBrainz"
@@ -7570,6 +7609,9 @@ msgstr "該檔案不是 JPEG、PNG 或 WebP 圖片"
 msgid "That saved query no longer exists."
 msgstr "該儲存的查詢已不存在。"
 
+msgid "The API key the server knows Chilpa by."
+msgstr "伺服器用來識別 Chilpa 的 API 金鑰。"
+
 msgid "The Discogs account changed. Search again."
 msgstr "Discogs 帳號已變更。請重新搜尋。"
 
@@ -7602,6 +7644,12 @@ msgstr "帳號未連線。你可以關閉此分頁。"
 
 msgid "The account expired; connect it again."
 msgstr "帳號已過期；請重新連線。"
+
+msgid "The address of a GNU FM server of your own, like https://gnufm.example.com."
+msgstr "你自己的 GNU FM 伺服器位址，例如 https://gnufm.example.com。"
+
+msgid "The address of your Koito server, like https://koito.example.com."
+msgstr "你的 Koito 伺服器位址，例如 https://koito.example.com。"
 
 msgid "The address you open the server at in a browser, with its port, and the user Chilpa signs in as."
 msgstr "你在瀏覽器中開啟伺服器的位址（包括連接埠）以及 Chilpa 登入的使用者名稱。"
@@ -9248,6 +9296,15 @@ msgstr ""
 
 msgid "Write the external SACD XML?"
 msgstr "要寫入外部 SACD XML 嗎？"
+
+msgid "Write the server's API key and its shared secret first."
+msgstr "請先輸入伺服器的 API 金鑰與共用密鑰。"
+
+msgid "Write the server's address first, like https://gnufm.example.com."
+msgstr "請先輸入伺服器位址，例如 https://gnufm.example.com。"
+
+msgid "Write the server's address first, like https://koito.example.com."
+msgstr "請先輸入伺服器位址，例如 https://koito.example.com。"
 
 msgid "Write to a file"
 msgstr "寫入至檔案"

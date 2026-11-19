@@ -1,16 +1,21 @@
 //! Sending what is listened to, as it is listened to: to ListenBrainz and
-//! to Last.fm.
+//! to Last.fm, and to the servers somebody chooses or runs themselves --
+//! Koito, Libre.fm, a GNU FM of their own.
 //!
 //! Each service has a thread of its own that does its network, so the
-//! window never waits on it: the facade hands both what started playing and
+//! window never waits on it: the facade hands each what started playing and
 //! what counted as a listen, and reads back a status for Settings. How a
-//! listen waits when it cannot go out is the same for both and lives in
+//! listen waits when it cannot go out is the same for all and lives in
 //! `queue`; what differs -- how an account is connected, what a request
 //! looks like -- is each service's own module.
 
+mod audioscrobbler;
+mod koito;
 pub(crate) mod lastfm;
 mod listenbrainz;
 mod queue;
+mod server;
+mod settings;
 
 use queue::{Order, Service};
 use serde::{Deserialize, Serialize};
@@ -106,25 +111,107 @@ impl Handle {
         }
         self.send(Order::Connect(credential));
     }
+
+    /// Forgets the account. The status says it is being worked on until the
+    /// thread has, so whoever shows it knows to look again.
+    fn disconnect(&self) {
+        if let Ok(mut s) = self.status.lock() {
+            s.checking = true;
+        }
+        self.send(Order::Disconnect);
+    }
+
+    /// Turns sending on or off; the status says so at once, before the
+    /// thread has kept it.
+    fn enable(&self, on: bool) {
+        if let Ok(mut s) = self.status.lock() {
+            s.enabled = on;
+        }
+        self.send(Order::Enable(on));
+    }
 }
 
-/// The two services, as the facade keeps them.
+/// A service somebody chooses or runs themselves: its thread starts when an
+/// account is connected, or at startup when one was kept, so whoever never
+/// uses it pays nothing for it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Chosen {
+    Koito,
+    Librefm,
+    Gnufm,
+}
+
+impl Chosen {
+    const ALL: [Chosen; 3] = [Chosen::Koito, Chosen::Librefm, Chosen::Gnufm];
+
+    /// Its name in a setting's key and in the folder its state is kept in.
+    pub(crate) fn id(self) -> &'static str {
+        match self {
+            Chosen::Koito => "koito",
+            Chosen::Librefm => "librefm",
+            Chosen::Gnufm => "gnufm",
+        }
+    }
+
+    fn service(self) -> Service {
+        match self {
+            Chosen::Koito => koito::SERVICE,
+            Chosen::Librefm => audioscrobbler::LIBREFM_SERVICE,
+            Chosen::Gnufm => audioscrobbler::GNUFM_SERVICE,
+        }
+    }
+}
+
+/// The services, as the facade keeps them.
 pub struct Scrobbler {
     listenbrainz: Handle,
     lastfm: Handle,
+    chosen: Vec<(Chosen, Handle)>,
+    dir: PathBuf,
+    secrets: PathBuf,
 }
 
 impl Scrobbler {
     fn start(dir: PathBuf, secrets: PathBuf) -> Self {
-        Self {
+        let mut scrobbler = Self {
             listenbrainz: Handle::start(listenbrainz::SERVICE, dir.join("listenbrainz"), secrets.clone()),
-            lastfm: Handle::start(lastfm::SERVICE, dir.join("lastfm"), secrets),
+            lastfm: Handle::start(lastfm::SERVICE, dir.join("lastfm"), secrets.clone()),
+            chosen: Vec::new(),
+            dir,
+            secrets,
+        };
+        for which in Chosen::ALL {
+            // A folder of its own is an account connected some time ago.
+            if scrobbler.dir.join(which.id()).is_dir() {
+                scrobbler.chosen(which);
+            }
         }
+        scrobbler
     }
 
-    fn both(&self, order: impl Fn() -> Order) {
+    /// The handle of a chosen service, starting its thread if it has none.
+    fn chosen(&mut self, which: Chosen) -> &Handle {
+        let at = match self.chosen.iter().position(|(have, _)| *have == which) {
+            Some(at) => at,
+            None => {
+                self.chosen.push((which, Handle::start(which.service(), self.dir.join(which.id()), self.secrets.clone())));
+                self.chosen.len() - 1
+            }
+        };
+        &self.chosen[at].1
+    }
+
+    /// The handle of a chosen service, if its thread runs.
+    fn running(&self, which: Chosen) -> Option<&Handle> {
+        self.chosen.iter().find(|(have, _)| *have == which).map(|(_, handle)| handle)
+    }
+
+    fn all(&self, order: impl Fn() -> Order) {
         self.listenbrainz.send(order());
         self.lastfm.send(order());
+        for (_, handle) in &self.chosen {
+            handle.send(order());
+        }
     }
 }
 
@@ -193,7 +280,7 @@ impl crate::Chilpa {
     /// front of the window, as what is playing now.
     pub(crate) fn announce(&self, listen: &Listen) {
         if let Some(s) = &self.scrobbler {
-            s.both(|| Order::Playing(listen.clone()));
+            s.all(|| Order::Playing(listen.clone()));
         }
     }
 }
@@ -225,14 +312,14 @@ pub(crate) fn if_heard(scrobbler: Option<&Scrobbler>, current: &mut crate::InPro
     if counts(played_ms, current.duration_ms) {
         current.scrobbled = true;
         if let (Some(s), Some(listen)) = (scrobbler, &current.listen) {
-            s.both(|| Order::Listened(listen.clone()));
+            s.all(|| Order::Listened(listen.clone()));
         }
     }
 }
 
 /// Whether a listen that has played for `played_ms` of `duration_ms` counts:
 /// half of it or four minutes, whichever comes first, and never a track of
-/// half a minute or less, or of unknown length. Both services' rule.
+/// half a minute or less, or of unknown length. Every service's rule.
 pub(crate) fn counts(played_ms: u64, duration_ms: u64) -> bool {
     duration_ms > 30_000 && played_ms >= (duration_ms / 2).min(240_000)
 }
