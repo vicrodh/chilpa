@@ -22,10 +22,18 @@ c++ -std=c++17 -O1 -g -fPIC -no-pie -pthread \
 case "$sanitizer" in
     thread)
         if [ "${CHILPA_TSAN_NEGATIVE_CONTROL:-0}" = 1 ]; then
-            QT_QPA_PLATFORM=offscreen CHILPA_TSAN=1 CHILPA_TSAN_CASE=negative \
-                TSAN_OPTIONS="halt_on_error=1:suppressions=$repo/scripts/tsan-cover-scheduler.supp" \
-                "$temporary/cover_budget"
-            exit 1
+            for control in negative worker-negative; do
+                status=0
+                QT_QPA_PLATFORM=offscreen CHILPA_TSAN=1 CHILPA_TSAN_CASE=$control \
+                    TSAN_OPTIONS="halt_on_error=1:exitcode=66:suppressions=$repo/scripts/tsan-cover-scheduler.supp" \
+                    "$temporary/cover_budget" || status=$?
+                if [ "$status" -ne 66 ]; then
+                    echo "FAIL ThreadSanitizer negative control $control exited $status, expected 66" >&2
+                    exit 1
+                fi
+                echo "PASS ThreadSanitizer negative control $control exited 66"
+            done
+            exit 0
         fi
         for scheduler_case in core pending running delivery queued; do
             QT_QPA_PLATFORM=offscreen CHILPA_TSAN=1 CHILPA_TSAN_CASE=$scheduler_case \

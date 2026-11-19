@@ -52,6 +52,7 @@ bool deliveryQueuedEntered = false;
 bool readerRequestCreated = false;
 std::atomic_bool tsanNegativeStart{false};
 bool tsanNegativeEnabled = false;
+bool tsanWorkerNegativeEnabled = false;
 volatile int tsanNegativeValue = 0;
 
 std::shared_ptr<CoverScheduler> schedulerForTests();
@@ -218,6 +219,15 @@ void coverTestDeliveryQueued()
 void coverTestTsanNegativeCallback()
 {
     if (!tsanNegativeEnabled)
+        return;
+    tsanNegativeStart = true;
+    for (int iteration = 0; iteration < 100'000; ++iteration)
+        tsanNegativeValue = tsanNegativeValue + 1;
+}
+
+void coverTestTsanWorkerNegative()
+{
+    if (!tsanWorkerNegativeEnabled)
         return;
     tsanNegativeStart = true;
     for (int iteration = 0; iteration < 100'000; ++iteration)
@@ -805,11 +815,12 @@ int main(int argc, char **argv)
         }
     }
 
-    if (isolatedCase == "negative") {
+    if (isolatedCase == "negative" || isolatedCase == "worker-negative") {
         reset();
         successful = true;
         automatic = true;
-        tsanNegativeEnabled = true;
+        tsanNegativeEnabled = isolatedCase == "negative";
+        tsanWorkerNegativeEnabled = isolatedCase == "worker-negative";
         std::thread conflictingWriter([] {
             while (!tsanNegativeStart.load()) {}
             for (int iteration = 0; iteration < 100'000; ++iteration)

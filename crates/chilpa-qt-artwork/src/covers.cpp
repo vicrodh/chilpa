@@ -71,6 +71,7 @@ void coverTestBeforeImageLoad();
 void coverTestAfterSplitRegistered();
 void coverTestDeliveryQueued();
 void coverTestTsanNegativeCallback();
+void coverTestTsanWorkerNegative();
 #endif
 
 class CoverResponse : public QQuickImageResponse
@@ -282,6 +283,9 @@ public:
 
     void execute(const std::shared_ptr<CoverWork> &work)
     {
+#ifdef CHILPA_COVER_SCHEDULER_TEST
+        coverTestTsanWorkerNegative();
+#endif
         {
             QMutexLocker lock(&m_mutex);
             if (work->subscribers.empty()) {

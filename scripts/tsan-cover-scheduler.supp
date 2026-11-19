@@ -13,6 +13,6 @@ race:operator delete[](void*)
 # Stripped GLib exposes only eventfd for its QQuickPixmapReader wakeup race. This can hide other eventfd reports; see tsan-cover-scheduler-traces.txt.
 race:eventfd
 # QThreadPool's uninstrumented queue hides the handoff from the CoverJob constructor; see tsan-cover-scheduler-traces.txt.
-race:CoverJob
+race:CoverJob::CoverJob
 # Qt joins finished pool threads inside its uninstrumented pool destructor; see tsan-cover-scheduler-traces.txt.
 thread:QThread::start
