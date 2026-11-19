@@ -306,14 +306,6 @@ public:
         return m_pending.size();
     }
 
-#ifdef CHILPA_COVER_SCHEDULER_TEST
-    bool idle() const
-    {
-        QMutexLocker lock(&m_mutex);
-        return m_pending.empty() && m_running.empty() && m_delivering.empty();
-    }
-#endif
-
 private:
     bool make(const std::shared_ptr<CoverWork> &work, CoverClass operation, QByteArray &out)
     {

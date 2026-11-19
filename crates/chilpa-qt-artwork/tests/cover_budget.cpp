@@ -53,8 +53,10 @@ void waitUntil(const std::function<bool()> &condition, const char *message)
 {
     QElapsedTimer timer;
     timer.start();
-    while (!condition() && timer.elapsed() < 5'000)
+    while (!condition() && timer.elapsed() < 5'000) {
         QCoreApplication::processEvents(QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents, 50);
+        QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    }
     require(condition(), message);
 }
 
@@ -231,7 +233,7 @@ void addProviders(QQmlEngine &engine, const std::shared_ptr<CoverScheduler> &sch
 
 void waitForScheduler(const std::shared_ptr<CoverScheduler> &scheduler)
 {
-    waitUntil([&] { return scheduler->idle() && active == 0; }, "the scheduler becomes idle");
+    waitUntil([&] { return scheduler->pendingCount() == 0 && active == 0; }, "the scheduler becomes idle");
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 }
 
@@ -248,9 +250,8 @@ void destroyEngineInState(const QByteArray &qml, const std::function<void()> &wa
     engineDestroyed = true;
     releaseState();
     waitForScheduler(scheduler);
-    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+    waitUntil([&] { return responsesDestroyed == expectedResponses; }, "engine teardown releases every response");
     require(responsesFinished == expectedResponses, "engine teardown finishes every response once");
-    require(responsesDestroyed == expectedResponses, "engine teardown releases every response");
     require(emissionsAfterEngineDestruction == 0, "no response emits after engine destruction");
 }
 
