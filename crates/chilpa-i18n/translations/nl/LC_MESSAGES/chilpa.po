@@ -6008,6 +6008,9 @@ msgstr "Plaats een plug-inmap in de plug-inmap van Chilpa en open de app opnieuw
 msgid "Put the copy back and quit"
 msgstr "Kopie terugzetten en afsluiten"
 
+msgid "Putting the copy back did not finish."
+msgstr "Het terugzetten van de kopie is niet voltooid."
+
 msgid "Q"
 msgstr ""
 
@@ -7752,6 +7755,9 @@ msgstr "De verbinding is niet versleuteld."
 msgid "The copy could not be put back: {}"
 msgstr "De kopie kon niet worden teruggezet: {}"
 
+msgid "The copy from before the update is at {}."
+msgstr "De kopie van vóór de update staat in {}."
+
 msgid "The current track has no such destination."
 msgstr "Het huidige nummer heeft zo'n bestemming niet."
 
@@ -7916,6 +7922,9 @@ msgstr "De bibliotheek bleef bezig met een andere taak. Er is niets meer verwijd
 
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr "De bibliotheek is niet gewijzigd, en de kopie van vóór de update staat nog steeds in {}."
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""

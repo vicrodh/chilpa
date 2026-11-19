@@ -183,6 +183,7 @@ impl Library {
         if let Some(dir) = path.parent() {
             let _ = std::fs::create_dir_all(dir);
         }
+        schema::refuse_interrupted(path)?;
         let db = Connection::open(path)?;
         // Before a pragma touches it: an older library is upgraded only
         // under the startup cover (`schema::upgrade::run`).

@@ -6011,6 +6011,9 @@ msgstr "將外掛資料夾放入 Chilpa 的 plugins 目錄並重新開啟應用�
 msgid "Put the copy back and quit"
 msgstr "還原副本並結束"
 
+msgid "Putting the copy back did not finish."
+msgstr "還原副本未完成。"
+
 msgid "Q"
 msgstr ""
 
@@ -7750,6 +7753,9 @@ msgstr "此連線未加密。"
 msgid "The copy could not be put back: {}"
 msgstr "無法還原副本：{}"
 
+msgid "The copy from before the update is at {}."
+msgstr "更新前的副本位於 {}。"
+
 msgid "The current track has no such destination."
 msgstr "目前曲目沒有此目的地。"
 
@@ -7914,6 +7920,9 @@ msgstr "音樂庫正忙於執行其他任務。未移除任何額外內容；請
 
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr "音樂庫沒有變更，更新前的副本仍位於 {}。"
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""

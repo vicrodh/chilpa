@@ -6008,6 +6008,9 @@ msgstr "Pon la carpeta de un plugin en el directorio de plugins de Chilpa y vuel
 msgid "Put the copy back and quit"
 msgstr "Restaurar la copia y salir"
 
+msgid "Putting the copy back did not finish."
+msgstr "No se terminó de restaurar la copia."
+
 msgid "Q"
 msgstr "Q"
 
@@ -7752,6 +7755,9 @@ msgstr "La conexión no está cifrada."
 msgid "The copy could not be put back: {}"
 msgstr "No se pudo restaurar la copia: {}"
 
+msgid "The copy from before the update is at {}."
+msgstr "La copia de antes de la actualización está en {}."
+
 msgid "The current track has no such destination."
 msgstr "No hay una pista actual con ese destino."
 
@@ -7916,6 +7922,9 @@ msgstr "La biblioteca siguió ocupada con otra tarea. No se quitó nada más; in
 
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr "La actualización de la biblioteca se detuvo al preparar su copia de seguridad en {}: {}"
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr "La biblioteca no cambió, y la copia de antes de la actualización sigue en {}."
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr "El limitador no añade retardo. El margen automático del EQ no anula la ganancia previa ni la ganancia de compensación del compresor."

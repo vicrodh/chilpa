@@ -173,6 +173,14 @@ TestCase {
         verify(!findChild(failure, "upgradeRestore").visible, "before a step committed, the library already is the copy")
     }
 
+    function test_a_missing_library_is_not_offered_the_update_again() {
+        failing({ canRestore: true, canRetry: false, message: "Putting the copy back did not finish." })
+        const splash = createTemporaryObject(factory, test)
+        verify(!findChild(splash, "upgradeRetry").visible, "running the update would create an empty library")
+        verify(findChild(splash, "upgradeRestore").visible)
+        verify(findChild(splash, "upgradeQuit").visible)
+    }
+
     function test_a_copy_that_can_be_put_back_is_offered() {
         failing({ canRestore: true })
         const splash = createTemporaryObject(factory, test)

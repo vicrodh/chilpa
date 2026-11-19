@@ -183,3 +183,83 @@ fn a_failure_before_any_step_committed_does_not_offer_the_copy() {
     upgrade.fail("disk I/O error".into());
     assert_eq!(upgrade.view()["canRestore"], false);
 }
+
+/// Runs `test` again in a child process with a profile of its own, marked
+/// by `child`. True inside the child, where the test goes on.
+pub(crate) fn in_own_profile(test: &str, child: &str) -> bool {
+    if std::env::var(child).as_deref() == Ok("1") { return true; }
+    let profile = tempfile::tempdir().unwrap();
+    let result = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", test, "--nocapture"])
+        .env(child, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
+    assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+    false
+}
+
+/// A library whose upgrade from 54 committed 55 and failed at 56, with its
+/// copy from before at 54.
+pub(crate) fn failed_at_56(path: &Path) {
+    older(path, 54);
+    // Step 56 creates this table.
+    Connection::open(path).unwrap().execute_batch("CREATE TABLE local_release_members(planted INTEGER);").unwrap();
+    assert!(schema::upgrade::run(path, &mut |_| {}, &Stop::default()).is_err());
+}
+
+/// Asks for the cover's view, which moves the upgrade on, until the window
+/// is asked for something.
+fn wait_for_a_request(api: &mut crate::Chilpa) -> crate::WindowRequest {
+    let deadline = Instant::now() + Duration::from_secs(60);
+    loop {
+        api.library_upgrade_view();
+        if let Some(request) = api.window_request() { return request; }
+        assert!(Instant::now() < deadline, "the window was never asked for anything");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}
+
+#[test]
+fn a_library_missing_beside_its_marker_is_offered_its_copy_and_never_created() {
+    if !in_own_profile("library_upgrade::tests::a_library_missing_beside_its_marker_is_offered_its_copy_and_never_created", "CHILPA_TEST_INTERRUPTED_RESTORE") { return; }
+    let path = chilpa_library::Library::default_path();
+    failed_at_56(&path);
+    // A restore cut off between moving the library aside and putting the copy in.
+    std::fs::rename(&path, schema::upgrade::failed_path(&path)).unwrap();
+    let mut api = crate::Chilpa::new();
+    assert!(api.library().is_none());
+    assert!(!path.exists(), "nothing creates an empty library in its place");
+    api.start_services();
+    let view = wait_for_the_upgrade(&mut api);
+    assert_eq!((view["failed"].as_bool(), view["canRestore"].as_bool(), view["canRetry"].as_bool()), (Some(true), Some(true), Some(false)), "{view}");
+    assert_eq!(view["title"], "The library could not be updated");
+    assert_eq!(view["message"], "Putting the copy back did not finish.");
+    assert_eq!(view["detail"], format!("The copy from before the update is at {}.", schema::backup_path(&path).display()));
+    api.retry_library_upgrade();
+    assert!(!path.exists(), "trying the update again would create an empty library");
+    assert!(api.servers.keys.is_none());
+    api.restore_library_copy();
+    assert_eq!(wait_for_a_request(&mut api), crate::WindowRequest::Quit);
+    assert_eq!(version_of(&path), 54, "the copy is back in its place");
+}
+
+#[test]
+fn a_restore_that_fails_says_the_library_was_not_changed() {
+    if !in_own_profile("library_upgrade::tests::a_restore_that_fails_says_the_library_was_not_changed", "CHILPA_TEST_RESTORE_FAILS") { return; }
+    let path = chilpa_library::Library::default_path();
+    failed_at_56(&path);
+    let mut api = crate::Chilpa::new();
+    api.start_services();
+    let view = wait_for_the_upgrade(&mut api);
+    assert_eq!(view["canRestore"], true, "{view}");
+    // The upgrade lock cannot be taken: the restore stops before it starts.
+    let lock = path.with_file_name("library.db.upgrade-lock");
+    let _ = std::fs::remove_file(&lock);
+    std::fs::create_dir(&lock).unwrap();
+    api.restore_library_copy();
+    let view = wait_for_the_upgrade(&mut api);
+    assert_eq!(view["failed"], true, "{view}");
+    assert!(view["message"].as_str().unwrap().starts_with("The copy could not be put back: "), "{view}");
+    assert_eq!(view["detail"], format!("The library was not changed, and the copy from before the update is still at {}.", schema::backup_path(&path).display()));
+    assert_eq!(view["canRetry"], true);
+    assert!(api.window_request().is_none());
+    assert_eq!(version_of(&path), 55, "the library is where it was");
+}

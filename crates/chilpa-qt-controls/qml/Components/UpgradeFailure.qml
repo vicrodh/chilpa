@@ -50,7 +50,8 @@ Column {
         anchors.horizontalCenter: parent.horizontalCenter
         spacing: Metrics.gap8
         PillButton { objectName: "upgradeQuit"; text: I18n.tr("Quit", I18n.rev); onClicked: failure.quit() }
-        PillButton { objectName: "upgradeRetry"; kind: "primary"; text: I18n.tr("Try again", I18n.rev); onClicked: failure.retry() }
+        // Not while the library is missing: running the update would make an empty one.
+        PillButton { objectName: "upgradeRetry"; kind: "primary"; visible: failure.upgrade.canRetry !== false; text: I18n.tr("Try again", I18n.rev); onClicked: failure.retry() }
     }
     // Only once a step has committed: before that the library already is
     // the copy.

@@ -6003,6 +6003,9 @@ msgstr "プラグインのフォルダーをChilpaのプラグインディレク
 msgid "Put the copy back and quit"
 msgstr "コピーを戻して終了"
 
+msgid "Putting the copy back did not finish."
+msgstr "コピーを戻す処理が完了しませんでした。"
+
 msgid "Q"
 msgstr ""
 
@@ -7742,6 +7745,9 @@ msgstr "接続は暗号化されていません。"
 msgid "The copy could not be put back: {}"
 msgstr "コピーを戻せませんでした: {}"
 
+msgid "The copy from before the update is at {}."
+msgstr "更新前のコピーは {} にあります。"
+
 msgid "The current track has no such destination."
 msgstr "現在のトラックにはそのような移動先がありません。"
 
@@ -7906,6 +7912,9 @@ msgstr "ライブラリが別の処理で使用中のままでした。これ以
 
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr "ライブラリは変更されておらず、更新前のコピーは引き続き {} にあります。"
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""

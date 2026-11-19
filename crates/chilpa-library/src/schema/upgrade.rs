@@ -95,6 +95,7 @@ pub fn pending(library: &Path) -> Option<Pending> {
 /// upgrading the same file is waited for, however long it takes, unless
 /// `stop` is requested.
 pub fn run(library: &Path, observer: &mut dyn FnMut(&Progress), stop: &Stop) -> rusqlite::Result<()> {
+    super::refuse_interrupted(library)?;
     if let Some(dir) = library.parent() {
         let _ = std::fs::create_dir_all(dir);
     }
@@ -166,7 +167,11 @@ pub(super) fn lock(library: &Path) -> rusqlite::Result<File> {
 }
 
 fn lock_reporting(library: &Path, observer: &mut dyn FnMut(&Progress), patience: Option<Duration>, stop: &Stop) -> rusqlite::Result<File> {
-    let path = std::fs::canonicalize(library).map_err(|error| io_error(library, error))?;
+    // A library being put back may be missing: its folder names the lock.
+    let path = std::fs::canonicalize(library).or_else(|_| {
+        let parent = library.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
+        std::fs::canonicalize(parent).map(|parent| parent.join(library.file_name().unwrap_or_default()))
+    }).map_err(|error| io_error(library, error))?;
     let mut name = path.file_name().unwrap_or_default().to_os_string();
     name.push(".upgrade-lock");
     let path = path.with_file_name(name);
@@ -218,12 +223,20 @@ pub fn unfinished_copy(library: &Path) -> Option<(i64, i64)> {
     (version == copied).then_some((copied, target))
 }
 
+/// A library that is missing while its marker says an upgrade did not
+/// finish: putting its copy back was cut off between moving the library
+/// aside and putting the copy in its place. What it waits for is that copy,
+/// never a new, empty library.
+pub fn interrupted(library: &Path) -> bool {
+    !library.exists() && marker_path(library).exists()
+}
+
 /// Whether the copy from before a failed upgrade can be put back: it is that
-/// upgrade's copy, and at least one step committed since, so the library is
-/// no longer what the copy holds.
+/// upgrade's copy, and either at least one step committed since, so the
+/// library is no longer what the copy holds, or the library is missing.
 pub fn restorable(library: &Path) -> bool {
     let Some((copied, _)) = unfinished_copy(library) else { return false };
-    pending(library).is_some_and(|now| now.from > copied)
+    interrupted(library) || pending(library).is_some_and(|now| now.from > copied)
 }
 
 /// Where a library that failed its upgrade is kept once its copy is put back.
@@ -236,39 +249,83 @@ pub fn failed_path(library: &Path) -> PathBuf {
 /// Puts the copy from before a failed upgrade back in the library's place.
 ///
 /// Nothing could write to the library since the copy was taken except the
-/// upgrade itself, so nothing is lost. The half-upgraded library is moved
-/// aside, not deleted, and the copy stays where it was: what is put back is a
-/// copy of it, synced before it takes the library's name. The next start
-/// finds the library older than this Chilpa and upgrades it again.
+/// upgrade itself, so nothing is lost. The copy is first copied beside the
+/// library and synced; only then does the library change: it keeps a second
+/// name, `library.db.failed-upgrade`, and the copy takes its first one in
+/// one rename, so there is no moment without a library. Where the
+/// filesystem has no hard links the library is renamed aside and the copy
+/// renamed in right after; a process killed between the two leaves the
+/// library missing beside its marker, which [`interrupted`] names and this
+/// finishes. The copy itself stays where it was. The next start finds the
+/// library older than this Chilpa and upgrades it again.
+///
+/// An error leaves the library where it was, unless the second of those
+/// two renames failed and the first could not be undone.
 pub fn restore(library: &Path) -> rusqlite::Result<()> {
     if !restorable(library) {
         return Err(rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISUSE), None));
     }
     let _file = lock(library)?;
-    {
-        let db = Connection::open(library)?;
-        db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))?;
-    }
+    clear_restoring(library);
+    let copy = backup_path(library);
+    let parent = library.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
+    let mut staged = tempfile::Builder::new().prefix(RESTORING).tempfile_in(parent).map_err(|error| io_error(library, error))?;
+    let mut source = File::open(&copy).map_err(|error| io_error(&copy, error))?;
+    #[cfg(test)]
+    trouble("copy")?;
+    std::io::copy(&mut source, staged.as_file_mut()).map_err(|error| io_error(library, error))?;
+    // The library's own permissions, not the private ones of a temporary file.
+    let permissions = std::fs::metadata(library).or_else(|_| std::fs::metadata(&copy)).map_err(|error| io_error(library, error))?.permissions();
+    staged.as_file().set_permissions(permissions).and_then(|()| staged.as_file().sync_all()).map_err(|error| io_error(library, error))?;
+    #[cfg(test)]
+    pause("staged");
     let aside = failed_path(library);
-    std::fs::rename(library, &aside).map_err(|error| io_error(library, error))?;
+    let mut renamed = false;
+    if library.exists() {
+        {
+            let db = Connection::open(library)?;
+            db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(()))?;
+        }
+        match std::fs::remove_file(&aside) {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(io_error(&aside, error)),
+            _ => {}
+        }
+        if std::fs::hard_link(library, &aside).is_err() {
+            std::fs::rename(library, &aside).map_err(|error| io_error(library, error))?;
+            renamed = true;
+        }
+    }
+    if let Err(error) = staged.persist(library) {
+        if renamed && !library.exists() {
+            let _ = std::fs::rename(&aside, library);
+        }
+        return Err(io_error(library, error.error));
+    }
+    // The copy is in place. What follows tidies up after it, and a failure
+    // there is written down, not returned: the library is already the copy.
     for suffix in ["-wal", "-shm"] {
         let mut name = library.as_os_str().to_os_string();
         name.push(suffix);
         match std::fs::remove_file(PathBuf::from(name)) {
-            Err(error) if error.kind() != std::io::ErrorKind::NotFound => return Err(io_error(library, error)),
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => eprintln!("library: the restored library kept its old {suffix}: {error}"),
             _ => {}
         }
     }
-    let copy = backup_path(library);
+    if let Err(error) = unmark(library) {
+        eprintln!("library: the copy is back, and its marker stayed: {error}");
+    }
+    Ok(())
+}
+
+/// What a restore killed halfway staged beside the library.
+fn clear_restoring(library: &Path) {
     let parent = library.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
-    let mut staged = tempfile::Builder::new().prefix(STAGING).tempfile_in(parent).map_err(|error| io_error(library, error))?;
-    let mut source = File::open(&copy).map_err(|error| io_error(&copy, error))?;
-    std::io::copy(&mut source, staged.as_file_mut()).map_err(|error| io_error(library, error))?;
-    // The library's own permissions, not the private ones of a temporary file.
-    let permissions = std::fs::metadata(&aside).map_err(|error| io_error(&aside, error))?.permissions();
-    staged.as_file().set_permissions(permissions).and_then(|()| staged.as_file().sync_all()).map_err(|error| io_error(library, error))?;
-    staged.persist(library).map_err(|error| io_error(library, error.error))?;
-    unmark(library)
+    let Ok(entries) = std::fs::read_dir(parent) else { return };
+    for entry in entries.flatten() {
+        if entry.file_name().to_string_lossy().starts_with(RESTORING) && entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            let _ = std::fs::remove_file(entry.path());
+        }
+    }
 }
 
 fn copy_at_hand(library: &Path, from: i64) -> bool {
@@ -304,6 +361,29 @@ fn clear_staging(library: &Path) {
 }
 
 const STAGING: &str = ".library-upgrade-";
+const RESTORING: &str = ".library-restore-";
+
+#[cfg(test)]
+thread_local! {
+    /// What a test makes fail inside `restore`, by the name of the point.
+    pub(super) static RESTORE_TROUBLE: std::cell::Cell<Option<&'static str>> = const { std::cell::Cell::new(None) };
+}
+
+#[cfg(test)]
+fn trouble(at: &str) -> rusqlite::Result<()> {
+    if RESTORE_TROUBLE.with(|cell| cell.get()) != Some(at) { return Ok(()); }
+    Err(io_error(Path::new(at), std::io::Error::other("injected by a test")))
+}
+
+/// A test that kills this process at `at` asks for it here.
+#[cfg(test)]
+fn pause(at: &str) {
+    let Ok(asked) = std::env::var("CHILPA_TEST_UPGRADE_PAUSE") else { return };
+    let Some((point, ready)) = asked.split_once('=') else { return };
+    if point != at { return; }
+    let _ = std::fs::write(ready, at);
+    std::thread::sleep(Duration::from_secs(60));
+}
 
 fn context(path: &Path, error: &str) -> String {
     chilpa_i18n::t_args("The library update stopped while preparing its backup at {}: {}", &[&path.display().to_string(), error])

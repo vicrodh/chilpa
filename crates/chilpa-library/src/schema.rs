@@ -109,6 +109,18 @@ pub fn back_up_before_upgrading(db: &Connection, library: &Path) -> rusqlite::Re
     upgrade::backup(db, library)
 }
 
+/// What an opener does before it touches the file: a library that is
+/// missing beside the marker of an unfinished upgrade is waiting for its copy
+/// to be put back (`upgrade::interrupted`), and creating it would make an
+/// empty library over the one being put back.
+pub(crate) fn refuse_interrupted(library: &Path) -> rusqlite::Result<()> {
+    if !upgrade::interrupted(library) { return Ok(()); }
+    Err(rusqlite::Error::SqliteFailure(
+        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISMATCH),
+        Some(chilpa_i18n::t("this library has to be updated first; start Chilpa to update it")),
+    ))
+}
+
 /// What an opener does before anything else: a library older than this code
 /// is refused as it is. Only `upgrade::run` changes a library's version,
 /// under the startup cover; an opener only creates a new library or opens a

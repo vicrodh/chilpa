@@ -6013,6 +6013,9 @@ msgstr "Поместите папку плагина в каталог плаг�
 msgid "Put the copy back and quit"
 msgstr "Вернуть копию и выйти"
 
+msgid "Putting the copy back did not finish."
+msgstr "Возврат копии не был завершён."
+
 msgid "Q"
 msgstr ""
 
@@ -7762,6 +7765,9 @@ msgstr "Соединение не зашифровано."
 msgid "The copy could not be put back: {}"
 msgstr "Не удалось вернуть копию: {}"
 
+msgid "The copy from before the update is at {}."
+msgstr "Копия, сделанная до обновления, находится в {}."
+
 msgid "The current track has no such destination."
 msgstr "У текущего трека нет такого назначения."
 
@@ -7926,6 +7932,9 @@ msgstr "Библиотека оставалась занята другой за
 
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr "Библиотека не изменилась, а копия, сделанная до обновления, по-прежнему находится в {}."
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""

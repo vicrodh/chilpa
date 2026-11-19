@@ -440,3 +440,98 @@ fn a_copy_is_not_put_back_over_a_library_no_step_changed() {
     assert_eq!(version_of(&path), 54);
     assert!(!upgrade::failed_path(&path).exists());
 }
+
+/// A library whose upgrade from 54 committed 55 and failed at 56, with its
+/// copy from before at 54.
+fn failed_at_56(path: &Path) {
+    at(path, 54);
+    // Step 56 creates this table.
+    Connection::open(path).unwrap().execute_batch("CREATE TABLE local_release_members(planted INTEGER);").unwrap();
+    heard(path, &upgrade::Stop::default(), |_| {}).0.unwrap_err();
+    assert_eq!(version_of(path), 55);
+}
+
+fn restore_leftovers(directory: &Path) -> bool {
+    std::fs::read_dir(directory).unwrap().any(|entry| entry.unwrap().file_name().to_string_lossy().starts_with(".library-restore-"))
+}
+
+fn intact(path: &Path) -> bool {
+    let db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+    db.query_row("PRAGMA integrity_check", [], |row| row.get::<_, String>(0)).unwrap() == "ok"
+}
+
+#[test]
+fn a_copy_that_cannot_be_staged_leaves_the_library_in_place() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    failed_at_56(&path);
+    upgrade::RESTORE_TROUBLE.with(|cell| cell.set(Some("copy")));
+    let failed = upgrade::restore(&path);
+    upgrade::RESTORE_TROUBLE.with(|cell| cell.set(None));
+    assert!(failed.is_err());
+    assert!(path.exists(), "the library is never moved before its copy is ready");
+    assert_eq!(version_of(&path), 55);
+    assert!(intact(&path));
+    assert!(!upgrade::failed_path(&path).exists());
+    assert!(!restore_leftovers(directory.path()));
+    assert!(upgrade::restorable(&path), "and the copy can still be put back");
+    upgrade::restore(&path).unwrap();
+    assert_eq!(version_of(&path), 54);
+}
+
+#[test]
+fn child_restores_until_killed() {
+    let Some(path) = std::env::var_os("CHILPA_TEST_RESTORE_LIBRARY") else { return };
+    upgrade::restore(Path::new(&path)).unwrap();
+}
+
+/// Starts a copy of this test binary running `test` with `variables`, and waits
+/// until it writes `ready`.
+fn child_until(test: &str, variables: &[(&str, std::ffi::OsString)], ready: &Path) -> Children {
+    let mut command = Command::new(std::env::current_exe().unwrap());
+    command.args(["--exact", test, "--test-threads=1"]).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+    for (key, value) in variables { command.env(key, value); }
+    let mut children = Children(vec![command.spawn().unwrap()]);
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while !ready.exists() {
+        assert!(Instant::now() < deadline, "the child never reached the point it pauses at");
+        assert!(children.0[0].try_wait().unwrap().is_none(), "the child ended before the point it pauses at");
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    children
+}
+
+#[test]
+fn a_kill_between_staging_and_the_swap_leaves_the_library_in_place() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    failed_at_56(&path);
+    let ready = directory.path().join("staged");
+    let pause = std::ffi::OsString::from(format!("staged={}", ready.display()));
+    drop(child_until("schema::upgrade_tests::child_restores_until_killed",
+        &[("CHILPA_TEST_RESTORE_LIBRARY", path.clone().into()), ("CHILPA_TEST_UPGRADE_PAUSE", pause)], &ready));
+    assert!(path.exists(), "a kill before the swap leaves the library where it was");
+    assert_eq!(version_of(&path), 55);
+    assert!(intact(&path));
+    assert!(upgrade::restorable(&path));
+    upgrade::restore(&path).unwrap();
+    assert_eq!(version_of(&path), 54);
+    assert!(!restore_leftovers(directory.path()), "what the killed one staged is cleared");
+}
+
+#[test]
+fn a_missing_library_beside_its_marker_is_never_created_anew() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    failed_at_56(&path);
+    // What a restore killed between moving the library aside and putting the
+    // copy in its place would leave, where the filesystem has no hard links.
+    std::fs::rename(&path, upgrade::failed_path(&path)).unwrap();
+    assert!(crate::Library::open(&path).is_err(), "an opener does not create an empty library over it");
+    assert!(!path.exists());
+    assert!(upgrade::run(&path, &mut |_| {}, &upgrade::Stop::default()).is_err(), "and the upgrade does not either");
+    assert!(!path.exists());
+    assert!(upgrade::restorable(&path), "what is left to do is putting the copy back");
+    upgrade::restore(&path).unwrap();
+    assert_eq!(version_of(&path), 54);
+}

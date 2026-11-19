@@ -6008,6 +6008,9 @@ msgstr ""
 msgid "Put the copy back and quit"
 msgstr ""
 
+msgid "Putting the copy back did not finish."
+msgstr ""
+
 msgid "Q"
 msgstr ""
 
@@ -7752,6 +7755,9 @@ msgstr ""
 msgid "The copy could not be put back: {}"
 msgstr ""
 
+msgid "The copy from before the update is at {}."
+msgstr ""
+
 msgid "The current track has no such destination."
 msgstr ""
 
@@ -7915,6 +7921,9 @@ msgid "The library stayed busy with another task. Nothing more was taken out; tr
 msgstr ""
 
 msgid "The library update stopped while preparing its backup at {}: {}"
+msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
 msgstr ""
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
