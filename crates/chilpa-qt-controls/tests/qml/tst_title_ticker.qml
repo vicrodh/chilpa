@@ -135,6 +135,31 @@ TestCase {
         compare(TipState.text, test.longTitle + " (next)")
     }
 
+    // A menu opened from the keyboard, away from the still pointer, hides the tooltip on purpose: the line under the
+    // pointer does not take it back while the menu is open, and the menu's own cut entry still says itself.
+    Component { id: menuFactory; Menu { x: 260; y: 150; entries: [{ text: "Play" }, { text: test.longTitle + ", an entry of the menu" }] } }
+    function test_a_menu_opened_under_a_still_pointer_keeps_the_line_quiet() {
+        const made = watchedScene()
+        tryVerify(() => slide() !== null, 1000, "it slides")
+        const menu = createTemporaryObject(menuFactory, test)
+        verify(menu.entries !== undefined, "the kit's menu")
+        menu.open()
+        tryVerify(() => menu.opened)
+        compare(TipState.target, null, "the menu took the tooltip")
+        tryVerify(() => slide() === null, 1000, "and the slide")
+        wait(Metrics.cutTextLook * 4)
+        compare(TipState.target, null, "the line under the still pointer does not take it back")
+        compare(slide(), null, "nor slides again")
+        const entry = menu.entryItems[1]
+        verify(entry && entry.cut, "the long entry is cut")
+        const at = entry.mapToItem(test, entry.width / 2, entry.height / 2)
+        mouseMove(test, at.x, at.y)
+        tryCompare(TipState, "target", entry, 1000, "the menu's cut entry says itself")
+        wait(Metrics.cutTextLook * 4)
+        compare(TipState.target, entry, "and keeps saying it")
+        menu.close()
+    }
+
     function test_a_line_that_fits_is_left_alone() {
         const made = scene()
         TipState.show(made.whole.text, made.whole)

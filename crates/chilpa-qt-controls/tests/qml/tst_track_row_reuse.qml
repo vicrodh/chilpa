@@ -7,6 +7,7 @@ import app.chilpa.testing
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // A list that scrolls itself recycles its rows: a row that leaves waits in
 // the pool and comes back as another track with the body it already had.
@@ -519,6 +520,30 @@ TestCase {
         tracks.set(9, entry(9))
     }
 
+    // The menu button under a still pointer says the offline state of the track it stands for: as a download
+    // goes, finishes or fails and its copy is removed, and when the row becomes another track in place.
+    function test_the_menu_button_tooltip_follows_the_offline_state_and_the_track() {
+        warm()
+        const row = view.itemAtIndex(9)
+        mouseMove(view, list.columns.moreX + row.end.favoriteWidth + Metrics.rowAction / 2, row.y - view.contentY + row.height / 2)
+        tryVerify(() => TipState.shown && TipState.target === row.end, 2000, "the menu button says what it does")
+        compare(TipState.text, "More")
+        for (const [mark, said] of [[{ state: "downloading", fraction: 0.5 }, "\nDownloading for offline listening"], [{ state: "ready" }, "\nAvailable offline"],
+                                     [{ state: "failed", error: "No room left" }, "\nNo room left"], [undefined, ""]]) {
+            Offline.marks[10] = mark
+            Offline.rev++
+            compare(TipState.text, "More" + said, "it says the offline state now: " + JSON.stringify(mark))
+            verify(TipState.shown && TipState.target === row.end, "without asking anew")
+        }
+        // Another track in the same row, kept offline.
+        tracks.set(9, entry(16))
+        compare(view.itemAtIndex(9), row, "the same row object")
+        compare(row.trackId, 17)
+        tryCompare(TipState, "text", "More\nAvailable offline", 1000, "it says the offline state of the track now in the row")
+        compare(TipState.target, row.end)
+        tracks.set(9, entry(9))
+    }
+
     function test_the_pool_holds_at_most_a_band_of_bodies() {
         list.height = 676
         view.forceLayout(); wait(0)
@@ -596,6 +621,80 @@ TestCase {
         wait(0)
         compare(drains.toggles, 2, "stopped, it drained its pool once")
         verify(slots().filter(row => !row.visible).length <= budget(), slots().filter(row => !row.visible).length + " rows in the pool")
+    }
+
+    // A look at the pool scheduled in the turn its list goes away finds no list, and does nothing.
+    Component {
+        id: bareList
+        Item {
+            property alias rows: rows
+            property alias looks: looks
+            ListView { id: rows; width: 100; height: 100; model: 50; reuseItems: true; delegate: Item { width: 100; height: 10 } }
+            TrackListViewport { id: looks; model: null; view: rows }
+        }
+    }
+    function test_a_look_at_the_pool_of_a_list_gone_in_its_turn_does_nothing() {
+        failOnWarning(/TypeError/)
+        const made = createTemporaryObject(bareList, test)
+        made.rows.height = 50
+        made.looks.view = null
+        wait(0)
+    }
+
+    // A list that shrinks while its scrollbar is held lets its pool go when the scrollbar is let go, not during the drag.
+    function test_a_list_that_shrinks_while_its_scrollbar_is_held_lets_its_pool_go_when_let_go() {
+        list.height = 676
+        view.forceLayout(); wait(0)
+        warm()
+        const bar = findChild(list, "trackListScrollbar")
+        mouseMove(view, view.width / 2, 50)
+        tryVerify(() => bar.visible, 1000, "the scrollbar shows")
+        const at = bar.mapToItem(test, bar.width / 2, bar.height * (bar.position + bar.size / 2))
+        mouseMove(test, at.x, at.y)
+        mousePress(test, at.x, at.y)
+        tryVerify(() => bar.pressed, 1000, "the scrollbar is held")
+        drains.toggles = 0
+        list.height = 176
+        wait(0); wait(0)
+        compare(drains.toggles, 0, "the list did not drain its pool while its scrollbar was held")
+        verify(slots().filter(row => !row.visible).length > budget(), "the pool is over its budget meanwhile")
+        mouseRelease(test, at.x, at.y)
+        tryVerify(() => !bar.pressed, 1000, "the scrollbar is let go")
+        wait(0)
+        compare(drains.toggles, 2, "let go, it drained its pool once")
+        verify(slots().filter(row => !row.visible).length <= budget(), slots().filter(row => !row.visible).length + " rows in the pool")
+    }
+
+    // A scroll under a still pointer resolves it once a step: at once, or a turn later when the step's layout changed the
+    // estimated height and asked for a look then. Counted by the turn-later looks, with the pointer's row checked each time.
+    Connections { id: later; target: null; property int runs: 0; function onTriggered() { runs++ } }
+    function test_a_scroll_under_a_still_pointer_resolves_it_once_a_step_data() {
+        return [{ tag: "ungrouped" }, { tag: "grouped", grouped: true }]
+    }
+    function test_a_scroll_under_a_still_pointer_resolves_it_once_a_step(data) {
+        if (data.grouped) { view.section.property = "group"; fill(400); view.positionViewAtBeginning(); view.forceLayout() }
+        warm()
+        const pointer = list.children.find(child => typeof child.track === "function" && child.rows === view)
+        later.target = pointer.resources.find(object => object.interval === 0 && object.triggeredOnStart !== undefined)
+        verify(later.target !== null, "the pointer's turn-later look")
+        const y = 100
+        mouseMove(view, view.width / 2, y)
+        wait(0)
+        let grown = 0
+        for (let step = 0; step < 60; ++step) {
+            const was = view.hovered, height = heights.changes
+            later.runs = 0
+            view.contentY += Metrics.rowCompact * 1.5
+            const now = view.indexAt(Metrics.gap2, y + view.contentY), grew = heights.changes > height
+            if (!grew) compare(view.hovered, now, "step " + step + ": the pointer is resolved at once")
+            else if (now !== was) compare(view.hovered, was, "step " + step + ": its layout asked for a look a turn later, and that one is the look")
+            wait(0)
+            compare(view.hovered, now, "step " + step + ": the row under the pointer")
+            compare(later.runs, grew ? 1 : 0, "step " + step + ": resolved once")
+            if (grew) grown++
+        }
+        verify(grown > 0 && grown < 60, grown + " of 60 steps changed the estimated height")
+        later.target = null
     }
 
     // What schedules a look at the pool, and what one costs: a scroll through groups, whose estimated content height
@@ -707,6 +806,41 @@ TestCase {
             compare(shown[i].y, shown[i - 1].y + shown[i - 1].height, "row " + shown[i].index + " sits right under row " + shown[i - 1].index)
         for (const row of shown.filter(row => !row.header))
             compare(surfaces().filter(surface => surface.visible && surface.y === row.y).length, 1, "row " + row.index + " has one surface at its place")
+    }
+
+    // A track that cannot play arrives by an insert, with motion on: it fades in to its dimmed opacity, and its row keeps
+    // following whether its track can play, also as another such track in the same row, and when the motion stops
+    // halfway through an arrival and settles it.
+    function test_a_track_that_cannot_play_arrives_dimmed() {
+        Motion.reduced = false
+        warm()
+        tracks.insert(2, entry(3))
+        view.forceLayout()
+        const row = view.itemAtIndex(2)
+        verify(row !== null && !row.available)
+        wait(Motion.panel * 3)
+        compare(row.opacity, Metrics.disabledOpacity, "it arrived dimmed")
+        tracks.set(2, entry(10))
+        compare(view.itemAtIndex(2), row, "the same row object")
+        compare(row.opacity, Metrics.disabledOpacity, "another track that cannot play in the same row stays dimmed")
+        tracks.setProperty(2, "available", true)
+        compare(row.opacity, 1, "its track can play")
+        tracks.setProperty(2, "available", false)
+        compare(row.opacity, Metrics.disabledOpacity, "and cannot again")
+        tracks.remove(2)
+        wait(Motion.panel * 3)
+        tracks.insert(2, entry(3))
+        view.forceLayout()
+        wait(Motion.base / 3)
+        const arriving = view.itemAtIndex(2)
+        verify(arriving !== null && !arriving.available)
+        Motion.reduced = true
+        compare(arriving.opacity, Metrics.disabledOpacity, "the motion stopped, its arrival settles dimmed")
+        tracks.setProperty(2, "available", true)
+        compare(arriving.opacity, 1, "and its row still follows its track")
+        tracks.setProperty(2, "available", false)
+        compare(arriving.opacity, Metrics.disabledOpacity)
+        tracks.remove(2)
     }
 
     function test_the_tracks_sheet_reuses_its_rows() {
