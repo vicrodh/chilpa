@@ -28,6 +28,13 @@ TestCase {
         x: 1050; y: 350; width: 40; height: 40
         onPaint: { const context = getContext("2d"); context.fillStyle = "#00ff00"; context.fillRect(0, 0, width, height) }
     }
+    // Every body the list builds, also those it throws away at once: one surface each.
+    Connections {
+        id: births
+        target: test.view ? test.view.contentItem : null
+        property var seen: new Set()
+        function onChildrenChanged() { for (const child of test.view.contentItem.children) if (child.rowIndex !== undefined && child.listMode !== undefined) seen.add(child) }
+    }
 
     // What the fixture's row at position i holds; every visible value names its row.
     function entry(i) {
@@ -145,9 +152,11 @@ TestCase {
     // One surface under each shown row, at its place, in the state of the
     // row it is now: selected, playing, under the pointer or striped by its index.
     function checkSurfaces() {
-        const shown = slots().filter(row => row.visible && !row.header)
+        // A row in the margin may still be building its first body; a row on the screen has its own.
+        for (const row of slots().filter(row => row.visible && row.immediate)) verify(body(row) !== null, "row " + row.index + " on the screen has its body")
+        const shown = slots().filter(row => row.visible && !row.header && body(row) !== null)
         const lit = surfaces().filter(surface => surface.visible)
-        compare(surfaces().length, slots().length, "a surface lives as long as its row")
+        compare(surfaces().length, slots().filter(row => body(row) !== null).length, "a surface lives as long as its row's body")
         compare(lit.length, shown.length, "one surface for each shown row")
         for (const row of shown) {
             const own = lit.filter(surface => surface.y === row.y), data = entry(row.index)
@@ -172,7 +181,7 @@ TestCase {
         for (const row of slots()) if (body(row)) bodies.set(row, body(row))
         const warm = slots().reduce((sum, row) => sum + row.contentBuilds, 0)
         let builds = 0, seenPlaying = false, seenSelected = false
-        for (const to of [lastY(), view.originY, lastY() / 2, lastY(), view.originY]) {
+        for (const to of [lastY(), view.originY, at(0.5), lastY(), view.originY]) {
             const before = new Map(slots().map(row => [row, [row.index, row.contentBuilds]]))
             sweep(to)
             for (const row of slots()) {
@@ -203,7 +212,7 @@ TestCase {
     function test_a_reused_row_takes_its_new_group_divider() {
         view.section.property = "group"
         fill(400)
-        for (const to of [lastY() / 3, lastY(), view.originY]) {
+        for (const to of [at(1 / 3), lastY(), view.originY]) {
             sweep(to)
             for (const row of slots().filter(row => row.visible && row.immediate)) {
                 compare(row.groupStart, row.index % 10 === 0, "row " + row.index + " starts its group")
@@ -243,7 +252,7 @@ TestCase {
     }
 
     function test_a_surface_goes_with_its_row() {
-        sweep(lastY() / 2)
+        sweep(at(0.5))
         checkSurfaces()
         fill(20)
         wait(50)
@@ -259,7 +268,7 @@ TestCase {
         for (const row of slots().filter(row => row.visible && row.immediate)) checkRow(row)
         tracks.clear()
         view.forceLayout(); wait(50)
-        compare(surfaces().length, slots().length, "no surface outlives its row")
+        compare(surfaces().length, slots().filter(row => body(row) !== null).length, "no surface outlives its row's body")
         compare(surfaces().filter(surface => surface.visible).length, 0)
     }
 
@@ -273,6 +282,7 @@ TestCase {
         const point = item.mapToItem(null, item.width / 2, item.height / 2)
         return grabImage(test).pixel(point.x, point.y)
     }
+    function built() { return births.seen.size }
     // A scroll with a frame between its steps, as a listener's: the rows coming
     // in through the margin have the time to build their bodies.
     function stroll(to) {
@@ -402,5 +412,46 @@ TestCase {
         compare(under.trackId, 12, "now showing another track")
         checkTip(x, y, "after the reset")
         tryVerify(() => TipState.shown && TipState.target === under.sourceBadge && TipState.text === "Source 11", 2000, "it says the new track's source: " + TipState.text)
+    }
+
+    // A body is built for the first time only once its row is placed: on the screen at once, in the
+    // margin asynchronously. Nothing is built for a row the list lets go in the same turn, and the
+    // first frame shows every row on the screen with its body. Each case logs what it built, when.
+    function test_first_bodies_wait_for_placement_data() {
+        return [{ tag: "first fill" }, { tag: "taller list" }, { tag: "rich to compact" }, { tag: "scroll into a wider band" },
+            { tag: "jumpTo" }, { tag: "jumpTo, grouped", grouped: true },
+            { tag: "positionViewAtIndex" }, { tag: "positionViewAtIndex, grouped", grouped: true }]
+    }
+    function test_first_bodies_wait_for_placement(data) {
+        if (data.grouped) { view.section.property = "group"; fill(400); view.positionViewAtBeginning(); view.forceLayout() }
+        if (data.tag === "first fill") tracks.clear()
+        if (data.tag === "rich to compact") { list.rich = true; view.forceLayout() }
+        wait(0)
+        // A cold pool: the list lets go of what it pooled.
+        view.reuseItems = false; view.reuseItems = true
+        wait(0)
+        const had = new Set(slots().map(row => body(row)).filter(own => own !== null))
+        const before = built()
+        if (data.tag === "first fill") { for (let i = 0; i < 400; ++i) tracks.append(entry(i)); view.forceLayout() }
+        else if (data.tag === "taller list") { list.height = 676; view.forceLayout() }
+        else if (data.tag === "rich to compact") { list.rich = false; view.forceLayout() }
+        else if (data.tag === "scroll into a wider band") { view.contentY = at(0.5); view.forceLayout() }
+        else if (data.tag.startsWith("jumpTo")) list.jumpTo(300)
+        else list.positionAt(300, ListView.Beginning)
+        const during = built() - before
+        const waiting = slots().filter(row => row.visible && row.immediate && body(row) === null).length
+        wait(0)
+        const first = built() - before
+        const shown = slots().filter(row => row.visible && row.immediate)
+        verify(shown.length > 0)
+        for (const row of shown) {
+            verify(body(row) !== null, "row " + row.index + " is drawn on the first frame")
+            checkRow(row)
+        }
+        wait(300)
+        const fresh = slots().map(row => body(row)).filter(own => own !== null && !had.has(own)).length
+        console.log(data.tag + ": " + during + " bodies built in the call, " + waiting + " rows on the screen waiting for theirs after it, "
+            + first + " built by the first frame, " + (built() - before) + " in all, " + fresh + " of them kept")
+        compare(built() - before, fresh, "no body was built for a row the list let go")
     }
 }
