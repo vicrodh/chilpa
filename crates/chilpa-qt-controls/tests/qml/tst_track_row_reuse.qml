@@ -35,6 +35,28 @@ TestCase {
         property var seen: new Set()
         function onChildrenChanged() { for (const child of test.view.contentItem.children) if (child.rowIndex !== undefined && child.listMode !== undefined) seen.add(child) }
     }
+    // The Tracks page: a sheet that scrolls sideways, with the snapshot rows and the optional columns.
+    Component {
+        id: sheetPage
+        Flickable {
+            id: page
+            readonly property alias list: sheetList
+            readonly property alias model: sheetTracks
+            width: 640; height: 300
+            contentWidth: Math.max(width, sheetList.columns.minimumWidth)
+            contentHeight: height
+            clip: true
+            TrackListModel { id: sheetTracks; kind: "tracks" }
+            TrackList {
+                id: sheetList
+                width: page.contentWidth; height: page.height
+                header: false; sheet: true; showPlays: true; rich: false
+                visibleLeft: page.contentX; visibleRight: page.contentX + page.width
+                optionalColumns: ["index", "art", "source", "quality", "bits", "rate", "format", "rating", "favorite", "plays", "time"]
+                model: sheetTracks
+            }
+        }
+    }
 
     // What the fixture's row at position i holds; every visible value names its row.
     function entry(i) {
@@ -78,6 +100,8 @@ TestCase {
         Prefs.animatedIndicator = false
         Motion.reduced = false
         list.height = 300
+        list.cursorRow = -1
+        test.forceActiveFocus()
     }
 
     function slots() { return view.contentItem.children.filter(item => item.contentBuilds !== undefined && item.rowKind !== undefined) }
@@ -294,6 +318,14 @@ TestCase {
         stroll(at(0.25)); stroll(view.originY)
         tryVerify(() => slots().every(row => body(row) !== null), 2000, "every row the list holds has built its body")
     }
+    // What the row says is the row of the model it is now, after the model moved.
+    function checkData(row) {
+        const data = tracks.get(row.index)
+        compare(findChild(row, "creditedText").text, data.title, "the title of row " + row.index)
+        compare(findChild(row, "trackNumber").text, String(data.number))
+        compare(row.sourceBadge.name, data.sourceName)
+        verify(row.artistLabel.text.includes(data.artist), "row " + row.index + " artist: " + row.artistLabel.text)
+    }
 
     function test_a_pooled_row_reads_nothing_when_revisions_change() {
         warm()
@@ -490,5 +522,98 @@ TestCase {
         console.log(data.tag + ": " + during + " bodies built in the call, " + waiting + " rows on the screen waiting for theirs after it, "
             + first + " built by the first frame, " + (built() - before) + " in all, " + fresh + " of them kept")
         compare(built() - before, fresh, "no body was built for a row the list let go")
+    }
+
+    function test_keyboard_moves_show_rows_already_built() {
+        warm()
+        list.forceActiveFocus()
+        list.viAction("first")
+        for (const action of ["last", "first", "halfDown", "halfDown", "halfUp", "last", "halfUp", "first", "down", "up"]) {
+            list.viAction(action)
+            wait(0)
+            const row = view.itemAtIndex(list.cursorRow)
+            verify(row !== null && row.visible && row.immediate, action + " brings row " + list.cursorRow + " on the screen")
+            for (const shown of slots().filter(slot => slot.visible && slot.immediate)) {
+                verify(body(shown) !== null, action + ": row " + shown.index + " is drawn")
+                checkRow(shown)
+            }
+            verify(slots().every(slot => slot.contentBuilds <= 1), action + ": no row built its body twice")
+        }
+    }
+
+    function test_rows_that_moved_with_motion_scroll_into_place() {
+        Motion.reduced = false
+        warm()
+        tracks.insert(4, Object.assign(entry(450), { number: 451 }))
+        sweep(at(0.1)); sweep(view.originY)
+        tracks.move(2, 9, 1)
+        sweep(view.originY + view.height); sweep(view.originY)
+        wait(Motion.panel * 3)
+        const shown = slots().filter(row => row.visible && row.immediate).sort((a, b) => a.index - b.index)
+        for (const row of shown) checkData(row)
+        for (let i = 1; i < shown.length; ++i)
+            compare(shown[i].y, shown[i - 1].y + shown[i - 1].height, "row " + shown[i].index + " sits right under row " + shown[i - 1].index)
+        for (const row of shown.filter(row => !row.header))
+            compare(surfaces().filter(surface => surface.visible && surface.y === row.y).length, 1, "row " + row.index + " has one surface at its place")
+    }
+
+    function test_the_tracks_sheet_reuses_its_rows() {
+        const page = createTemporaryObject(sheetPage, test)
+        const sheetView = findChild(page.list, "trackListView"), cols = page.list.columns
+        for (let i = 0; i < 300; ++i)
+            page.model.append(Object.assign(entry(i), { bitDepth: i % 2 ? 24 : 16, sampleRate: 44100 + i * 100, format: "F" + i }))
+        const rows = () => sheetView.contentItem.children.filter(item => item.contentBuilds !== undefined && item.rowKind !== undefined)
+        const shownRows = () => rows().filter(row => row.visible && row.immediate)
+        sheetView.forceLayout()
+        for (const to of [sheetView.contentHeight / 4, 0]) {
+            while (Math.abs(to - sheetView.contentY) > sheetView.height / 3) { sheetView.contentY += (to > sheetView.contentY ? 1 : -1) * sheetView.height / 3; sheetView.forceLayout(); wait(20) }
+            sheetView.contentY = to; sheetView.forceLayout(); wait(20)
+        }
+        tryVerify(() => rows().every(row => findChild(row, "trackRowBody") !== null), 2000, "the sheet's rows have built their bodies")
+        verify(page.contentWidth > page.width && !cols.bitsShown, "the technical columns start out of sight")
+        const checkSheetRow = row => {
+            const data = page.model.get(row.index)
+            compare(row.rowKind, 0, "the sheet shows every row as a track")
+            compare(findChild(row, "trackNumber").text, String(row.index + 1))
+            compare(findChild(row, "creditedText").text, data.title)
+            compare(row.sourceBadge.name, cols.sourceShown ? data.sourceName : "")
+            compare(findChild(row, "trackBitDepth") !== null && findChild(row, "trackBitDepth").visible, cols.bitsShown, "row " + row.index + " shows its bit depth with its column")
+            if (cols.bitsShown) compare(findChild(row, "trackBitDepth").text, data.bitDepth + "-bit")
+            if (cols.rateShown) compare(findChild(row, "trackSampleRate").text, (data.sampleRate / 1000) + "kHz")
+        }
+        const builds = () => rows().reduce((sum, row) => sum + row.contentBuilds, 0)
+        const warmBuilds = builds()
+        for (const to of [sheetView.contentHeight - sheetView.height, 0, sheetView.contentHeight / 2]) {
+            sheetView.contentY = to; sheetView.forceLayout()
+            wait(0)
+            for (const row of shownRows()) checkSheetRow(row)
+        }
+        compare(builds(), warmBuilds, "long scrolls on the sheet built no body")
+        // Rich rows pool some; the technical columns come into sight: only the rows on the screen build them.
+        page.list.rich = true
+        sheetView.forceLayout(); wait(0)
+        const pooled = rows().filter(row => !row.visible)
+        verify(pooled.length > 0)
+        page.contentX = page.contentWidth - page.width
+        wait(0)
+        verify(cols.bitsShown && cols.rateShown, "the technical columns are in sight")
+        for (const row of pooled) compare(findChild(row, "trackBitDepth"), null, "pooled row " + row.index + " built no technical cells")
+        for (const row of shownRows()) checkSheetRow(row)
+        page.list.rich = false
+        sheetView.forceLayout()
+        wait(0)
+        for (const row of shownRows()) checkSheetRow(row)
+        // A still pointer over an artist; the sheet scrolls sideways under it, and the next frame hovers the album.
+        page.contentX = 0
+        sheetView.positionViewAtBeginning()
+        waitForRendering(page)
+        const row = shownRows().find(row => row.index === 3)
+        const x = cols.artistX + Metrics.gap8, y = row.y - sheetView.contentY + row.height / 2
+        mouseMove(sheetView, x, y)
+        tryCompare(sheetView, "artistHovered", 3)
+        page.contentX = cols.albumX - cols.artistX
+        waitForRendering(page)
+        compare(sheetView.artistHovered, -1, "the artist left the pointer")
+        compare(sheetView.albumHovered, 3, "the album came under it")
     }
 }
