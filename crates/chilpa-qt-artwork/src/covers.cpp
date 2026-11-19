@@ -69,6 +69,7 @@ void coverTestResponseFinished();
 void coverTestWorkCompleted();
 void coverTestBeforeImageLoad();
 void coverTestDeliveryQueued();
+void coverTestTsanNegativeCallback();
 #endif
 
 class CoverResponse : public QQuickImageResponse
@@ -103,7 +104,10 @@ public:
             m_pendingImage = std::move(image);
             m_pendingError = std::move(error);
         }
-        QMetaObject::invokeMethod(this, &CoverResponse::deliverPending, Qt::QueuedConnection);
+        {
+            QMutexLocker handoff(&m_deliveryHandoffMutex);
+            QMetaObject::invokeMethod(this, &CoverResponse::deliverPending, Qt::QueuedConnection);
+        }
 #ifdef CHILPA_COVER_SCHEDULER_TEST
         coverTestDeliveryQueued();
 #endif
@@ -114,6 +118,12 @@ private:
 
     void deliverPending()
     {
+        {
+            QMutexLocker handoff(&m_deliveryHandoffMutex);
+        }
+#ifdef CHILPA_COVER_SCHEDULER_TEST
+        coverTestTsanNegativeCallback();
+#endif
         QImage image;
         QString error;
         {
@@ -140,6 +150,7 @@ private:
     QImage m_image;
     QString m_error;
     QMutex m_completionMutex;
+    QMutex m_deliveryHandoffMutex;
     QImage m_pendingImage;
     QString m_pendingError;
     std::atomic_bool m_cancelled{false};

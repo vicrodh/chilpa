@@ -1,0 +1,103 @@
+The system Qt libraries are not instrumented and are stripped. These trace
+signatures justify the scheduler suite suppressions without matching a whole
+module. Addresses and process ids vary between runs.
+
+QWaitCondition::~QWaitCondition
+  Main-thread destruction:
+    pthread_mutex_destroy
+    QWaitCondition::~QWaitCondition
+    CoverScheduler shared_ptr destruction at process shutdown
+  Finished pooled-thread access:
+    pthread_cond_timedwait
+    QWaitCondition::wait
+  Allocation:
+    QWaitCondition::QWaitCondition
+    CoverScheduler::request dispatching its first pool job
+
+assertObjectType
+  Main-thread queued-call dispatch:
+    assertObjectType<CoverResponse> at qobjectdefs_impl.h:106
+    QObject::event
+  Pooled-thread allocation:
+    invokeMethodCallableHelper at qobjectdefs.h:645
+    CoverResponse::finish at covers.cpp
+  The system Qt reads its callable type metadata before CoverResponse can
+  acquire the explicit delivery handoff mutex.
+
+libQt6Core.so.6+0x2d1191
+  Write of size 8 by Thread (pooled):
+    memmove
+    libQt6Core.so.6+0x2d1191
+  Previous write of size 8 by another Thread (pooled):
+    memmove
+    libQt6Core.so.6+0x2d1191
+  Allocation:
+    libQt6Core.so.6+0x2d0cec
+  Both threads were created by QThread::start from QThreadPool::start while
+  CoverScheduler::request dispatched independent jobs.
+  TSAN cannot match the stripped module offset in a suppression. The required
+  race:memmove entry also suppresses unrelated reports whose conflicting stack
+  contains the memmove interceptor. The scalar negative control does not use
+  memmove and proves only that direct callback races remain visible.
+
+libQt6Core.so.6+0x29013d
+  QQmlThread delete:
+    operator delete
+    libQt6Core.so.6+0x29013d
+  Main-thread allocation:
+    operator new
+    libQt6Core.so.6+0x2901da
+  The system Qt exposes no symbol for either internal frame. The required
+  operator-delete suppression can hide unrelated races whose stack deletes
+  storage. The scalar negative control performs no allocation or deletion.
+
+libglib-2.0.so.0+0xbcd49
+  Main-thread access:
+    write
+    libglib-2.0.so.0+0xbcd49
+  QQuickPixmapReader access and allocation:
+    eventfd
+    libglib-2.0.so.0+0xbcb4b
+  GLib is stripped and uninstrumented. The required eventfd suppression can
+  hide other races reported through that interceptor. The scalar negative
+  control does not use file descriptors.
+
+libQt6Core.so.6+0x2af2e6
+  Main-thread and QQuickPixmapReader accesses:
+    memcpy
+    libQt6Core.so.6+0x2af2e6
+  Allocation:
+    libQt6Core.so.6+0x2c9ec6
+  QtCore exposes no symbols for this buffer handoff. The required memcpy
+  suppression can hide unrelated races whose stack copies memory. The scalar
+  negative control performs direct integer accesses.
+
+libQt6Quick.so.6+0x3aceda
+  Main-thread teardown:
+    operator delete[]
+    libQt6Quick.so.6+0x3aceda
+  QQuickPixmapReader allocation:
+    operator new[]
+    libQt6Quick.so.6+0x400687
+  QtQuick exposes no symbols for this buffer lifetime. The required array
+  delete suppression can hide unrelated races that delete arrays. The scalar
+  negative control does not allocate or delete arrays.
+
+CoverJob constructor
+  Pooled-thread read:
+    CoverJob::run at covers.cpp
+    libQt6Core.so.6+0x2c2da4
+  Main-thread write:
+    CoverJob::CoverJob at covers.cpp:178
+    CoverScheduler::dispatchLocked at covers.cpp
+  The reported storage is the CoverJob shared_ptr member handed to the worker
+  by the system Qt thread pool. The constructor-name suppression does not
+  match CoverJob::run or callback accesses.
+
+QThread::start
+  Reported finished thread:
+    pthread_create
+    QThread::start
+    CoverScheduler::request
+  TSAN reports the pooled thread as leaked at process exit because the join in
+  the system QThreadPool destructor is uninstrumented.

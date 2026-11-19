@@ -21,6 +21,12 @@ c++ -std=c++17 -O1 -g -fPIC -no-pie -pthread \
     $(pkg-config --cflags --libs Qt6Quick Qt6Qml Qt6Network)
 case "$sanitizer" in
     thread)
+        if [ "${CHILPA_TSAN_NEGATIVE_CONTROL:-0}" = 1 ]; then
+            QT_QPA_PLATFORM=offscreen CHILPA_TSAN=1 CHILPA_TSAN_CASE=negative \
+                TSAN_OPTIONS="halt_on_error=1:suppressions=$repo/scripts/tsan-cover-scheduler.supp" \
+                "$temporary/cover_budget"
+            exit 1
+        fi
         for scheduler_case in core pending running delivery queued; do
             QT_QPA_PLATFORM=offscreen CHILPA_TSAN=1 CHILPA_TSAN_CASE=$scheduler_case \
                 TSAN_OPTIONS="halt_on_error=1:suppressions=$repo/scripts/tsan-cover-scheduler.supp" \

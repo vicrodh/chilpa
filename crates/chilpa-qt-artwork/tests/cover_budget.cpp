@@ -47,6 +47,11 @@ bool beforeImageLoadEntered = false;
 bool releaseImageLoad = false;
 bool deliveryQueuedEntered = false;
 bool readerRequestCreated = false;
+std::atomic_bool tsanNegativeStart{false};
+bool tsanNegativeEnabled = false;
+volatile int tsanNegativeValue = 0;
+
+std::shared_ptr<CoverScheduler> schedulerForTests();
 
 void require(bool condition, const char *message)
 {
@@ -126,9 +131,12 @@ std::string enteredAt(qsizetype index)
 
 void reset()
 {
+    auto scheduler = schedulerForTests();
+    waitUntil([&] { return scheduler->idle(); }, "the preceding scheduler work becomes idle");
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
+    waitUntil([] { return responsesDestroyed == responsesCreated; },
+              "the preceding responses are destroyed before counters reset");
     std::unique_lock lock(gateMutex);
-    require(gateChanged.wait_for(lock, std::chrono::seconds(5), [] { return active == 0; }),
-            "the preceding requests completed");
     entered.clear();
     allowed.clear();
     calls = 0;
@@ -191,6 +199,15 @@ void coverTestDeliveryQueued()
     gateChanged.notify_all();
 }
 
+void coverTestTsanNegativeCallback()
+{
+    if (!tsanNegativeEnabled)
+        return;
+    tsanNegativeStart = true;
+    for (int iteration = 0; iteration < 100'000; ++iteration)
+        tsanNegativeValue = tsanNegativeValue + 1;
+}
+
 class Responses {
 public:
     explicit Responses(QGuiApplication &application) : m_application(application) {}
@@ -229,6 +246,11 @@ public:
             require(pointer.isNull(), "finished responses can be deleted safely");
     }
 
+    void waitForFinished(int count)
+    {
+        waitUntil([&] { return finished >= count; }, "the expected responses finish");
+    }
+
     int finished = 0;
 private:
     QGuiApplication &m_application;
@@ -249,14 +271,15 @@ struct Providers {
     CoverProvider atmosphere{scheduler, CoverClass::Atmosphere};
 };
 
-class QueuedDeliveryThread : public QThread {
+class ReusedDeliveryThread : public QThread {
 public:
-    explicit QueuedDeliveryThread(std::shared_ptr<CoverScheduler> scheduler) : scheduler(std::move(scheduler)) {}
+    explicit ReusedDeliveryThread(std::shared_ptr<CoverScheduler> scheduler) : scheduler(std::move(scheduler)) {}
 
 protected:
     void run() override
     {
-        scheduler->request(CoverClass::Cover, QStringLiteral("64/file:///queued-delivery"));
+        const int currentRun = ++runs;
+        scheduler->request(CoverClass::Cover, QStringLiteral("64/file:///queued-delivery-%1").arg(currentRun));
         std::unique_lock lock(gateMutex);
         readerRequestCreated = true;
         gateChanged.notify_all();
@@ -265,6 +288,7 @@ protected:
 
 private:
     std::shared_ptr<CoverScheduler> scheduler;
+    int runs = 0;
 };
 
 QString coverId(const QString &name) { return QStringLiteral("64/file:///") + name; }
@@ -547,19 +571,50 @@ int main(int argc, char **argv)
     {
         Providers providers;
         Responses responses(application);
+        successful = true;
         responses.add(&providers.atmosphere, atmosphereId(QStringLiteral("blocked-atmosphere")));
         waitEntered("a:/blocked-atmosphere");
-        responses.add(&providers.contained, coverId(QStringLiteral("mixed")));
-        responses.add(&providers.cover, coverId(QStringLiteral("mixed")));
+        responses.add(&providers.contained, coverId(QStringLiteral("mixed")), true);
+        responses.add(&providers.cover, coverId(QStringLiteral("mixed")), true);
         waitEntered("c:/mixed");
         responses.add(&providers.cover, coverId(QStringLiteral("waiting-cover")));
         allow("c:/mixed");
         require(enteredAt(2) == "c:/waiting-cover", "a pending cover enters before a mixed contained continuation");
         allow("c:/waiting-cover");
         waitEntered("n:/mixed");
+        responses.add(&providers.cover, coverId(QStringLiteral("mixed")), true);
+        responses.waitForFinished(3);
         allow("n:/mixed");
         allow("a:/blocked-atmosphere");
         responses.wait();
+    }
+
+    reset();
+    {
+        Providers providers;
+        Responses responses(application);
+        successful = true;
+        responses.add(&providers.atmosphere, atmosphereId(QStringLiteral("drop-atmosphere")));
+        waitEntered("a:/drop-atmosphere");
+        auto *contained = responses.add(&providers.contained, coverId(QStringLiteral("drop-continuation")));
+        responses.add(&providers.cover, coverId(QStringLiteral("drop-continuation")), true);
+        waitEntered("c:/drop-continuation");
+        responses.add(&providers.cover, coverId(QStringLiteral("drop-blocker")));
+        allow("c:/drop-continuation");
+        waitEntered("c:/drop-blocker");
+        responses.waitForFinished(1);
+        contained->cancel();
+        require(providers.scheduler->pendingCount() == 0,
+                "the last contained cancellation drops its pending continuation");
+        allow("c:/drop-blocker");
+        allow("a:/drop-atmosphere");
+        responses.wait();
+        waitForScheduler(providers.scheduler);
+        {
+            std::lock_guard lock(gateMutex);
+            require(std::find(entered.begin(), entered.end(), "n:/drop-continuation") == entered.end(),
+                    "a dropped continuation never enters the contained operation");
+        }
     }
 
     reset();
@@ -667,7 +722,7 @@ int main(int argc, char **argv)
         successful = true;
         automatic = true;
         auto scheduler = schedulerForTests();
-        QueuedDeliveryThread reader(scheduler);
+        ReusedDeliveryThread reader(scheduler);
         reader.start();
         {
             std::unique_lock lock(gateMutex);
@@ -679,6 +734,43 @@ int main(int argc, char **argv)
         waitForScheduler(scheduler);
         require(responsesFinished == 1, "thread shutdown finishes the queued response once");
         require(responsesDestroyed == 1, "thread shutdown destroys the queued response");
+        if (!qEnvironmentVariableIsSet("CHILPA_TSAN")) {
+            {
+                std::lock_guard lock(gateMutex);
+                deliveryQueuedEntered = false;
+                readerRequestCreated = false;
+            }
+            reader.start();
+            {
+                std::unique_lock lock(gateMutex);
+                require(gateChanged.wait_for(lock, std::chrono::seconds(5), [] {
+                    return readerRequestCreated && deliveryQueuedEntered;
+                }), "a delivery is queued after reusing the reader thread");
+            }
+            require(reader.wait(5'000), "the reused reader thread stops with a queued delivery");
+            waitForScheduler(scheduler);
+            require(responsesFinished == 2, "reused thread shutdown finishes each queued response once");
+            require(responsesDestroyed == 2, "reused thread shutdown destroys each queued response");
+        }
+    }
+
+    if (isolatedCase == "negative") {
+        reset();
+        successful = true;
+        automatic = true;
+        tsanNegativeEnabled = true;
+        std::thread conflictingWriter([] {
+            while (!tsanNegativeStart.load()) {}
+            for (int iteration = 0; iteration < 100'000; ++iteration)
+                tsanNegativeValue = iteration;
+        });
+        Providers providers;
+        Responses responses(application);
+        responses.add(&providers.cover, coverId(QStringLiteral("tsan-negative-control")), true);
+        responses.wait();
+        conflictingWriter.join();
+        std::fputs("FAIL ThreadSanitizer did not report the negative control\n", stderr);
+        return 1;
     }
 
     if (!isolatedCase.isEmpty())
