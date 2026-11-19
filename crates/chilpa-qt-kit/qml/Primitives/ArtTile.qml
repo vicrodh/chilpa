@@ -42,7 +42,6 @@ Item {
     readonly property int decode: Math.ceil(Math.max(width, height) * Screen.devicePixelRatio / Metrics.artDecodeStep) * Metrics.artDecodeStep
 
     Rectangle {
-        objectName: "artPlaceholder"
         anchors.fill: parent
         visible: image.status !== Image.Ready
         topLeftRadius: root.corners.x
