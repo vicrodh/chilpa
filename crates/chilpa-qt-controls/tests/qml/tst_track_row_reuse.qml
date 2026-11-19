@@ -519,6 +519,30 @@ TestCase {
         tracks.set(9, entry(9))
     }
 
+    // The menu button under a still pointer says the offline state of the track it stands for: as a download
+    // goes, finishes or fails and its copy is removed, and when the row becomes another track in place.
+    function test_the_menu_button_tooltip_follows_the_offline_state_and_the_track() {
+        warm()
+        const row = view.itemAtIndex(9)
+        mouseMove(view, list.columns.moreX + row.end.favoriteWidth + Metrics.rowAction / 2, row.y - view.contentY + row.height / 2)
+        tryVerify(() => TipState.shown && TipState.target === row.end, 2000, "the menu button says what it does")
+        compare(TipState.text, "More")
+        for (const [mark, said] of [[{ state: "downloading", fraction: 0.5 }, "\nDownloading for offline listening"], [{ state: "ready" }, "\nAvailable offline"],
+                                     [{ state: "failed", error: "No room left" }, "\nNo room left"], [undefined, ""]]) {
+            Offline.marks[10] = mark
+            Offline.rev++
+            compare(TipState.text, "More" + said, "it says the offline state now: " + JSON.stringify(mark))
+            verify(TipState.shown && TipState.target === row.end, "without asking anew")
+        }
+        // Another track in the same row, kept offline.
+        tracks.set(9, entry(16))
+        compare(view.itemAtIndex(9), row, "the same row object")
+        compare(row.trackId, 17)
+        tryCompare(TipState, "text", "More\nAvailable offline", 1000, "it says the offline state of the track now in the row")
+        compare(TipState.target, row.end)
+        tracks.set(9, entry(9))
+    }
+
     function test_the_pool_holds_at_most_a_band_of_bodies() {
         list.height = 676
         view.forceLayout(); wait(0)

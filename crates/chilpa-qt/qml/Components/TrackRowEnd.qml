@@ -42,14 +42,14 @@ Item {
     function menuPoint(item) {
         return end.mapToItem(item, width - Metrics.menuWidth, height + Metrics.gap4)
     }
-    function explain() {
-        if (hovered === 0)
-            TipState.hide(end)
-        else
-            TipState.show(hovered === 2 ? [I18n.tr("More", I18n.rev), Offline.tip(trackId, Offline.rev)].filter(text => text !== "").join("\n")
-                : favorite ? I18n.tr("Remove from favorites", I18n.rev)
-                : I18n.tr("Add to favorites", I18n.rev), end)
+    function said() {
+        return hovered === 2 ? [I18n.tr("More", I18n.rev), Offline.tip(trackId, Offline.rev)].filter(text => text !== "").join("\n")
+            : favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
     }
+    function explain() { if (hovered === 0) TipState.hide(end); else TipState.show(said(), end) }
+    // Followed while the cell holds the tooltip: the offline state and the track change under a still pointer.
+    readonly property string saying: hovered === 0 ? "" : said()
+    onSayingChanged: if (TipState.target === end) explain()
 
     width: favoriteWidth + Metrics.rowAction
     onHoveredChanged: explain()
