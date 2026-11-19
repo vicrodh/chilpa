@@ -183,3 +183,191 @@ fn a_published_backup_keeps_private_temporary_file_permissions() {
     assert_eq!(actual, expected, "publication preserves the earlier private backup permissions");
     verify(&path);
 }
+
+fn at(path: &Path, version: usize) {
+    let db = Connection::open(path).unwrap();
+    apply_pragmas(&db).unwrap();
+    stop_at(&db, version);
+    db.execute_batch("INSERT INTO sources(id,provider,instance) VALUES(1,'local','default');
+        INSERT INTO tracks(id,source_id,external_id,title,added_at) VALUES(1,1,'/fixture','Song',1);").unwrap();
+}
+
+fn version_of(path: &Path) -> i64 {
+    Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap()
+        .query_row("PRAGMA user_version", [], |row| row.get(0)).unwrap()
+}
+
+fn heard(path: &Path, stop: &upgrade::Stop, mut also: impl FnMut(&upgrade::Progress)) -> (rusqlite::Result<()>, Vec<upgrade::Progress>) {
+    let mut seen = Vec::new();
+    let result = upgrade::run(path, &mut |progress| { also(progress); seen.push(*progress); }, stop);
+    (result, seen)
+}
+
+fn staging_left(directory: &Path) -> bool {
+    std::fs::read_dir(directory).unwrap().any(|entry| entry.unwrap().file_name().to_string_lossy().starts_with(".library-upgrade-"))
+}
+
+#[test]
+fn the_version_is_the_number_of_steps() {
+    assert_eq!(STEPS.len() as i64, VERSION);
+}
+
+#[test]
+fn pending_names_only_an_older_library_and_writes_nothing() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    assert_eq!(upgrade::pending(&path), None, "no file");
+    assert!(!path.exists(), "asking does not create it");
+    at(&path, 40);
+    assert_eq!(upgrade::pending(&path), Some(upgrade::Pending { from: 40, to: VERSION }));
+    let current = directory.path().join("current.db");
+    drop(crate::Library::open(&current).unwrap());
+    assert_eq!(upgrade::pending(&current), None, "current");
+    let newer = directory.path().join("newer.db");
+    Connection::open(&newer).unwrap().pragma_update(None, "user_version", VERSION + 1).unwrap();
+    assert_eq!(upgrade::pending(&newer), None, "newer is its opener's error to say");
+    assert_eq!(version_of(&path), 40);
+    assert!(!directory.path().join("library.db.upgrade-lock").exists());
+    assert!(!backup_path(&path).exists());
+}
+
+#[test]
+fn the_observer_hears_every_step_in_order_and_ends_at_one() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 50);
+    let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
+    result.unwrap();
+    assert_eq!(seen[0].phase, upgrade::Phase::BackingUp);
+    let steps: Vec<_> = seen.iter().filter(|p| p.phase == upgrade::Phase::Step).collect();
+    assert_eq!(steps.iter().map(|p| p.version).collect::<Vec<_>>(), (51..=VERSION).collect::<Vec<_>>(), "every step, in order");
+    assert_eq!(steps.iter().map(|p| p.step).collect::<Vec<_>>(), (1..=steps.len()).collect::<Vec<_>>());
+    assert!(steps.iter().all(|p| p.steps == steps.len()));
+    assert!(seen.windows(2).all(|pair| pair[0].fraction <= pair[1].fraction), "the bar never goes back: {seen:?}");
+    let last = seen.last().unwrap();
+    assert_eq!((last.phase, last.fraction), (upgrade::Phase::Finishing, 1.0));
+    assert_eq!(version_of(&path), VERSION);
+    assert_eq!(version_of(&backup_path(&path)), 50);
+    assert!(!upgrade::marker_path(&path).exists(), "a completed upgrade leaves no marker");
+}
+
+#[test]
+fn a_current_library_is_only_opened() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    drop(crate::Library::open(&path).unwrap());
+    // Creating it took the lock; running over it must not.
+    std::fs::remove_file(directory.path().join("library.db.upgrade-lock")).unwrap();
+    let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
+    result.unwrap();
+    assert_eq!(seen.iter().map(|p| (p.phase, p.fraction)).collect::<Vec<_>>(), [(upgrade::Phase::Finishing, 1.0)]);
+    assert!(!backup_path(&path).exists());
+    assert!(!directory.path().join("library.db.upgrade-lock").exists());
+}
+
+#[test]
+fn a_failed_step_keeps_the_copy_from_before_the_upgrade_for_the_next_attempt() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    // Step 56 creates this table: the upgrade commits 55 and stops at 56.
+    Connection::open(&path).unwrap().execute_batch("CREATE TABLE local_release_members(planted INTEGER);").unwrap();
+    let (result, _) = heard(&path, &upgrade::Stop::default(), |_| {});
+    assert!(result.unwrap_err().to_string().contains("local_release_members"));
+    assert_eq!(version_of(&path), 55, "the step before the failure is kept");
+    assert_eq!(version_of(&backup_path(&path)), 54);
+    assert_eq!(upgrade::unfinished_copy(&path), Some((54, VERSION)));
+    let copy = std::fs::read(backup_path(&path)).unwrap();
+    Connection::open(&path).unwrap().execute_batch("DROP TABLE local_release_members;").unwrap();
+    let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
+    result.unwrap();
+    assert!(seen.iter().all(|p| p.phase != upgrade::Phase::BackingUp), "the copy at hand is not taken again");
+    assert_eq!(std::fs::read(backup_path(&path)).unwrap(), copy, "the copy is still the one from before the upgrade");
+    assert_eq!(version_of(&path), VERSION);
+    assert!(!upgrade::marker_path(&path).exists());
+}
+
+#[test]
+fn a_marker_left_by_a_completed_upgrade_is_ignored() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    at(&backup_path(&path), 53);
+    // An upgrade from 53 to 54 died after its last step and before it removed its marker.
+    std::fs::write(upgrade::marker_path(&path), "53 54").unwrap();
+    assert_eq!(upgrade::unfinished_copy(&path), Some((53, 54)));
+    let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
+    result.unwrap();
+    assert_eq!(seen[0].phase, upgrade::Phase::BackingUp, "that copy is not from this upgrade");
+    assert_eq!(version_of(&backup_path(&path)), 54);
+    assert!(!upgrade::marker_path(&path).exists());
+}
+
+#[test]
+fn leftover_staging_folders_are_removed_before_the_copy() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    let leftover = directory.path().join(".library-upgrade-killed");
+    std::fs::create_dir(&leftover).unwrap();
+    std::fs::write(leftover.join("half"), b"a copy killed halfway").unwrap();
+    heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap();
+    assert!(!staging_left(directory.path()));
+}
+
+#[test]
+fn a_held_upgrade_lock_is_waited_for_past_five_seconds_and_said() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    let held = upgrade::lock(&path).unwrap();
+    let (said, phases) = std::sync::mpsc::channel();
+    let worker = {
+        let path = path.clone();
+        std::thread::spawn(move || upgrade::run(&path, &mut |progress| { let _ = said.send(progress.phase); }, &upgrade::Stop::default()))
+    };
+    assert_eq!(phases.recv_timeout(Duration::from_secs(5)).unwrap(), upgrade::Phase::WaitingForOther);
+    // The bounded wait of an opener gives up after five seconds; this one does not.
+    std::thread::sleep(Duration::from_millis(5300));
+    assert!(!worker.is_finished(), "still waiting");
+    assert_eq!(version_of(&path), 54);
+    drop(held);
+    worker.join().unwrap().unwrap();
+    assert_eq!(version_of(&path), VERSION);
+}
+
+#[test]
+fn a_stop_between_steps_keeps_the_last_complete_version_and_the_copy() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 52);
+    let stop = upgrade::Stop::default();
+    let (result, _) = heard(&path, &stop, |progress| if progress.phase == upgrade::Phase::Step && progress.version == 54 { stop.request() });
+    assert_eq!(result.unwrap_err().sqlite_error_code(), Some(rusqlite::ErrorCode::OperationInterrupted));
+    assert_eq!(version_of(&path), 53, "the step that was asked to stop never began");
+    let db = Connection::open_with_flags(&path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+    assert_eq!(db.query_row("PRAGMA integrity_check", [], |row| row.get::<_, String>(0)).unwrap(), "ok");
+    drop(db);
+    assert_eq!(upgrade::unfinished_copy(&path), Some((52, VERSION)), "the marker still names the copy from before");
+    let copy = std::fs::read(backup_path(&path)).unwrap();
+    heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap();
+    assert_eq!(std::fs::read(backup_path(&path)).unwrap(), copy);
+    assert_eq!(version_of(&path), VERSION);
+    assert!(!upgrade::marker_path(&path).exists());
+}
+
+#[test]
+fn a_stop_before_the_copy_changes_nothing() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    at(&backup_path(&path), 53);
+    let previous = std::fs::read(backup_path(&path)).unwrap();
+    let stop = upgrade::Stop::default();
+    let (result, _) = heard(&path, &stop, |progress| if progress.phase == upgrade::Phase::BackingUp { stop.request() });
+    assert_eq!(result.unwrap_err().sqlite_error_code(), Some(rusqlite::ErrorCode::OperationInterrupted));
+    assert_eq!(version_of(&path), 54);
+    assert_eq!(std::fs::read(backup_path(&path)).unwrap(), previous);
+    assert!(!upgrade::marker_path(&path).exists());
+    assert!(!staging_left(directory.path()));
+}

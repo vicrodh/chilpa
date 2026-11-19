@@ -26,7 +26,7 @@ mod offline_audio;
 mod rating_sync;
 mod favorite_sync;
 mod local_presentation;
-mod upgrade;
+pub mod upgrade;
 #[cfg(test)]
 mod upgrade_tests;
 
@@ -84,7 +84,7 @@ pub fn back_up_before_upgrading(db: &Connection, library: &Path) -> rusqlite::Re
 }
 
 pub(crate) fn upgrade(db: &Connection, library: &Path) -> rusqlite::Result<()> {
-    upgrade::run(db, library)
+    upgrade::apply(db, library, &mut |_| {}, Some(std::time::Duration::from_secs(5)), &upgrade::Stop::default()).map(drop)
 }
 
 /// Builds a database stopped at an older version, as a shipped Chilpa would
@@ -112,6 +112,13 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
 }
 
 fn migrate_locked(db: &Connection) -> rusqlite::Result<()> {
+    steps_locked(db, &mut |_| Ok(()))
+}
+
+/// Applies every step the file still needs, each in its own transaction.
+/// `before` hears the version a step leads to before it begins, and an error
+/// from it stops there, with the steps before it kept.
+fn steps_locked(db: &Connection, before: &mut dyn FnMut(i64) -> rusqlite::Result<()>) -> rusqlite::Result<()> {
     let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
     if actual > VERSION {
         // A database from a newer version is left alone: downgrading loses
@@ -134,6 +141,7 @@ fn migrate_locked(db: &Connection) -> rusqlite::Result<()> {
         if actual >= target {
             continue;
         }
+        before(target)?;
         // Each step goes in its own transaction: if it blows up halfway, the
         // version does not advance and the database stays as it was.
         let tx = rusqlite::Transaction::new_unchecked(db, rusqlite::TransactionBehavior::Immediate)?;
