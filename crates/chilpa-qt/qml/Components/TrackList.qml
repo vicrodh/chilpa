@@ -166,8 +166,8 @@ Item {
 
         delegate: TrackRow {
             required property var model
-            // Optional cells do not request native roles while their column is
-            // hidden. Keep the row body pooled so scrolling reuses its objects.
+            // Hidden columns and pooled rows read no optional roles, a pooled row answers no pointer, and a list that scrolls itself keeps each body through its pool.
+            resident: !list.fitContent && !list.viewport
             rowKind: list.snapshotRows ? 0 : model.rowKind
             number: list.snapshotRows ? index + 1 : model.number || 0
             headerLabel: list.snapshotRows ? "" : model.headerLabel || ""
@@ -201,8 +201,8 @@ Item {
             favorite: inViewport && columns.favoriteShown && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered || list.activeFocus && index === list.cursorRow
-            actionHovered: index === view.hovered ? view.actionHovered : 0
-            moveHovered: index === view.hovered ? view.moveHovered : 0
+            actionHovered: visible && index === view.hovered ? view.actionHovered : 0
+            moveHovered: visible && index === view.hovered ? view.moveHovered : 0
             artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
             groupActionsEnabled: list.groupActionsEnabled

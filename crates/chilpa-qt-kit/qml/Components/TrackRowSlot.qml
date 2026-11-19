@@ -5,6 +5,9 @@ import "../Theme"
 Item {
     id: slot
     property bool inViewport: true
+    // In a list that scrolls itself I keep my body through the pool and build it at once, placed or not.
+    // That view keeps every slot it made, so it holds as many bodies as rows it has held at once.
+    property bool resident: false
     property bool layoutReady: false
     // I wait for the view to place the slot before I build its visible contents.
     function finishLayout() { layoutReady = true }
@@ -52,5 +55,5 @@ Item {
         return point.x >= 0 && point.x < stars.width && point.y >= 0 && point.y < stars.height
             ? Math.floor(point.x / stars.width * Metrics.ratingMaximum) + 1 : 0
     }
-    Loader { id: body; property int builds: 0; onLoaded: builds++; anchors.fill: parent; active: slot.layoutReady && slot.inViewport; asynchronous: !slot.immediate; sourceComponent: slot.content }
+    Loader { id: body; property int builds: 0; onLoaded: builds++; anchors.fill: parent; active: (slot.resident || slot.layoutReady) && (slot.inViewport || slot.resident && body.builds > 0); asynchronous: !slot.resident && !slot.immediate; sourceComponent: slot.content }
 }
