@@ -328,3 +328,26 @@ fn an_empty_table_is_rebuilt_without_analyze_or_foreign_key_checks() {
     let (checks, analyzed) = counts();
     assert!(checks > before.0 && analyzed > before.1, "a library with tracks is checked and analyzed");
 }
+
+/// Every foreign key that names `tracks`, with what it names and does.
+fn keys_to_tracks(db: &Connection) -> Vec<(String, String, String, String, String)> {
+    db.prepare("SELECT m.name, f.\"from\", f.\"table\", coalesce(f.\"to\", ''), f.on_delete FROM sqlite_master m
+        JOIN pragma_foreign_key_list(m.name) f WHERE m.type = 'table' AND lower(f.\"table\") = 'tracks' ORDER BY m.name, f.\"from\"").unwrap()
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?))).unwrap().map(Result::unwrap).collect()
+}
+
+fn keys_of_tracks(db: &Connection) -> Vec<(String, String, String)> {
+    db.prepare("SELECT \"from\", \"table\", coalesce(\"to\", '') FROM pragma_foreign_key_list('tracks') ORDER BY \"from\"").unwrap()
+        .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?))).unwrap().map(Result::unwrap).collect()
+}
+
+#[test]
+fn every_foreign_key_to_and_from_tracks_survives_the_rebuild() {
+    let db = filled();
+    let (children, own) = (keys_to_tracks(&db), keys_of_tracks(&db));
+    assert_eq!(children.len(), 13, "{children:?}");
+    assert_eq!(own.iter().map(|key| key.1.as_str()).collect::<Vec<_>>(), ["albums", "sources"], "{own:?}");
+    migrate(&db).unwrap();
+    assert_eq!(keys_to_tracks(&db), children, "every child still names tracks, by the same column, with the same rule");
+    assert_eq!(keys_of_tracks(&db), own, "and tracks still names its source and its album");
+}

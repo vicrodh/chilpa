@@ -608,3 +608,52 @@ fn running_over_a_current_library_removes_a_marker_left_beside_it() {
     heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap();
     assert!(!upgrade::marker_path(&path).exists());
 }
+
+#[test]
+fn child_upgrades_until_killed() {
+    let Some(path) = std::env::var_os("CHILPA_TEST_UPGRADE_LIBRARY_KILLED") else { return };
+    upgrade::run(Path::new(&path), &mut |_| {}, &upgrade::Stop::default()).unwrap();
+}
+
+/// An upgrade killed at `point`, and the attempt after it.
+fn killed_at(point: &str) -> (tempfile::TempDir, std::path::PathBuf) {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    let ready = directory.path().join(point);
+    let pause = std::ffi::OsString::from(format!("{point}={}", ready.display()));
+    drop(child_until("schema::upgrade_tests::child_upgrades_until_killed",
+        &[("CHILPA_TEST_UPGRADE_LIBRARY_KILLED", path.clone().into()), ("CHILPA_TEST_UPGRADE_PAUSE", pause)], &ready));
+    assert_eq!(version_of(&path), 54, "nothing of the library changed yet");
+    assert!(intact(&path));
+    assert_eq!(version_of(&backup_path(&path)), 54, "the copy was published whole");
+    (directory, path)
+}
+
+#[test]
+fn a_kill_after_the_copy_is_published_and_before_its_marker_loses_nothing() {
+    let (directory, path) = killed_at("published");
+    assert!(!upgrade::marker_path(&path).exists());
+    let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
+    result.unwrap();
+    assert!(seen.iter().any(|p| p.phase == upgrade::Phase::BackingUp), "without a marker the copy is taken again");
+    assert_eq!(version_of(&backup_path(&path)), 54);
+    assert_eq!(version_of(&path), VERSION);
+    assert!(!upgrade::marker_path(&path).exists());
+    assert!(!staging_left(directory.path()));
+}
+
+#[test]
+fn a_kill_right_after_the_marker_keeps_both_copies_of_the_library_from_before() {
+    let (directory, path) = killed_at("marked");
+    assert_eq!(upgrade::unfinished_copy(&path), Some((54, VERSION)));
+    let (result, seen) = heard(&path, &upgrade::Stop::default(), |_| {});
+    result.unwrap();
+    // The killed run never recorded the library it left, so its copy is
+    // not trusted: it is kept aside and a new one is taken.
+    assert!(seen.iter().any(|p| p.phase == upgrade::Phase::BackingUp));
+    assert_eq!(version_of(&directory.path().join("library.db.before-upgrade-54")), 54);
+    assert_eq!(version_of(&backup_path(&path)), 54);
+    assert_eq!(version_of(&path), VERSION);
+    assert!(!upgrade::marker_path(&path).exists());
+}

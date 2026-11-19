@@ -154,6 +154,8 @@ fn apply(db: &Connection, library: &Path, observer: &mut dyn FnMut(&Progress), s
         stop.check()?;
         backup(db, library)?;
         mark(library, from)?;
+        #[cfg(test)]
+        pause("marked");
     }
     let before = usize::from(copy);
     super::steps_locked(db, &mut |target, part| {
@@ -548,5 +550,8 @@ pub(super) fn backup(db: &Connection, library: &Path) -> rusqlite::Result<()> {
     copied.sync_all().map_err(|error| io_error(&destination, error))?;
     drop(copied);
     std::fs::rename(&temporary, &destination).map_err(|error| io_error(&destination, error))?;
-    sync_folder(&destination)
+    sync_folder(&destination)?;
+    #[cfg(test)]
+    pause("published");
+    Ok(())
 }
