@@ -11,7 +11,7 @@ QtObject {
     readonly property var band: view ? [view.height, view.cacheBuffer, view.visible, view.moving] : []
     onBandChanged: if (view && view.interactive) Qt.callLater(viewport.trim)
     function trim() {
-        if (!view.interactive || view.moving) return
+        if (!view || !view.interactive || view.moving) return
         view.forceLayout()
         if (view.contentItem.children.filter(slot => slot.pooled === true).length > 3 * Math.ceil(view.height / Metrics.rowCompact)) { view.reuseItems = false; view.reuseItems = true }
     }

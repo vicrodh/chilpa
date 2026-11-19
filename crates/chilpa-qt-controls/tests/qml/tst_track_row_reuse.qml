@@ -7,6 +7,7 @@ import app.chilpa.testing
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // A list that scrolls itself recycles its rows: a row that leaves waits in
 // the pool and comes back as another track with the body it already had.
@@ -620,6 +621,24 @@ TestCase {
         wait(0)
         compare(drains.toggles, 2, "stopped, it drained its pool once")
         verify(slots().filter(row => !row.visible).length <= budget(), slots().filter(row => !row.visible).length + " rows in the pool")
+    }
+
+    // A look at the pool scheduled in the turn its list goes away finds no list, and does nothing.
+    Component {
+        id: bareList
+        Item {
+            property alias rows: rows
+            property alias looks: looks
+            ListView { id: rows; width: 100; height: 100; model: 50; reuseItems: true; delegate: Item { width: 100; height: 10 } }
+            TrackListViewport { id: looks; model: null; view: rows }
+        }
+    }
+    function test_a_look_at_the_pool_of_a_list_gone_in_its_turn_does_nothing() {
+        failOnWarning(/TypeError/)
+        const made = createTemporaryObject(bareList, test)
+        made.rows.height = 50
+        made.looks.view = null
+        wait(0)
     }
 
     // What schedules a look at the pool, and what one costs: a scroll through groups, whose estimated content height
