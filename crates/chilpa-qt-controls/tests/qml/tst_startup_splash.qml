@@ -234,6 +234,23 @@ TestCase {
         verify(button("upgradeQuit").activeFocus, "a key the panel does not use goes nowhere")
     }
 
+    // An upgrade that fails while the cover shows it running hands the
+    // keyboard to the failure too, not only one that had failed before.
+    function test_a_running_upgrade_that_fails_answers_the_keyboard() {
+        upgrading()
+        const splash = createTemporaryObject(factory, test)
+        const button = (name) => findChild(splash, name)
+        tryCompare(splash, "opacity", 1)
+        failing({ canRestore: true })
+        tryVerify(() => button("upgradeRetry").activeFocus, 2000, "Try again is where the keyboard starts")
+        keyClick(Qt.Key_Tab)
+        verify(button("upgradeRestore").activeFocus, "Tab goes round the failure's buttons")
+        keyClick(Qt.Key_Tab)
+        verify(button("upgradeQuit").activeFocus)
+        keyClick(Qt.Key_Escape)
+        compare(LibraryUpgrade.left, 1, "Escape quits")
+    }
+
     function test_without_try_again_the_keyboard_starts_on_the_copy() {
         failing({ canRestore: true, canRetry: false })
         const splash = createTemporaryObject(factory, test)
