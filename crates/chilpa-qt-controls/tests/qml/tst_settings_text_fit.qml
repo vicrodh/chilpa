@@ -111,7 +111,7 @@ TestCase {
         for (const arm of each(fixed, /("[\w.]+"|crate::[\w:]+)\s*=>\s*\{?\s*vec!\[([^\]]*)\]/g))
             out[arm[1].replace(/"/g, "")] = each(arm[2], label).map(m => m[1] !== undefined ? I18n.tr(unquote(m[1])) : unquote(m[2]))
         const tables = { "crate::graphics_boot::RENDERER": ["graphics_boot.rs", "RENDERER_CHOICES"], "crate::graphics_boot::INTERFACE_SIZE": ["graphics_boot.rs", "SIZE_CHOICES"],
-            "crate::queue::normalization::TARGET": ["queue/normalization.rs", "TARGET_CHOICES"], "crate::queue::back_button::BACK": ["queue/back_button.rs", "CHOICES"],
+            "crate::queue::normalization::TARGET": ["queue/normalization.rs", "TARGET_CHOICES"], "crate::queue::back_button::BACK": ["queue/back_button.rs", "CHOICES"], "crate::outputs::channel_mode::CHANNEL_MODE": ["outputs/channel_mode.rs", "CHOICES"],
             "integrations.discord.artworkSource": ["discord/mod.rs", "SOURCES"], "integrations.discord.artworkRetention": ["discord/mod.rs", "RETENTIONS"] }
         for (const key in tables) {
             const source = read(api + tables[key][0])
@@ -124,6 +124,7 @@ TestCase {
         out["audio.device"] = ["USB DAC, USB Audio", "HDA Intel PCH, ALC1220 Analog", "HDMI 0 (External monitor), HDMI Audio"]
         out["audio.alsaPlugin"] = ["hw: the card alone", "plughw: converts what it refuses", "pcm: shared, as ALSA sets it up"].map(t => I18n.tr(t))
         out["audio.hwVolumeControl"] = [I18n.tr("Choose a playback control"), "PCM", "Digital Playback Volume"]
+        out["crate::beets_runtime::ENGINE"] = ["Chilpa", "beets"]
         out["crate::graphics_boot::gpu::GPU"] = [I18n.tr("Auto (recommended)"), "AMD Radeon RX 7900 XTX (RADV NAVI31)", "Intel Arc A770 Graphics (DG2)"]
         return out
     }
@@ -223,12 +224,13 @@ TestCase {
     function worded(select) { return !/(audio\.device|::GPU)$/.test(select.objectName) }
     // These Japanese descriptions, wrapped at the widths they get here, report
     // a contentWidth 2.00 px past their box, yet each of their lines laid out
-    // alone fits it (391.67 in 392, 347.70 in 348, 711.39 in 712): Qt adds
+    // alone fits it (391.67 and 391.44 in 392, 347.70 in 348, 711.39 in 712): Qt adds
     // the 2 px to the whole text's width, not to any line's glyphs, and
     // nothing is drawn past the box.
     readonly property var wrappedWider: ["Look up lyrics through Chilpa's lyrics service when the file and its source have none.",
         "Remove unreferenced images from sources and plugins. Needed images download again.",
-        "Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."]
+        "Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network.",
+        "Chilpa never changes your library on its own: every change goes through you. To rule out edits and anything that can't be undone, turn this on. It blocks tag and cover edits, deletions, changes to server playlists and syncing to a device whose folder is in your library. Favorites, ratings and adding sources keep working."]
 
     function fits(width, data) {
         I18n.choose(data.language)

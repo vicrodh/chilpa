@@ -36,11 +36,11 @@ TestCase {
         verify(shown(rating) && rating.checked)
         Prefs.ratings = false
         verify(!shown(rating), "no rating column to turn on")
-        verify(shown(findChild(withPanes.contentItem, "paneToggle-year")), "the other columns stay")
+        tryVerify(() => { const year = findChild(withPanes.contentItem, "paneToggle-year"); return shown(year) && year.parent.y > 0 }, 1000, "the other columns stay, placed again once their rows are rebuilt")
         mouseClick(findChild(withPanes.contentItem, "paneToggle-year"))
         compare(test.asked, ["year"], "only the column asked for changes")
         Prefs.ratings = true
-        verify(shown(rating) && rating.checked)
+        tryVerify(() => { const again = findChild(withPanes.contentItem, "paneToggle-rating"); return shown(again) && again.checked }, 1000, "the rating column is offered again, still chosen")
     }
 
     function test_the_tracks_screen_offers_no_stars_and_keeps_the_ones_chosen() {

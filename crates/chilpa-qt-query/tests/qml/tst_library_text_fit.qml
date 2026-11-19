@@ -7,6 +7,7 @@ import "qrc:/qt/qml/app/chilpa/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Tools
+import "qrc:/qt/qml/app/chilpa/discovery/qml/Patterns" as DiscoveryUi
 
 // The library's screens, Home and the search results say their titles,
 // counts, tools, column names and chips in each language without running
@@ -30,7 +31,7 @@ TestCase {
     Component { id: tracksPage; TracksScreen {} }
     Component { id: homePage; HomeScreen {} }
     Component { id: pageHero; PageHero {} }
-    Component { id: albumHero; AlbumHero {} }
+    Component { id: albumHero; DiscoveryUi.AlbumHero {} }
     Component { id: crumbs; SourceCrumbs {} }
     Component { id: flyoutFactory; SearchFlyout { room: 700 } }
     SearchModel { id: hits }
