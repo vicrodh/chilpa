@@ -7,12 +7,13 @@ QtObject {
     required property var model
     required property var view
     property var place: null
-    // A list that scrolls itself pools at most three screens of compact rows, more than it holds at once at one size; past that, once laid out, its whole pool goes.
-    readonly property var band: view ? [view.height, view.cacheBuffer, view.contentHeight] : []
+    // A list that scrolls itself pools at most three screens of compact rows; past that its whole pool goes, looked at when its screen, margin or visibility changes or it stops moving.
+    readonly property var band: view ? [view.height, view.cacheBuffer, view.visible, view.moving] : []
     onBandChanged: if (view && view.interactive) Qt.callLater(viewport.trim)
     function trim() {
+        if (!view.interactive || view.moving) return
         view.forceLayout()
-        if (view.visible && view.contentItem.children.filter(slot => slot.resident && !slot.visible).length > 3 * Math.ceil(view.height / Metrics.rowCompact)) { view.reuseItems = false; view.reuseItems = true }
+        if (view.contentItem.children.filter(slot => slot.pooled === true).length > 3 * Math.ceil(view.height / Metrics.rowCompact)) { view.reuseItems = false; view.reuseItems = true }
     }
     // One reset restoration per turn, cancelled with the owning list.
     readonly property Timer pending: Timer { interval: 0; onTriggered: viewport.restore() }
@@ -45,10 +46,8 @@ QtObject {
         if (!was || was.list !== identity() || view.count === 0)
             return
         view.forceLayout()
-        if (was.row >= view.count) {
-            view.positionViewAtEnd()
-            return
-        }
+        if (was.row >= view.count)
+            return view.positionViewAtEnd()
         view.positionViewAtIndex(was.row, ListView.Beginning)
         view.contentY += was.into
         view.returnToBounds()

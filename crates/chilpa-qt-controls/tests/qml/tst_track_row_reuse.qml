@@ -46,6 +46,9 @@ TestCase {
         property int emptiest: 0
         function onBeforeSynchronizing() { made++; emptiest = Math.max(emptiest, test.emptyRows()) }
     }
+    // What schedules a look at the pool of the list (TrackListViewport.band), and the view's content height.
+    Connections { id: bands; target: null; property int changes: 0; function onBandChanged() { changes++ } }
+    Connections { id: heights; target: test.view; property int changes: 0; function onContentHeightChanged() { changes++ } }
     // The Tracks page: a sheet that scrolls sideways, with the snapshot rows and the optional columns.
     Component {
         id: sheetPage
@@ -112,14 +115,18 @@ TestCase {
         Motion.reduced = false
         view.cancelFlick()
         view.maximumFlickVelocity = test.flickVelocity
+        list.visible = true
         list.height = 300
         list.cursorRow = -1
+        bands.target = null
         test.forceActiveFocus()
     }
 
     function slots() { return view.contentItem.children.filter(item => item.contentBuilds !== undefined && item.rowKind !== undefined) }
     // The rows the screen shows, by their place in the view, that have no body to draw.
     function emptyRows() { return slots().filter(row => row.visible && row.y + row.height > view.contentY && row.y < view.contentY + view.height && body(row) === null).length }
+    function pool() { return list.resources.find(object => typeof object.trim === "function" && object.band !== undefined) }
+    function budget() { return 3 * Math.ceil(view.height / Metrics.rowCompact) }
     function surfaces() { return view.contentItem.children.filter(item => item.rowIndex !== undefined && item.listMode !== undefined) }
     function body(row) { return findChild(row, "trackRowBody") }
     function findItem(item, wanted) {
@@ -512,14 +519,17 @@ TestCase {
         list.rich = true; view.forceLayout(); wait(0)
         list.rich = false; view.forceLayout(); wait(0)
         compare(built() - before, 0, "rich and back to compact built no body")
-        // A warm pool scrolls at any speed without building: two screens a frame.
-        const fast = built()
+        // A warm pool scrolls at any speed without building: two screens a frame, with a turn of the event loop
+        // after each step, where a look at the pool would run, and counted after the last one.
+        const fast = built(), rows = slots()
         for (const to of [lastY(), view.originY]) {
             const step = (to > view.contentY ? 2 : -2) * view.height
-            while (Math.abs(to - view.contentY) > Math.abs(step)) { view.contentY += step; view.forceLayout() }
-            view.contentY = to; view.forceLayout()
+            while (Math.abs(to - view.contentY) > Math.abs(step)) { view.contentY += step; view.forceLayout(); wait(0) }
+            view.contentY = to; view.forceLayout(); wait(0)
         }
+        wait(0)
         compare(built() - fast, 0, "two screens a frame built no body")
+        compare(rows.filter(row => slots().indexOf(row) < 0).length, 0, "and let no row go")
         // A list a search empties keeps its pool, and filled again builds nothing.
         const kept = slots().length, again = built()
         verify(kept <= 3 * Math.ceil(view.height / Metrics.rowCompact), kept + " rows held")
@@ -529,6 +539,76 @@ TestCase {
         fill(400)
         view.positionViewAtBeginning(); view.forceLayout(); wait(0)
         compare(built() - again, 0, "filled again, it built no body")
+    }
+
+    // Hidden, every row is hidden with its parent, but only the list's pool is the pool: a list shrunk while hidden
+    // lets its pool go, and shown again keeps at most its budget.
+    function test_a_list_shrunk_while_hidden_lets_its_pool_go() {
+        list.height = 676
+        view.forceLayout(); wait(0)
+        warm()
+        const rows = slots()
+        list.visible = false
+        list.height = 176
+        wait(0)
+        verify(rows.some(row => slots().indexOf(row) < 0), "hidden, the list let its pool go: " + slots().length + " rows held of " + rows.length)
+        list.visible = true
+        wait(0)
+        const pooled = slots().filter(row => !row.visible).length
+        verify(pooled <= budget(), pooled + " rows in the pool for a budget of " + budget())
+        for (const row of slots().filter(row => row.visible && row.immediate)) checkRow(row)
+    }
+
+    // A list that shrinks while it moves lets its pool go when it stops, not mid-flick. Qt itself releases a few
+    // rows without pooling them when the view shrinks during a flick; the list's own drain is turning reuse off and on.
+    Connections { id: drains; target: test.view; property int toggles: 0; function onReuseItemsChanged() { toggles++ } }
+    function test_a_list_that_shrinks_while_it_moves_lets_its_pool_go_when_it_stops() {
+        list.height = 676
+        view.forceLayout(); wait(0)
+        warm()
+        view.flick(0, -view.maximumFlickVelocity)
+        tryVerify(() => view.moving, 1000, "the list moves")
+        drains.toggles = 0
+        list.height = 176
+        for (let turn = 0; turn < 5; ++turn) wait(16)
+        verify(view.moving, "still moving")
+        compare(drains.toggles, 0, "the list did not drain its pool while it moved")
+        verify(slots().filter(row => !row.visible).length > budget(), "the pool is over its budget meanwhile")
+        tryVerify(() => !view.moving, 5000, "the flick ends")
+        wait(0)
+        compare(drains.toggles, 2, "stopped, it drained its pool once")
+        verify(slots().filter(row => !row.visible).length <= budget(), slots().filter(row => !row.visible).length + " rows in the pool")
+    }
+
+    // What schedules a look at the pool, and what one costs: a scroll through groups, whose estimated content height
+    // moves with every step, a flick, and a model that grows a row at a time, as a scan adds them.
+    function test_scrolling_and_growing_leave_the_pool_alone() {
+        const looks = pool()
+        verify(looks !== undefined, "the list's pool")
+        view.section.property = "group"
+        fill(400)
+        view.positionViewAtBeginning(); view.forceLayout()
+        warm()
+        bands.target = looks
+        bands.changes = 0; heights.changes = 0
+        for (const to of [lastY(), view.originY, at(0.5), view.originY]) stroll(to)
+        const swept = heights.changes
+        verify(swept > 0, "the content height moved during the grouped scroll")
+        compare(bands.changes, 0, "a grouped scroll whose content height moved " + swept + " times scheduled no look at the pool")
+        bands.changes = 0
+        view.flick(0, -view.maximumFlickVelocity)
+        tryVerify(() => view.moving, 1000)
+        tryVerify(() => !view.moving, 5000)
+        compare(bands.changes, 2, "a flick schedules one look when it starts, which waits, and one when it stops")
+        bands.changes = 0; heights.changes = 0
+        for (let i = 0; i < 10; ++i) { tracks.append(entry(400 + i)); wait(50) }
+        compare(bands.changes, 0, "a model growing by ten rows, one every 50 ms, scheduled no look at the pool")
+        // One look within the budget lays nothing out and walks the rows the view holds.
+        const runs = 500, start = Date.now()
+        for (let i = 0; i < runs; ++i) looks.trim()
+        const each = (Date.now() - start) / runs
+        console.log("pool: grouped scroll " + swept + " content heights, 0 looks; flick 2 scheduled; growth "
+            + heights.changes + " content heights, 0 looks; one look " + each.toFixed(3) + " ms over " + view.contentItem.children.length + " children")
     }
 
     // A body is built for the first time on the screen at once, in the margin asynchronously once its row is placed,

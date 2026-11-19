@@ -9,6 +9,8 @@ Item {
     // screen; else it waits for my placement, off the screen built asynchronously. None is built for a screen a jump lays out on its way.
     property bool resident: false
     readonly property bool deferFirstBuild: ListView.view !== null && ListView.view.positioning === true
+    property bool pooled: false // set by the list while I wait in its pool, whatever my parents show
+    visible: !pooled
     property bool layoutReady: false
     function finishLayout() { layoutReady = true }
     Component.onCompleted: Qt.callLater(finishLayout)

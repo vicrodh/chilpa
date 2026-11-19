@@ -207,7 +207,7 @@ Item {
             selectionMode: list.selectionMode
             groupActionsEnabled: list.groupActionsEnabled
             groupStart: ListView.section !== "" && ListView.section !== ListView.previousSection
-            ListView.onPooled: visible = false; ListView.onReused: visible = true
+            ListView.onPooled: pooled = true; ListView.onReused: pooled = false
         }
 
         onContentYChanged: pointer.track()
