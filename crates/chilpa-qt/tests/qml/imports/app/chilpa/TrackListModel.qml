@@ -31,7 +31,7 @@ ListModel {
     function canGo(row, kind) { return true }
     function creditOf(row) { return get(row).artist || "" }
     function select(row, mode) { lastAction = "select"; lastRow = row }
-    function isTrack(row) { return row >= 0 && row < count && get(row).rowKind === 0 }
+    function isTrack(row) { return row >= 0 && row < count && get(row).rowKind === 0 && !get(row).missing }
     function queue(row) { lastAction = "queue"; lastRow = row }
     function favoriteChosen(row, favorite) { lastAction = favorite ? "favorite" : "unfavorite"; lastRow = row }
     function play(row) { lastAction = "play"; lastRow = row }

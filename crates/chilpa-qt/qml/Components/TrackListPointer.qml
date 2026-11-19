@@ -3,8 +3,11 @@ import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+
+    // Hover and clicks are resolved once for the whole list.
 MouseArea {
     id: pointer
+
     property Item host
     property ListView rows
     property TrackColumns cols
@@ -12,24 +15,34 @@ MouseArea {
     property QueueMenu groupMenu
     property CreditLine measure
     cursorShape: Qt.PointingHandCursor
+
     property Item sourceTip: null
     onVisibleChanged: if (!visible && sourceTip) { TipState.hide(sourceTip); sourceTip = null }
     Component.onDestruction: if (sourceTip) TipState.hide(sourceTip)
+
     property int pressedRow: -1
     property real pressedY: 0
     property bool dragging: false
     property bool pressedRating: false
+    // What is being dragged, for the ghost that follows the pointer.
     property string dragTitle
     property string dragDetail
     property int dragCount: 1
     property bool dropped: false
+    // Where what is dragged would land: on that row, after it when it comes
+    // from above and before it when it comes from below.
     readonly property int dropRow: dragging && containsMouse ? rowAt(mouseY) : -1
     readonly property bool dropAfter: dropRow > pressedRow
+
     hoverEnabled: true
     onWheel: (wheel) => { host.userScrollStarted(); wheel.accepted = false }
+    // A movable row owns its press so the page cannot steal it for scrolling.
     preventStealing: pressedRow >= 0
     acceptedButtons: Qt.LeftButton | Qt.RightButton
-    function rowAt(y) { return rows.indexAt(Metrics.gap2, y + rows.contentY) }
+
+    function rowAt(y) {
+        return rows.indexAt(Metrics.gap2, y + rows.contentY)
+    }
     function track() {
         rows.hovered = containsMouse ? rowAt(mouseY) : -1
         rows.artistHovered = containsMouse && onArtist(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
@@ -45,11 +58,16 @@ MouseArea {
         rows.actionHovered = containsMouse ? (groupActionAt(rows.hovered, mouseX, mouseY) || actionAt(rows.hovered, mouseX, mouseY)) : 0
         rows.moveHovered = containsMouse ? moveAt(rows.hovered, mouseX, mouseY) : 0
     }
+    // The arrow at that point of a row kept in its own order: before the
+    // number, one over the other in a rich row and side by side in a
+    // compact one.
     function moveAt(row, x, y) {
         const item = cols.reorder && row >= 0 ? rows.itemAtIndex(row) : null
         const left = item ? x - item.x - cols.moveX : -1
-        if (!item || item.header || !item.available || left < 0 || left >= cols.move) return 0
-        if (!cols.rich) return left < Metrics.moveCellCompact ? 1 : 2
+        if (!item || item.header || !item.available || left < 0 || left >= cols.move)
+            return 0
+        if (!cols.rich)
+            return left < Metrics.moveCellCompact ? 1 : 2
         const cell = Math.floor((y + rows.contentY - item.y - item.height / 2) / Metrics.moveCell)
         return cell === -1 ? 1 : cell === 0 ? 2 : 0
     }
@@ -71,24 +89,31 @@ MouseArea {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
         return item ? item.ratingAt(x - item.x, y + rows.contentY - item.y) : 0
     }
+    // Whether the pointer is on the row's artist: its own column in
+    // compact rows, the line under the title in rich ones. Worked out
+    // here, once for the list, and not by a handler on every row.
     function onArtist(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
         if (!item || item.header || item.artist === "" || !host.model.canGo(row, "artist"))
             return false
         return item.containsArtist(x - item.x, y + rows.contentY - item.y)
     }
+
     function onAlbum(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
         if (!item || item.header || item.album === "" || !host.model.canGo(row, "album")) return false
         return item.containsLabel(pointer, item.albumText, x, y)
     }
     function onHeaderComposer(item, x, y) {
-        return item && item.headerWork && item.headerComposerTarget !== "" && item.containsLabel(pointer, item.headerComposerLabel, x, y)
+        return item && item.headerWork && item.headerComposerTarget !== ""
+            && item.containsLabel(pointer, item.headerComposerLabel, x, y)
     }
+
     function creditAt(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
         return item && item.available ? item.creditAt(pointer, x, y) : null
     }
+
     onPressed: (mouse) => {
         if (mouse.button === Qt.LeftButton && host.reorderable) host.userScrollStarted()
         dropped = false
@@ -110,6 +135,7 @@ MouseArea {
             dragging = true
     }
     onReleased: (mouse) => {
+        // The release that ends a drag is a drop, not also a click.
         dropped = dragging
         if (dragging && pressedRow >= 0) {
             const target = rowAt(mouse.y)
@@ -121,16 +147,17 @@ MouseArea {
     }
     onContainsMouseChanged: track()
     onClicked: (mouse) => {
-        const row = rowAt(mouse.y)
-        if (row < 0 || dropped) return
-        const header = rows.itemAtIndex(row)
-        if (!header || !header.header && header.trackId === 0 && !header.available) return
+        const row = rowAt(mouse.y), header = rows.itemAtIndex(row)
+        // A slot whose track left the list takes no click: no cursor, selection or menu.
+        if (row < 0 || dropped || !header || !header.header && !host.model.isTrack(row))
+            return
         const groupAction = groupActionAt(row, mouse.x, mouse.y)
         if (mouse.button === Qt.LeftButton && groupAction > 0) {
             if (groupAction === 3) {
                 const at = header.groupActionArea.mapToItem(host, 0, header.groupActionArea.height + Metrics.gap4)
                 groupMenu.showGroup(row, header.headerLabel, host.width - Metrics.menuWidth - Metrics.gap10, at.y)
-            } else host.model.groupAction(row, groupAction === 1 ? "play" : "shuffle", header.headerLabel); return
+            } else host.model.groupAction(row, groupAction === 1 ? "play" : "shuffle", header.headerLabel)
+            return
         }
         const credit = mouse.button === Qt.LeftButton && !host.selectionMode && !(mouse.modifiers & (Qt.ControlModifier | Qt.MetaModifier | Qt.ShiftModifier)) ? creditAt(row, mouse.x, mouse.y) : null
         if (credit) { Navigation.goKey(credit.target, credit.key); return }
@@ -182,11 +209,11 @@ MouseArea {
     onDoubleClicked: (mouse) => {
         const row = rowAt(mouse.y)
         const header = row >= 0 ? rows.itemAtIndex(row) : null
-        if (!header || !header.header && header.trackId === 0 && !header.available) return
-        if (groupActionAt(row, mouse.x, mouse.y) || onHeaderComposer(header, mouse.x, mouse.y))
+        if (!header || !header.header && !host.model.isTrack(row) || groupActionAt(row, mouse.x, mouse.y) || onHeaderComposer(header, mouse.x, mouse.y))
             return
         if (creditAt(row, mouse.x, mouse.y) || onAlbum(row, mouse.x, mouse.y) || onArtist(row, mouse.x, mouse.y))
             return
+        // A second quick press on an arrow is one more step, not a play.
         if (row >= 0 && mouse.button === Qt.LeftButton && move(row, mouse.x, mouse.y))
             return
         if (row >= 0 && mouse.button === Qt.LeftButton && !pressedRating && !ratingAt(row, mouse.x, mouse.y) && !actionAt(row, mouse.x, mouse.y))
