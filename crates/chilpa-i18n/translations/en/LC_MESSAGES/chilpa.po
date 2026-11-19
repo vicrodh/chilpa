@@ -10751,6 +10751,9 @@ msgstr ""
 msgid "this device delivers bit-perfect in no common format"
 msgstr ""
 
+msgid "this library has to be updated first; start Chilpa to update it"
+msgstr ""
+
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr ""
 

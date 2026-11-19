@@ -83,8 +83,18 @@ pub fn back_up_before_upgrading(db: &Connection, library: &Path) -> rusqlite::Re
     upgrade::backup(db, library)
 }
 
-pub(crate) fn upgrade(db: &Connection, library: &Path) -> rusqlite::Result<()> {
-    upgrade::apply(db, library, &mut |_| {}, Some(std::time::Duration::from_secs(5)), &upgrade::Stop::default()).map(drop)
+/// What an opener does before anything else: a library older than this code
+/// is refused as it is. Only `upgrade::run` changes a library's version,
+/// under the startup cover; an opener only creates a new library or opens a
+/// current one.
+pub(crate) fn refuse_older(db: &Connection) -> rusqlite::Result<()> {
+    db.busy_timeout(std::time::Duration::from_secs(5))?;
+    let actual: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    if actual == 0 || actual >= VERSION { return Ok(()); }
+    Err(rusqlite::Error::SqliteFailure(
+        rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISMATCH),
+        Some(chilpa_i18n::t("this library has to be updated first; start Chilpa to update it")),
+    ))
 }
 
 /// Builds a database stopped at an older version, as a shipped Chilpa would
@@ -101,8 +111,9 @@ pub fn stop_at(db: &Connection, version: usize) {
     db.execute_batch(&format!("PRAGMA user_version = {version}")).unwrap();
 }
 
-/// Creates or upgrades the schema.
-pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
+/// Creates the schema, or brings a database up in place: what a new library
+/// and the tests need. A library on disk is upgraded by `upgrade::run` alone.
+pub(crate) fn migrate(db: &Connection) -> rusqlite::Result<()> {
     let gate = migration_gate(db);
     let _migration = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner()));
     let actual: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
@@ -479,6 +490,7 @@ mod tests {
         assert_eq!(tables(&db), 0, "version 47 did not have it");
         drop(db);
 
+        upgrade::run(&path, &mut |_| {}, &upgrade::Stop::default()).unwrap();
         let lib = crate::Library::open(&path).unwrap();
         let backup = backup_path(&path);
         assert!(backup.is_file(), "a copy is kept before the shape of the file changes");

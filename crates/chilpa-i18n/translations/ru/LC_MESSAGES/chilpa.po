@@ -10765,6 +10765,9 @@ msgstr "этому компьютеру не удалось выполнить �
 msgid "this device delivers bit-perfect in no common format"
 msgstr "это устройство не отдаёт bit-perfect ни в одном общем формате"
 
+msgid "this library has to be updated first; start Chilpa to update it"
+msgstr "сначала эту библиотеку нужно обновить; запустите Chilpa, чтобы обновить её"
+
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr "эта библиотека версии {}, а эта версия Chilpa понимает версии до {}; обновите Chilpa, а не открывайте библиотеку старой версией"
 

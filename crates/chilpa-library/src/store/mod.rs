@@ -177,16 +177,20 @@ impl Library {
         &self.db
     }
 
-    /// Opens (or creates) the library in that file.
+    /// Opens (or creates) the library in that file. One older than this code
+    /// is refused: `schema::upgrade::run` brings it up first.
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
         if let Some(dir) = path.parent() {
             let _ = std::fs::create_dir_all(dir);
         }
         let db = Connection::open(path)?;
+        // Before a pragma touches it: an older library is upgraded only
+        // under the startup cover (`schema::upgrade::run`).
+        schema::refuse_older(&db)?;
         query::register(&db)?;
         schema::apply_pragmas(&db)?;
-        // Before the shape of the file changes, and only when it is going to.
-        schema::upgrade(&db, path)?;
+        // A new library is created here; a current one is left as it is.
+        schema::migrate(&db)?;
         // Not only after a scan: a library that already exists carries the
         // statistics of an empty database and would keep them until its next
         // scan, which may be never.
@@ -1058,10 +1062,12 @@ mod tests {
         let backup = crate::schema::backup_path(&path);
         assert!(!backup.exists(), "nothing to go back to yet");
 
+        crate::schema::upgrade::run(&path, &mut |_| {}, &Default::default()).unwrap();
         let lib = Library::open(&path).unwrap();
         assert_eq!(lib.track_count(true).unwrap(), 1, "the library still has its track");
         assert!(backup.exists(), "and there is a way back");
 
+        crate::schema::upgrade::run(&backup, &mut |_| {}, &Default::default()).unwrap();
         let kept = Library::open(&backup).unwrap();
         assert_eq!(kept.db.query_row("SELECT title FROM tracks WHERE id = 1", [], |r| r.get::<_, String>(0)).unwrap(), "What was there", "the copy opens and holds what was in it");
 

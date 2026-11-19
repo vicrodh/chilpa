@@ -103,7 +103,7 @@ pub fn run(library: &Path, observer: &mut dyn FnMut(&Progress), stop: &Stop) -> 
         stop.watch(&db);
         crate::store::query::register(&db)?;
         super::apply_pragmas(&db)?;
-        apply(&db, library, observer, None, stop)?
+        apply(&db, library, observer, stop)?
     };
     stop.check()?;
     drop(crate::Library::open(library)?);
@@ -112,15 +112,15 @@ pub fn run(library: &Path, observer: &mut dyn FnMut(&Progress), stop: &Stop) -> 
 }
 
 /// The steps this connection's file still needs, under both locks, telling
-/// `observer`. `patience` bounds the wait for another process; `None` waits
-/// for as long as it takes. Returns how many steps it applied.
-pub(super) fn apply(db: &Connection, library: &Path, observer: &mut dyn FnMut(&Progress), patience: Option<Duration>, stop: &Stop) -> rusqlite::Result<usize> {
+/// `observer`. Another process holding the lock is waited for as long as it
+/// takes. Returns how many steps it applied.
+fn apply(db: &Connection, library: &Path, observer: &mut dyn FnMut(&Progress), stop: &Stop) -> rusqlite::Result<usize> {
     if version(db)? >= VERSION { super::migrate(db)?; return Ok(0); }
     let gate = super::migration_gate(db);
     let _process = gate.as_ref().map(|gate| gate.lock().unwrap_or_else(|error| error.into_inner()));
     if version(db)? >= VERSION { super::migrate_locked(db)?; return Ok(0); }
     let on_disk = db.path().is_some_and(|path| !path.is_empty());
-    let _file = if on_disk { Some(lock_reporting(library, observer, patience, stop)?) } else { None };
+    let _file = if on_disk { Some(lock_reporting(library, observer, None, stop)?) } else { None };
     // Another process may have completed the upgrade while this one waited.
     let from = version(db)?;
     if from >= VERSION {

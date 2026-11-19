@@ -10737,6 +10737,9 @@ msgstr "このコンピューターはネットワークを検索できません
 msgid "this device delivers bit-perfect in no common format"
 msgstr "このデバイスは、共通のどのフォーマットでもビットパーフェクトで再生できません"
 
+msgid "this library has to be updated first; start Chilpa to update it"
+msgstr "このライブラリは先に更新する必要があります。Chilpa を起動して更新してください"
+
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr "このライブラリはバージョン{}ですが、このChilpaが対応しているのは{}までです。古いバージョンで開かずに、Chilpaを更新してください"
 

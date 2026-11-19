@@ -10751,6 +10751,9 @@ msgstr "este computador não conseguiu procurar na rede"
 msgid "this device delivers bit-perfect in no common format"
 msgstr "este dispositivo não entrega bit-perfect em nenhum formato comum"
 
+msgid "this library has to be updated first; start Chilpa to update it"
+msgstr "esta biblioteca precisa ser atualizada primeiro; abra o Chilpa para atualizá-la"
+
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr "esta biblioteca é da versão {} e este Chilpa entende até a {}; atualize o Chilpa em vez de abri-la com um antigo"
 

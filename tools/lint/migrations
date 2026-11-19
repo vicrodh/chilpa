@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""A library changes its version in one place only.
+
+The library's schema steps run inside `chilpa_library::schema::upgrade::run`,
+started by the facade's `library_upgrade` while the startup cover waits, and
+nowhere else: no opener upgrades, and nothing reads a library on its way up.
+This keeps that true as the code grows:
+
+- in `chilpa-library`'s code (tests aside), `user_version` is written only
+  under `src/schema.rs` and `src/schema/`;
+- a `CREATE`, `ALTER` or `DROP` of a table, index, trigger or view outside
+  those paths is a temporary object or is listed, with its reason, in
+  `migrations-allowed.txt`;
+- outside `chilpa-library` and tests, only
+  `crates/chilpa-api/src/library_upgrade.rs` names `upgrade::run`;
+- the window's `main.rs` starts what reads the library through
+  `start_services`, which waits for the upgrade, and never by the parts.
+"""
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
+LIBRARY = "crates/chilpa-library/src/"
+SCHEMA = ("crates/chilpa-library/src/schema.rs", "crates/chilpa-library/src/schema/")
+ALLOWED = Path(__file__).resolve().parent / "migrations-allowed.txt"
+UPGRADER = "crates/chilpa-api/src/library_upgrade.rs"
+MAIN = "crates/chilpa-qt/src/main.rs"
+PARTS = ("start_plugins", "start_scrobbling", "start_servers", "start_media_controls")
+
+DDL = re.compile(r"\b(CREATE|ALTER|DROP)\s+(?:(TEMP|TEMPORARY)\s+)?(?:UNIQUE\s+)?(TABLE|INDEX|TRIGGER|VIEW)\b")
+VERSION_WRITE = re.compile(r"user_version\s*=|\"user_version\"\s*,")
+
+
+def tracked():
+    out = subprocess.run(["git", "ls-files", "-z", "crates"], cwd=ROOT, capture_output=True, check=True).stdout
+    return [name for name in out.decode().split("\0") if name.endswith(".rs")]
+
+
+def is_test_file(name):
+    return "/tests/" in name or name.endswith("tests.rs") or "/tests.rs" in name
+
+
+def code_lines(text):
+    """The lines of a file outside `#[cfg(test)]` items, with their numbers."""
+    lines = text.split("\n")
+    out, skip, depth = [], False, 0
+    pending = False
+    for number, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if skip:
+            depth += line.count("{") - line.count("}")
+            if depth <= 0 and ("}" in line or stripped.endswith(";")):
+                skip = False
+            continue
+        if pending:
+            if not stripped or stripped.startswith("#[") or stripped.startswith("//"):
+                continue
+            pending = False
+            depth = line.count("{") - line.count("}")
+            if depth > 0:
+                skip = True
+            continue
+        if stripped == "#[cfg(test)]":
+            pending = True
+            continue
+        out.append((number, line))
+    return out
+
+
+def allowed():
+    out = set()
+    for n, line in enumerate(ALLOWED.read_text().split("\n"), 1):
+        if not line.strip() or line.startswith("#"):
+            continue
+        path, _, why = line.partition("|")
+        if not why.strip():
+            sys.exit(f"{ALLOWED.name}:{n}: expected 'path | reason'")
+        out.add(path.strip())
+    return out
+
+
+def main():
+    errors = []
+    listed = allowed()
+    used = set()
+    for name in tracked():
+        path = ROOT / name
+        if not path.exists():
+            continue
+        text = path.read_text(errors="replace")
+        if name.startswith(LIBRARY) and not is_test_file(name) and not name.startswith(SCHEMA):
+            for number, line in code_lines(text):
+                if VERSION_WRITE.search(line):
+                    errors.append(f"{name}:{number}: writes the library's version outside its schema steps")
+                for match in DDL.finditer(line):
+                    if match.group(2):
+                        continue
+                    if name in listed:
+                        used.add(name)
+                        continue
+                    errors.append(f"{name}:{number}: {match.group(0)} outside the schema steps; a library's shape changes only in a step")
+        if not name.startswith("crates/chilpa-library/") and not is_test_file(name) and name != UPGRADER and re.search(r"\bupgrade::run\b", text):
+            errors.append(f"{name}: names upgrade::run; only {UPGRADER} upgrades a library")
+    for name in sorted(listed - used):
+        errors.append(f"{ALLOWED.name}: {name} has no schema change left to allow; remove it")
+    main = (ROOT / MAIN).read_text()
+    if "start_services" not in main:
+        errors.append(f"{MAIN}: what reads the library starts through start_services, which waits for an upgrade")
+    elif main.index("start_services") > main.index("engine.load"):
+        errors.append(f"{MAIN}: start_services comes before the window loads")
+    for part in PARTS:
+        if re.search(rf"\b{part}\b", main):
+            errors.append(f"{MAIN}: {part} is started by start_services, after any upgrade")
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"migrations: {len(errors)} error(s)", file=sys.stderr)
+        sys.exit(1)
+    print("migrations: the library changes version only in its upgrade, started by the startup cover")
+
+
+if __name__ == "__main__":
+    main()

@@ -23,7 +23,7 @@ fn verify(path: &Path) {
 }
 
 #[test]
-fn concurrent_library_opens_keep_one_pre_upgrade_backup() {
+fn concurrent_upgrades_keep_one_pre_upgrade_backup() {
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("library.db");
     fixture(&path);
@@ -32,7 +32,7 @@ fn concurrent_library_opens_keep_one_pre_upgrade_backup() {
         let (path, barrier) = (path.clone(), barrier.clone());
         std::thread::spawn(move || {
             barrier.wait();
-            crate::Library::open(&path).unwrap();
+            upgrade::run(&path, &mut |_| {}, &upgrade::Stop::default()).unwrap();
         })
     }).collect();
     for worker in workers { worker.join().unwrap(); }
@@ -44,7 +44,7 @@ fn child_opens_current_library() {
     let Some(path) = std::env::var_os("CHILPA_TEST_UPGRADE_LIBRARY") else { return };
     let ready = std::env::var_os("CHILPA_TEST_UPGRADE_READY").unwrap();
     std::fs::write(ready, b"ready").unwrap();
-    crate::Library::open(Path::new(&path)).unwrap();
+    upgrade::run(Path::new(&path), &mut |_| {}, &upgrade::Stop::default()).unwrap();
 }
 
 struct Children(Vec<Child>);
@@ -138,7 +138,7 @@ fn an_existing_backup_is_replaced_by_a_complete_pre_upgrade_wal_snapshot() {
     writer.execute_batch("INSERT INTO tracks(id,source_id,external_id,title,album_id,added_at) VALUES(2,1,'/second','Recent song',1,2);").unwrap();
     let wal = directory.path().join("listener's library.db-wal");
     assert!(std::fs::metadata(&wal).unwrap().len() > 0, "the snapshot includes committed WAL data");
-    drop(crate::Library::open(&path).unwrap());
+    upgrade::run(&path, &mut |_| {}, &upgrade::Stop::default()).unwrap();
     assert_ne!(std::fs::read(&destination).unwrap(), old_bytes);
     let copied = Connection::open_with_flags(&destination, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
     assert_eq!(copied.query_row("SELECT title FROM tracks WHERE id=2", [], |row| row.get::<_, String>(0)).unwrap(), "Recent song");
@@ -178,7 +178,7 @@ fn a_published_backup_keeps_private_temporary_file_permissions() {
     let expected = template.as_file().metadata().unwrap().permissions().mode() & 0o777;
     assert_eq!(expected & 0o077, 0, "temporary files exclude group and other access");
     drop(template);
-    drop(crate::Library::open(&path).unwrap());
+    upgrade::run(&path, &mut |_| {}, &upgrade::Stop::default()).unwrap();
     let actual = std::fs::metadata(backup_path(&path)).unwrap().permissions().mode() & 0o777;
     assert_eq!(actual, expected, "publication preserves the earlier private backup permissions");
     verify(&path);
@@ -370,4 +370,34 @@ fn a_stop_before_the_copy_changes_nothing() {
     assert_eq!(std::fs::read(backup_path(&path)).unwrap(), previous);
     assert!(!upgrade::marker_path(&path).exists());
     assert!(!staging_left(directory.path()));
+}
+
+fn listing(directory: &Path) -> Vec<String> {
+    // The log and shared memory of a connection come and go with it.
+    let mut names: Vec<String> = std::fs::read_dir(directory).unwrap().map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .filter(|name| !name.ends_with("-wal") && !name.ends_with("-shm")).collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn every_opener_refuses_an_older_library_and_leaves_it_alone() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    at(&path, 54);
+    let (files, bytes) = (listing(directory.path()), std::fs::read(&path).unwrap());
+    let refused = crate::Library::open(&path).err().expect("an opener never upgrades");
+    assert_eq!(refused.sqlite_error_code(), Some(rusqlite::ErrorCode::TypeMismatch));
+    assert!(refused.to_string().contains("has to be updated first"), "{refused}");
+    assert!(crate::Library::open_existing(&path).is_err());
+    assert!(crate::Library::open_read_only(&path).is_err());
+    let scan = crate::ScanJob::try_start_with(path.clone(), vec![directory.path().join("music")], None, std::sync::Arc::new(crate::scan::NoContainers)).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !scan.poll().iter().any(|event| matches!(event, crate::ScanProgress::Failed(_))) {
+        assert!(Instant::now() < deadline, "a scan of an older library fails instead of upgrading it");
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    assert_eq!(version_of(&path), 54);
+    assert_eq!(listing(directory.path()), files, "no copy, marker or lock file");
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
 }
