@@ -1,13 +1,20 @@
 // The window's covers, at the size they are drawn (frontend ADR-0014,
 // rule 5): an image provider behind `image://cover/<size>/<path>`.
 //
-// All three providers share two workers. Pending work is newest-first within
-// its class, with every ninth dispatch reserved for the oldest request in that
-// class. Classes take round-robin turns so contained covers and atmosphere
-// cannot starve row covers or be starved by them. When covers are pending,
-// non-cover work occupies at most one worker so headers and immersive views
-// cannot take both cover slots. Pending producers exist only while at least one
-// live Image is subscribed, so demand bounds the queue without rejecting it.
+// All three providers share two workers. Within its class, pending work is
+// served oldest first: a list asks for its visible rows before its buffer
+// rows, so at rest the screen fills top-down before anything off screen. A
+// pending request withdrawn while others still wait means rows are leaving
+// the screen; until the queue drains, the class then alternates its newest
+// and oldest requests, so the leading edge of a scroll gets every other
+// dispatch and the rows already on screen the rest. A jump withdraws the old
+// screen before the new one asks, so the queue drains and the new screen is
+// served oldest first again. Classes take round-robin turns so contained
+// covers and atmosphere cannot starve row covers or be starved by them. When
+// covers are pending, non-cover work occupies at most one worker so headers
+// and immersive views cannot take both cover slots. Pending producers exist
+// only while at least one live Image is subscribed, so demand bounds the
+// queue without rejecting it.
 
 #include <QtCore/QHash>
 #include <QtCore/QMetaObject>
@@ -57,7 +64,7 @@ public:
 };
 
 enum class CoverClass : int { Cover = 0, Contained = 1, Atmosphere = 2 };
-enum class WorkOperation { Derivative, Contained, Atmosphere };
+enum class WorkOperation { Derivative, Atmosphere };
 enum class WorkPhase { Base, Contained };
 class CoverScheduler;
 
@@ -187,8 +194,6 @@ private:
 class CoverScheduler : public std::enable_shared_from_this<CoverScheduler>
 {
 public:
-    static constexpr quint64 OldestDispatchInterval = 9;
-
     CoverScheduler() { m_pool.setMaxThreadCount(2); }
     ~CoverScheduler() { m_pool.waitForDone(); }
 
@@ -204,6 +209,7 @@ public:
             if (const auto existing = m_byKey.value(key)) {
                 if (kind == CoverClass::Cover && existing->phase == WorkPhase::Contained) {
                     readyCover = std::make_shared<CoverWork>();
+                    readyCover->id = id;
                     readyCover->subscribers.push_back({response, kind});
                     readyCoverPath = existing->coverPath;
                     m_delivering.push_back(readyCover);
@@ -218,8 +224,7 @@ public:
                 work->key = key;
                 work->id = id;
                 work->operation = kind == CoverClass::Atmosphere ? WorkOperation::Atmosphere
-                    : key.startsWith(QStringLiteral("contained:")) ? WorkOperation::Contained
-                                                                   : WorkOperation::Derivative;
+                                                                 : WorkOperation::Derivative;
                 work->priority = kind;
                 work->firstSeen = work->lastDemand = ++m_demandSequence;
                 work->subscribers.push_back({response, kind});
@@ -250,6 +255,10 @@ public:
                     m_byKey.remove((*pending)->key);
                     m_pending.erase(pending);
                 }
+                if (m_pending.empty())
+                    drainedLocked();
+                else
+                    m_scrolling = true;
                 found = true;
                 break;
             }
@@ -302,11 +311,9 @@ public:
             complete(work, made ? QString::fromUtf8(coverOut.constData()) : QString(), {});
             return;
         }
-        if (work->operation == WorkOperation::Contained) {
-            const bool made = make(work, CoverClass::Contained, containedOut);
-            complete(work, {}, made ? QString::fromUtf8(containedOut.constData()) : QString());
-            return;
-        }
+        // A contained cover takes two queue turns: the base derivative, which
+        // plain cover askers of the same key share, then the contained
+        // picture made from it.
         if (work->phase == WorkPhase::Contained) {
             const bool made = make(work, CoverClass::Contained, containedOut);
             complete(work, work->coverPath, made ? QString::fromUtf8(containedOut.constData()) : QString());
@@ -316,6 +323,7 @@ public:
         continueAfterBase(work, coverMade ? QString::fromUtf8(coverOut.constData()) : QString());
     }
 
+#ifdef CHILPA_COVER_SCHEDULER_TEST
     qsizetype pendingCount() const
     {
         QMutexLocker lock(&m_mutex);
@@ -328,6 +336,7 @@ public:
         return m_pending.empty() && m_running.empty() && m_delivering.empty()
             && m_pool.activeThreadCount() == 0;
     }
+#endif
 
 private:
     void continueAfterBase(const std::shared_ptr<CoverWork> &work, QString coverPath)
@@ -344,6 +353,7 @@ private:
             });
             if (makeContained) {
                 coverDelivery = std::make_shared<CoverWork>();
+                coverDelivery->id = work->id;
                 auto subscriber = work->subscribers.begin();
                 while (subscriber != work->subscribers.end()) {
                     if (subscriber->kind == CoverClass::Cover) {
@@ -428,8 +438,11 @@ private:
 #ifdef CHILPA_COVER_SCHEDULER_TEST
         coverTestBeforeImageLoad();
 #endif
-        const QImage coverImage = (coverWanted || atmosphereWanted) && !coverPath.isEmpty() ? QImage(coverPath) : QImage();
-        const QImage containedImage = containedWanted && !containedPath.isEmpty() ? QImage(containedPath) : QImage();
+        const CoverClass coverOperation = atmosphereWanted ? CoverClass::Atmosphere : CoverClass::Cover;
+        const QImage coverImage = (coverWanted || atmosphereWanted) && !coverPath.isEmpty()
+            ? load(work, coverOperation, coverPath) : QImage();
+        const QImage containedImage = containedWanted && !containedPath.isEmpty()
+            ? load(work, CoverClass::Contained, containedPath) : QImage();
 #ifdef CHILPA_COVER_SCHEDULER_TEST
         coverTestBeforeDelivery();
 #endif
@@ -450,12 +463,26 @@ private:
         }
     }
 
+    // The cache sweep can remove a file between the facade naming it and
+    // this read. The facade is asked once more, which makes the file again;
+    // a second failure is delivered as an error.
+    QImage load(const std::shared_ptr<CoverWork> &work, CoverClass operation, const QString &path)
+    {
+        QImage image(path);
+        if (!image.isNull())
+            return image;
+        QByteArray out(4096, '\0');
+        return make(work, operation, out) ? QImage(QString::fromUtf8(out.constData())) : QImage();
+    }
+
     void dispatchLocked()
     {
         while (m_running.size() < 2 && !m_pending.empty()) {
             const auto selected = selectLocked();
             auto work = *selected;
             m_pending.erase(selected);
+            if (m_pending.empty())
+                drainedLocked();
             m_running.push_back(work);
             m_pool.start(new CoverJob(shared_from_this(), work));
         }
@@ -465,7 +492,7 @@ private:
     {
         if (work->operation == WorkOperation::Atmosphere)
             return CoverClass::Atmosphere;
-        if (work->operation == WorkOperation::Contained || work->phase == WorkPhase::Contained)
+        if (work->phase == WorkPhase::Contained)
             return CoverClass::Contained;
         return CoverClass::Cover;
     }
@@ -494,12 +521,18 @@ private:
                 continue;
             if (!(nonCoverRunning && coverPending))
                 m_nextClass = (candidateClass + 1) % 3;
-            const bool oldestTurn = ++m_classDispatches[candidateClass] % OldestDispatchInterval == 0;
-            if (oldestTurn)
+            if (!m_scrolling)
                 return oldest;
-            return newest;
+            const bool oldestTurn = ++m_classDispatches[candidateClass] % 2 == 0;
+            return oldestTurn ? oldest : newest;
         }
         return m_pending.begin();
+    }
+
+    void drainedLocked()
+    {
+        m_scrolling = false;
+        m_classDispatches = {};
     }
 
     mutable QMutex m_mutex;
@@ -509,6 +542,8 @@ private:
     std::vector<std::shared_ptr<CoverWork>> m_running;
     std::vector<std::shared_ptr<CoverWork>> m_delivering;
     quint64 m_demandSequence = 0;
+    // A pending request was withdrawn since the queue last drained.
+    bool m_scrolling = false;
     std::array<quint64, 3> m_classDispatches{};
     int m_nextClass = 0;
 };
@@ -560,9 +595,12 @@ private:
 extern "C" void chilpa_install_covers(void *engine)
 {
     static NetworkFactory network;
-    // Jobs may outlive their providers during engine teardown. Keep the shared
-    // pool alive until process shutdown so it is never destroyed by a worker.
-    static auto scheduler = std::make_shared<CoverScheduler>();
+    // Never destroyed. A running job also owns the scheduler, so if this
+    // reference were released at exit a worker could become the last owner,
+    // and the destructor would then wait for the pool from inside it. Kept
+    // to the end of the process, the count never reaches zero on any thread,
+    // and a response cancelled while the process exits can still reach it.
+    static const auto &scheduler = *new std::shared_ptr<CoverScheduler>(std::make_shared<CoverScheduler>());
     static_cast<QQmlEngine *>(engine)->setNetworkAccessManagerFactory(&network);
     static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("cover"), new CoverProvider(scheduler));
     static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("contained"), new CoverProvider(scheduler, CoverClass::Contained));

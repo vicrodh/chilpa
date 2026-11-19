@@ -277,9 +277,8 @@ pub(crate) fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBu
     let size = size.clamp(32, 2048);
     // The file's own date is in the name, so a cover replaced on disk gets
     // a new derivative instead of the old one forever.
-    let modified = std::fs::metadata(path)
-        .and_then(|m| m.modified())
-        .ok()
+    let changed = std::fs::metadata(path).and_then(|m| m.modified()).ok();
+    let modified = changed
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
         .map_or(0, |d| d.as_secs());
     let out = dir.join(format!("{:016x}-{size}.jpg", key(path, modified)));
@@ -289,7 +288,8 @@ pub(crate) fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBu
     MAKING.once(&out, || {
         // A cover smaller than asked is kept at its size: making it bigger
         // only makes it blurrier and heavier.
-        let pixels = cached_derivative(dir, key(path, modified), size).or_else(|| with_cover_size(path, Some(size), |cover| {
+        let reused = changed.and_then(|changed| cached_derivative(dir, key(path, modified), size, changed));
+        let pixels = reused.or_else(|| with_cover_size(path, Some(size), |cover| {
             let small = if cover.width().max(cover.height()) > size { cover.thumbnail(size, size) } else { cover };
             small.into_rgb8()
         }))?;
@@ -297,16 +297,22 @@ pub(crate) fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBu
     })
 }
 
-fn cached_derivative(dir: &Path, fingerprint: u64, target: u32) -> Option<image::RgbImage> {
-    cached_derivative_candidates(dir, fingerprint, target).into_iter().find_map(|path| with_cover(&path, |cover| {
+fn cached_derivative(dir: &Path, fingerprint: u64, target: u32, original: std::time::SystemTime) -> Option<image::RgbImage> {
+    cached_derivative_candidates(dir, fingerprint, target, original).into_iter().find_map(|path| with_cover(&path, |cover| {
         (cover.width().max(cover.height()) >= target).then(|| {
             cover.resize(target, target, image::imageops::FilterType::Lanczos3).into_rgb8()
         })
     }).flatten())
 }
 
-fn cached_derivative_candidates(dir: &Path, fingerprint: u64, target: u32) -> Vec<PathBuf> {
-    cached_derivative_candidates_with(dir, fingerprint, target, Path::is_file)
+/// The name keeps the original's time in whole seconds, so an original
+/// replaced within the same second keeps the name of its old derivatives.
+/// One is a source only if it was written strictly after the original's
+/// full-resolution time; on equal times the original is read instead.
+fn cached_derivative_candidates(dir: &Path, fingerprint: u64, target: u32, original: std::time::SystemTime) -> Vec<PathBuf> {
+    cached_derivative_candidates_with(dir, fingerprint, target, |path| {
+        std::fs::metadata(path).is_ok_and(|meta| meta.is_file() && meta.modified().is_ok_and(|made| made > original))
+    })
 }
 
 fn cached_derivative_candidates_with(
@@ -398,7 +404,34 @@ mod tests {
         image::RgbImage::from_fn(side, side, |x, y| image::Rgb([(x % 256) as u8, (y % 256) as u8, 90]))
             .save(&path)
             .unwrap();
+        // An original predates its derivatives, as in a real library; a file
+        // written in the same clock tick would not count as older.
+        set_modified(&path, std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000));
         path
+    }
+
+    fn set_modified(path: &Path, at: std::time::SystemTime) {
+        std::fs::File::options().write(true).open(path).unwrap().set_modified(at).unwrap();
+    }
+
+    #[test]
+    fn a_new_size_is_not_made_from_a_derivative_older_than_its_replaced_original() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = dir.path().join("cover.png");
+        let cache = dir.path().join("cache");
+        let second = std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+        image::RgbImage::from_pixel(600, 600, image::Rgb([220, 20, 20])).save(&original).unwrap();
+        set_modified(&original, second + std::time::Duration::from_millis(100));
+        let red = derivative_in(&cache, &original, 256).unwrap();
+        set_modified(&red, second + std::time::Duration::from_millis(200));
+        // Replaced within the same second: the whole-second name still matches.
+        image::RgbImage::from_pixel(600, 600, image::Rgb([20, 20, 220])).save(&original).unwrap();
+        set_modified(&original, second + std::time::Duration::from_millis(500));
+        let small = derivative_in(&cache, &original, 128).unwrap();
+        assert_eq!(small.file_name().unwrap().to_str().unwrap().split('-').next(),
+                   red.file_name().unwrap().to_str().unwrap().split('-').next(), "both sizes share the fingerprint");
+        let [red_channel, _, blue_channel] = image::open(&small).unwrap().into_rgb8().get_pixel(64, 64).0;
+        assert!(blue_channel > 200 && red_channel < 50, "the new size shows the replacement, not the older derivative");
     }
 
     #[test]
@@ -522,7 +555,7 @@ mod tests {
         let stepped = dir.path().join(format!("{fingerprint:016x}-256.jpg"));
         std::fs::File::create(&non_step).unwrap();
         std::fs::File::create(&stepped).unwrap();
-        assert_eq!(cached_derivative_candidates(dir.path(), fingerprint, 128), [stepped]);
+        assert_eq!(cached_derivative_candidates(dir.path(), fingerprint, 128, std::time::UNIX_EPOCH), [stepped]);
         assert!(non_step.is_file(), "the non-step derivative remains available to an exact request");
     }
 
