@@ -10,6 +10,8 @@ Item {
     property var entries: []
     property var dataSource: null
     property bool recordings: false
+    // The page whose margin holds the scrollbar: hover reaches it there.
+    property Item scrollbarOverlay: null
     readonly property int total: dataSource ? dataSource.count : entries.length
     property bool ready: true
     readonly property alias scrollView: rows
@@ -66,7 +68,7 @@ Item {
         model: table.total; clip: true; reuseItems: true
         cacheBuffer: Metrics.rowRich * 2
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { objectName: "discoveryScrollbar"; gutter: Metrics.pageGutter }
+        ScrollBar.vertical: ViewportScrollBar { objectName: "discoveryScrollbar"; gutter: Metrics.pageGutter; overlayParent: table.scrollbarOverlay }
         onContentYChanged: table.requestVisible()
         onHeightChanged: Qt.callLater(table.requestVisible)
         delegate: Button {

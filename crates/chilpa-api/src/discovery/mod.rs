@@ -73,10 +73,33 @@ impl Selection {
     }
 }
 
+/// Separates a discovery selection from the Tracks query whose column
+/// selections narrow its tracks: `selection` U+001E `query`.
+pub(crate) const SHEET: char = '\u{1e}';
+
 impl Reader {
     pub fn collection_tracks(&self, kind: &str, key: &str, extras: &Filter, mut emit: impl FnMut(crate::FoundTracks)) {
-        if kind == "discovery" { emit(crate::FoundTracks { snapshot: self.discovery_snapshot(key), ..Default::default() }); }
+        if kind == "discovery" { emit(crate::FoundTracks { snapshot: self.discovery_snapshot_with(key, extras), ..Default::default() }); }
         else { self.tracks_progressive(key, extras, emit); }
+    }
+
+    /// A genre's or composer's library filter, narrowed by a Tracks query's
+    /// column selections. The tracks keep the records' order and the
+    /// selection's own sources; the Library's shared scope does not apply.
+    fn discovery_scope_using(&self, selected: &Selection, sheet: &str, extras: &Filter, index: &crate::library_sources::SourceIndex) -> Option<Filter> {
+        if !matches!(selected.kind.as_str(), "genre" | "composer") || selected.name.is_empty() { return None; }
+        let mut filter = self.discovery_filter_using(selected, index);
+        if selected.kind == "genre" && filter.genres.is_empty() { return None; }
+        if !sheet.is_empty() { filter.sheet = crate::TracksQuery::parse(sheet).filter(extras).sheet; }
+        Some(filter)
+    }
+
+    /// The filter a Tracks query names, or the one of a discovery selection
+    /// narrowed by it. `None` when the selection names nothing.
+    pub(crate) fn sheet_filter(&self, query: &str, extras: &Filter, index: &crate::library_sources::SourceIndex) -> Option<Filter> {
+        let Some((key, sheet)) = query.split_once(SHEET) else { return Some(crate::TracksQuery::parse(query).filter(extras)) };
+        let selected = self.resolve_album_genre_using(Selection::parse(key)?, index).ok()?;
+        self.discovery_scope_using(&selected, sheet, extras, index)
     }
 
     pub fn collection_albums(&self, kind: &str, order: &str, group: &str, text: &str, extras: &Filter, scope: &str) -> AlbumsFound {
@@ -116,6 +139,7 @@ impl Reader {
         Ok(names.into_values().collect())
     }
 
+    #[cfg(test)]
     fn discovery_filter(&self, selected: &Selection) -> Filter {
         self.discovery_filter_using(selected, &self.source_index().1)
     }
@@ -132,15 +156,20 @@ impl Reader {
     /// The snapshot keeps all parts, including albumless tracks. Existing
     /// source integration and copy grouping apply to genre/composer journeys.
     pub fn discovery_snapshot(&self, key: &str) -> Snapshot {
+        self.discovery_snapshot_with(key, &Filter::default())
+    }
+
+    /// The same, narrowed by the column selections of a Tracks query that
+    /// follows the selection after U+001E.
+    pub fn discovery_snapshot_with(&self, key: &str, extras: &Filter) -> Snapshot {
+        let (key, sheet) = key.split_once(SHEET).unwrap_or((key, ""));
         let Some(selected) = Selection::parse(key) else { return Snapshot::default() };
         let selected = if selected.genre_token.is_empty() { selected } else {
             let Ok(selected) = self.resolve_album_genre_using(selected,&self.source_index().1) else { return Snapshot::default() };
             selected
         };
         if selected.kind == "work" { return self.work_snapshot(&selected); }
-        if !matches!(selected.kind.as_str(), "genre" | "composer") || selected.name.is_empty() { return Snapshot::default(); }
-        let filter = self.discovery_filter(&selected);
-        if selected.kind == "genre" && filter.genres.is_empty() { return Snapshot::default(); }
+        let Some(filter) = self.discovery_scope_using(&selected, sheet, extras, &self.source_index().1) else { return Snapshot::default() };
         self.refresh(&filter, TrackOrder::Album, || true).map(|(_, snapshot)| snapshot).unwrap_or_default()
     }
 

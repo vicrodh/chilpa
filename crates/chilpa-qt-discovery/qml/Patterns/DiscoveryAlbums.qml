@@ -9,6 +9,7 @@ Item {
     property string key: ""
     property string filter: ""
     property string order: "title"
+    property Item scrollbarOverlay: null
     readonly property alias collection: records
     readonly property bool playable: records.ready && records.error === "" && records.albums > 0
     readonly property alias scrollView: grid.scrollView
@@ -16,6 +17,6 @@ Item {
     readonly property string error: records.error
     function retry() { records.retry() }
     AlbumGridModel { id:records; objectName:"discoveryAlbumModel"; kind:"discovery"; key:section.key; filter:section.filter; order:section.order; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
-    AlbumGrid { id:grid; anchors.fill:parent; model:records; onOpen:albumId => Navigation.go("album",albumId) }
+    AlbumGrid { id:grid; anchors.fill:parent; model:records; scrollbarOverlay:section.scrollbarOverlay; onOpen:albumId => Navigation.go("album",albumId) }
     Text { anchors.centerIn:parent; visible:records.ready && records.albums === 0; text:I18n.tr("No albums in this selection",I18n.rev); font.pointSize:Type.body; color:Theme.color.textSecondary }
 }

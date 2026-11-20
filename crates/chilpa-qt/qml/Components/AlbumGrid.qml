@@ -33,6 +33,7 @@ Item {
     // How far right of the cards the scrollbar sits: in the middle of the
     // page's margin.
     property real scrollGutter: Metrics.pageGutter
+    property Item scrollbarOverlay: null // the page whose margin holds the thumb: hover reaches it there
     // Artists: round portraits, the name centered (design/03 ArtistCard).
     property bool round: false
     property var roundIds: []
@@ -98,7 +99,7 @@ Item {
         header: grid.technical ? technicalHeader : null
         headerPositioning: grid.technical ? ListView.OverlayHeader : ListView.InlineHeader
         ScrollBar.vertical: ViewportScrollBar {
-            objectName: "albumVerticalScrollBar"
+            objectName: "albumVerticalScrollBar"; overlayParent: grid.scrollbarOverlay
             policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
             gutter: grid.technical ? Metrics.gap8 : grid.scrollGutter
             viewportHovered: viewHover.hovered

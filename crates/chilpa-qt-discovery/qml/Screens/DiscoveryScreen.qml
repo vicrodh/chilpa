@@ -174,7 +174,7 @@ Item {
             availableWidth: heading.width
             model: visible ? content.item?.collection || null : null
             available: !!model && !content.retiring && !discoveryPage.waiting && content.item.playable
-            filtered: find.excludedSources.length > 0 || (showRandomAlbum && find.text.trim() !== "")
+            filtered: find.excludedSources.length > 0 || (showRandomAlbum && find.text.trim() !== "") || content.item?.sheetFiltered === true
             showRandomAlbum: discoveryPage.tab === 1
             scope: JSON.stringify([discoveryPage.collectionKey, discoveryPage.tab, find.text, find.order])
             label: discoveryPage.selected.name || discoveryPage.rootTitle
@@ -185,13 +185,13 @@ Item {
         objectName: "discoveryContent"
         visible: !discoveryPage.waiting && discoveryPage.failure === ""
         anchors.left: heading.left; anchors.right: heading.right; anchors.top: heading.bottom; anchors.topMargin: Metrics.gap20
-        anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.contentBottom
+        anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.floatingPlayerClearance // docked, the plane already ends above the player
         onLoaded: Qt.callLater(discoveryPage.restoreViewport)
     }
     Component {
         id: genreOverview
         GenreOverview {
-            key:discoveryPage.collectionKey; filter:find.text; order:find.order; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:discoveryPage.queryPending
+            key:discoveryPage.collectionKey; filter:find.text; order:find.order; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:discoveryPage.queryPending; scrollbarOverlay:discoveryPage
             artistsContent: Component {
                 Item {
                     AlbumGridModel { id:people; kind:"discoveryArtists"; key:discoveryPage.collectionKey; filter:find.text; order:find.order; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
@@ -213,7 +213,7 @@ Item {
     Component {
         id: navigationList
         DiscoveryIndex {
-            kind: discoveryPage.mode
+            kind: discoveryPage.mode; scrollbarOverlay: discoveryPage
             ready: !results.loading && Array.isArray(discoveryPage.about.items)
             dataSource: results
             onActivated: entry => discoveryPage.open(entry)
@@ -222,7 +222,7 @@ Item {
     Component {
         id: workTable
         DiscoveryWorkTable {
-            recordings: discoveryPage.work
+            recordings: discoveryPage.work; scrollbarOverlay: discoveryPage
             ready: !results.loading && Array.isArray(discoveryPage.about.items)
             dataSource: results
             onActivated: entry => discoveryPage.open(entry)
@@ -230,7 +230,7 @@ Item {
     }
     Component {
         id: albums
-        DiscoveryAlbums { key:discoveryPage.collectionKey; filter:find.text; order:find.order.replace("name","title") }
+        DiscoveryAlbums { key:discoveryPage.collectionKey; filter:find.text; order:find.order.replace("name","title"); scrollbarOverlay:discoveryPage }
     }
     Component {
         id: artists
@@ -239,8 +239,8 @@ Item {
             cards: Component { ArtistUi.ArtistCardGrid { artists:parent.artists } }
         }
     }
-    Component { id: tracks; DiscoveryTracks { key: discoveryPage.collectionKey; autoPlay:discoveryPage.playSelection; showLegacyActions: !discoveryPage.genre; onPlayed:discoveryPage.playSelection = false } }
-    Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.collectionKey; recording: true } }
+    Component { id: tracks; DiscoveryTracks { key: discoveryPage.collectionKey; autoPlay:discoveryPage.playSelection; showLegacyActions: !discoveryPage.genre; scrollbarOverlay:discoveryPage; onPlayed:discoveryPage.playSelection = false } }
+    Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.collectionKey; recording: true; scrollbarOverlay:discoveryPage } }
     DiscoveryStatus {
         anchors.fill:content; loading:discoveryPage.waiting; failure:discoveryPage.failure
         empty:discoveryPage.listing && !discoveryPage.selected.recording && (discoveryPage.about.items || []).length === 0

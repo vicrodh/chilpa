@@ -78,7 +78,7 @@ impl Reader {
                 Err(_) => { answer["error"] = json!(chilpa_i18n::t("The filter cannot be read.")); return answer; }
             }
         };
-        let mut filter = TracksQuery::parse(query).filter(extras);
+        let Some(mut filter) = self.sheet_filter(query, extras, index) else { return answer };
         filter.sheet.without(field);
         let fixed: &[&str] = match field {
             "rating" => &["0", "1", "2", "3", "4", "5"],
@@ -137,6 +137,7 @@ impl crate::Chilpa {
     /// The same source hearts the UI shows, including pending optimistic changes.
     /// The request owns this immutable snapshot and releases it with its result.
     pub fn track_sheet_extras(&self, query: &str, column: &str, mut extras: Filter) -> Filter {
+        let query = query.split_once(crate::discovery::SHEET).map_or(query, |(_, sheet)| sheet);
         if column == "favorite" || TracksQuery::parse(query).sheet.as_ref().is_some_and(|sheet| sheet.favorite.is_some()) {
             extras.sheet.source_favorites = Arc::new(self.source_track_marks().1);
         }

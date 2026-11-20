@@ -13,6 +13,8 @@ Item {
     readonly property int total: dataSource ? dataSource.count : entries.length
     property bool ready: true
     property string kind: "genres"
+    // The page whose margin holds the scrollbar: hover reaches it there.
+    property Item scrollbarOverlay: null
     readonly property bool portraits: kind === "composers" || kind === "genres"
     readonly property int entryWidth: portraits ? Metrics.sceneCardWidth : Metrics.discoveryEntryWidth
     readonly property int entryHeight: portraits ? Metrics.sceneCardHeight : Metrics.discoveryEntryHeight
@@ -50,7 +52,7 @@ Item {
         reuseItems: true
         cacheBuffer: cellHeight
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { objectName: "discoveryScrollbar"; gutter: Metrics.pageGutter }
+        ScrollBar.vertical: ViewportScrollBar { objectName: "discoveryScrollbar"; gutter: Metrics.pageGutter; overlayParent: parentView.scrollbarOverlay }
         onContentYChanged: parentView.requestVisible()
         onHeightChanged: Qt.callLater(parentView.requestVisible)
         onColumnsChanged: Qt.callLater(parentView.requestVisible)
