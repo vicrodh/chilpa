@@ -90,6 +90,21 @@ fn store(address: &str, extension: &str, bytes: &[u8]) -> Option<String> {
 /// The picture at that address, on disk. Fetched the first time and read
 /// from the cache after. `None` when there is none to show.
 pub(crate) fn keep(address: &str) -> Option<String> {
+    keep_matching(address, Duration::from_secs(8), |_| true)
+}
+
+/// The same, keeping only bytes whose SHA-256 is `digest`. A larger file
+/// gets a longer wait; the size limit stays.
+pub(crate) fn keep_digest(address: &str, digest: &str, timeout: Duration) -> Option<String> {
+    keep_matching(address, timeout, |bytes| matches_digest(bytes, digest))
+}
+
+fn matches_digest(bytes: &[u8], digest: &str) -> bool {
+    use sha2::Digest as _;
+    format!("{:x}", sha2::Sha256::digest(bytes)) == digest
+}
+
+fn keep_matching(address: &str, timeout: Duration, wanted: impl Fn(&[u8]) -> bool) -> Option<String> {
     if let Some(kept) = kept(address) {
         return Some(kept);
     }
@@ -97,11 +112,11 @@ pub(crate) fn keep(address: &str) -> Option<String> {
         url: address,
         user_agent: "Chilpa",
         accept: "image/*",
-        timeout: Duration::from_secs(8),
+        timeout,
         max_bytes: LARGEST,
         authorization: None,
     };
-    let got = chilpa_core::fetch(&asked).ok().filter(|reply| reply.status == 200)?;
+    let got = chilpa_core::fetch(&asked).ok().filter(|reply| reply.status == 200 && wanted(&reply.body))?;
     let extension = kind(&got.body)?;
     validate(&got.body)?;
     store(address, extension, &got.body)
@@ -179,6 +194,14 @@ mod tests {
         bytes.get_mut().truncate(40);
         assert_eq!(kind(bytes.get_ref()), Some("png"));
         assert!(validate(bytes.get_ref()).is_none());
+    }
+
+    #[test]
+    fn only_the_published_bytes_match_their_digest() {
+        let digest = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824";
+        assert!(matches_digest(b"hello", digest));
+        assert!(!matches_digest(b"hello!", digest));
+        assert!(!matches_digest(b"hello", &digest.to_uppercase()));
     }
 
     #[test]

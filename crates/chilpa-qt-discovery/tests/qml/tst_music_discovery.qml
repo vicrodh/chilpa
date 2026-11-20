@@ -509,8 +509,7 @@ TestCase {
     }
     function test_a_retained_genre_tile_releases_images_outside_the_viewport() {
         const page = createTemporaryObject(maker, this)
-        const image = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='navy'/%3E%3C/svg%3E"
-        const items = Array.from({length:60}, (_, n) => ({kind:"genre",name:"Style " + n,images:[image],albums:n + 1}))
+        const items = Array.from({length:60}, (_, n) => ({kind:"genre",name:"Style " + n,art:{key:"style-" + n},albums:n + 1}))
         findChild(page, "discoveryModel").document = JSON.stringify({items:items,total:60})
         const view = findChild(page, "discoveryEntries")
         let tile
@@ -527,6 +526,46 @@ TestCase {
         page.visible = false
         tryCompare(tile, "activeImages", false)
         compare(picture.source.toString(), "")
+    }
+    function test_a_genre_without_an_image_is_a_flat_tile_with_its_name() {
+        const page = createTemporaryObject(maker, this)
+        const items = [{kind:"genre",name:"Personal shelf",albums:2,images:["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'/%3E"]},
+                       {kind:"genre",name:"Rock",albums:3,art:{key:"rock",credit:"Author",license:"CC0",page:"https://example.org/rock"}}]
+        findChild(page, "discoveryModel").document = JSON.stringify({items:items,total:2})
+        let plain, known
+        tryVerify(() => { plain = findChild(page, "discoveryEntry:Personal shelf"); known = findChild(page, "discoveryEntry:Rock"); return !!plain && !!known })
+        const flat = findChild(plain, "discoveryGenrePortrait")
+        compare(flat.source.toString(), "", "album covers are not a genre image")
+        verify(!flat.ready)
+        compare(findChild(plain, "discoveryGenreDefaultArt").active, true)
+        const label = flat.children.find(child => child.text === "Personal shelf")
+        verify(label && label.visible, "the flat tile carries the genre's name")
+        const shown = findChild(known, "discoveryGenrePortrait")
+        tryVerify(() => shown.source.toString().startsWith("data:image/svg+xml"), 5000, "a known genre shows its published card")
+        tryVerify(() => shown.ready)
+        verify(!shown.children.find(child => child.text === "Rock").visible)
+        page.visible = false
+        tryCompare(findChild(known, "discoveryGenreDefaultArt"), "active", false)
+        compare(shown.source.toString(), "")
+    }
+    function test_the_genre_hero_shows_the_published_header_or_a_flat_banner() {
+        const known = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:"Rock"})})
+        findChild(known, "discoveryModel").document = JSON.stringify({items:[],total:0,summary:{albums:2,images:[]},
+            art:{key:"rock",credit:"Author",license:"CC0",licenseUrl:"",page:"https://example.org/rock"}})
+        let header
+        tryVerify(() => { header = findChild(known, "genreDefaultHeader"); return !!header })
+        compare(header.key, "rock")
+        verify(header.header)
+        tryCompare(header, "active", true)
+        tryVerify(() => !!findChild(known, "discoveryMosaicImage0"), 5000, "the published header fills the hero")
+        compare(findChild(known, "discoveryMosaicImage0").source.toString(), header.source)
+        verify(!findChild(known, "discoveryMosaicFlat").visible)
+        const plain = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:"Personal shelf"})})
+        findChild(plain, "discoveryModel").document = JSON.stringify({items:[],total:0,summary:{albums:2,images:["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'/%3E"]}})
+        let flat
+        tryVerify(() => { flat = findChild(plain, "discoveryMosaicFlat"); return !!flat && flat.visible }, 5000, "no image: one flat banner")
+        verify(!findChild(plain, "discoveryMosaicImage0"))
+        compare(findChild(plain, "genreDefaultHeader").key, "")
     }
     function test_genre_image_actions_keep_the_opaque_genre_key() {
         const route=JSON.stringify({kind:"genre",name:"heavy-metal",identity:"opaque:genre"})

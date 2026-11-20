@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.artwork
+import app.chilpa.discovery
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/Viewport.js" as Viewport
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
@@ -25,6 +26,8 @@ Item {
     readonly property var subgenres: (about.items || []).slice(0, Metrics.discoveryPreview)
     readonly property url chosenImage: Artwork.genreHeader(key, Artwork.rev)
     readonly property bool customImage: chosenImage.toString() !== ""
+    readonly property var art: about.art || ({})
+    readonly property bool defaultImage: !customImage && headerArt.source !== ""
     property bool layoutReady: false
     function settleLayout() { subgenreGrid.forceLayout(); body.forceLayout(); layoutReady = true }
     Component.onCompleted: Qt.callLater(settleLayout)
@@ -58,7 +61,13 @@ Item {
                 id: hero
                 objectName: "genreHero"
                 width: parent.width; height: Metrics.discoveryHeroHeight
-                DiscoveryMosaic { anchors.fill: parent; images: overview.customImage ? [overview.chosenImage] : overview.summary.images || []; art:overview.about.art || ({}); label: overview.name; activeImages: overview.inView(hero) }
+                GenreArtModel { id: headerArt; objectName: "genreDefaultHeader"; key: overview.art.key || ""; header: true; active: !overview.customImage && overview.inView(hero) }
+                DiscoveryMosaic {
+                    anchors.fill: parent; activeImages: overview.inView(hero)
+                    images: overview.customImage ? [overview.chosenImage] : overview.defaultImage ? [headerArt.source] : []
+                    credit: overview.defaultImage ? [overview.art.credit,overview.art.license,overview.art.licenseUrl,overview.art.page].filter(Boolean).join("\n") : ""
+                    tint: Array.from(overview.name).reduce((sum, letter) => (sum * 31 + letter.charCodeAt(0)) % 65521, 0) // derived: the genre card's stable hash
+                }
                 Rectangle {
                     anchors.fill: parent; radius: Metrics.radiusCard
                     gradient: Gradient {
@@ -74,7 +83,7 @@ Item {
                     onClicked: { imageEditor.replace(artworkEditor, true); imageEditor.item.open() }
                 }
                 RetiringLoader { id: imageEditor }
-                Component { id: artworkEditor; GenreArtworkEditor { key: overview.key; onClosed: imageEditor.replace(null, false) } }
+                Component { id: artworkEditor; GenreArtworkEditor { key: overview.key; artKey: overview.art.key || ""; onClosed: imageEditor.replace(null, false) } }
                 Column {
                     anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Metrics.gap24
                     spacing: Metrics.gap12
