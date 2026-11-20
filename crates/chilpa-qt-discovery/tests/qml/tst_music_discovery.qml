@@ -3,6 +3,7 @@ import QtTest
 import app.chilpa
 import app.chilpa.artwork
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Screens"
 import "../../qml/Patterns"
 
@@ -603,6 +604,67 @@ TestCase {
         tryVerify(()=>!findChild(page,"genreArtworkEditor"),5000,"closing releases the selector and both previews")
         compare(page.routeKey,route)
         Artwork.genres=({});Artwork.genreHeaders=({});Artwork.rev++
+    }
+    function genreTracks(name) {
+        const page = createTemporaryObject(maker, this, {routeKey:JSON.stringify({kind:"genre",name:name})})
+        findChild(page, "discoveryModel").document = JSON.stringify({items:[],total:0,summary:{albums:2,images:[]}})
+        page.changeTab(3)
+        let list
+        tryVerify(() => { list = findChild(page, "discoveryTrackList"); return !!list })
+        return {page:page, list:list, section:findChild(page, "discoveryContent").item}
+    }
+    function test_the_content_ends_at_the_plane_unless_the_player_floats() {
+        const page = createTemporaryObject(maker, this, {mode:"genres"})
+        const content = findChild(page, "discoveryContent")
+        Metrics.playerSpace = 0
+        compare(content.anchors.bottomMargin, 0, "a docked player leaves no band under the content")
+        compare(content.y + content.height, page.height)
+        Metrics.playerSpace = Metrics.playerHeight
+        compare(content.anchors.bottomMargin, Metrics.floatingPlayerClearance, "a floating player keeps its room")
+    }
+    function test_discovery_scrollbars_and_their_hover_margin_belong_to_the_page_data() {
+        return [{tag:"genres",mode:"genres",name:"discoveryScrollbar"},{tag:"compositions",mode:"compositions",name:"discoveryScrollbar"}]
+    }
+    function test_discovery_scrollbars_and_their_hover_margin_belong_to_the_page(data) {
+        const page = createTemporaryObject(maker, this, {mode:data.mode})
+        findChild(page, "discoveryModel").document = JSON.stringify({total:100,items:Array.from({length:100},(_,index)=>({kind:data.mode === "compositions" ? "work" : "genre",name:"Entry " + index,albums:1,tracks:1}))})
+        let bar
+        tryVerify(() => { bar = findChild(page, data.name); return !!bar && bar.parent === page })
+        compare(bar.overlayParent, page)
+        compare(bar.area.parent, page, "the hover bridge outside the list is the page's, or hover never reaches it")
+    }
+    function test_genre_tracks_put_their_scrollbar_on_the_page() {
+        const genre = genreTracks("Asian")
+        const bar = findChild(genre.list, "trackListScrollbar")
+        tryCompare(bar, "parent", genre.page)
+        compare(bar.area.parent, genre.page)
+    }
+    function test_genre_tracks_filter_from_their_column_headers() {
+        const genre = genreTracks("Asian")
+        const head = findChild(genre.section, "discoveryTrackHeader")
+        verify(head && head.visible, "the genre's tracks have Tracks' filtering headers")
+        compare(genre.list.header, false, "the list's own header gives way to them")
+        verify(findChild(head, "tracksColumn-artist").visible)
+        const key = genre.list.model.key
+        compare(key, genre.page.collectionKey, "no filter keeps the plain selection")
+        const columnFilter = findChild(genre.section, "tracksColumnFilter")
+        verify(columnFilter)
+        columnFilter.applied("artist", ["Mari Iijima"], ({}))
+        tryVerify(() => genre.list.model.key !== key)
+        const parts = genre.list.model.key.split("\u001e")
+        compare(parts[0], genre.page.collectionKey)
+        compare(JSON.parse(parts[1].split("\u001f")[4]), {artist:["Mari Iijima"]})
+        verify(findChild(genre.section, "discoveryFilterTrail").visible, "the chips say what filters the list")
+        verify(genre.section.sheetFiltered)
+        findChild(genre.section, "discoveryFilterTrail").cleared()
+        tryCompare(genre.list.model, "key", key)
+    }
+    function test_a_recording_keeps_the_plain_track_list() {
+        const page = createTemporaryObject(maker, this, {mode:"compositions",routeKey:JSON.stringify({kind:"work",name:"Suite",work:"work:3",recording:"first"})})
+        let list
+        tryVerify(() => { list = findChild(page, "discoveryTrackList"); return !!list })
+        verify(!findChild(page, "discoveryTrackHeader").visible)
+        compare(list.header, true)
     }
     function test_discovery_scrollbars_never_overlap_content_data() {
         return [{tag:"genres",mode:"genres"},{tag:"composers",mode:"composers"},{tag:"compositions",mode:"compositions"}]

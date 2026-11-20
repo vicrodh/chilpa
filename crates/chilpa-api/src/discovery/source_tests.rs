@@ -182,3 +182,23 @@ fn source_route_limits_accept_many_real_keys_and_reject_oversized_filters() {
     assert!(Selection::parse(&json!({"excluded_sources":["x".repeat(513)]}).to_string()).is_none());
     assert!(options::Options::parse(&" ".repeat(65537)).is_none());
 }
+
+#[test]
+fn column_selections_narrow_a_genre_and_its_choices_stay_within_it() {
+    let (reader,index) = fixture();
+    let sheet = |selection: &str| ["", "", "", "", selection].join("\u{1f}");
+    let key = r#"{"kind":"genre","name":"Metal","excluded_sources":["server:home","plugin:beta"]}"#;
+    let stamp = (1,vec![("alpha".into(),false,true),("beta".into(),false,true)]);
+    let narrowed = reader.sheet_filter(&format!("{key}{SHEET}{}", sheet(r#"{"artist":["Player"]}"#)),&Filter::default(),&index).unwrap();
+    let (_,snapshot) = reader.refresh_using(&narrowed,TrackOrder::Album,||true,(stamp.clone(),index.clone())).unwrap();
+    assert_eq!(snapshot.ids,vec![1],"only the selected artist's tracks of the genre");
+    let whole = reader.sheet_filter(&format!("{key}{SHEET}{}", sheet("")),&Filter::default(),&index).unwrap();
+    let (_,snapshot) = reader.refresh_using(&whole,TrackOrder::Album,||true,(stamp,index.clone())).unwrap();
+    assert_eq!(snapshot.ids.into_iter().collect::<HashSet<_>>(),HashSet::from([1,4,-11,-12]),"no selection keeps the genre whole");
+    let choices = |query: String| reader.track_column(&query,&Filter::default(),"artist","","")["items"].as_array().unwrap()
+        .iter().map(|item| item["key"].as_str().unwrap().to_string()).collect::<HashSet<_>>();
+    assert_eq!(choices(format!(r#"{{"kind":"genre","name":"Jazz"}}{SHEET}{}"#, sheet(""))),HashSet::from(["Player".to_string()]));
+    assert!(choices(sheet("")).len() > 1,"the whole library offers more artists than the genre");
+    assert!(reader.sheet_filter(&format!(r#"{{"kind":"genre","name":""}}{SHEET}{}"#, sheet("")),&Filter::default(),&index).is_none());
+    assert!(reader.discovery_snapshot_with(&format!(r#"{{"kind":"genre","name":"Jazz"}}{SHEET}{}"#, sheet(r#"{"artist":["Nobody"]}"#)),&Filter::default()).ids.is_empty());
+}

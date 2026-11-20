@@ -25,6 +25,29 @@ TestCase {
         SidebarFrame { id: frame; window: win; router: router; anchors.fill: parent }
     }
 
+    function navigationGroups() {
+        const column = findChild(frame, "sidebarNavigation").contentItem.children[0]
+        return column.children.filter(group => group.modelData !== undefined).sort((a, b) => a.index - b.index)
+    }
+    function test_a_collapsed_sidebar_reaches_the_playlists_before_the_plugins() {
+        SettingsModel.sidebarMode = "open"
+        let group
+        tryVerify(() => { group = navigationGroups().find(group => group.modelData.screen === "playlistManager"); return !!group })
+        verify(!group.visible, "open, the playlists have their own section")
+        const groups = navigationGroups()
+        SettingsModel.sidebarMode = "collapsed"
+        tryCompare(group, "visible", true)
+        compare(navigationGroups(), groups, "collapsing rebuilds no entry")
+        const at = groups.indexOf(group)
+        const firstPlugin = groups.findIndex(group => group.modelData.screen === "source")
+        verify(at > 0 && (firstPlugin < 0 || at < firstPlugin), "after the library, before the plugins")
+        verify(groups.slice(0, at).every(group => !group.modelData.key), "every library page comes first")
+        const item = group.children.find(child => child.collapsed !== undefined && child.glyph !== undefined)
+        compare(item.glyph, Icons.playlist)
+        item.clicked()
+        compare(Navigation.page, "playlistManager", "it opens the playlist manager")
+        SettingsModel.sidebarMode = "open"
+    }
     function test_deferred_navigation_waits_for_acknowledgement_and_cancels_old_work() {
         let calls = 0
         frame.deferNavigation(function() { calls += 1 })

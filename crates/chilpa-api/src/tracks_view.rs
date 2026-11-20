@@ -156,11 +156,14 @@ impl Reader {
 /// Whether a track list stops being ready while it is read again. A source's
 /// list already shown is only refreshed by a change in its catalog: taking its
 /// readiness back would swap every section sized by it for its placeholder
-/// and move the page under the listener. Another list is not there yet.
+/// and move the page under the listener. A discovery list carries its whole
+/// selection in its key, so the same key only reads the same list again; a
+/// library or catalog change used to blank and redraw it. Another list is not
+/// there yet, and Tracks keeps the Library's shared scope outside its key.
 pub fn reload_withdraws_ready(kind: &str, shown: bool) -> bool {
     match kind {
-        "source" => !shown,
-        "tracks" | "discovery" => true,
+        "source" | "discovery" => !shown,
+        "tracks" => true,
         _ => false,
     }
 }
@@ -173,11 +176,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_shown_source_list_stays_ready_while_its_catalog_refreshes_it() {
-        assert!(!reload_withdraws_ready("source", true), "a refresh must not swap the shown rows for a placeholder");
-        assert!(reload_withdraws_ready("source", false), "another list is not there yet");
+    fn a_shown_source_or_discovery_list_stays_ready_while_it_is_read_again() {
+        for kind in ["source", "discovery"] {
+            assert!(!reload_withdraws_ready(kind, true), "{kind}: a refresh must not swap the shown rows for a placeholder");
+            assert!(reload_withdraws_ready(kind, false), "{kind}: another list is not there yet");
+        }
         for shown in [false, true] {
-            assert!(reload_withdraws_ready("tracks", shown) && reload_withdraws_ready("discovery", shown));
+            assert!(reload_withdraws_ready("tracks", shown));
             assert!(!reload_withdraws_ready("album", shown));
         }
     }

@@ -19,6 +19,8 @@ Item {
     property string name: ""
     property var about: ({})
     property bool loading: false
+    // The page whose margin holds the scrollbar: hover reaches it there.
+    property Item scrollbarOverlay: null
     property Component artistsContent
     readonly property bool ready: !loading && layoutReady
     readonly property alias scrollView: view
@@ -52,7 +54,7 @@ Item {
         objectName: "genreOverviewScroll"
         anchors.fill: parent; contentWidth: width; contentHeight: body.height
         clip: true; boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { objectName: "genreOverviewScrollbar"; gutter: Metrics.pageGutter }
+        ScrollBar.vertical: ViewportScrollBar { objectName: "genreOverviewScrollbar"; gutter: Metrics.pageGutter; overlayParent: overview.scrollbarOverlay }
         Column {
             id: body
             width: view.width

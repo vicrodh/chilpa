@@ -4,11 +4,11 @@ import app.chilpa.kit
 // Each Tracks page owns its filters; column visibility survives restarts.
 QtObject {
     id: state
-    required property var settings
-    required property var visits
-    property var filters: visits.recall("tracks.columnFilters", ({}))
+    required property var settings; required property var visits
+    property string memory: "tracks" // where filters stay between visits; empty, as long as the page
+    property var filters: memory ? visits.recall(memory + ".columnFilters", ({})) : ({})
     // At most 256 selected source labels survive visits; no catalog is retained.
-    property var sourceNames: visits.recall("tracks.sourceNames", ({}))
+    property var sourceNames: memory ? visits.recall(memory + ".sourceNames", ({})) : ({})
     property var columns: readColumns(settings.kept("ui.tracks.columns"))
     readonly property var defaults: ["index", "art", "source", "time", "rating", "quality", "favorite"]
     readonly property bool marksFiltered: typeof effective.favorite === "boolean"
@@ -39,5 +39,5 @@ QtObject {
         }
     }
     function keepColumns(chosen) { columns = chosen; settings.keep("ui.tracks.columns", JSON.stringify(chosen)) }
-    Component.onDestruction: { visits.keep("tracks.columnFilters", filters); visits.keep("tracks.sourceNames", sourceNames) }
+    Component.onDestruction: if (memory) { visits.keep(memory + ".columnFilters", filters); visits.keep(memory + ".sourceNames", sourceNames) }
 }

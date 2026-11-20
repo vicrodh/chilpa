@@ -109,6 +109,8 @@ pub fn submit(query: String, extras: Filter, arrived: impl FnOnce(Option<(FoundT
 /// Discovery keeps its scoped snapshot; Tracks retains the progressive sheet.
 pub fn submit_collection(kind: String, query: String, extras: Filter, arrived: impl FnOnce(Option<(FoundTracks, Timing)>) + Send + 'static) {
     if kind == "tracks" { return submit(query, extras, arrived); }
+    // A discovery list narrowed by a column of hearts needs the same marks the UI shows.
+    let extras = app::with(|api| api.track_sheet_extras(&query, "", extras));
     let timing = Timing::start();
     let delivery = Delivery::new(arrived);
     worker::submit_checked(move |reader| {
