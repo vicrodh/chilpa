@@ -75,6 +75,7 @@ TitledFlow {
     DiscoveryMosaic { width: Metrics.discoveryEntryWidth; height: Metrics.discoveryGenreHeight; tint: 3 }
     DiscoveryActions { width:Metrics.settingsMaxWidth; selected:({kind:"genre",name:"Jazz"}); choices:["Overview","Albums","Artists","Tracks","Subgenres"]; overview:true }
     DiscoveryTools { width:Metrics.settingsMaxWidth; title:"Genres" }
+    DiscoveryTools { width:Metrics.settingsMaxWidth; title:"Compositions"; mode:"compositions" }
     DiscoveryBreadcrumb { title:"Genres"; trail:["Rock","Metal"] }
     GenreSources { sources:[{key:"local:default",label:"Local library"},{key:"plugin:fixture",label:"Source"}] }
     ArtistCard { artist:({title:"Artist",sources:[]}); activeImages:false }
@@ -86,9 +87,14 @@ TitledFlow {
     }
     DiscoveryWorkTable {
         width: Metrics.settingsMaxWidth; height: Metrics.queueMin
-        entries: [{kind:"work",name:"Suite",composers:["Composer"],recordings:3,tracks:12,duration:2500000,sources:["Local"]},
-                  {kind:"work",name:"Overture",composers:["Composer"],recordings:2,tracks:2,duration:450000,sources:["Local","Source"]}]
+        columns: ({date:true})
+        entries: [{kind:"work",name:"Suite",composers:["Composer"],recordings:3,tracks:12,duration:2500000,sources:["Local"],
+                   form:{value:"suite",label:"Suite",source:"title"},period:{value:"baroque",label:"Baroque",source:"composers"},date:{value:"1720",label:"1720",source:"catalogue"}},
+                  {kind:"work",name:"Overture",composers:["Composer","Second composer"],recordings:2,tracks:2,duration:450000,sources:["Local","Source"]}]
     }
+    ComposerHeader { width:Metrics.settingsMaxWidth; name:"Composer"; about:({years:"1685–1750",period:"Baroque"}); works:12; activeImages:false }
+    ComposerPictureMenu { width:Metrics.discoveryEntryWidth; height:Metrics.rowRich }
+    GenreArtistShelf { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; key:'{"kind":"genre","name":"Jazz"}'; cards: Component { ArtistCardGrid { anchors.fill:parent; artists:parent.artists } } }
     DiscoveryTracks { width: Metrics.discoveryEntryWidth * 2; height: Metrics.queueMin } // derived: the same two-card preview width
     DiscoveryAlbums { width:Metrics.settingsMaxWidth; height:Metrics.queueMin }
     DiscoveryArtists { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; cards: Component { ArtistCardGrid { artists:parent.artists } } }

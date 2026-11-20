@@ -50,6 +50,16 @@ impl Catalog {
         SelectionHold { catalog: self.clone(), id }
     }
 
+    /// Reads ahead the tracks of records a shown discovery page counts, at
+    /// most 16 per call and behind what someone opened. A record that failed
+    /// waits for its retry, as on any other page.
+    pub(crate) fn read_ahead_tracks(&self, ids: &[i64]) {
+        let mut inner = self.lock();
+        for id in ids.iter().take(16) {
+            if inner.store.cards.get(id).is_some_and(|card| card.tracks.is_none()) { self.queue(&mut inner, super::Job::Tracks(*id), false); }
+        }
+    }
+
     pub(crate) fn request_selection_tracks(&self, id: i64) {
         let mut inner = self.lock();
         if inner.store.cards.get(&id).is_some_and(|card| card.tracks.is_none()) {

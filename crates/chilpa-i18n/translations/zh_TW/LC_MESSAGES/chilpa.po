@@ -526,6 +526,12 @@ msgstr "所有演出者"
 msgid "All categories"
 msgstr "所有分類"
 
+msgid "All composers"
+msgstr "所有作曲者"
+
+msgid "All compositions"
+msgstr "所有作品"
+
 msgid "All discs"
 msgstr "所有碟片"
 
@@ -784,6 +790,9 @@ msgstr "四月"
 msgid "Architecture"
 msgstr "架構"
 
+msgid "Aria"
+msgstr "詠嘆調"
+
 msgid "Arranger"
 msgstr "編曲者"
 
@@ -1018,11 +1027,20 @@ msgstr "背景圖片"
 msgid "Balance · −100 left / +100 right"
 msgstr "平衡 · −100 左 / +100 右"
 
+msgid "Ballade"
+msgstr "敘事曲"
+
+msgid "Ballet"
+msgstr "芭蕾舞劇"
+
 msgid "Band pass"
 msgstr ""
 
 msgid "Barcode"
 msgstr "條碼"
+
+msgid "Baroque"
+msgstr "巴洛克"
 
 msgid "Bars"
 msgstr "長條"
@@ -1214,8 +1232,17 @@ msgstr "正在取消更新…"
 msgid "Cancelling…"
 msgstr "取消中…"
 
+msgid "Canon"
+msgstr "卡農"
+
+msgid "Cantata"
+msgstr "清唱劇"
+
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "限制提升幅度，使最大峰值保持在滿刻度以下。關閉時，安靜曲目即使峰值削波也能達到目標。"
+
+msgid "Capriccio"
+msgstr "隨想曲"
 
 msgid "Card image"
 msgstr ""
@@ -1249,6 +1276,9 @@ msgstr "分類"
 
 msgid "Ceiling"
 msgstr ""
+
+msgid "Chaconne"
+msgstr "夏康舞曲"
 
 msgid "Change cover"
 msgstr "變更封面"
@@ -1739,6 +1769,15 @@ msgstr "選擇要在何處開啟此音樂"
 msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr ""
 
+msgid "Chorale"
+msgstr "聖詠"
+
+msgid "Classical"
+msgstr "古典"
+
+msgid "Classical period"
+msgstr "古典時期"
+
 msgid "Clean"
 msgstr "乾淨"
 
@@ -1970,6 +2009,9 @@ msgstr "壓縮器比率 · 1–6"
 msgid "Compressor threshold · −60–0 dB"
 msgstr "壓縮器臨界值 · −60–0 dB"
 
+msgid "Concerto"
+msgstr "協奏曲"
+
 msgid "Config files you can create:"
 msgstr "你可以建立的設定檔："
 
@@ -2023,6 +2065,9 @@ msgstr "連線錯誤"
 
 msgid "Container"
 msgstr "容器"
+
+msgid "Contemporary"
+msgstr "當代"
 
 msgid "Content advisory"
 msgstr "內容分級"
@@ -2630,6 +2675,9 @@ msgstr "發行版"
 msgid "Distribution version"
 msgstr "發行版版本"
 
+msgid "Divertimento"
+msgstr "嬉遊曲"
+
 msgid "DoP carrier · {}"
 msgstr "DoP 載體 · {}"
 
@@ -2939,9 +2987,6 @@ msgstr ""
 msgid "Explore"
 msgstr "探索"
 
-msgid "Explore works, recordings and albums credited to this composer."
-msgstr ""
-
 msgid "Export"
 msgstr "匯出"
 
@@ -2995,6 +3040,9 @@ msgstr ""
 
 msgid "Failed to load albums"
 msgstr "無法載入專輯"
+
+msgid "Fantasia"
+msgstr "幻想曲"
 
 msgid "Favorite"
 msgstr "最愛"
@@ -3185,6 +3233,9 @@ msgstr "忘記裝置…"
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "忘記目前找到的歌詞以及已知無歌詞的曲目。播放曲目時會重新查詢。"
 
+msgid "Form"
+msgstr "曲式"
+
 msgid "Format"
 msgstr "格式"
 
@@ -3238,6 +3289,9 @@ msgstr "自該年份起"
 
 msgid "From this week"
 msgstr "來自本週"
+
+msgid "Fugue"
+msgstr "賦格"
 
 msgid "Full"
 msgstr "完整"
@@ -3328,6 +3382,9 @@ msgstr "開始使用"
 
 msgid "Getting started"
 msgstr "新手入門"
+
+msgid "Gigue"
+msgstr "吉格舞曲"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr "GitHub 目前限制來自此網路的請求。請稍後再試。"
@@ -3684,6 +3741,9 @@ msgstr ""
 msgid "Imported"
 msgstr "已匯入"
 
+msgid "Impromptu"
+msgstr "即興曲"
+
 msgid "In a Jellyfin app where you are signed in, open Quick Connect and type this code. Chilpa notices by itself."
 msgstr "在你已登入的 Jellyfin 應用程式中開啟「快速連線」並輸入此代碼，Chilpa 會自動偵測。"
 
@@ -3831,6 +3891,9 @@ msgstr ""
 msgid "Instrument"
 msgstr "樂器"
 
+msgid "Instrumentation"
+msgstr "編制"
+
 msgid "Integrations"
 msgstr "整合"
 
@@ -3845,6 +3908,9 @@ msgstr "介面縮放比例"
 
 msgid "Interface size"
 msgstr "介面大小"
+
+msgid "Intermezzo"
+msgstr "間奏曲"
 
 msgid "Interrupted"
 msgstr "已中斷"
@@ -3920,6 +3986,9 @@ msgstr "無效的偏好設定值；請在「設定」中查看選項。"
 
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr "無效 — 應包含 alsa_output 或 alsa_input"
+
+msgid "Invention"
+msgstr "創意曲"
 
 msgid "Invert left polarity"
 msgstr "反轉左聲道相位"
@@ -4394,6 +4463,9 @@ msgstr "歌詞檢視"
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "未包含翻譯的歌詞會發送至 Chilpa 歌詞 API。"
 
+msgid "Madrigal"
+msgstr "牧歌"
+
 msgid "Magazine"
 msgstr "雜誌"
 
@@ -4436,6 +4508,9 @@ msgstr "標記為未播放"
 msgid "Mark the start first with :loop a."
 msgstr "請先使用 :loop a 標記起點。"
 
+msgid "Mass"
+msgstr "彌撒曲"
+
 msgid "Mastering engineer"
 msgstr "母帶工程師"
 
@@ -4460,8 +4535,14 @@ msgstr "最大支援 32/384"
 msgid "May"
 msgstr "五月"
 
+msgid "Mazurka"
+msgstr "馬厝卡"
+
 msgid "Media info"
 msgstr ""
+
+msgid "Medieval"
+msgstr "中世紀"
 
 msgid "Member Of"
 msgstr "成員於"
@@ -4505,6 +4586,9 @@ msgstr "迷你播放器預設檢視"
 msgid "Minimize"
 msgstr "最小化"
 
+msgid "Minuet"
+msgstr "小步舞曲"
+
 msgid "Minutes"
 msgstr "分鐘"
 
@@ -4528,6 +4612,9 @@ msgstr "混音工程師"
 
 msgid "Mode not reported"
 msgstr "未回報模式"
+
+msgid "Modern"
+msgstr "現代"
 
 msgid "Mon"
 msgstr "週一"
@@ -4606,6 +4693,9 @@ msgstr "最多播放"
 
 msgid "Most played tracks"
 msgstr "最多播放曲目"
+
+msgid "Motet"
+msgstr "經文歌"
 
 msgid "Mounted storage"
 msgstr "已掛載儲存空間"
@@ -4877,6 +4967,12 @@ msgstr "尚未知曉音訊輸出；請稍後再試。"
 msgid "No changes to apply."
 msgstr ""
 
+msgid "No classical composers yet. Choose All composers to see every composer credit."
+msgstr "尚無古典作曲者。選擇「所有作曲者」以查看所有作曲者標示。"
+
+msgid "No classical compositions yet. Choose All compositions to see every work."
+msgstr "尚無古典作品。選擇「所有作品」以查看所有作品。"
+
 msgid "No composer"
 msgstr "無作曲者"
 
@@ -5086,6 +5182,9 @@ msgstr "無年份"
 
 msgid "No year; genre, label and composer take none too"
 msgstr "無年份；類型、廠牌與作曲者亦無設定"
+
+msgid "Nocturne"
+msgstr "夜曲"
 
 msgid "None"
 msgstr "無"
@@ -5468,6 +5567,9 @@ msgstr "開啟：{} · 可聽度：{}"
 msgid "Opening…"
 msgstr "正在開啟…"
 
+msgid "Opera"
+msgstr "歌劇"
+
 msgid "Operating system"
 msgstr "作業系統"
 
@@ -5480,8 +5582,14 @@ msgstr ""
 msgid "Operation stopped with errors"
 msgstr ""
 
+msgid "Operetta"
+msgstr "輕歌劇"
+
 msgid "Optional access token for private playlists"
 msgstr "私人播放清單的選用存取權杖"
+
+msgid "Oratorio"
+msgstr "神劇"
 
 msgid "Original audio"
 msgstr "原始音訊"
@@ -5537,6 +5645,9 @@ msgstr "輸出格式"
 msgid "Output identity could not be saved."
 msgstr "無法儲存輸出識別。"
 
+msgid "Overture"
+msgstr "序曲"
+
 msgid "Overview"
 msgstr ""
 
@@ -5561,8 +5672,17 @@ msgstr ""
 msgid "Parentheses group; NOT works like the minus"
 msgstr "括號分組；NOT 作用類似減號"
 
+msgid "Partita"
+msgstr "帕蒂塔"
+
 msgid "Parts"
 msgstr ""
+
+msgid "Passacaglia"
+msgstr "帕薩卡利亞"
+
+msgid "Passion"
+msgstr "受難曲"
 
 msgid "Password"
 msgstr "密碼"
@@ -5641,6 +5761,9 @@ msgstr "演出者"
 
 msgid "Performers"
 msgstr "演出者"
+
+msgid "Period"
+msgstr "時期"
 
 msgid "Permission required"
 msgstr "需要權限"
@@ -5864,6 +5987,9 @@ msgstr "Podcast"
 msgid "Points show individual filter gains. Drag to adjust frequency and gain; scroll over a point to adjust Q. Locked filters stay fixed."
 msgstr ""
 
+msgid "Polonaise"
+msgstr "波蘭舞曲"
+
 msgid "Popular Tracks"
 msgstr "熱門曲目"
 
@@ -5887,6 +6013,12 @@ msgstr "預測為未變更的 PCM；DoP 解碼與可聽輸出未測試"
 
 msgid "Preferred GPU"
 msgstr "偏好的 GPU"
+
+msgid "Prelude"
+msgstr "前奏曲"
+
+msgid "Prelude and fugue"
+msgstr "前奏曲與賦格"
 
 msgid "Preparing Mood analysis"
 msgstr "正在準備心情分析"
@@ -6059,6 +6191,9 @@ msgstr "音質、格式與來源篩選器"
 msgid "Quarantined"
 msgstr "已隔離"
 
+msgid "Quartet"
+msgstr "四重奏"
+
 msgid "Queries"
 msgstr "查詢"
 
@@ -6115,6 +6250,9 @@ msgstr "依容量快速檢視"
 
 msgid "Quick view"
 msgstr "快速檢視"
+
+msgid "Quintet"
+msgstr "五重奏"
 
 msgid "Quit"
 msgstr "結束"
@@ -6495,6 +6633,9 @@ msgstr "正在移除 {}"
 msgid "Removing…"
 msgstr "正在移除…"
 
+msgid "Renaissance"
+msgstr "文藝復興"
+
 msgid "Rename"
 msgstr "重新命名"
 
@@ -6569,6 +6710,9 @@ msgstr "請求的輸出路徑"
 
 msgid "Requests: {}"
 msgstr "請求數：{}"
+
+msgid "Requiem"
+msgstr "安魂曲"
 
 msgid "Rescan"
 msgstr "重新掃描"
@@ -6678,6 +6822,9 @@ msgstr "安裝前請先檢視請求的權限。"
 msgid "Reviewing changes…"
 msgstr "正在檢視變更…"
 
+msgid "Rhapsody"
+msgstr "狂想曲"
+
 msgid "Rich"
 msgstr "豐富"
 
@@ -6689,6 +6836,12 @@ msgstr ""
 
 msgid "Right delay · 0–30 ms"
 msgstr "右聲道延遲 · 0–30 ms"
+
+msgid "Romantic"
+msgstr "浪漫時期"
+
+msgid "Rondo"
+msgstr "迴旋曲"
 
 msgid "Route"
 msgstr "路徑"
@@ -6845,6 +6998,9 @@ msgstr "掃描中…"
 
 msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
 msgstr "排程檢查會在 Chilpa 開啟時執行。啟動檢查會在應用程式開啟時執行一次。未變更的檔案會被略過。"
+
+msgid "Scherzo"
+msgstr "詼諧曲"
 
 msgid "Scope of this check"
 msgstr "此檢查的範圍"
@@ -7083,6 +7239,9 @@ msgstr "獨立的輸入限制無法涵蓋取樣率、字元寬度與聲道數的
 
 msgid "September"
 msgstr "九月"
+
+msgid "Serenade"
+msgstr "小夜曲"
 
 msgid "Server"
 msgstr ""
@@ -7400,8 +7559,17 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Sonata"
+msgstr "奏鳴曲"
+
+msgid "Song"
+msgstr "歌曲"
+
 msgid "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
 msgstr ""
+
+msgid "Song cycle"
+msgstr "聯篇歌曲"
 
 msgid "Songs"
 msgstr "歌曲"
@@ -7592,6 +7760,9 @@ msgstr "訂閱項目"
 msgid "Success"
 msgstr "成功"
 
+msgid "Suite"
+msgstr "組曲"
+
 msgid "Sun"
 msgstr "週日"
 
@@ -7600,6 +7771,9 @@ msgstr "演唱歌詞行"
 
 msgid "Surface"
 msgstr "表面"
+
+msgid "Symphony"
+msgstr "交響曲"
 
 msgid "Sync cancelled"
 msgstr "同步已取消"
@@ -8729,6 +8903,9 @@ msgstr "移動至"
 msgid "To use a different account, add it as a separate server."
 msgstr ""
 
+msgid "Toccata"
+msgstr "觸技曲"
+
 msgid "Today"
 msgstr "今天"
 
@@ -8755,6 +8932,9 @@ msgstr ""
 
 msgid "Tone enabled"
 msgstr ""
+
+msgid "Tone poem"
+msgstr "交響詩"
 
 msgid "Too many device storage locations were reported."
 msgstr "回報了過多的裝置儲存位置。"
@@ -8869,6 +9049,9 @@ msgstr "樹狀圖"
 
 msgid "Trending shows"
 msgstr "熱門節目"
+
+msgid "Trio"
+msgstr "三重奏"
 
 msgid "Try again"
 msgstr "重試"
@@ -9176,6 +9359,9 @@ msgstr "有效的節點名稱"
 msgid "Value"
 msgstr ""
 
+msgid "Variations"
+msgstr "變奏曲"
+
 msgid "Verify files after transfer"
 msgstr "傳輸後驗證檔案"
 
@@ -9278,6 +9464,9 @@ msgstr "桌布模糊"
 
 msgid "Wallpaper, blurred"
 msgstr "桌布（已模糊）"
+
+msgid "Waltz"
+msgstr "圓舞曲"
 
 msgid "Warning"
 msgstr "警告"
@@ -9408,8 +9597,8 @@ msgstr "紀錄標題與曲目標題中的字詞"
 msgid "Work"
 msgstr "作品"
 
-msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
-msgstr ""
+msgid "Works named by work tags or by the titles of their parts, with their composers. Recordings keep their album and performer context."
+msgstr "依作品標籤或其樂章標題命名的作品及其作曲者。錄音保留其專輯與演出者。"
 
 msgid "Write XML"
 msgstr "寫入 XML"
@@ -11347,6 +11536,9 @@ msgstr "{}-bit / {}"
 
 msgid "{}s"
 msgstr "{}s"
+
+msgid "Étude"
+msgstr "練習曲"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "「{}」有未儲存的變更。開啟此紀錄將會遺失這些變更。"

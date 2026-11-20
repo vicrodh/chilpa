@@ -794,4 +794,77 @@ TestCase {
         compare(page.tab, 3)
         compare(page.playSelection, true)
     }
+    function lastOptions(model) { return JSON.parse(model.requests[model.requests.length - 1].options) }
+    function test_compositions_open_on_classical_and_remember_the_switch() {
+        let page = createTemporaryObject(maker, this, {mode:"compositions"})
+        const model = findChild(page, "discoveryModel")
+        const choice = findChild(page, "discoveryClassical")
+        verify(choice.visible)
+        compare(choice.current, 0)
+        tryVerify(() => model.requests.length > 0)
+        compare(lastOptions(model).classical, true)
+        choice.activated(1)
+        tryVerify(() => lastOptions(model).classical === undefined, 3000, "All compositions sends no classical filter")
+        page.destroy(); wait(1)
+        page = createTemporaryObject(maker, this, {mode:"compositions"})
+        compare(findChild(page, "discoveryClassical").current, 1)
+        page.destroy(); wait(1)
+        page = createTemporaryObject(maker, this, {mode:"compositions",routeKey:JSON.stringify({kind:"work",name:"Suite",work:"work:1",composers:["Writer"]})})
+        verify(!findChild(page, "discoveryClassical").visible, "a work's recordings have no switch")
+    }
+    function test_an_empty_classical_listing_names_the_other_choice() {
+        const page = createTemporaryObject(maker, this, {mode:"composers"})
+        findChild(page, "discoveryModel").document = JSON.stringify({total:0,items:[]})
+        compare(findChild(page, "discoveryClassical").current, 1, "composers open on all of them")
+        compare(findChild(page, "discoveryTools").emptyText, "No composer credits yet. Add composers in the metadata editor.")
+        findChild(page, "discoveryClassical").activated(0)
+        compare(findChild(page, "discoveryTools").emptyText, "No classical composers yet. Choose All composers to see every composer credit.")
+    }
+    function test_a_composer_page_opens_with_an_artist_header_and_its_picture_menu() {
+        const page = createTemporaryObject(maker, this, {mode:"composers",routeKey:JSON.stringify({kind:"composer",name:"Johann Sebastian Bach"})})
+        findChild(page, "discoveryModel").document = JSON.stringify({total:2,items:[],composer:{name:"Johann Sebastian Bach",years:"1685–1750",period:"Baroque"}})
+        const header = findChild(page, "composerHeader")
+        verify(header.visible)
+        tryCompare(header, "facts", "1685–1750 · Baroque · 2 compositions")
+        verify(!findChild(page, "discoveryClassical").visible)
+        const picture = findChild(header, "composerPortrait")
+        mouseClick(picture, picture.width / 2, picture.height / 2, Qt.RightButton)
+        tryVerify(() => findChild(page, "composerPictureMenu")?.opened === true)
+        const menu = findChild(page, "composerPictureMenu")
+        compare(menu.entries[0].act, "choose")
+        menu.chosen(0)
+        compare(Artwork.asked[Artwork.asked.length - 1], "choose Johann Sebastian Bach")
+    }
+    function test_a_composer_card_opens_its_picture_menu_on_a_right_click() {
+        const page = createTemporaryObject(maker, this, {mode:"composers"})
+        findChild(page, "discoveryModel").document = JSON.stringify({total:1,items:[{kind:"composer",name:"Composer",albums:3,years:"1685–1750",period:"Baroque"}]})
+        const view = findChild(page, "discoveryEntries")
+        tryVerify(() => !!findChild(view, "discoveryEntry:Composer"))
+        const card = findChild(view, "discoveryEntry:Composer")
+        compare(card.detail, "1685–1750 · Baroque")
+        mouseClick(card, card.width / 2, card.height / 2, Qt.RightButton)
+        tryVerify(() => findChild(page, "composerPictureMenu")?.opened === true)
+        compare(Navigation.went.length, 0, "a right click does not open the composer")
+        findChild(page, "composerPictureMenu").chosen(0)
+        compare(Artwork.asked[Artwork.asked.length - 1], "choose Composer")
+    }
+    function test_works_show_roon_columns_and_composer_links() {
+        const page = createTemporaryObject(maker, this, {mode:"compositions"})
+        findChild(page, "discoveryModel").document = JSON.stringify({total:1,columns:{date:false,instrumentation:false},items:[
+            {kind:"work",name:"Cantata, JLB 5",work:"work:5",composers:["Johann Ludwig Bach","Second"],recordings:2,tracks:6,
+             form:{value:"cantata",label:"Cantata",source:"title"},period:{value:"baroque",label:"Baroque",source:"composers"}}]})
+        const view = findChild(page, "discoveryEntries")
+        tryVerify(() => !!view.itemAtIndex(0))
+        const row = view.itemAtIndex(0)
+        compare(findChild(row, "discoveryWorkCell:period").text, "Baroque")
+        compare(findChild(row, "discoveryWorkCell:form").text, "Cantata")
+        compare(findChild(row, "discoveryWorkCell:recordings").text, "2")
+        compare(findChild(row, "discoveryWorkCell:date"), null, "no work of the result has a date")
+        const credit = findChild(row, "discoveryWorkCell:credit")
+        credit.linkActivated("1")
+        compare(Navigation.went[0], "composers")
+        compare(JSON.parse(Navigation.went[1]).name, "Second")
+        page.width = 560
+        tryCompare(findChild(row, "discoveryWorkDetails"), "text", "Johann Ludwig Bach · Second · Baroque · Cantata · 2 recordings")
+    }
 }

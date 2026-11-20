@@ -8,6 +8,7 @@ import "../Components"
 
 ScreenHead {
     id: tools
+    objectName: "discoveryTools"
     property alias text: find.text
     property string mode: "genres"
     property string order: "name"
@@ -20,6 +21,18 @@ ScreenHead {
     property bool detail: false
     property var sources: []
     property var excludedSources: []
+    // Composers and compositions of the classical tradition only, as Roon
+    // opens them; the other choice shows every one.
+    property bool classical: true
+    property bool composer: false
+    readonly property bool classicalChoice: (mode === "compositions" || mode === "composers") && listing && !detail
+    // What an empty listing says, for the search, the switch and the mode.
+    readonly property string emptyText: text !== "" ? I18n.tr("No matches. Try another search.", I18n.rev)
+        : mode === "genres" ? I18n.tr("No genres with albums in this selection", I18n.rev)
+        : classicalChoice && classical ? (mode === "composers" ? I18n.tr("No classical composers yet. Choose All composers to see every composer credit.", I18n.rev)
+            : I18n.tr("No classical compositions yet. Choose All compositions to see every work.", I18n.rev))
+        : mode === "composers" && !composer ? I18n.tr("No composer credits yet. Add composers in the metadata editor.", I18n.rev)
+        : I18n.tr("No work tags in this selection. Composer credits are still available under Albums and Tracks.", I18n.rev)
     signal sourcesChosen(var excluded)
     signal queryChanged()
     flexible: find
@@ -33,6 +46,14 @@ ScreenHead {
         placeholder: tools.work ? I18n.tr("Filter recordings", I18n.rev) : I18n.tr("Search your library", I18n.rev)
         onTextChanged: tools.queryChanged()
         onEscaped: text = ""
+    }
+    SegmentedControl {
+        objectName: "discoveryClassical"
+        anchors.verticalCenter: parent.verticalCenter
+        visible: tools.classicalChoice
+        options: [{text:I18n.tr("Classical", I18n.rev)}, {text:tools.mode === "composers" ? I18n.tr("All composers", I18n.rev) : I18n.tr("All compositions", I18n.rev)}]
+        current: tools.classical ? 0 : 1
+        onActivated: index => { tools.classical = index === 0; tools.queryChanged() }
     }
     SortButton {
         objectName: "discoverySort"

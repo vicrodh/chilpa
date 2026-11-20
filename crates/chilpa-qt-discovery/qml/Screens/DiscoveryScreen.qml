@@ -38,7 +38,7 @@ Item {
     readonly property bool listing: !detail || composer && tab === 0 || work && tab === 0 || genre && tab === 4
     readonly property string queryKind: work ? "recordings" : mode
     readonly property bool needsMetadata: !selected.recording && (listing || genre)
-    readonly property string queryIdentity: JSON.stringify([queryKind,collectionKey,find.text,find.order,find.scope])
+    readonly property string queryIdentity: JSON.stringify([queryKind,collectionKey,find.text,find.order,find.scope,find.classical])
     property string requestedIdentity: ""
     readonly property bool queryPending: needsMetadata && (requestedIdentity !== queryIdentity || results.loading || !Array.isArray(about.items))
     readonly property string failure: !queryPending && needsMetadata && about.error ? about.error : content.item?.error || ""
@@ -55,7 +55,7 @@ Item {
             for (const key of Object.keys(positions)) shifted[Number(key) + 1] = positions[key]
             positions = shifted; tab++
         }
-        find.text = state.text || ""; find.order = state.order || "name"; find.scope = state.scope || "all"
+        find.text = state.text || ""; find.order = state.order || "name"; find.scope = state.scope || "all"; find.classical = state.classical ?? mode === "compositions"
         sourceOverride = state.sourceOverride === true
         find.excludedSources = selected.excluded_sources || state.excludedSources || []
         restoredPosition = positions[tab] || state.position || 0; restoring = restoredPosition > 0
@@ -66,7 +66,7 @@ Item {
         const previous = Visit.recall("discovery.visits", {})
         const next = {}
         for (const key of Object.keys(previous).filter(key => key !== memory).slice(-63)) next[key] = previous[key]
-        next[memory] = {version:2, tab:tab, order:find.order, scope:find.scope, sourceOverride:sourceOverride, excludedSources:find.excludedSources, text:find.text, positions:positions, position:positions[tab] || 0}
+        next[memory] = {version:2, tab:tab, order:find.order, scope:find.scope, classical:find.classical, sourceOverride:sourceOverride, excludedSources:find.excludedSources, text:find.text, positions:positions, position:positions[tab] || 0}
         Visit.keep("discovery.visits", next)
     }
     function changeTab(next) {
@@ -119,7 +119,7 @@ Item {
         onTriggered: if (discoveryPage.visible && discoveryPage.needsMetadata) {
             discoveryPage.requestedIdentity = discoveryPage.queryIdentity
             const key = discoveryPage.collectionKey
-            results.request(discoveryPage.queryKind, key, find.text, JSON.stringify({order:find.order,scope:find.scope,excluded_sources:discoveryPage.decode(key).excluded_sources}), Library.contentRev + Library.remoteRev + Artwork.rev)
+            results.request(discoveryPage.queryKind, key, find.text, JSON.stringify({order:find.order,scope:find.scope,classical:find.classicalChoice && find.classical || undefined,excluded_sources:discoveryPage.decode(key).excluded_sources}), Library.contentRev + Library.remoteRev + Artwork.rev)
         }
     }
     function open(entry) {
@@ -145,11 +145,15 @@ Item {
             visible: discoveryPage.detail
             title: discoveryPage.rootTitle; mode: discoveryPage.mode; trail: discoveryPage.breadcrumb; excludedSources: find.excludedSources
         }
+        ComposerHeader {
+            width: parent.width; visible: discoveryPage.composer
+            name: discoveryPage.selected.name || ""; about: discoveryPage.about.composer || null; works: discoveryPage.about.total || 0
+        }
         DiscoveryTools {
             id: find
             width: parent.width
-            title: discoveryPage.detail ? discoveryPage.selected.name || discoveryPage.rootTitle : discoveryPage.rootTitle
-            mode: discoveryPage.mode; listing: discoveryPage.listing; work: discoveryPage.work; detail: discoveryPage.detail
+            title: discoveryPage.composer ? "" : discoveryPage.detail ? discoveryPage.selected.name || discoveryPage.rootTitle : discoveryPage.rootTitle
+            mode: discoveryPage.mode; listing: discoveryPage.listing; work: discoveryPage.work; detail: discoveryPage.detail; composer: discoveryPage.composer
             overview: discoveryPage.overview; recording: !!discoveryPage.selected.recording
             tracks: discoveryPage.detail && discoveryPage.tab === (discoveryPage.genre ? 3 : 2)
             sources: discoveryPage.about.sources || []
@@ -192,19 +196,8 @@ Item {
         id: genreOverview
         GenreOverview {
             key:discoveryPage.collectionKey; filter:find.text; order:find.order; name:discoveryPage.selected.name || ""; about:discoveryPage.about; loading:discoveryPage.queryPending; scrollbarOverlay:discoveryPage
-            artistsContent: Component {
-                Item {
-                    AlbumGridModel { id:people; kind:"discoveryArtists"; key:discoveryPage.collectionKey; filter:find.text; order:find.order; columns:grid.columns; contentRev:Library.contentRev + Library.remoteRev }
-                    ArtistUi.ArtistCardGrid { id:grid; anchors.fill:parent; artists:people; visible:people.ready && people.error === ""; flow:GridView.FlowTopToBottom; flickableDirection:Flickable.HorizontalFlick }
-                    ShelfSkeleton { anchors.fill:parent; visible:!people.ready; round:true }
-                    Column {
-                        anchors.centerIn:parent; spacing:Metrics.gap12
-                        Text { text:people.error || I18n.tr("No artists in this selection", I18n.rev); color:Theme.color.textSecondary; font.pointSize:Type.body }
-                        PillButton { anchors.horizontalCenter:parent.horizontalCenter; visible:people.error !== ""; text:I18n.tr("Retry", I18n.rev); onClicked:people.retry() }
-                        visible:people.ready && (people.error !== "" || people.albums === 0)
-                    }
-                }
-            }
+            artistsContent: Component { GenreArtistShelf { key:discoveryPage.collectionKey; filter:find.text; order:find.order
+                cards: Component { ArtistUi.ArtistCardGrid { anchors.fill:parent; artists:parent.artists; visible:parent.shown; flow:GridView.FlowTopToBottom; flickableDirection:Flickable.HorizontalFlick } } } }
             onActivated: entry => discoveryPage.open(entry)
             onBrowseRequested: section => { discoveryPage.playSelection = false; discoveryPage.changeTab(({albums:1,artists:2,tracks:3,subgenres:4})[section] || 0) }
             onPlayRequested: { discoveryPage.playSelection = true; discoveryPage.changeTab(3) }
@@ -222,7 +215,7 @@ Item {
     Component {
         id: workTable
         DiscoveryWorkTable {
-            recordings: discoveryPage.work; scrollbarOverlay: discoveryPage
+            recordings: discoveryPage.work; scrollbarOverlay: discoveryPage; columns: discoveryPage.about.columns || ({})
             ready: !results.loading && Array.isArray(discoveryPage.about.items)
             dataSource: results
             onActivated: entry => discoveryPage.open(entry)
@@ -244,10 +237,7 @@ Item {
     DiscoveryStatus {
         anchors.fill:content; loading:discoveryPage.waiting; failure:discoveryPage.failure
         empty:discoveryPage.listing && !discoveryPage.selected.recording && (discoveryPage.about.items || []).length === 0
-        emptyText: find.text !== "" ? I18n.tr("No matches. Try another search.", I18n.rev)
-                : discoveryPage.mode === "genres" ? I18n.tr("No genres with albums in this selection", I18n.rev)
-                : discoveryPage.mode === "composers" && !discoveryPage.composer ? I18n.tr("No composer credits yet. Add composers in the metadata editor.", I18n.rev)
-                : I18n.tr("No work tags in this selection. Composer credits are still available under Albums and Tracks.", I18n.rev)
+        emptyText: find.emptyText
         onRetryRequested:discoveryPage.retry()
     }
 }

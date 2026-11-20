@@ -20,14 +20,14 @@ Column {
     signal openRequested(var entry)
     signal tabRequested(int tab)
     spacing: Metrics.gap12
+    // A composer's page says who it is in its header instead.
     Text {
-        visible: !root.overview
+        visible: !root.overview && !root.composer
         width: parent.width
         text: root.work ? I18n.tr("Available parts, grouped by album and performer. Work tags do not confirm a complete recording.", I18n.rev)
-            : root.composer ? I18n.tr("Explore works, recordings and albums credited to this composer.", I18n.rev)
             : root.mode === "genres" ? I18n.tr("Follow a style into its subgenres, or search for one directly.", I18n.rev)
             : root.mode === "composers" ? I18n.tr("The people behind the music in your library.", I18n.rev)
-            : I18n.tr("Works identified by work and composer tags. Recordings keep their album and performer context.", I18n.rev)
+            : I18n.tr("Works named by work tags or by the titles of their parts, with their composers. Recordings keep their album and performer context.", I18n.rev)
         wrapMode: Text.WordWrap; textFormat: Text.PlainText
         font.pointSize: Type.body; color: Theme.color.textSecondary
     }
@@ -60,16 +60,5 @@ Column {
         options: root.choices.map(text => ({text:text}))
         current: root.tab
         onActivated: index => root.tabRequested(index)
-    }
-    Row {
-        spacing: Metrics.gap8
-        visible: root.composer
-        PillButton {
-            text: I18n.tr("About this composer", I18n.rev); kind: "ghost"
-            onClicked: {
-                Visit.keep("artist.aboutIntent", {name:root.selected.name || "", at:Date.now()})
-                Navigation.openArtist(root.selected.name || "")
-            }
-        }
     }
 }
