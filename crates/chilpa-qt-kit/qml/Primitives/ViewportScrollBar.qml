@@ -54,13 +54,13 @@ ScrollBar {
             area.width = Qt.binding(function() { return sideways ? viewport.width : gutter + bar.width })
             area.height = Qt.binding(function() { return sideways ? (bar.reservedBottom > 0 ? bar.height : gutter + bar.height) : Math.max(0, viewport.height - bar.reservedBottom) })
         }
-        placement.start()
+        if (!placement.running) placement.start()
     }
-    // Start only after this owner captures its viewport. A child timer can
-    // complete and fire earlier while a page is incubated across frames.
+    // Rearm at owner completion if this fires before viewport capture.
     Timer {
         id: placement
         interval: 0
+        running: true
         onTriggered: {
             if (!bar || !bar.viewport) return
             // Negative gutters stay clipped; positive gutters use the free margin.
