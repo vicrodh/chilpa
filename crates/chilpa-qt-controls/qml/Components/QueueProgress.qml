@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa.kit
-import "../Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // I keep navigation and playback usable while a long list is being added.
 Rectangle {

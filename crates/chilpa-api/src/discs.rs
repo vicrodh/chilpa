@@ -77,6 +77,7 @@ pub(crate) fn with_headers(rows: Vec<TrackRow>, discs: &[Disc], show_discs: bool
         let number = track.disc.max(1);
         if show_discs && current != Some(number) {
             current = Some(number);
+            previous_work = None;
             let songs = rows[index..].iter().take_while(|row| row.disc.max(1) == number).count();
             let disc = discs.iter().find(|disc| disc.number == number);
             entries.push(TrackEntry::Header(GroupHeader {
@@ -87,7 +88,9 @@ pub(crate) fn with_headers(rows: Vec<TrackRow>, discs: &[Disc], show_discs: bool
             }));
         }
         let work = track.work.trim();
-        if previous_work != Some(work) && !work.is_empty() {
+        let same_title = work.eq_ignore_ascii_case(track.title.trim());
+        let shared = rows.get(index + 1).is_some_and(|next| next.disc.max(1) == number && next.work.trim() == work);
+        if previous_work != Some(work) && !work.is_empty() && (!same_title || shared) {
             entries.push(TrackEntry::Header(GroupHeader {
                 label: work.to_string(),
                 work: true,
@@ -161,6 +164,20 @@ mod tests {
             composer_target: String::new(),
             groups: None, ai_generated: None, explicit: None, credits: None,
         }
+    }
+
+    #[test]
+    fn song_work_tags_do_not_repeat_each_title_and_disc_boundaries_restart_groups() {
+        let mut song = row(1, "Wildest Dreams", "Iron Maiden");
+        song.title = "Wildest Dreams".into();
+        assert_eq!(with_headers(vec![song.clone()], &[], false).len(), 1);
+        let mut movement = song.clone();
+        movement.title = "Second movement".into();
+        let grouped = with_headers(vec![song, movement], &[], false);
+        assert!(matches!(&grouped[0], TrackEntry::Header(head) if head.work && head.label == "Wildest Dreams"));
+        assert_eq!(grouped.len(), 3);
+        let entries = with_headers(vec![row(1, "Suite", "Writer"), row(2, "Suite", "Writer")], &[], true);
+        assert_eq!(entries.iter().filter(|entry| matches!(entry, TrackEntry::Header(head) if head.work)).count(), 2);
     }
 
     #[test]

@@ -14,7 +14,7 @@ pub struct TracksQuery {
     /// A track's own stars to keep, 0 for none, written "5,0"; empty keeps
     /// every track.
     pub ratings: Vec<u8>,
-    /// Present only for the independent sheet protocol; old callers keep shared extras.
+    /// Present for the independent sheet protocol.
     pub sheet: Option<chilpa_library::store::track_sheet::Selection>,
 }
 
@@ -34,9 +34,9 @@ impl TracksQuery {
         if !crate::rating_switch::on() { sheet.without("rating"); }
         Filter {
             text: self.text.clone(),
-            excluded_sources: if self.sheet.is_none() { extras.excluded_sources.clone() } else { Vec::new() },
-            qualities: if self.sheet.is_none() { extras.qualities.clone() } else { Vec::new() },
-            formats: if self.sheet.is_none() { extras.formats.clone() } else { Vec::new() },
+            excluded_sources: extras.excluded_sources.clone(),
+            qualities: extras.qualities.clone(),
+            formats: extras.formats.clone(),
             track_ratings: if crate::rating_switch::on() { self.ratings.clone() } else { Vec::new() },
             grouped_by: if self.grouped() && self.group != "plays" { self.group.clone() } else { String::new() },
             sheet,
@@ -125,9 +125,8 @@ pub fn group_of(group: &str, row: &TrackRow) -> String {
 }
 
 impl Reader {
-    /// The tracks of a query, with the integrated sources' saved tracks
-    /// merged into the same order. The sources, qualities and formats left
-    /// out come from `extras`, which the Library screen shares.
+    /// The Library's tracks, with the sheet's filters and ordering applied.
+    /// Source and quality settings come from the Library's shared scope.
     pub fn tracks(&self, query: &str, extras: &Filter) -> FoundTracks {
         self.tracks_using(query, extras, &self.source_index().1)
     }
@@ -136,16 +135,8 @@ impl Reader {
         let query = TracksQuery::parse(query);
         let filter = query.filter(extras);
         let by = if query.group == "name" { "title" } else { query.group.as_str() };
-        if !index.items.iter().any(|item| item.saved_track) && !query.grouped() {
-            return FoundTracks { snapshot: self.snapshot(&filter, query.order()), group: query.group, ..Default::default() };
-        }
-        let (local, keys) = self.lib.keyed_snapshot(&filter, query.order()).unwrap_or_else(|e| {
-            eprintln!("chilpa-queries: library snapshot failed: {e}");
-            Default::default()
-        });
-        let stars = crate::library_sources::Stars::read(&self.lib, index);
-        let (mut snapshot, mut sections) = crate::library_sources::merge_snapshot(local, keys, &filter, query.order(), index, &stars,
-            crate::library_sources::Scope::Tracks, (!filter.grouped_by.is_empty()).then_some(by), None);
+        let (mut snapshot, mut sections) = self.library_snapshot(
+            &filter, query.order(), index, None, (!filter.grouped_by.is_empty()).then_some(by));
         if query.group == "plays" {
             let grouped = crate::library_sources::plays::tracks(&self.lib, snapshot.ids, index);
             snapshot.ids = grouped.ids;

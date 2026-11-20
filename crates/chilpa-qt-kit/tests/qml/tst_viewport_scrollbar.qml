@@ -117,6 +117,30 @@ TestCase {
             Rectangle { width: 20; height: 20 }
         }
     }
+    Component {
+        id: asyncViewMaker
+        Loader {
+            asynchronous: true
+            sourceComponent: Item {
+                property alias bar: asyncBar
+                property alias view: asyncView
+                Flickable {
+                    id: asyncView
+                    width: 200; height: 120; contentHeight: 1000
+                    ScrollBar.vertical: ViewportScrollBar { id: asyncBar; overlayParent: test; gutter: 0 }
+                }
+                Repeater { model: 1000; Item { width: 1; height: 1 } }
+            }
+        }
+    }
+    function test_async_owner_starts_placement_after_capturing_its_viewport() {
+        const loader=createTemporaryObject(asyncViewMaker,test)
+        tryCompare(loader,"status",Loader.Ready)
+        const bar=loader.item.bar
+        tryCompare(bar,"parent",test)
+        compare(bar.viewport,loader.item.view)
+        compare(bar.x,loader.item.view.width-bar.width/2)
+    }
     function init() { failOnWarning(/ReferenceError|TypeError|Binding loop detected|Cannot specify.*anchors/) }
     function cleanup() { Metrics.playerSpace = Metrics.playerHeight; mouseMove(test, 790, 390) }
     function assertVisibleThumb(scrollbar) {
@@ -136,6 +160,34 @@ TestCase {
         tryVerify(() => Math.abs(bar.mapToItem(view, 0, 0).y) < 0.1)
         bar.rightEdge = view.width - 24
         tryVerify(() => Math.abs(bar.mapToItem(view, 0, 0).x - bar.rightEdge - Metrics.gap8 + bar.width / 2) < 0.1)
+    }
+    function test_late_attachment_restores_the_overlay_parent_and_geometry_bindings() {
+        const frame=createTemporaryObject(nestedViewMaker,test)
+        const bar=frame.bar, view=frame.view
+        tryCompare(bar,"parent",test)
+        // The attached control can finish after an incubated page's timer.
+        bar.parent=view
+        bar.x=view.width-bar.width
+        bar.y=0
+        tryCompare(bar,"parent",test)
+        const aligned=()=>Math.abs(bar.mapToItem(view,0,0).x-view.width-Metrics.gap8+bar.width/2)<0.1
+        tryVerify(aligned)
+        view.width+=20
+        frame.x+=30
+        tryVerify(aligned)
+    }
+    function test_late_attachment_reuses_the_existing_inset_layer() {
+        const frame=createTemporaryObject(clearedViewMaker,test)
+        const bar=frame.vertical
+        tryVerify(()=>bar.insetLayer!==null && bar.parent===bar.insetLayer)
+        const layer=bar.insetLayer
+        const children=frame.view.children.length
+        bar.parent=frame.view
+        bar.height=frame.view.height
+        tryCompare(bar,"parent",layer)
+        compare(bar.insetLayer,layer)
+        compare(frame.view.children.length,children)
+        compare(bar.height,frame.view.height-bar.reservedBottom)
     }
     function test_both_axes_have_nonzero_visible_thumbs() {
         const oldHorizontal = wideBar.policy, oldVertical = gutterBar.policy

@@ -89,7 +89,7 @@ Item {
         visualizerFeed: page.visualizerFeed
         scopeRenderer: page.scopeRenderer
         visualizationsReady: page.visualizationsReady
-        lyrics: Component { LyricsPanel { closable: false } }
+        lyrics: Component { Tools.LyricsPanel { closable: false } }
         x: Metrics.contentX
         y: Metrics.contentTop
         width: Metrics.listenArt

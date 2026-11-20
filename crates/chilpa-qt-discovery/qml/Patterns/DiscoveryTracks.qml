@@ -10,6 +10,9 @@ Item {
     property string key: ""
     property bool recording: false
     property bool autoPlay: false
+    property bool showLegacyActions: true
+    readonly property alias collection: parts
+    readonly property bool playable: parts.ready && parts.count > 0
     signal played()
     function tryPlay() {
         if (!autoPlay || !parts.ready || parts.count === 0) return
@@ -25,8 +28,8 @@ Item {
     Row {
         id: actions
         spacing: Metrics.gap8
-        PillButton { objectName:"discoveryPlay"; text: I18n.tr("Play", I18n.rev); kind: "primary"; enabled: parts.ready && parts.count > 0; onClicked: parts.playAll(false) }
-        PillButton { objectName:"discoveryQueue"; text: I18n.tr("Add to queue", I18n.rev); enabled: parts.ready && parts.count > 0; onClicked: parts.queueAll() }
+        PillButton { visible: section.showLegacyActions; objectName:"discoveryPlay"; text: I18n.tr("Play", I18n.rev); kind: "primary"; enabled: parts.ready && parts.count > 0; onClicked: parts.playAll(false) }
+        PillButton { visible: section.showLegacyActions; objectName:"discoveryQueue"; text: I18n.tr("Add to queue", I18n.rev); enabled: parts.ready && parts.count > 0; onClicked: parts.queueAll() }
         Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.trCount("{} track", "{} tracks", parts.count, I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
     }
     TrackList {

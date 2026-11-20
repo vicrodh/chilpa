@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as Tools
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
@@ -30,6 +31,10 @@ Item {
     property bool sheet: false
     property var optionalColumns: []
     property bool header: true
+    // Detail pages put their controls in the same viewport as the recycled rows.
+    property real introHeight: -1
+    property alias footer: view.footer
+    property bool sourcePlaylistArt: false
     // How far right of the rows the scrollbar sits: in the middle of the
     // page's margin, unless the screen puts something there.
     property real scrollGutter: Metrics.pageGutter
@@ -111,6 +116,8 @@ Item {
 
     TrackHeader {
         id: head
+        parent: view.headerItem || list
+        y: Math.max(0, list.introHeight)
         visible: list.header
         height: list.header ? Metrics.rowHeader : 0
         cols: columns
@@ -135,9 +142,9 @@ Item {
         property int moveHovered: 0
         readonly property bool scrollbarHeld: !!ScrollBar.vertical && ScrollBar.vertical.pressed // a drag, for the pool (TrackListViewport)
 
-        anchors.top: head.bottom
-        anchors.bottom: parent.bottom
-        width: parent.width
+        anchors { top: list.introHeight < 0 ? head.bottom : parent.top; bottom: parent.bottom; left: parent.left; right: parent.right }
+        header: list.introHeight < 0 ? null : intro
+        Component { id: intro; Item { width: view.width; height: list.introHeight + head.height } }
         interactive: !list.fitContent
         clip: !list.fitContent
         model: list.model
@@ -185,7 +192,7 @@ Item {
             qualityDetail: columns.sheet && columns.qualityShown ? model.qualityDetail || "" : ""
             duration: columns.timeShown ? model.duration || "" : ""
             plays: columns.playsShown ? model.plays || 0 : 0
-            art: inViewport && (rowKind !== 0 || columns.artShown) ? model.art || "" : ""
+            art: !inViewport || rowKind === 0 && !columns.artShown ? "" : list.sourcePlaylistArt && rowKind === 0 ? Sources.trackArt(trackId, Library.remoteArtRev).toString() || model.art : model.art || ""
             credits: inViewport ? JSON.parse(model.credits || "{}") : ({})
             explicitContent: model.explicitContent === true
             aiGenerated: model.aiGenerated === true
@@ -237,13 +244,10 @@ Item {
 
     // Work and record groups keep the existing compact toolbar.
     TrackGroupActions {
-        readonly property Item rowItem: view.hovered >= 0 ? view.itemAtIndex(view.hovered) : null
-        visible: list.groupActionsEnabled && rowItem && rowItem.header && (rowItem.headerWork || rowItem.record)
-        row: view.hovered
-        item: rowItem
+        viewport: view
+        enabled: list.groupActionsEnabled
         model: list.model
         x: list.width - width - Metrics.gap12
-        y: rowItem ? view.y + rowItem.y - view.contentY + (rowItem.height - height) / 2 : 0
         z: 2
     }
 }

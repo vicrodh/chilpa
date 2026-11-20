@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.artwork
 import app.chilpa.discovery
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns" as ArtistUi
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as ControlsUi
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -31,7 +32,8 @@ Item {
     property bool sourceOverride: false
     readonly property string memory: "discovery." + mode + "." + routeKey
     readonly property var about: decode(results.document)
-    readonly property string collectionKey: mode === "genres" ? JSON.stringify(Object.assign({}, selected, {excluded_sources:find.excludedSources}, selected.albumScope !== undefined ? {albumScope:selected.albumScope === true && !sourceOverride} : {})) : routeKey
+    // The reader resolves inherited sources from the album. Its answer updates the picker without changing the requested route.
+    readonly property string collectionKey: mode !== "genres" || selected.albumScope === true && !sourceOverride ? routeKey : JSON.stringify(Object.assign({}, selected, {excluded_sources:find.excludedSources}, selected.albumScope ? {albumScope:false} : {}))
     readonly property var breadcrumb: (selected.trail || []).length > 1 ? selected.trail : about.breadcrumb || selected.trail || []
     readonly property bool listing: !detail || composer && tab === 0 || work && tab === 0 || genre && tab === 4
     readonly property string queryKind: work ? "recordings" : mode
@@ -41,7 +43,7 @@ Item {
     readonly property bool queryPending: needsMetadata && (requestedIdentity !== queryIdentity || results.loading || !Array.isArray(about.items))
     readonly property string failure: !queryPending && needsMetadata && about.error ? about.error : content.item?.error || ""
     readonly property bool waiting: failure === "" && (queryPending || !content.item || content.item.ready === false)
-    readonly property Component contentComponent: selected.recording ? recordingParts : overview ? genreOverview : listing ? (mode === "compositions" || composer) && !work ? workTable : navigationList : composer || work ? tab === 1 ? albums : tracks : tab === 1 ? albums : tab === 2 ? artists : tracks
+    readonly property Component contentComponent: selected.recording ? recordingParts : overview ? genreOverview : listing ? mode === "compositions" || composer || work ? workTable : navigationList : composer || work ? tab === 1 ? albums : tracks : tab === 1 ? albums : tab === 2 ? artists : tracks
     readonly property var choices: composer ? [I18n.tr("Compositions", I18n.rev), I18n.tr("Albums", I18n.rev), I18n.tr("Tracks", I18n.rev)]
         : work ? [I18n.tr("Recordings", I18n.rev), I18n.tr("Albums", I18n.rev)]
         : [I18n.tr("Overview", I18n.rev), I18n.tr("Albums", I18n.rev), I18n.tr("Artists", I18n.rev), I18n.tr("Tracks", I18n.rev), I18n.tr("Subgenres", I18n.rev)]
@@ -108,8 +110,7 @@ Item {
         objectName: "discoveryModel"
         onDocumentChanged: {
             const document = discoveryPage.decode(results.document)
-            const route = discoveryPage.decode(discoveryPage.routeKey)
-            if (route.albumScope === true && !discoveryPage.sourceOverride && Array.isArray(document.excluded_sources)) find.excludedSources = document.excluded_sources
+            if (find && Array.isArray(document.excluded_sources) && discoveryPage.decode(discoveryPage.routeKey).albumScope === true && !discoveryPage.sourceOverride) find.excludedSources = document.excluded_sources
         }
     }
     Timer {
@@ -117,7 +118,8 @@ Item {
         interval: Motion.searchSettle
         onTriggered: if (discoveryPage.visible && discoveryPage.needsMetadata) {
             discoveryPage.requestedIdentity = discoveryPage.queryIdentity
-            results.request(discoveryPage.queryKind, discoveryPage.collectionKey, find.text, JSON.stringify({order:find.order,scope:find.scope,excluded_sources:find.excludedSources}), Library.contentRev + Library.remoteRev + Artwork.rev)
+            const key = discoveryPage.collectionKey
+            results.request(discoveryPage.queryKind, key, find.text, JSON.stringify({order:find.order,scope:find.scope,excluded_sources:discoveryPage.decode(key).excluded_sources}), Library.contentRev + Library.remoteRev + Artwork.rev)
         }
     }
     function open(entry) {
@@ -159,23 +161,23 @@ Item {
             }
             onQueryChanged: { discoveryPage.restoring = false; discoveryPage.positions[discoveryPage.tab] = 0; discoveryPage.schedule() }
         }
-        Text {
-            visible: !discoveryPage.overview
-            width: parent.width
-            text: discoveryPage.work ? I18n.tr("Available parts, grouped by album and performer. Work tags do not confirm a complete recording.", I18n.rev)
-                : discoveryPage.composer ? I18n.tr("Explore works, recordings and albums credited to this composer.", I18n.rev)
-                : discoveryPage.mode === "genres" ? I18n.tr("Follow a style into its subgenres, or search for one directly.", I18n.rev)
-                : discoveryPage.mode === "composers" ? I18n.tr("The people behind the music in your library.", I18n.rev)
-                : I18n.tr("Works identified by work and composer tags. Recordings keep their album and performer context.", I18n.rev)
-            wrapMode: Text.WordWrap; textFormat: Text.PlainText
-            font.pointSize: Type.body; color: Theme.color.textSecondary
-        }
         DiscoveryActions {
             width: parent.width
+            mode: discoveryPage.mode
             selected:discoveryPage.selected; about:discoveryPage.about; choices:discoveryPage.choices
             tab:discoveryPage.tab; overview:discoveryPage.overview; loading:discoveryPage.queryPending
             onOpenRequested: entry => discoveryPage.open(entry)
             onTabRequested: tab => discoveryPage.changeTab(tab)
+        }
+        ControlsUi.CollectionPlayback {
+            visible: discoveryPage.genre && (discoveryPage.tab === 1 || discoveryPage.tab === 3)
+            availableWidth: heading.width
+            model: visible ? content.item?.collection || null : null
+            available: !!model && !content.retiring && !discoveryPage.waiting && content.item.playable
+            filtered: find.excludedSources.length > 0 || (showRandomAlbum && find.text.trim() !== "")
+            showRandomAlbum: discoveryPage.tab === 1
+            scope: JSON.stringify([discoveryPage.collectionKey, discoveryPage.tab, find.text, find.order])
+            label: discoveryPage.selected.name || discoveryPage.rootTitle
         }
     }
     RetiringLoader {
@@ -211,7 +213,7 @@ Item {
     Component {
         id: navigationList
         DiscoveryIndex {
-            kind: discoveryPage.work ? "recordings" : discoveryPage.mode
+            kind: discoveryPage.mode
             ready: !results.loading && Array.isArray(discoveryPage.about.items)
             dataSource: results
             onActivated: entry => discoveryPage.open(entry)
@@ -220,6 +222,7 @@ Item {
     Component {
         id: workTable
         DiscoveryWorkTable {
+            recordings: discoveryPage.work
             ready: !results.loading && Array.isArray(discoveryPage.about.items)
             dataSource: results
             onActivated: entry => discoveryPage.open(entry)
@@ -236,7 +239,7 @@ Item {
             cards: Component { ArtistUi.ArtistCardGrid { artists:parent.artists } }
         }
     }
-    Component { id: tracks; DiscoveryTracks { key: discoveryPage.collectionKey; autoPlay:discoveryPage.playSelection; onPlayed:discoveryPage.playSelection = false } }
+    Component { id: tracks; DiscoveryTracks { key: discoveryPage.collectionKey; autoPlay:discoveryPage.playSelection; showLegacyActions: !discoveryPage.genre; onPlayed:discoveryPage.playSelection = false } }
     Component { id: recordingParts; DiscoveryTracks { key: discoveryPage.collectionKey; recording: true } }
     DiscoveryStatus {
         anchors.fill:content; loading:discoveryPage.waiting; failure:discoveryPage.failure

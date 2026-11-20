@@ -18,6 +18,7 @@ Column {
     property string link
     // Artists: round portraits.
     property bool round: false
+    property var destinations: ({})
     property int size: 0
     property string sourceIcon: ""
     readonly property int viewportColumns: CardLayout.columns(width)
@@ -50,7 +51,7 @@ Column {
         round: root.round
         viewport: root.viewport
         model: root.model
-        onOpen: (albumId) => Navigation.go("album", albumId)
+        onOpen: (albumId) => root.destinations[albumId] ? Navigation.goKey("source", root.destinations[albumId]) : Navigation.go("album", albumId)
     }
     // One row: as many records as fit across.
     Binding {

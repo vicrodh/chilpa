@@ -592,6 +592,9 @@ msgstr "所有主題"
 msgid "All time"
 msgstr "所有時間"
 
+msgid "All tracks"
+msgstr ""
+
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "在 Discogs 允許 Chilpa，然後貼上下方的代碼。"
 
@@ -786,6 +789,9 @@ msgstr "編曲者"
 
 msgid "Artist"
 msgstr "演出者"
+
+msgid "Artist discovery"
+msgstr ""
 
 msgid "Artist mix"
 msgstr "演出者混音"
@@ -3539,6 +3545,12 @@ msgstr "首頁"
 msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
 msgstr ""
 
+msgid "How many tracks should be added to the queue?"
+msgstr ""
+
+msgid "How many tracks should be shuffled from the whole collection?"
+msgstr ""
+
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "視窗後方桌布的模糊程度：0% 保持清晰，100% 為最強模糊。"
 
@@ -4153,6 +4165,9 @@ msgstr "音樂庫檢查失敗"
 
 msgid "Library check interrupted"
 msgstr "音樂庫檢查已中斷"
+
+msgid "Library counts"
+msgstr ""
 
 msgid "Library folders"
 msgstr "音樂庫資料夾"
@@ -4789,6 +4804,9 @@ msgstr "新外掛"
 
 msgid "New queue"
 msgstr "新佇列"
+
+msgid "New releases from your plugins"
+msgstr ""
 
 msgid "New tab"
 msgstr "新分頁"
@@ -5543,6 +5561,9 @@ msgstr ""
 msgid "Parentheses group; NOT works like the minus"
 msgstr "括號分組；NOT 作用類似減號"
 
+msgid "Parts"
+msgstr ""
+
 msgid "Password"
 msgstr "密碼"
 
@@ -5882,6 +5903,9 @@ msgstr ""
 msgid "Preparing playlists"
 msgstr "正在準備播放清單"
 
+msgid "Preparing queue"
+msgstr ""
+
 msgid "Preparing results…"
 msgstr "正在準備結果…"
 
@@ -6122,6 +6146,9 @@ msgstr "廣播與 DSD 修正"
 msgid "Radio asks for each song's cover once, and the cover stays on screen. Native DSD through PipeWire now plays on a real DAC, with PipeWire 1.6 or later."
 msgstr "電台模式只會請求一次每首歌曲的封面，且封面會保持顯示在螢幕上。在 PipeWire 1.6 或更新版本中，原生 DSD 透過 PipeWire 已可在實體 DAC 上播放。"
 
+msgid "Random album"
+msgstr ""
+
 msgid "Rate"
 msgstr "取樣率"
 
@@ -6280,6 +6307,9 @@ msgstr "最近播放的播放清單"
 
 msgid "Recently played playlists in the library"
 msgstr "音樂庫中最近播放的播放清單"
+
+msgid "Recording"
+msgstr ""
 
 msgid "Recording engineer"
 msgstr "錄音工程師"
@@ -7018,6 +7048,9 @@ msgstr "選取的音樂"
 msgid "Selected output"
 msgstr "選取的輸出"
 
+msgid "Self-hosted ({})"
+msgstr ""
+
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr ""
 
@@ -7219,6 +7252,9 @@ msgstr "顯示/隱藏視窗"
 msgid "Showing"
 msgstr "正在顯示"
 
+msgid "Showing {}"
+msgstr ""
+
 msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr ""
 
@@ -7362,6 +7398,9 @@ msgid "Some selected files have no mapping in this candidate. Adjust the selecti
 msgstr ""
 
 msgid "Some selected files were outside this lookup. Look up the selected group again."
+msgstr ""
+
+msgid "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
 msgstr ""
 
 msgid "Songs"
@@ -11188,6 +11227,10 @@ msgstr[0] "{} 筆紀錄"
 msgid "{} record or track edited here is one the server no longer lists; its edits are kept."
 msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
 msgstr[0] "在此處編輯的 {} 筆紀錄或曲目已不在伺服器的列表中；其編輯內容將予以保留。"
+
+msgid "{} recording"
+msgid_plural "{} recordings"
+msgstr[0] ""
 
 msgid "{} required"
 msgstr "需要 {}"

@@ -51,6 +51,7 @@ pub mod qobject {
         fn list_action(self: Pin<&mut TrackListModel>, action: &QString, row: i32, to: i32);
         #[qinvokable]
         fn play_all(self: Pin<&mut TrackListModel>, shuffled: bool);
+        #[qinvokable] fn queue_collection(self: &TrackListModel, action: &QString, shuffled: bool, limit: i32, label: &QString);
         #[qinvokable]
         fn queue_all(self: Pin<&mut TrackListModel>);
         #[qinvokable]
@@ -409,6 +410,13 @@ impl qobject::TrackListModel {
             app::with(|api| api.listen_row_action(key, &action, target));
             self.as_mut().schedule();
         }
+    }
+
+    pub fn queue_collection(&self, action: &QString, shuffled: bool, limit: i32, label: &QString) {
+        if !matches!(self.kind().to_string().as_str(), "tracks" | "discovery") || !*self.ready() { return; }
+        let Rows::Snapshot { ids, .. } = &self.rust().rows else { return; };
+        let action = chilpa_api::CollectionQueueAction::new(action.to_string(), shuffled, limit, label.to_string());
+        queue_activity::collection(ids.ids.clone(), false, action);
     }
 
     pub fn play_all(self: Pin<&mut Self>, shuffled: bool) {

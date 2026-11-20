@@ -23,6 +23,8 @@ QtObject {
     function creditDocument(id, path, rev) { return JSON.stringify(creditDocuments[path] || creditDocuments[id] || {}) }
     function artistKey(id, path) { return "" }
     function artistLink(id, name) { return JSON.stringify(AlbumActions.artistDestination.key ? AlbumActions.artistDestination : {target:"artist",key:name}) }
+    function trackArt(id, rev) { return "" }
+    function cardHeader(id, rev) { return card(id, rev) }
     function cardPage(id, rev) { return card(id, rev) }
     function card(id, rev) { return JSON.stringify((state.cards || {})[id] || {}) }
     function favoritePending(plugin, reference, rev) {

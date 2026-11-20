@@ -31,7 +31,7 @@ ApplicationWindow {
     property int phase: 0
     property double started: 0
     property bool awaiting: false
-    property real trackHeight: 0
+    property int trackCount: 0
     property var failures: []
     ScreenHost { id: host; anchors.fill: parent }
     SearchModel { id: search; scope: "albums"; source: "local" }
@@ -116,7 +116,7 @@ ApplicationWindow {
             console.log("SMOKE album after-first-frame=" + sample + " worst-gui-gap=" + worstAfter + "ms content-builds=" + builds)
             if (worstAfter > 250) failures.push("record blocked the GUI for " + worstAfter + "ms after its first frame")
             if (view.model.count > 100 && builds >= 60) failures.push("record constructed " + builds + " visual contents before scrolling")
-            trackHeight = view.contentHeight
+            trackCount = view.count
             snapshot = view.model.albumPage
             Library.remoteRev++
             Library.remoteArtRev++
@@ -125,7 +125,7 @@ ApplicationWindow {
         if (phase === 1) {
             if (view.model.albumPage !== snapshot) failures.push("remote artwork reloaded a local record")
             worstAfter = 0; previousAfter = Date.now()
-            page.contentY = Math.max(0, page.contentHeight - page.height)
+            view.positionViewAtIndex(view.count - 1, ListView.End)
             phase = 2; next.restart(); return
         }
         if (phase === 2) {
@@ -133,9 +133,9 @@ ApplicationWindow {
             if (worstAfter > 250) failures.push("scrolling down blocked the GUI for " + worstAfter + "ms")
             const last = view.itemAtIndex(view.count - 1)
             if (!last || !find(last, "trackRowBody")) failures.push("last track has no visual row")
-            if (view.contentHeight !== trackHeight) failures.push("windowing changed track geometry")
+            if (view.count !== trackCount) failures.push("scrolling changed the album track count")
             worstAfter = 0; previousAfter = Date.now()
-            page.contentY = 0
+            view.positionViewAtBeginning()
             phase = 3; next.restart(); return
         }
         if (phase === 3) {

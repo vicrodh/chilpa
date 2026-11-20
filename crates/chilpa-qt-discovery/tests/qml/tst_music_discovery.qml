@@ -18,6 +18,7 @@ TestCase {
     width: 1100; height: 820
     Component { id: maker; DiscoveryScreen { width: 1100; height: 820 } }
     Component { id: genreBrowserMaker; AlbumGenreBrowser {} }
+    Component { id: genrePluginMaker; GenrePluginShelves { width: 800; nearViewport: true } }
     Component {
         id: albumHeroMaker
         AlbumHero {
@@ -27,6 +28,68 @@ TestCase {
         }
     }
     function init() { failOnWarning(/ReferenceError|TypeError|Binding loop|invalid context/);Visit.kept = ({}); Navigation.went = []; Navigation.page = ""; Navigation.selectedId = 0 }
+    function test_an_empty_plugin_section_can_receive_replies_when_scrolled_into_view() {
+        const page = createTemporaryObject(maker, this, {height:600, routeKey:'{"kind":"genre","name":"Rock"}'})
+        const model = findChild(page, "discoveryModel")
+        model.document = '{"items":[],"summary":{"albums":4}}'
+        const content = findChild(page, "discoveryContent")
+        tryCompare(content, "visible", true)
+        const viewport = content.item.scrollView
+        const shelves = findChild(content.item, "genrePluginShelves")
+        const feed = findChild(shelves, "genrePluginModel")
+        tryVerify(() => viewport.contentHeight > viewport.height)
+        viewport.contentY = viewport.contentHeight - viewport.height
+        tryCompare(shelves, "nearViewport", true)
+        compare(shelves.height, 0)
+        const before = feed.requests.length
+        Library.remoteRev++
+        tryVerify(() => feed.requests.length > before)
+    }
+
+    function test_plugin_discovery_groups_albums_and_artists_by_source_and_omits_empty_sections() {
+        const shelves = createTemporaryObject(genrePluginMaker, this, {genreKey:'{"kind":"genre","name":"Rock"}'})
+        const feed = findChild(shelves, "genrePluginModel")
+        tryVerify(() => feed.requests.length > 0)
+        compare(feed.requests[0].kind, "genre_plugins")
+        verify(!findChild(shelves, "genrePluginReleases").visible)
+        verify(!findChild(shelves, "genrePluginArtists").visible)
+        const releases = [1,2,3,4,5,6,7,8].map(id => ({id:-id, name:"Release " + id, credit:"Performer", image:""}))
+        const artists = [1,2,3].map(id => ({id:-10-id, key:"one native:artist:" + id, name:"Artist " + id, image:""}))
+        feed.document = JSON.stringify({items:[], plugins:[
+            {id:"one", name:"First source", newReleases:releases, artists:[]},
+            {id:"two", name:"Second source", newReleases:releases, artists}]})
+        verify(findChild(shelves, "genrePluginReleaseRow:one").visible)
+        verify(findChild(shelves, "genrePluginReleaseRow:two").visible)
+        verify(!findChild(shelves, "genrePluginArtistRow:one"))
+        const artistRow = findChild(shelves, "genrePluginArtistRow:two")
+        const releaseRow = findChild(shelves, "genrePluginReleaseRow:one")
+        const artistCards = findChild(artistRow, "albumCarouselRail")
+        const releaseCards = findChild(releaseRow, "albumCarouselRail")
+        compare(artistRow.round, true)
+        compare(releaseRow.round, false)
+        compare(releaseRow.model.kind, "ids")
+        compare(JSON.parse(releaseRow.model.key), [-1,-2,-3,-4,-5,-6,-7,-8])
+        compare(releaseRow.size, 8)
+        tryCompare(artistCards, "count", 3)
+        tryCompare(releaseCards, "count", 8)
+        tryVerify(() => releaseRow.farthest > 0)
+        artistCards.forceLayout()
+        releaseCards.forceLayout()
+        verify(waitForRendering(shelves))
+        const artistGrid = findChild(artistRow, "albumGridInteraction").grid
+        const releaseInteraction = findChild(releaseRow, "albumGridInteraction")
+        artistGrid.open(-11, "Artist 1")
+        compare(Navigation.went, ["source", "one native:artist:1"])
+        releaseInteraction.grid.open(-1, "Release 1")
+        compare(Navigation.selectedId, -1)
+        releaseInteraction.toggleQuick(0)
+        compare(releaseRow.model.expanded, 0)
+        releaseInteraction.toggleQuick(0)
+        compare(releaseRow.model.expanded, -1)
+        shelves.genreKey = '{"kind":"genre","name":"Jazz"}'
+        verify(!findChild(shelves, "genrePluginReleases").visible)
+    }
+
     function test_a_delayed_genre_overview_shows_a_skeleton_until_the_summary_arrives() {
         const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Asian"})})
         const model=findChild(page,"discoveryModel")
@@ -257,19 +320,46 @@ TestCase {
     }
     function test_pending_source_tracks_cannot_trigger_old_collection_actions() {
         const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Heavy Metal"})})
+        findChild(page,"discoveryModel").document = '{"items":[]}'
         page.changeTab(3)
         const list=findChild(page,"discoveryTrackList")
         verify(list)
         list.model.append({title:"Old source track",artist:"Artist",album:"Album",rowKind:0,trackId:1,playing:false,selected:false,available:true})
+        const play = findChild(page,"collectionPlay")
+        const shuffle = findChild(page,"collectionShuffle")
+        const queue = findChild(page,"collectionQueue")
         list.model.ready=false
-        verify(!findChild(page,"discoveryPlay").enabled)
-        verify(!findChild(page,"discoveryQueue").enabled)
+        verify(!play.enabled && !shuffle.enabled && !queue.enabled)
         verify(!list.enabled)
         list.model.ready=true
-        verify(findChild(page,"discoveryPlay").enabled)
-        verify(findChild(page,"discoveryQueue").enabled)
-        verify(list.enabled)
+        tryCompare(play, "enabled", true)
+        verify(shuffle.enabled && queue.enabled && list.enabled)
+        verify(!findChild(page,"collectionRandomAlbum").visible)
     }
+
+    function test_genre_albums_use_the_loaded_collection_for_all_playback_actions() {
+        const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Rock"})})
+        findChild(page,"discoveryModel").document = '{"items":[]}'
+        page.changeTab(1)
+        const controls = findChild(page,"collectionActions")
+        const albums = findChild(page,"discoveryAlbumModel")
+        const random = findChild(controls,"collectionRandomAlbum")
+        compare(controls.model, albums)
+        verify(!controls.enabled)
+        albums.albums = 25
+        const shuffle = findChild(controls,"collectionShuffle")
+        tryCompare(shuffle, "enabled", true)
+        verify(random.visible && random.enabled)
+        tryVerify(() => shuffle.x > findChild(controls,"collectionPlay").x)
+        verify(waitForRendering(shuffle))
+        mouseClick(shuffle)
+        const modal = findChild(controls,"collectionSizeDialog")
+        tryCompare(modal, "opened", true)
+        modal.close()
+        findChild(page,"discoverySearch").text = "One record"
+        verify(controls.filtered)
+    }
+
     function test_retargeting_a_genre_route_updates_its_source_scope_immediately() {
         const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Metal",excluded_sources:["local:default"]})})
         page.routeKey=JSON.stringify({kind:"genre",name:"Heavy Metal",excluded_sources:["server:fixture"]})
@@ -297,6 +387,33 @@ TestCase {
         compare(JSON.parse(restored.collectionKey).albumScope,false)
         compare(findChild(restored,"genreSources").excluded,["local:default"])
     }
+    function test_an_album_genre_shows_the_first_response_without_a_filter_change_data() {
+        return [
+            {tag:"aor", name:"AOR", albums:0, tagText:"aor"},
+            {tag:"heavy metal", name:"Heavy Metal", albums:3, tagText:"Heavy Metal"}
+        ]
+    }
+
+    function test_an_album_genre_shows_the_first_response_without_a_filter_change(data) {
+        const route = JSON.stringify({kind:"genre", name:data.tagText, album:17, genreToken:"opaque", albumScope:true})
+        const page = createTemporaryObject(maker, this, {routeKey:route})
+        const model = findChild(page,"discoveryModel")
+        tryVerify(() => model.requests.length > 0)
+        const key = page.collectionKey
+        const identity = page.queryIdentity
+        verify(findChild(page,"discoveryLoading").visible)
+        model.loading = true
+        model.document = JSON.stringify({items:[], total:0, summary:{albums:data.albums, images:[]},
+            excluded_sources:["plugin:remote"], breadcrumb:[data.name]})
+        model.loading = false
+        tryVerify(() => findChild(page,"discoveryContent").visible, 500)
+        verify(!findChild(page,"discoveryLoading").visible)
+        compare(page.collectionKey, key)
+        compare(page.queryIdentity, identity)
+        compare(findChild(page,"genreSources").excluded, ["plugin:remote"])
+        compare(findChild(page,"genrePlay").enabled, data.albums > 0)
+    }
+
     function test_a_shortened_genre_entry_keeps_its_opaque_identity_and_source_scope() {
         const page=createTemporaryObject(maker,this,{routeKey:JSON.stringify({kind:"genre",name:"Rock",excluded_sources:["plugin:other"]})})
         const key=JSON.stringify({kind:"genre",name:"Long genre…",genreId:42,genreToken:"opaque",album:17,albumScope:true})
@@ -476,6 +593,30 @@ TestCase {
         compare(key.kind, "work")
         compare(key.work, "work:3")
         compare(key.composers, ["Writer"])
+    }
+    function test_recordings_show_stripes_metadata_and_keep_the_selected_identity() {
+        const page = createTemporaryObject(maker, this, {width:560,mode:"compositions",routeKey:JSON.stringify({
+            kind:"work",name:"Suite",work:"work:3",composers:["Writer"]})})
+        findChild(page, "discoveryModel").document = JSON.stringify({total:2,items:[
+            {kind:"recording",name:"First record",artist:"Quartet",recording:"first",source:"Fixture",year:1987,tracks:3,duration:125000,album:-7},
+            {kind:"recording",name:"Second record",artist:"Pianist",recording:"second",source:"Local",tracks:2,duration:4000000,album:3}
+        ]})
+        const view = findChild(page, "discoveryEntries")
+        tryVerify(() => !!view.itemAtIndex(1))
+        const first = view.itemAtIndex(0)
+        const second = view.itemAtIndex(1)
+        compare(findChild(first, "discoveryWorkDetails").text, "Quartet · 1987 · Fixture · 2:05 · 3 parts")
+        verify(findChild(first, "discoveryWorkStripe").color !== findChild(second, "discoveryWorkStripe").color)
+        verify(findChild(first, "discoveryWorkArt"))
+        compare(findChild(second, "discoveryWorkDetails").text, "Pianist · Local · 1:06:40 · 2 parts")
+        page.width = 1100
+        tryCompare(findChild(first, "discoveryWorkDetails"), "text", "1987 · Fixture")
+        first.forceActiveFocus()
+        keyClick(Qt.Key_Return)
+        const selected = JSON.parse(Navigation.went[1])
+        compare(selected.work, "work:3")
+        compare(selected.recording, "first")
+        compare(selected.album, -7)
     }
     function test_a_genre_overview_keeps_shelves_lazy_and_restores_its_scroll() {
         const page = createTemporaryObject(maker, this, {height:640,routeKey:JSON.stringify({kind:"genre",name:"Metal"})})

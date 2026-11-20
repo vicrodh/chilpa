@@ -38,13 +38,21 @@ MouseArea {
     readonly property int dropRow: dragging && containsMouse ? rowAt(mouseY) : -1
     readonly property bool dropAfter: dropRow > pressedRow
 
+    // The inline header and footer own their controls. Only track rows receive
+    // this handler; their coordinates include the visible part of the header.
+    readonly property real headerInset: rows && rows.headerItem
+        ? Math.max(0, Math.min(rows.height, rows.headerItem.y + rows.headerItem.height - rows.contentY)) : 0
+    anchors.bottomMargin: rows && rows.footerItem ? Math.max(0, Math.min(rows.height, rows.height - (rows.footerItem.y - rows.contentY))) : 0
+    anchors.topMargin: headerInset
+    function contentY(y) { return y + headerInset + rows.contentY }
+
     hoverEnabled: true
     onWheel: (wheel) => { host.userScrollStarted(); wheel.accepted = false }
     // A movable row owns its press so the page cannot steal it for scrolling.
     preventStealing: pressedRow >= 0
     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
-    function rowAt(y) { return rows.indexAt(Metrics.gap2, y + rows.contentY) }
+    function rowAt(y) { return rows.indexAt(Metrics.gap2, contentY(y)) }
     function track() {
         rows.hovered = containsMouse ? rowAt(mouseY) : -1
         rows.artistHovered = containsMouse && onArtist(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
@@ -69,7 +77,7 @@ MouseArea {
             return 0
         if (!cols.rich)
             return left < Metrics.moveCellCompact ? 1 : 2
-        const cell = Math.floor((y + rows.contentY - item.y - item.height / 2) / Metrics.moveCell)
+        const cell = Math.floor((contentY(y) - item.y - item.height / 2) / Metrics.moveCell)
         return cell === -1 ? 1 : cell === 0 ? 2 : 0
     }
     function move(row, x, y) {
@@ -79,7 +87,7 @@ MouseArea {
     }
     function actionAt(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
-        return item && item.end ? item.end.actionAt(x - item.x - item.end.x, y + rows.contentY - item.y) : 0
+        return item && item.end ? item.end.actionAt(x - item.x - item.end.x, contentY(y) - item.y) : 0
     }
     function groupActionAt(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
@@ -87,14 +95,14 @@ MouseArea {
     }
     function ratingAt(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
-        return item ? item.ratingAt(x - item.x, y + rows.contentY - item.y) : 0
+        return item ? item.ratingAt(x - item.x, contentY(y) - item.y) : 0
     }
     // Whether the pointer is on the row's artist: its own column in
     // compact rows, the line under the title in rich ones. Worked out
     // here, once for the list, and not by a handler on every row.
     function onArtist(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
-        return !!item && !item.header && item.artist !== "" && host.model.canGo(row, "artist") && item.containsArtist(x - item.x, y + rows.contentY - item.y)
+        return !!item && !item.header && item.artist !== "" && host.model.canGo(row, "artist") && item.containsArtist(x - item.x, contentY(y) - item.y)
     }
 
     function onAlbum(row, x, y) {
@@ -165,7 +173,7 @@ MouseArea {
         }
         if (mouse.button === Qt.RightButton) {
             host.model.select(row, 4)
-            menu.show(row, mouse.x, rows.y + mouse.y)
+            menu.show(row, mouse.x, rows.y + headerInset + mouse.y)
             return
         }
         if (move(row, mouse.x, mouse.y))

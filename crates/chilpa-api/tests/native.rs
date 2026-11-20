@@ -228,7 +228,8 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
         std::thread::sleep(Duration::from_millis(30));
     }
     let reader = chilpa.reader().unwrap();
-    assert!(reader.tracks("",&Default::default()).snapshot.ids.iter().all(|id| *id > 0));
+    let library = reader.refresh(&Default::default(), chilpa_api::TrackOrder::Artist, || true).unwrap().1;
+    assert_eq!(reader.tracks("artist", &Default::default()).snapshot.ids, library.ids);
     let rock = { let mut f = chilpa_api::Filter::default(); f.choose(1, &["rock".into()]); f };
     let (facets, library) = reader.refresh(&rock, chilpa_api::TrackOrder::Artist, || true).unwrap();
     assert!(library.album_ids.iter().any(|id| *id < 0), "a saved record of the source is in Library under its genre");
@@ -259,8 +260,10 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     let filter = chilpa_api::Filter { excluded_sources:vec!["plugin:com.test.native".into()], ..Default::default() };
     assert!(!reader.tracks("",&filter).snapshot.ids.contains(&track.id));
     chilpa.sources_command("track_library","com.test.native","false");
-    assert!(!reader.tracks("",&Default::default()).snapshot.ids.contains(&track.id));
+    let library = reader.refresh(&Default::default(), chilpa_api::TrackOrder::Artist, || true).unwrap().1;
+    assert_eq!(reader.tracks("artist", &Default::default()).snapshot.ids, library.ids);
     chilpa.sources_command("album_library", "com.test.native", "false");
+    assert!(!reader.tracks("", &Default::default()).snapshot.ids.contains(&track.id));
     assert!(chilpa.integrated_albums("", &Default::default()).is_empty());
     assert_eq!(serde_json::from_str::<serde_json::Value>(&chilpa.album_libraries()).unwrap()[0]["enabled"], false);
     chilpa.group_playlists_by_source(true);

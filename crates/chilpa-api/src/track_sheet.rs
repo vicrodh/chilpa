@@ -106,7 +106,7 @@ impl Reader {
             || (!fixed.is_empty() && fold(&fixed_label(field, key)).contains(&search));
         let after_ordered = after.as_ref().map(|key| ordered(field, key.clone()));
         let mut choices: BTreeMap<_, usize> = local.into_iter().map(|(key, count)| (ordered(field, key), count)).collect();
-        for item in index.items.iter().filter(|item| item.saved_track && item.track != 0 && prepared.passes(item, &stars)) {
+        for item in index.items.iter().filter(|item| item.track != 0 && prepared.passes(item, &stars)) {
             let key = ordered(field, value(item, field, &stars, &filter.sheet));
             if after_ordered.as_ref().is_some_and(|after| key <= *after) || (fixed.is_empty() && !matches(&key.1)) { continue; }
             // Once full, keys past the end cannot enter this page. Removing a large

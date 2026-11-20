@@ -84,6 +84,25 @@ TestCase {
         Motion.reduced = false
     }
 
+    Component { id: modalFactory; Modal { preferredHeight: 100 } }
+
+    function test_a_modal_releases_the_scrolling_copy_until_it_closes() {
+        const made = scene()
+        TipState.show(made.cut.text, made.cut)
+        tryVerify(() => slide() !== null)
+        const modal = createTemporaryObject(modalFactory, test)
+        modal.open()
+        tryCompare(modal, "opened", true)
+        tryVerify(() => slide() === null)
+        compare(made.cut.opacity, 1)
+        TipState.show(made.badged.text, made.badged)
+        compare(slide(), null)
+        modal.close()
+        tryCompare(modal, "visible", false)
+        TipState.show(made.cut.text, made.cut)
+        tryVerify(() => slide() !== null)
+    }
+
     function test_a_cut_line_slides_to_its_end_and_comes_back_when_let_go() {
         const made = scene()
         compare(slide(), null)

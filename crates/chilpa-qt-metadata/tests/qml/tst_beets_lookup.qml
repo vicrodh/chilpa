@@ -41,6 +41,22 @@ TestCase {
         compare(MetadataEditor.applied,0)
         compare(MetadataEditor.saved,0)
     }
+    function test_album_editor_can_choose_engine_without_applying_or_saving_tags() {
+        const page=createTemporaryObject(maker,this)
+        const choice=findChild(page,"metadataLookupEngine")
+        verify(choice)
+        compare(choice.current,0)
+        choice.forceActiveFocus(); keyClick(Qt.Key_Right)
+        compare(MetadataEditor.engineCalls,["beets"])
+        compare(choice.current,1)
+        keyClick(Qt.Key_Left)
+        compare(MetadataEditor.engineCalls,["beets","native"])
+        compare(choice.current,0)
+        MetadataEditor.updateLookup({searching:true})
+        compare(choice.enabled,false)
+        compare(MetadataEditor.applied,0)
+        compare(MetadataEditor.saved,0)
+    }
     function test_cancelling_a_lookup_keeps_configuration_and_form_values() {
         const doc=document("beets")
         doc.lookup.searching=true; doc.lookup.beets_busy=true

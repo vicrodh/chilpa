@@ -97,7 +97,7 @@ TrackRowSlot {
             y: lifted ? track.y : 0
             width: track.width
             height: track.height
-            rowIndex: row.index
+            rowIndex: row.number > 0 ? row.number - 1 : row.index
             radius: row.rich ? Metrics.radiusCard : Metrics.radiusRow
             visible: !row.header && track.visible
             hovered: row.hovered; selected: row.selected

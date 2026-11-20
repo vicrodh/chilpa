@@ -27,3 +27,21 @@ pub fn read<R>(f: impl FnOnce(&State) -> R) -> R {
 pub fn write<R>(f: impl FnOnce(&mut State) -> R) -> R {
     STATE.with(|s| f(&mut s.borrow_mut()))
 }
+
+/// Installs a changed answer and resets row pages only if their identity moved.
+pub fn publish(facets: Facets, snapshot: Snapshot, revision: i32) -> Option<Rc<Facets>> {
+    write(|state| {
+        let ids_unchanged = state.snapshot.ids == snapshot.ids && state.snapshot.album_ids == snapshot.album_ids;
+        if ids_unchanged && state.page_revision == revision {
+            if state.facets.as_ref() == &facets && state.snapshot.totals == snapshot.totals { return None; }
+        } else {
+            state.album_pages = Rc::default();
+            state.track_pages = Rc::default();
+            state.page_revision = revision;
+        }
+        let facets = Rc::new(facets);
+        state.facets = facets.clone();
+        state.snapshot = Rc::new(snapshot);
+        Some(facets)
+    })
+}

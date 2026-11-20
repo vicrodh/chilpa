@@ -85,8 +85,8 @@ struct Selection<'a> { favorites_only: bool, within: Option<&'a HashSet<i64>> }
 impl Reader {
     /// The records of the Albums screen: the library's that hold every word
     /// of `text`, through the sources, qualities and formats `extras` leaves
-    /// (the Library screen shares them), and the integrated sources' saved
-    /// records, merged in the order asked for and grouped by `group`.
+    /// (the Library screen shares them), and the records represented by
+    /// integrated albums or tracks, in the order and grouping asked for.
     pub fn albums_view(&self, order: &str, group: &str, text: &str, extras: &Filter) -> AlbumsFound {
         self.albums_view_using(order, group, text, extras, &self.source_index().1)
     }
@@ -174,7 +174,7 @@ impl Reader {
     }
 }
 
-/// Saved records, or the records selected by discovery, that hold every word
+/// Integrated records, or the records selected by discovery, that hold every word
 /// of `text` in their title or artist and pass the extras, each once as order keys.
 fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras: &Filter, favorites_only: bool, within: Option<&HashSet<i64>>) -> Vec<(i64, chilpa_library::AlbumKey)> {
     let words: Vec<String> = text.to_lowercase().split_whitespace().map(String::from).collect();
@@ -185,7 +185,7 @@ fn saved_records(index: &crate::library_sources::SourceIndex, text: &str, extras
     let mut records: std::collections::HashMap<i64, chilpa_library::AlbumKey> = std::collections::HashMap::new();
     let mut order = Vec::new();
     for item in index.items.iter().filter(|item| item.album != 0 && within.map_or_else(
-        || if favorites_only { item.favorite_album } else { item.saved_album },
+        || !favorites_only || item.favorite_album,
         |within| within.contains(&item.album) && (!favorites_only || item.favorite_album))) {
         let named = |word: &String| item.folded.album_title.contains(word.as_str()) || item.folded.artists.iter().any(|a| a.contains(word.as_str()));
         if !words.iter().all(named) || !through.passes(item, &stars) { continue; }

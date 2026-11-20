@@ -585,6 +585,9 @@ msgstr ""
 msgid "All time"
 msgstr ""
 
+msgid "All tracks"
+msgstr "All tracks"
+
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "Allow Chilpa on Discogs, then paste the code below."
 
@@ -778,6 +781,9 @@ msgid "Arranger"
 msgstr ""
 
 msgid "Artist"
+msgstr ""
+
+msgid "Artist discovery"
 msgstr ""
 
 msgid "Artist mix"
@@ -3533,6 +3539,12 @@ msgstr ""
 msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
 msgstr "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
 
+msgid "How many tracks should be added to the queue?"
+msgstr "How many tracks should be added to the queue?"
+
+msgid "How many tracks should be shuffled from the whole collection?"
+msgstr "How many tracks should be shuffled from the whole collection?"
+
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr ""
 
@@ -4150,6 +4162,9 @@ msgstr "Library check failed"
 
 msgid "Library check interrupted"
 msgstr "Library check interrupted"
+
+msgid "Library counts"
+msgstr "Library counts"
 
 msgid "Library folders"
 msgstr ""
@@ -4785,6 +4800,9 @@ msgid "New plugin"
 msgstr "New plugin"
 
 msgid "New queue"
+msgstr ""
+
+msgid "New releases from your plugins"
 msgstr ""
 
 msgid "New tab"
@@ -5540,6 +5558,9 @@ msgstr ""
 msgid "Parentheses group; NOT works like the minus"
 msgstr ""
 
+msgid "Parts"
+msgstr ""
+
 msgid "Password"
 msgstr ""
 
@@ -5879,6 +5900,9 @@ msgstr ""
 msgid "Preparing playlists"
 msgstr "Preparing playlists"
 
+msgid "Preparing queue"
+msgstr ""
+
 msgid "Preparing results…"
 msgstr ""
 
@@ -6119,6 +6143,9 @@ msgstr ""
 msgid "Radio asks for each song's cover once, and the cover stays on screen. Native DSD through PipeWire now plays on a real DAC, with PipeWire 1.6 or later."
 msgstr ""
 
+msgid "Random album"
+msgstr ""
+
 msgid "Rate"
 msgstr ""
 
@@ -6276,6 +6303,9 @@ msgid "Recently played playlists"
 msgstr ""
 
 msgid "Recently played playlists in the library"
+msgstr ""
+
+msgid "Recording"
 msgstr ""
 
 msgid "Recording engineer"
@@ -7017,6 +7047,9 @@ msgstr "Selected music"
 msgid "Selected output"
 msgstr "Selected output"
 
+msgid "Self-hosted ({})"
+msgstr "Self-hosted ({})"
+
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 
@@ -7218,6 +7251,9 @@ msgstr ""
 msgid "Showing"
 msgstr ""
 
+msgid "Showing {}"
+msgstr "Showing {}"
+
 msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr ""
 
@@ -7363,6 +7399,9 @@ msgstr ""
 
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
+
+msgid "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
+msgstr "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
 
 msgid "Songs"
 msgstr ""
@@ -11225,6 +11264,11 @@ msgstr[1] ""
 
 msgid "{} record or track edited here is one the server no longer lists; its edits are kept."
 msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} recording"
+msgid_plural "{} recordings"
 msgstr[0] ""
 msgstr[1] ""
 

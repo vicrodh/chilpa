@@ -269,6 +269,11 @@ impl Chilpa {
         if visible { self.catalog.visible_art_of_card(id) } else { self.catalog.art_of_card(id) }
     }
 
+    /// Only a realized playlist row asks for its cover.
+    pub fn source_track_artwork(&self, id: i64) -> String {
+        self.catalog.visible_art_of_track(id)
+    }
+
     /// Refresh covers of an existing Home snapshot without changing its membership.
     pub fn refresh_source_album_artwork(&self, rows: &mut [Album]) {
         for row in rows { row.artwork_path = self.catalog.art_of_card(row.id); }
@@ -698,6 +703,10 @@ impl Chilpa {
         self.catalog.advance_composers();
         let (ready, _hold) = self.catalog.ready();
         for deferred in ready {
+            if let Some(ready) = deferred.paths_ready {
+                ready(self.catalog.playable_album_paths(&deferred.albums));
+                continue;
+            }
             self.with_queue_origin(deferred.origin, |app| match deferred.act.as_str() {
                 "later" => app.album_later(&deferred.albums, ""),
                 act if act.starts_with("buffer:") => app.album_listen_action(&deferred.albums, act),

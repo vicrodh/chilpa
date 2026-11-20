@@ -68,6 +68,32 @@ TestCase {
         compare(find.text, "", "another playlist starts with nothing typed")
     }
 
+    function test_large_playlist_recycles_and_maps_clicks_below_its_scrolling_header() {
+        const tracks = findChild(screen, "playlistTracks")
+        const view = screen.scrollView
+        tracks.clear()
+        for (let i = 0; i < 1970; ++i)
+            tracks.append({trackId: i + 1, rowKind: 0, number: i + 1, title: "Track", artist: "Band", album: "Record",
+                sourceName: "", duration: "3:00", plays: 0, quality: "FLAC", tier: 2, available: true,
+                playing: false, selected: false, headerLabel: "", headerMeta: "", art: ""})
+        tryCompare(view, "count", 1970)
+        view.positionViewAtBeginning()
+        view.forceLayout()
+        const first = view.itemAtIndex(0)
+        verify(first)
+        const search = findChild(screen, "playlistTrackSearch")
+        verify(search.mapToItem(view, 0, search.height).y < first.mapToItem(view, 0, 0).y)
+        mouseClick(view, view.width * 0.35, first.mapToItem(view, 0, first.height / 2).y)
+        compare(tracks.lastRow, 0)
+        view.positionViewAtIndex(1969, ListView.End)
+        view.forceLayout()
+        tryVerify(() => view.itemAtIndex(1969)?.number === 1970)
+        verify(view.contentItem.children.filter(item => item.rowKind !== undefined).length < 100)
+        verify(search.mapToItem(view, 0, search.height).y < 0)
+        tracks.clear()
+        view.positionViewAtBeginning()
+    }
+
     // A music server's own playlist plays whole from its header, wears the
     // server's icon, and takes changes only while the account may make them
     // there and none is on its way.

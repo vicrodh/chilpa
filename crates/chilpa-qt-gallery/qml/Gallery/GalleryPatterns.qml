@@ -38,12 +38,12 @@ TitledFlow {
     TabStrip { room: Metrics.sidebarWidth }
     Sidebar { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
     SidebarPlaylists { id: sampleSidebar; width: Metrics.sidebarWidth; height: Metrics.panesHeight }
-    RightPanel { width: Metrics.rightPanel; height: Metrics.queueMin * 3 } // derived: room for both and the divider
+    QueueTools.RightPanel { width: Metrics.rightPanel; height: Metrics.queueMin * 3 } // derived: room for both and the divider
     Row {
         spacing: Metrics.gridGap
-        QueuePanel { width: Metrics.rightPanel; height: Metrics.queueMin }
-        LyricsPanel { width: Metrics.rightPanel; height: Metrics.queueMin }
-        LyricsOptions {}
+        QueueTools.QueuePanel { width: Metrics.rightPanel; height: Metrics.queueMin }
+        QueueTools.LyricsPanel { width: Metrics.rightPanel; height: Metrics.queueMin }
+        QueueTools.LyricsOptions {}
     }
     Column {
         width: section.width - Metrics.sidebarWidth - Metrics.gridGap

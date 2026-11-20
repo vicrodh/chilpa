@@ -1116,3 +1116,5 @@ fullname
 unask
 upnp
 subtabs
+# Qt input method hint for numeric fields.
+imh

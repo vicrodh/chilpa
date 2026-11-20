@@ -304,6 +304,14 @@ impl crate::Chilpa {
     }
 
     pub fn native_card_info(&mut self, id: i64) -> String {
+        self.native_card_document(id, true)
+    }
+
+    pub fn native_card_header(&mut self, id: i64) -> String {
+        self.native_card_document(id, false)
+    }
+
+    fn native_card_document(&mut self, id: i64, playlist_entries: bool) -> String {
         let Some(card) = self.catalog.card(id) else { return "{}".into(); };
         if !self.natives.has_pages(&card.plugin) { return "{}".into(); }
         let mut info = card.metadata.clone();
@@ -321,7 +329,7 @@ impl crate::Chilpa {
         if let Some(url) = self.catalog.chosen_art(id).and_then(|path| url::Url::from_file_path(path).ok()) {
             info["chosen_art"] = json!(url.to_string());
         }
-        if card.kind == super::store::CardKind::Playlist && info["editable"] == true {
+        if playlist_entries && card.kind == super::store::CardKind::Playlist && info["editable"] == true {
             info["entries"] = json!(self.catalog.tracks(id).unwrap_or_default().iter().map(|t| json!({"ref":t.metadata["ref"],"member":t.metadata["member"],"title":t.title,"artist":t.artist,"available":t.playable})).collect::<Vec<_>>());
         }
         if card.kind == super::store::CardKind::Album { if let Some(document) = self.catalog.shelf(&format!("{} native:{}", card.plugin, card.identity)) { info["shelves"] = page_shelves(&self.catalog, &card.plugin, &card.identity, &mut info, &document.document["shelves"], true); } }

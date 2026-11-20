@@ -35,6 +35,13 @@ Column {
     Flow {
         width: parent.width
         spacing: Metrics.gap8
+        SegmentedControl {
+            objectName: "metadataLookupEngine"
+            options: [{text: "Chilpa"}, {text: "beets"}]
+            current: root.beets ? 1 : 0
+            enabled: !root.busy && root.doc.state === "ready"
+            onActivated: index => { root.chosen = -1; MetadataEditor.setEngine(index === 1 ? "beets" : "native") }
+        }
         Text { height:lookupActionButton.height; verticalAlignment:Text.AlignVCenter; visible:root.beets; text:"beets · MusicBrainz"; font.pointSize:Type.meta; color:Theme.color.textSecondary; textFormat:Text.PlainText }
         SegmentedControl {
             id: provider

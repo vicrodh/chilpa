@@ -1,6 +1,10 @@
 //! I report background queue work without polling or serializing its rows.
 #[cxx_qt::bridge]
 pub mod qobject {
+    unsafe extern "C++" {
+        include!("cxx-qt-lib/qstring.h");
+        type QString = cxx_qt_lib::QString;
+    }
     #[auto_cxx_name]
     extern "RustQt" {
         #[qobject]
@@ -10,6 +14,8 @@ pub mod qobject {
         type QueueActivity = super::QueueActivityRust;
         #[qinvokable]
         fn refresh(self: Pin<&mut QueueActivity>);
+        #[qinvokable]
+        fn collection_menu(self: &QueueActivity) -> QString;
     }
     impl cxx_qt::Threading for QueueActivity {}
     impl cxx_qt::Initialize for QueueActivity {}
@@ -52,6 +58,32 @@ pub fn albums(ids: Vec<i64>, action: String, shuffled: bool, label: String) {
     }
 }
 
+/// A confirmed bulk action works from the model's captured ids and outlives the page.
+pub fn collection(ids: Vec<i64>, albums: bool, action: chilpa_api::CollectionQueueAction) {
+    let ids = if albums { action.album_selection(ids) } else { ids };
+    if ids.is_empty() { return; }
+    let (origin, work) = crate::app::with(|api| (api.browse_origin(), api.begin_queue_work()));
+    refresh();
+    let pending = if albums { ids.iter().copied().filter(|id| *id < 0).collect() } else { Vec::new() };
+    let resolve = move |remote| {
+        crate::worker::submit(move |reader| {
+            let paths = if albums { reader.collection_album_paths(&ids, remote, &action) }
+                else { reader.collection_track_paths(&ids, &action) };
+            post(move || {
+                crate::app::with(|api| api.with_queue_origin(origin, |api| action.apply(api, &paths)));
+                drop(work);
+            });
+        });
+    };
+    if albums {
+        // The catalog can complete inline under the facade borrow. Submit to
+        // the reader on the next GUI turn, once that borrow has been released.
+        crate::app::with(|api| api.read_collection_album_paths(pending, move |remote| post(move || resolve(remote))));
+    } else {
+        resolve(Default::default());
+    }
+}
+
 pub enum QueuePaths { Known(Vec<String>), Ids(Vec<i64>) }
 pub fn paths(paths: QueuePaths, then: impl FnOnce(&mut chilpa_api::Chilpa, &[String]) + Send + 'static) {
     let (origin, work) = crate::app::with(|api| (api.browse_origin(), api.begin_queue_work()));
@@ -70,6 +102,10 @@ unsafe extern "C" { fn chilpa_queue_cursor(busy: bool); }
 #[derive(Default)]
 pub struct QueueActivityRust { busy: bool }
 impl qobject::QueueActivity {
+    pub fn collection_menu(&self) -> cxx_qt_lib::QString {
+        cxx_qt_lib::QString::from(crate::app::with(|api| api.collection_queue_menu()).to_string())
+    }
+
     pub fn refresh(mut self: Pin<&mut Self>) {
         let busy = crate::app::with(|api| api.queue_busy());
         BUSY.store(busy, std::sync::atomic::Ordering::Relaxed);

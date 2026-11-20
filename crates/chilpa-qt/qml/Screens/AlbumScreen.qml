@@ -1,6 +1,5 @@
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import QtQuick
-import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.artwork
@@ -18,8 +17,10 @@ import "qrc:/qt/qml/app/chilpa/offline/qml/Components" as OfflineParts
 
 // A record (design/06 Album): its header, the bar with discs and where the
 // information comes from, and its tracks with a header per disc.
-Flickable {
+Item {
     id: page
+    clip: true
+    readonly property alias scrollView: trackList.rows
     property double albumId: Navigation.routeId
 
     property bool selectionMode: false
@@ -42,12 +43,6 @@ Flickable {
     function showArtwork() { lightbox.active = true; lightbox.item.show(detail.art) }
     function showInformation() { information.active = true; information.item.open() }
     function showGenres() { genreBrowser.active = true; genreBrowser.item.open() }
-
-    contentWidth: width
-    contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
-    boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ViewportScrollBar { viewportHovered: pageHover.hovered }
-    HoverHandler { id: pageHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
 
     AlbumDetailModel {
         id: detail
@@ -72,6 +67,7 @@ Flickable {
     onAlbumIdChanged: find.clear()
     AlbumHeaderBackground {
         width: page.width
+        y: trackList.rows.headerItem ? trackList.rows.headerItem.y - trackList.rows.contentY : 0
         height: Metrics.contentTop + (sourceDetails.visible ? sourceDetails.heroHeight : hero.height) + Metrics.gap16
         art: detail.art
         mode: SettingsModel.albumHeader
@@ -79,9 +75,9 @@ Flickable {
 
     Column {
         id: column
-        x: Metrics.contentX
+        parent: trackList.rows.headerItem || page
         y: Metrics.contentTop
-        width: page.width - Metrics.contentX * 2 // derived: padding on both sides
+        width: trackList.width
         spacing: Metrics.gap16
 
         DiscoveryUi.AlbumHero {
@@ -165,35 +161,40 @@ Flickable {
                 id: summaryText
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                text: detail.summary
+                text: detail.summary || ""
                 font.pointSize: Type.meta
                 color: Theme.color.textSecondary
             }
         }
 
         Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
+    }
 
-        TrackList {
-            width: parent.width
-            height: implicitHeight
-            fitContent: true
-            viewport: page
-            prefetch: page.presented
-            showArtist: sourceDetails.info.kind === "playlist"
-            showAlbum: sourceDetails.info.kind === "playlist"
-            showArt: sourceDetails.info.kind === "playlist"
-            model: tracks
-            selectionMode: page.selectionMode
-        }
+    TrackList {
+        id: trackList
+        anchors.fill: parent
+        anchors.leftMargin: Metrics.contentX
+        anchors.rightMargin: Metrics.contentX
+        scrollbarOverlay: page
+        scrollbarEdge: page.width - Metrics.contentX - Metrics.gap12
+        scrollGutter: 0
+        introHeight: column.y + column.height + Metrics.gap16
+        bottomInset: Metrics.contentBottom
+        showArtist: sourceDetails.info.kind === "playlist"
+        showAlbum: sourceDetails.info.kind === "playlist"
+        sourcePlaylistArt: sourceDetails.info.kind === "playlist"
+        showArt: sourcePlaylistArt
+        model: tracks
+        selectionMode: page.selectionMode
 
-        Loader {
+        footer: Loader {
             objectName: "albumRecommendationsLoader"
-            width: parent.width
+            width: trackList.width
             height: item ? item.implicitHeight : 1
-            active: page.presented && detail.found
+            active: page.presented && detail.found === true
             asynchronous: true
             property double albumId: detail.selectedId
-            property Flickable viewport: page
+            property Flickable viewport: trackList.rows
             property var shelves: (sourceDetails.info.shelves || []).filter(shelf => !(shelf.id === "tracks" && shelf.kind === "track"))
             source: "qrc:/qt/qml/app/chilpa/sources/qml/Patterns/AlbumRecommendations.qml"
         }
@@ -226,7 +227,7 @@ Flickable {
         active: page.selectionMode && tracks.selectedCount > 0
         z: 2
         x: (page.width - width) / 2
-        y: page.contentY + page.height - height - Metrics.selectionBottom
+        y: page.height - height - Metrics.selectionBottom
         sourceComponent: PlaylistSelectionBar {
             model: tracks
             playlistName: detail.title

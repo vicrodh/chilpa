@@ -17,7 +17,7 @@ Column {
     signal selectToggle()
     signal context(real left, real top)
     property var record
-    readonly property var info: cardId < 0 ? JSON.parse(Sources.cardPage(cardId, Library.remoteRev) || "{}") : ({})
+    readonly property var info: cardId < 0 ? JSON.parse(Sources.cardHeader(cardId, Library.remoteRev) || "{}") : ({})
     readonly property bool canFavorite: /^(album|playlist|artist):/.test(info.ref || "") && info.editable !== true
     readonly property bool playlist: info.kind === "playlist" || /^playlist:/.test(info.ref || "")
     // The header's text is white over the cover's darkened field. On the
@@ -32,14 +32,14 @@ Column {
     visible: cardId < 0 && !!info.plugin
     spacing: Metrics.gap8
     function open(reference) { heading.follow(reference) }
-    onInfoChanged: if (playlistEditor.visible) playlistEditor.info = info
+    onInfoChanged: if (playlistEditor.visible) playlistEditor.info = JSON.parse(Sources.cardPage(cardId, Library.remoteRev) || "{}")
     SourcePlaylistEditor { id: playlistEditor }
     SourcePageHeader { id: heading; record: details.record; selecting: details.selecting; onArtwork: details.artwork(); onArtworkMenu: (left, top) => { const at = heading.mapToItem(details, left, top); details.artworkMenu(at.x, at.y) }; onSelectToggle: details.selectToggle(); onContext: (left, top) => details.context(left, top); width: parent.width; currentPage: true; externalInformation: true; onInformation: details.information(); onGenresRequested: details.genresRequested(); contrasted: details.contrasted; cardId: details.cardId; playbackModel: details.trackModel || ({count:0,summary:""}); info: Object.assign({}, details.info, {title: details.record ? details.record.title : details.info.title, art: details.record ? details.record.art : details.info.art}) }
     Flow {
         width: parent.width
         spacing: Metrics.gap8
         PillButton { visible: !!details.info.label_ref; text: details.info.label || I18n.tr("Label", I18n.rev); onClicked: details.open(details.info.label_ref) }
-        PillButton { visible: details.info.editable === true; text: I18n.tr("Edit playlist", I18n.rev); onClicked: playlistEditor.begin(details.info, "update") }
+        PillButton { visible: details.info.editable === true; text: I18n.tr("Edit playlist", I18n.rev); onClicked: playlistEditor.begin(JSON.parse(Sources.cardPage(details.cardId, Library.remoteRev) || "{}"), "update") }
         PillButton { visible: details.info.copyable === true; text: I18n.tr("Copy playlist", I18n.rev); onClicked: playlistEditor.begin(details.info, "copy") }
     }
 }

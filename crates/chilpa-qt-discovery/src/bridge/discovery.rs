@@ -161,4 +161,5 @@ fn image_urls(value: &mut serde_json::Value) {
     }
     if let Some(images) = value.get_mut("images").and_then(serde_json::Value::as_array_mut) { for image in images { url(image); } }
     if let Some(portrait) = value.get_mut("portrait") { url(portrait); }
+    if let Some(artwork) = value.get_mut("artwork") { url(artwork); }
 }

@@ -40,15 +40,11 @@ crates/chilpa-qt/qml/Components/TrackSourceLabel.qml
 crates/chilpa-qt/qml/Main.qml
 crates/chilpa-qt/qml/Patterns/CastPicker.qml
 crates/chilpa-qt/qml/Patterns/DevHooks.qml
-crates/chilpa-qt/qml/Patterns/LyricsOptions.qml
-crates/chilpa-qt/qml/Patterns/LyricsPanel.qml
 crates/chilpa-qt/qml/Patterns/NavMenu.qml
 crates/chilpa-qt/qml/Patterns/PlaybackOptions.qml
 crates/chilpa-qt/qml/Patterns/PlayerBar.qml
 crates/chilpa-qt/qml/Patterns/PlayerLcd.qml
 crates/chilpa-qt/qml/Patterns/QualityTooltip.qml
-crates/chilpa-qt/qml/Patterns/QueuePanel.qml
-crates/chilpa-qt/qml/Patterns/RightPanel.qml
 crates/chilpa-qt/qml/Patterns/SearchBox.qml
 crates/chilpa-qt/qml/Patterns/SearchFlyout.qml
 crates/chilpa-qt/qml/Patterns/Sidebar.qml
@@ -57,7 +53,6 @@ crates/chilpa-qt/qml/Patterns/TabBar.qml
 crates/chilpa-qt/qml/Patterns/TabStrip.qml
 crates/chilpa-qt/qml/Patterns/Toast.qml
 crates/chilpa-qt/qml/PlayerIdle.qml
-crates/chilpa-qt/qml/RightPanelFrame.qml
 crates/chilpa-qt/qml/ScreenHost.qml
 crates/chilpa-qt/qml/Screens/AlbumScreen.qml
 crates/chilpa-qt/qml/Screens/AlbumsScreen.qml

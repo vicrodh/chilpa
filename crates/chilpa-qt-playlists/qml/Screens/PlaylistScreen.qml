@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Window
-import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.playlists
@@ -17,8 +16,10 @@ import "../Patterns"
 // record page: the header over its cover, the bar between two rules with
 // its order, what is typed to find a row and how much it holds, then its
 // tracks. A track's menu here can take it out of the playlist.
-Flickable {
+Item {
     id: page
+    clip: true
+    readonly property alias scrollView: trackList.rows
 
     property int playlistId: Navigation.routeId
     // A server answers after the change was asked: the library's turn too.
@@ -40,10 +41,6 @@ Flickable {
     // playlist reads in the theme's own colors, as QBZ's playlist page does.
     readonly property bool contrasted: SettingsModel.albumHeader !== "off" && page.covers.length > 0 && !Theme.ambient
 
-    contentWidth: width
-    contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
-    boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ViewportScrollBar {}
     onPlaylistIdChanged: find.clear()
 
     TrackListModel {
@@ -61,6 +58,7 @@ Flickable {
     }
     AlbumHeaderBackground {
         width: page.width
+        y: trackList.rows.headerItem ? trackList.rows.headerItem.y - trackList.rows.contentY : 0
         height: Metrics.contentTop + hero.height + Metrics.gap16
         art: page.covers.length > 0 ? page.covers[0] : ""
         mode: SettingsModel.albumHeader
@@ -68,9 +66,9 @@ Flickable {
 
     Column {
         id: column
-        x: Metrics.contentX
+        parent: trackList.rows.headerItem || page
         y: Metrics.contentTop
-        width: page.width - Metrics.contentX * 2 // derived: padding on both sides
+        width: trackList.width
         spacing: Metrics.gap16
 
         PlaylistHeader {
@@ -158,20 +156,25 @@ Flickable {
         }
 
         Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
+    }
 
-        TrackList {
-            width: parent.width
-            height: implicitHeight
-            visible: tracks.count > 0
-            fitContent: true
-            viewport: page
-            model: tracks
-            sortable: false
-            order: page.order
-            selectionMode: page.selectionMode
-            // Rows found by what is typed are not the whole order to move in.
-            reorderable: page.changeable && page.order === "custom" && !page.selectionMode && find.typed === ""
-        }
+    TrackList {
+        id: trackList
+        anchors.fill: parent
+        anchors.leftMargin: Metrics.contentX
+        anchors.rightMargin: Metrics.contentX
+        scrollbarOverlay: page
+        scrollbarEdge: page.width - Metrics.contentX - Metrics.gap12
+        scrollGutter: 0
+        introHeight: column.y + column.height + Metrics.gap16
+        bottomInset: Metrics.contentBottom
+        header: tracks.count > 0
+        model: tracks
+        sortable: false
+        order: page.order
+        selectionMode: page.selectionMode
+        // Rows found by what is typed are not the whole order to move in.
+        reorderable: page.changeable && page.order === "custom" && !page.selectionMode && find.typed === ""
     }
 
     QueueMenu {
@@ -190,7 +193,7 @@ Flickable {
         playlistName: page.playlistName
         canRemove: page.changeable
         x: (page.width - width) / 2
-        y: page.contentY + page.height - height - Metrics.selectionBottom
+        y: page.height - height - Metrics.selectionBottom
         onFinished: {
             tracks.clearSelection()
             page.selectionMode = false

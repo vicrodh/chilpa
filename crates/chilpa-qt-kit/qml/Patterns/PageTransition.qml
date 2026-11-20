@@ -6,9 +6,6 @@ import "../Components"
 // I paint the destination acknowledgement before I construct its page.
 Item {
     id: transition
-    property bool resizing: false
-    property real heldWidth: -1
-    onResizingChanged: if (resizing) heldWidth = width; else heldWidth = -1
     property string route: ""
     property string retainedScreen: ""
     property string componentRoute: ""

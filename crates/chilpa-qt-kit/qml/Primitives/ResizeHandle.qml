@@ -19,6 +19,7 @@ Item {
     signal started()
     signal moved(real delta)
     signal released()
+    signal canceled()
 
     implicitWidth: vertical ? Metrics.resizeHandle : Metrics.notchLong
     implicitHeight: vertical ? Metrics.notchLong : Metrics.panesHandle
@@ -56,5 +57,6 @@ Item {
                 handle.moved(along(mouse) - start)
         }
         onReleased: handle.released()
+        onCanceled: handle.canceled()
     }
 }

@@ -407,12 +407,9 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
     let stamp = now();
     let mut inner = catalog.lock();
     if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
-    let images = take_record_tracks(&mut inner, &plugin, id, kind, holder, &mut answer, stamp);
+    take_record_tracks(&mut inner, &plugin, id, holder, &mut answer, stamp);
     inner.card_errors.remove(&id);
     inner.dirty = true;
-    for image in images {
-        catalog.want_cover(&mut inner, &image);
-    }
     drop(inner);
     if let Some(itself) = answer.get(holder).filter(|v| v["shelves"].is_array()) {
         super::pages::ingest_document(catalog, &plugin, &reference, itself);
@@ -420,7 +417,7 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
     Ok(())
 }
 
-fn take_record_tracks(inner: &mut super::Inner, plugin: &str, id: i64, kind: CardKind, holder: &str, answer: &mut Value, stamp: u64) -> Vec<String> {
+fn take_record_tracks(inner: &mut super::Inner, plugin: &str, id: i64, holder: &str, answer: &mut Value, stamp: u64) {
     let store = &mut inner.store;
     let before = inner.collection_ephemeral.cards.contains(&id).then(|| store.allocation_watermarks());
     let available = answer["availability"] != "unavailable" && answer[holder]["available"] != false;
@@ -433,11 +430,6 @@ fn take_record_tracks(inner: &mut super::Inner, plugin: &str, id: i64, kind: Car
         .filter_map(|item| store.take_owned_item_track(plugin, item, Some(&under), stamp)).collect();
     let best = tracks.iter().filter_map(|t| store.tracks.get(t)?.format.clone())
         .max_by_key(|f: &Format| (f.quality().tier.rank(), f.bits, f.rate));
-    let images: Vec<String> = if kind == CardKind::Playlist {
-        tracks.iter().filter_map(|t| store.tracks.get(t)).map(|t| t.image.clone()).collect()
-    } else {
-        Vec::new()
-    };
     if let Some(card) = store.cards.get_mut(&id) {
         card.tracks = Some(tracks);
         card.metadata["available"] = json!(available);
@@ -445,7 +437,6 @@ fn take_record_tracks(inner: &mut super::Inner, plugin: &str, id: i64, kind: Car
         if card.format.is_none() { card.format = best; }
     }
     if let Some(before) = before { inner.collection_ephemeral.own_allocations(before, store.allocation_watermarks()); }
-    images
 }
 
 fn take_playable_rows(answer: &mut Value) -> Vec<Value> {
@@ -490,7 +481,7 @@ mod tests {
                     shelf["items"] = Value::Array(vec![item]);
                     answer["shelves"] = Value::Array(vec![json!({"kind":"album","items":[]}), shelf]);
                 }
-                let images = take_record_tracks(&mut inner, "fixture", id, kind, holder, &mut answer, 2);
+                take_record_tracks(&mut inner, "fixture", id, holder, &mut answer, 2);
                 let store = &mut inner.store;
                 let card = &store.cards[&id];
                 let track_id = card.tracks.as_ref().unwrap()[0];
@@ -503,7 +494,6 @@ mod tests {
                 assert_eq!(track.format.as_ref().unwrap().quality().short(), "FLAC 24/96");
                 if keep_extras { assert_eq!(answer[holder]["shelves"], extras); }
                 else { assert_eq!(answer[holder], Value::Null, "I move headers that have no retained page extras"); }
-                assert_eq!(images.len(), usize::from(kind == CardKind::Playlist));
                 assert!(take_playable_rows(&mut answer).is_empty());
                 let update = json!({"ref":"track:7@list:1","title":"Same occurrence"});
                 assert_eq!(store.take_owned_item_track("fixture", update, None, 3), Some(track_id));

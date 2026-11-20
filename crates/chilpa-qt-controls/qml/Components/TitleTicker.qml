@@ -14,7 +14,7 @@ Item {
     id: ticker
 
     readonly property bool on: Prefs.rev >= 0 && SettingsModel.kept("appearance.titleTicker") !== "false"
-    readonly property Item held: TipState.target
+    readonly property Item held: InputLayers.blocks(Window.window) ? null : TipState.target
     // A title with a badge is cut in its own line of text, not in what holds both.
     readonly property Item line: !on || !enabled || Motion.reduced || !held || held.truncated !== true ? null
         : held.advisoryWidth !== undefined ? held.children[0] : held

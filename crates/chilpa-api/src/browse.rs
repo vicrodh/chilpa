@@ -373,6 +373,8 @@ struct RefreshCache {
     /// Grouping across sources, and the copies chosen, as preferences say.
     copies: (bool, Vec<String>),
     entries: std::collections::VecDeque<(Filter, TrackOrder, Facets, Snapshot)>,
+    // One unfiltered summary per revision, owned by this reader.
+    library_counts: Option<LibraryCounts>,
 }
 
 /// The preferences a merged grid's grouping reads, as a cache compares them.
@@ -702,6 +704,7 @@ impl Reader {
             let copies = if index.items.is_empty() { Default::default() } else { copy_preferences() };
             if cache.revision != before || cache.sources != stamp || cache.copies != copies {
                 cache.entries.clear();
+                cache.library_counts = None;
                 (cache.revision, cache.sources, cache.copies) = (before, stamp, copies);
             }
             if before.is_some() {
@@ -717,17 +720,7 @@ impl Reader {
         let read = || {
             let mut facets = self.facets_current(filter, &current, shared.as_ref())?;
             if !current() { return None; }
-            let snapshot = if index.items.is_empty() { self.snapshot(filter, order) } else {
-                let stars = crate::library_sources::Stars::read(&self.lib, &index);
-                let held = self.copy_grouping();
-                let grouping = held.as_ref().map(|(library, versions, chosen)| crate::library_sources::Grouping { library, versions: *versions, chosen });
-                crate::library_sources::merge_facets(&mut facets, filter, &index, &stars, grouping);
-                let (local, keys) = self.lib.keyed_snapshot(filter, order).unwrap_or_else(|e| {
-                    eprintln!("chilpa-queries: library snapshot failed: {e}");
-                    Default::default()
-                });
-                crate::library_sources::merge_snapshot(local, keys, filter, order, &index, &stars, crate::library_sources::Scope::Library, None, grouping).0
-            };
+            let snapshot = self.library_snapshot(filter, order, &index, Some(&mut facets), None).0;
             current().then_some((facets, snapshot))
         };
         let result = self.lib.with_browse_candidates(filter, read).unwrap_or_else(|error| {
@@ -742,6 +735,49 @@ impl Reader {
             }
         }
         result
+    }
+
+    pub(crate) fn library_snapshot(&self, filter: &Filter, order: TrackOrder, index: &crate::library_sources::SourceIndex,
+        facets: Option<&mut Facets>, letters_by: Option<&str>) -> (Snapshot, Vec<(usize, String)>) {
+        if index.items.is_empty() && letters_by.is_none() { return (self.snapshot(filter, order), Vec::new()); }
+        let stars = crate::library_sources::Stars::read(&self.lib, index);
+        let held = self.copy_grouping();
+        let grouping = held.as_ref().map(|(library, versions, chosen)| crate::library_sources::Grouping { library, versions: *versions, chosen });
+        if let Some(facets) = facets { crate::library_sources::merge_facets(facets, filter, index, &stars, grouping); }
+        let (local, keys) = self.lib.keyed_snapshot(filter, order).unwrap_or_else(|e| {
+            eprintln!("chilpa-queries: library snapshot failed: {e}");
+            Default::default()
+        });
+        crate::library_sources::merge_snapshot(local, keys, filter, order, index, &stars, letters_by, grouping)
+    }
+
+    /// The visible selection and its unfiltered baseline from the same source index.
+    pub fn refresh_library(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool) -> Option<(Facets, Snapshot, LibraryCounts)> {
+        self.refresh_library_using(filter, order, current, self.source_index())
+    }
+
+    pub(crate) fn refresh_library_using(&self, filter: &Filter, order: TrackOrder, current: impl Fn() -> bool,
+        source: (crate::library_sources::Stamp, std::sync::Arc<crate::library_sources::SourceIndex>),
+    ) -> Option<(Facets, Snapshot, LibraryCounts)> {
+        let index = source.1.clone();
+        let (facets, shown) = self.refresh_using(filter, order, &current, source)?;
+        if !current() { return None; }
+        let revision = self.refresh_cache.borrow().revision;
+        let cached = self.refresh_cache.borrow().library_counts.clone();
+        let counts = if let Some(counts) = cached.filter(|_| revision.is_some()) { counts } else {
+            let all = Filter::default();
+            let unfiltered;
+            let snapshot = if *filter == all { &shown } else {
+                unfiltered = self.library_snapshot(&all, TrackOrder::Artist, &index, None, None).0;
+                &unfiltered
+            };
+            let counts = LibraryCounts::read(&self.lib, snapshot, &facets.sources, &index);
+            if revision.is_some() && revision == self.lib.read_revision().ok() {
+                self.refresh_cache.borrow_mut().library_counts = Some(counts.clone());
+            }
+            counts
+        };
+        current().then_some((facets, shown, counts))
     }
 
     /// What grids group a record kept by several sources by, when they do:
@@ -812,6 +848,48 @@ impl Reader {
 
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LibraryCounts {
+    pub total: Totals,
+    pub local: usize,
+    pub servers: usize,
+    pub server_tracks: usize,
+    pub plugins: Vec<(String, usize)>,
+}
+
+impl LibraryCounts {
+    fn read(lib: &chilpa_library::Library, snapshot: &Snapshot, sources: &[FacetEntry], index: &crate::library_sources::SourceIndex) -> Self {
+        let database_tracks = snapshot.ids.iter().filter(|id| **id > 0).count();
+        let servers = sources.iter().filter(|source| source.key.starts_with("server:")).count();
+        let mut counts = Self { total: snapshot.totals, local: database_tracks, servers, ..Self::default() };
+        if servers > 0 {
+            let ids: HashSet<_> = snapshot.ids.iter().copied().filter(|id| *id > 0).collect();
+            match lib.server_track_count_in(&ids) {
+                Ok(tracks) => {
+                    counts.server_tracks = tracks;
+                    counts.local -= tracks;
+                }
+                Err(error) => eprintln!("chilpa-queries: server track counts failed: {error}"),
+            }
+        }
+        if !index.items.is_empty() {
+            let ids: HashSet<_> = snapshot.ids.iter().copied().filter(|id| *id < 0).collect();
+            let mut by_plugin = std::collections::BTreeMap::new();
+            for source in &index.sources {
+                let Some(id) = source.key.strip_prefix("plugin:") else { continue };
+                by_plugin.insert(id, (source.label.as_str(), 0));
+            }
+            for item in &index.items {
+                if ids.contains(&item.track) {
+                    by_plugin.entry(item.plugin.as_str()).or_insert((item.plugin.as_str(), 0)).1 += 1;
+                }
+            }
+            counts.plugins = by_plugin.into_values().map(|(label, tracks)| (label.to_owned(), tracks)).collect();
+        }
+        counts
+    }
+}
+
 impl Chilpa {
     /// The Library header counts real records and every eligible track.
     pub fn library_summary(&self, totals: Totals) -> String {
@@ -819,6 +897,26 @@ impl Chilpa {
         format!("{} · {}",
             self.tf("{} album", "{} albums", totals.albums as i64, &[&albums]),
             self.tf("{} song", "{} songs", totals.tracks as i64, &[&songs]))
+    }
+
+    /// Formats the unfiltered and visible counts from the same reader publication.
+    pub fn library_count_lines(&self, counts: LibraryCounts, totals: Totals) -> (String, String, String) {
+        let total = self.library_summary(counts.total);
+        let showing = self.library_summary(totals);
+        let details = serde_json::json!({
+            "showing": showing,
+            "local": counts.local,
+            "serverTracks": counts.server_tracks,
+            "servers": counts.servers,
+            "plugins": counts.plugins,
+        });
+        let line = if totals.albums == counts.total.albums && totals.tracks == counts.total.tracks {
+            showing
+        } else {
+            self.t_args("Showing {}", &[&showing])
+        };
+        let span = crate::format::span(totals.duration_ms);
+        (total, format!("{line} · {span}"), details.to_string())
     }
 
     /// A second, read-only connection to an initialized library. Reports

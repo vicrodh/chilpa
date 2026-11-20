@@ -3,7 +3,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/controls/qml/Screens"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components"
 
 ApplicationWindow {
     id: window

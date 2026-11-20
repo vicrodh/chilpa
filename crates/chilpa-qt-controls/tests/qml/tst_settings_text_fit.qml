@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 // Qt 6.10 brings a SearchField of its own with QtQuick.Controls; this is the kit's.

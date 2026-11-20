@@ -19,11 +19,11 @@ fn fixture() -> (Reader, SourceIndex) {
 }
 
 #[test]
-fn independent_sheet_does_not_inherit_library_extras() {
+fn sheet_filters_intersect_with_the_shared_source_scope() {
     let (reader, index) = fixture();
-    let extras = Filter { excluded_sources: vec!["local:default".into(), "plugin:fixture".into()], formats: vec!["mp3".into()], ..Default::default() };
+    let extras = Filter { excluded_sources: vec!["local:default".into()], formats: vec!["flac".into()], ..Default::default() };
     let found = reader.tracks_using(&key(json!({"title":["Common"]})), &extras, &index);
-    assert_eq!(found.snapshot.ids.len(), 2);
+    assert_eq!(found.snapshot.ids, [-1]);
     let found = reader.tracks_using(&key(json!({"artist":["Album credit"]})), &extras, &index);
     assert!(found.snapshot.ids.is_empty(), "the displayed track artist is the exact selectable value");
 }
