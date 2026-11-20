@@ -30,6 +30,7 @@ use std::collections::{BTreeMap, HashSet};
 const PAGE: usize = 60;
 
 pub(crate) fn genre_identity(name: &str) -> String { genres::strong_identity(name) }
+pub(crate) use genres::art_digest as genre_art_digest;
 
 #[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]

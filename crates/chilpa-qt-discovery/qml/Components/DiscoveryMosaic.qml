@@ -6,26 +6,18 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Item {
     id: mosaic
     property var images: []
-    property var art: ({})
+    // Shown on hover while the images are a published default.
+    property string credit: ""
     property bool activeImages: true
-    property string label: ""
+    // Without images the mosaic is one flat tile of this placeholder color.
+    property int tint: 0
     property int radius: Metrics.radiusCard
     onActiveImagesChanged: if (!activeImages) TipState.hide(mosaic)
     Component.onDestruction: TipState.hide(mosaic)
     readonly property int count: Math.min(4, images.length)
-    ArtTile {
-        anchors.fill: parent; radius: mosaic.radius; visible: mosaic.count === 0
-        source: mosaic.activeImages && mosaic.art?.key ? "qrc:/qt/qml/app/chilpa/discovery/assets/genres/" + mosaic.art.key + ".jpg" : ""
-    }
+    ArtTile { objectName: "discoveryMosaicFlat"; anchors.fill: parent; radius: mosaic.radius; visible: mosaic.count === 0; tint: mosaic.tint }
     HoverHandler {
-        onHoveredChanged: hovered && mosaic.count === 0 && mosaic.art?.page
-            ? TipState.show([mosaic.art.credit,mosaic.art.license,mosaic.art.licenseUrl,mosaic.art.page].filter(Boolean).join("\n"), mosaic) : TipState.hide(mosaic)
-    }
-    Text {
-        anchors.centerIn: parent
-        visible: mosaic.count === 0 && !mosaic.art?.key
-        text: mosaic.label.split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase()
-        font.pointSize: Type.title; font.weight: Type.semibold; color: Theme.color.textTertiary
+        onHoveredChanged: hovered && mosaic.count > 0 && mosaic.credit !== "" ? TipState.show(mosaic.credit, mosaic) : TipState.hide(mosaic)
     }
     Repeater {
         model: mosaic.count
