@@ -418,7 +418,11 @@ fn the_copy_from_before_a_failed_upgrade_can_be_put_back() {
     upgrade::restore(&path).unwrap();
     assert_eq!(std::fs::read(&path).unwrap(), copy, "the library is the copy again");
     assert_eq!(version_of(&path), 54);
-    assert_eq!(version_of(&upgrade::failed_path(&path)), 55, "the half-upgraded library is kept aside");
+    // Opened for writing: the library set aside keeps its write-ahead mode
+    // without a log of its own, and the SQLite a Mac ships does not open
+    // that read-only.
+    let aside: i64 = Connection::open(upgrade::failed_path(&path)).unwrap().query_row("PRAGMA user_version", [], |row| row.get(0)).unwrap();
+    assert_eq!(aside, 55, "the half-upgraded library is kept aside");
     assert!(backup_path(&path).exists(), "and the copy stays where it was");
     assert!(!upgrade::marker_path(&path).exists());
     assert!(!directory.path().join("library.db-wal").exists());
