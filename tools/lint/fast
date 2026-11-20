@@ -4,6 +4,8 @@ set -e
 root=$(git rev-parse --show-toplevel)
 "$root/tools/lint/no-platform-names"
 "$root/tools/lint/arquitectura"
+# A library changes version only in its upgrade, under the startup cover.
+"$root/tools/lint/migrations"
 # Settings grow by feature, never in the bridge (frontend ADR-0015).
 "$root/tools/lint/settings-bridge"
 "$root/tools/lint/window-files"

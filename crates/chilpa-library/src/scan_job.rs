@@ -128,8 +128,8 @@ impl ScanJob {
 /// the library, so its upgrade and maintenance are done; opening the full
 /// way again read every local track before the first file was looked at,
 /// 230 ms on thirty thousand and growing with the library, not the folder.
-/// A library that is not there yet, or not at this version, is opened the
-/// full way, which is what creates it.
+/// A library that is not there yet is opened the full way, which is what
+/// creates it; an older one is refused by both.
 fn open(db_path: &Path) -> rusqlite::Result<Library> {
     Library::open_existing(db_path).or_else(|_| Library::open(db_path))
 }

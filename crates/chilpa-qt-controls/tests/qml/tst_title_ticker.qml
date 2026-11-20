@@ -35,6 +35,30 @@ TestCase {
         }
     }
 
+    // As in the window: one watcher for every cut line, and the ticker sliding the one it says.
+    Component {
+        id: watched
+        Item {
+            anchors.fill: parent
+            property alias first: first
+            property alias second: second
+            Text { id: first; x: 20; y: 20; width: 120; elide: Text.ElideRight; text: test.longTitle }
+            Text { id: second; x: 20; y: 20; width: 120; elide: Text.ElideRight; visible: false; text: "Another title much too long for its place in a row" }
+            CutTextTips { watching: parent }
+            TitleTicker {}
+        }
+    }
+    Component { id: lineFactory; Text { x: 20; y: 20; width: 120; elide: Text.ElideRight } }
+    function watchedScene() {
+        const made = createTemporaryObject(watched, test)
+        verify(made)
+        tryVerify(() => made.first.truncated)
+        mouseMove(test, 40, 26)
+        mouseMove(test, 42, 27)
+        tryCompare(TipState, "target", made.first, Metrics.cutTextLook * 10, "the cut line says itself")
+        return made
+    }
+
     function slide() {
         const layer = test.Overlay.overlay
         for (const child of layer.children)
@@ -79,6 +103,101 @@ TestCase {
         tryVerify(() => slide() === null)
         compare(made.cut.opacity, 1, "let go, the line is drawn again as it was")
         verify(!TipState.quiet)
+    }
+
+    // TipState lets go of a line that hides; the watcher lets go of it too, and looks again under the still pointer.
+    function test_a_cut_line_hidden_and_shown_again_under_a_still_pointer_says_itself_again() {
+        const made = watchedScene()
+        tryVerify(() => slide() !== null, 1000, "it slides")
+        made.first.visible = false
+        compare(TipState.target, null, "a hidden line says nothing")
+        tryVerify(() => slide() === null, 1000, "and stops sliding")
+        wait(Metrics.cutTextLook * 2)
+        made.first.visible = true
+        tryCompare(TipState, "target", made.first, Metrics.cutTextLook * 10, "shown again, it says itself again without the pointer moving")
+        compare(TipState.text, test.longTitle)
+        tryVerify(() => slide() !== null, 1000, "and slides again")
+    }
+
+    function test_a_cut_line_put_in_the_place_of_another_says_itself() {
+        const made = watchedScene()
+        made.first.visible = false
+        made.second.visible = true
+        tryCompare(TipState, "target", made.second, Metrics.cutTextLook * 10, "the line now under the still pointer says itself")
+        compare(TipState.text, made.second.text)
+        // One line goes for good and another is made in its place.
+        const gone = createTemporaryObject(lineFactory, made, { text: test.longTitle + " (gone)" })
+        made.second.visible = false
+        tryCompare(TipState, "target", gone, Metrics.cutTextLook * 10)
+        const next = createTemporaryObject(lineFactory, made, { text: test.longTitle + " (next)" })
+        gone.destroy()
+        tryCompare(TipState, "target", next, Metrics.cutTextLook * 10, "the line made in the place of a destroyed one says itself")
+        compare(TipState.text, test.longTitle + " (next)")
+    }
+
+    // A menu opened from the keyboard, away from the still pointer, hides the tooltip on purpose: the line under the
+    // pointer does not take it back while the menu is open, and the menu's own cut entry still says itself.
+    Component { id: menuFactory; Menu { x: 260; y: 150; entries: [{ text: "Play" }, { text: test.longTitle + ", an entry of the menu" }] } }
+    function test_a_menu_opened_under_a_still_pointer_keeps_the_line_quiet() {
+        const made = watchedScene()
+        tryVerify(() => slide() !== null, 1000, "it slides")
+        const menu = createTemporaryObject(menuFactory, test)
+        verify(menu.entries !== undefined, "the kit's menu")
+        menu.open()
+        tryVerify(() => menu.opened)
+        compare(TipState.target, null, "the menu took the tooltip")
+        tryVerify(() => slide() === null, 1000, "and the slide")
+        wait(Metrics.cutTextLook * 4)
+        compare(TipState.target, null, "the line under the still pointer does not take it back")
+        compare(slide(), null, "nor slides again")
+        const entry = menu.entryItems[1]
+        verify(entry && entry.cut, "the long entry is cut")
+        const at = entry.mapToItem(test, entry.width / 2, entry.height / 2)
+        mouseMove(test, at.x, at.y)
+        tryCompare(TipState, "target", entry, 1000, "the menu's cut entry says itself")
+        wait(Metrics.cutTextLook * 4)
+        compare(TipState.target, entry, "and keeps saying it")
+        menu.close()
+    }
+
+    // The line a menu kept quiet goes on with the menu gone, until a scroll hides it and brings another line under the
+    // still pointer: the hidden line is let go of, and the line now under the pointer says itself.
+    function test_a_line_kept_quiet_after_a_menu_is_let_go_of_when_it_hides() {
+        const made = watchedScene()
+        const menu = createTemporaryObject(menuFactory, test)
+        menu.open()
+        tryVerify(() => menu.opened)
+        compare(TipState.target, null, "the menu took the tooltip")
+        menu.close()
+        tryVerify(() => !menu.visible)
+        wait(Metrics.cutTextLook * 2)
+        compare(TipState.target, null, "with the menu gone, the line under the still pointer stays quiet")
+        made.first.visible = false
+        made.second.visible = true
+        tryCompare(TipState, "target", made.second, Metrics.cutTextLook * 10, "the line now under the still pointer says itself")
+        compare(TipState.text, made.second.text)
+    }
+
+    // Another item takes the tooltip from the line still shown under the still pointer, and a menu opened from the
+    // keyboard at once hides it: the line stays quiet while the menu is open and after it, until the pointer moves, and
+    // then says itself without the pointer having left it.
+    Component { id: otherFactory; Rectangle { x: 400; y: 250; width: 40; height: 20 } }
+    function test_a_line_another_item_takes_the_tooltip_from_says_itself_at_the_next_move() {
+        const made = watchedScene()
+        const other = createTemporaryObject(otherFactory, test)
+        TipState.show("Another item", other)
+        const menu = createTemporaryObject(menuFactory, test)
+        menu.open()
+        tryVerify(() => menu.opened)
+        compare(TipState.target, null, "the menu took the tooltip")
+        wait(Metrics.cutTextLook * 4)
+        compare(TipState.target, null, "the line under the still pointer does not take it back while the menu is open")
+        menu.close()
+        tryVerify(() => !menu.visible)
+        wait(Metrics.cutTextLook * 2)
+        compare(TipState.target, null, "nor after it, with the pointer still")
+        mouseMove(test, 43, 27)
+        tryCompare(TipState, "target", made.first, Metrics.cutTextLook * 10, "a move within the line makes it say itself")
     }
 
     function test_a_line_that_fits_is_left_alone() {

@@ -696,6 +696,9 @@ msgstr ""
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr ""
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr ""
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1362,6 +1365,9 @@ msgid "Checking storage identity"
 msgstr "Checking storage identity"
 
 msgid "Checking the account…"
+msgstr ""
+
+msgid "Checking the result…"
 msgstr ""
 
 msgid "Checking your audio stack…"
@@ -5174,6 +5180,12 @@ msgstr ""
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr ""
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr ""
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr ""
+
 msgid "Nov"
 msgstr ""
 
@@ -5993,6 +6005,15 @@ msgstr ""
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr ""
 
+msgid "Put the copy back and quit"
+msgstr ""
+
+msgid "Putting the copy back did not finish."
+msgstr ""
+
+msgid "Putting the copy back…"
+msgstr ""
+
 msgid "Q"
 msgstr ""
 
@@ -6763,6 +6784,9 @@ msgstr ""
 msgid "Saved to {} and read back from it."
 msgstr ""
 
+msgid "Saving a copy of the library first…"
+msgstr ""
+
 msgid "Saving selection…"
 msgstr "Saving selection…"
 
@@ -7430,6 +7454,9 @@ msgstr ""
 msgid "Status"
 msgstr ""
 
+msgid "Step {} of {}: {}"
+msgstr ""
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7728,6 +7755,12 @@ msgstr ""
 msgid "The connection is not encrypted."
 msgstr ""
 
+msgid "The copy could not be put back: {}"
+msgstr ""
+
+msgid "The copy from before the update is at {}."
+msgstr ""
+
 msgid "The current track has no such destination."
 msgstr ""
 
@@ -7878,6 +7911,9 @@ msgstr ""
 msgid "The library could not be read."
 msgstr "The library could not be read."
 
+msgid "The library could not be updated"
+msgstr ""
+
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
 
@@ -7887,7 +7923,16 @@ msgstr ""
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr ""
 
+msgid "The library update stopped unexpectedly."
+msgstr ""
+
 msgid "The library update stopped while preparing its backup at {}: {}"
+msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr ""
+
+msgid "The library was updated, but the check after it failed"
 msgstr ""
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
@@ -8385,6 +8430,9 @@ msgid "This genre is no longer available."
 msgstr ""
 
 msgid "This genre is no longer present on the album."
+msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
 msgstr ""
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
@@ -9628,6 +9676,9 @@ msgstr ""
 msgid "cannot be done"
 msgstr ""
 
+msgid "changing how the library is stored"
+msgstr ""
+
 msgid "choose at least one folder that holds your music"
 msgstr ""
 
@@ -9707,6 +9758,9 @@ msgid "from"
 msgstr ""
 
 msgid "from a file"
+msgstr ""
+
+msgid "giving every track a number that is never used again"
 msgstr ""
 
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
@@ -10722,6 +10776,9 @@ msgid "this computer could not search the network"
 msgstr ""
 
 msgid "this device delivers bit-perfect in no common format"
+msgstr ""
+
+msgid "this library has to be updated first; start Chilpa to update it"
 msgstr ""
 
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"

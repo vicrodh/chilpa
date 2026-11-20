@@ -220,6 +220,8 @@ impl crate::Chilpa {
     /// window calls it once; nothing else does, so a test never opens the
     /// keyring or the network.
     pub fn start_scrobbling(&mut self) {
+        // Not before the library is current: `start_services` starts it then.
+        if self.library_upgrading() { return; }
         if self.scrobbler.is_none() {
             self.scrobbler = Some(Scrobbler::start(chilpa_dirs::data(), Self::plugins_dir()));
         }

@@ -93,7 +93,12 @@ TestCase {
     function test_an_arc_off_the_screen_turns_nothing() {
         mark("downloading", -1)
         const end = createTemporaryObject(endFactory, test, {trackId: 5, inViewport: false})
-        compare(findChild(shownMark(end, "trackOfflineMark"), "offlineArc").active, false)
+        compare(shownMark(end, "trackOfflineMark"), null, "off the screen a row's end reads no offline state")
+        compare(Pulse.held, 0)
+        end.inViewport = true
+        verify(findChild(shownMark(end, "trackOfflineMark"), "offlineArc").active, "on the screen its arc turns")
+        end.inViewport = false
+        compare(findChild(shownMark(end, "trackOfflineMark"), "offlineArc").active, false, "and stops when the row leaves")
         compare(Pulse.held, 0)
     }
 

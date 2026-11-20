@@ -695,6 +695,9 @@ msgstr "再生中のトラックのマークをイコライザーバーでアニ
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "アプリ全体の背後にアルバムアートのアニメーション背景を表示します。リソース使用量が多く、GPUアクセラレーションを使います。"
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr "別の Chilpa がこのライブラリを更新しています。完了を待っています…"
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1361,6 +1364,9 @@ msgstr "ストレージを識別中"
 
 msgid "Checking the account…"
 msgstr "アカウントを確認中…"
+
+msgid "Checking the result…"
+msgstr "結果を確認しています…"
 
 msgid "Checking your audio stack…"
 msgstr "オーディオスタックを確認中…"
@@ -5169,6 +5175,12 @@ msgstr "まだ何も保存されていません。"
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr "ここで入力するものはありません。Plex アカウントにサインインできるブラウザが必要です。"
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr "何も失われていません。ライブラリはこのステップの前の状態のままで、更新前のコピーは {} にあります。"
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr "何も失われていません。ライブラリはこのステップの前の状態のままです。"
+
 msgid "Nov"
 msgstr "11月"
 
@@ -5988,6 +6000,15 @@ msgstr "購入"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "プラグインのフォルダーをChilpaのプラグインディレクトリに置き、アプリを開き直してください。"
 
+msgid "Put the copy back and quit"
+msgstr "コピーを戻して終了"
+
+msgid "Putting the copy back did not finish."
+msgstr "コピーを戻す処理が完了しませんでした。"
+
+msgid "Putting the copy back…"
+msgstr "コピーを戻しています…"
+
 msgid "Q"
 msgstr ""
 
@@ -6757,6 +6778,9 @@ msgstr "保存した結果は、セッションをまたいで利用できます
 msgid "Saved to {} and read back from it."
 msgstr "{} に保存し、そこから読み直します。"
 
+msgid "Saving a copy of the library first…"
+msgstr "まずライブラリのコピーを保存しています…"
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -7422,6 +7446,9 @@ msgstr "Chilpaが生成した統計"
 msgid "Status"
 msgstr "ステータス"
 
+msgid "Step {} of {}: {}"
+msgstr "ステップ {}/{}：{}"
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7718,6 +7745,12 @@ msgstr "チェックは完了しましたが、以前のサンプルレートを
 msgid "The connection is not encrypted."
 msgstr "接続は暗号化されていません。"
 
+msgid "The copy could not be put back: {}"
+msgstr "コピーを戻せませんでした: {}"
+
+msgid "The copy from before the update is at {}."
+msgstr "更新前のコピーは {} にあります。"
+
 msgid "The current track has no such destination."
 msgstr "現在のトラックにはそのような移動先がありません。"
 
@@ -7868,6 +7901,9 @@ msgstr ""
 msgid "The library could not be read."
 msgstr "ライブラリを読み取れませんでした。"
 
+msgid "The library could not be updated"
+msgstr "ライブラリを更新できませんでした"
+
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
 
@@ -7877,8 +7913,17 @@ msgstr "ライブラリが別の処理で使用中のままだったため、こ
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "ライブラリが別の処理で使用中のままでした。これ以上は削除されていません。少ししてからもう一度お試しください。"
 
+msgid "The library update stopped unexpectedly."
+msgstr "ライブラリの更新が予期せず停止しました。"
+
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr "ライブラリは変更されておらず、更新前のコピーは引き続き {} にあります。"
+
+msgid "The library was updated, but the check after it failed"
+msgstr "ライブラリは更新されましたが、その後の確認に失敗しました"
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""
@@ -8375,6 +8420,9 @@ msgstr ""
 
 msgid "This genre is no longer present on the album."
 msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
+msgstr "これは更新後に一度だけ行われ、大きなライブラリでは数分かかることがあります。完了すると Chilpa が自動的に開きます。"
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "通常より時間がかかっています。MusicBrainzが混雑している可能性があります。しばらくしてからもう一度お試しください。"
@@ -9616,6 +9664,9 @@ msgstr "「{}」を呼び出していますが、誰も承認していません"
 msgid "cannot be done"
 msgstr "非対応"
 
+msgid "changing how the library is stored"
+msgstr "ライブラリの保存形式を変更しています"
+
 msgid "choose at least one folder that holds your music"
 msgstr "音楽が入っているフォルダを1つ以上選んでください"
 
@@ -9696,6 +9747,9 @@ msgstr "以降"
 
 msgid "from a file"
 msgstr "ファイルから"
+
+msgid "giving every track a number that is never used again"
+msgstr "各トラックに二度と使われない番号を割り当てています"
 
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "アカウントをChilpaの外部で自分で管理する: 認証情報をシステムのキーリングに独自の名前で保存すると主張しています。Chilpaはそれを確認できず、削除もできず、これらのいずれも検証できません"
@@ -10709,6 +10763,9 @@ msgstr "このコンピューターはネットワークを検索できません
 
 msgid "this device delivers bit-perfect in no common format"
 msgstr "このデバイスは、共通のどのフォーマットでもビットパーフェクトで再生できません"
+
+msgid "this library has to be updated first; start Chilpa to update it"
+msgstr "このライブラリは先に更新する必要があります。Chilpa を起動して更新してください"
 
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr "このライブラリはバージョン{}ですが、このChilpaが対応しているのは{}までです。古いバージョンで開かずに、Chilpaを更新してください"

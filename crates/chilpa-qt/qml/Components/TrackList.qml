@@ -81,7 +81,7 @@ Item {
         // After the view has taken the reset in.
         function onModelReset() {
             list.rowsRev++
-            if (list.cursorRow >= view.count) list.cursorRow = -1
+            if (list.cursorRow >= 0) list.cursorRow = list.model.selectedRow() // the old number may hold another track: follow the selected one
             keptViewport.restoreLater()
         }
     }
@@ -133,6 +133,7 @@ Item {
         property int actionHovered: 0
         // 1 the arrow up, 2 the arrow down, of the row under the pointer.
         property int moveHovered: 0
+        readonly property bool scrollbarHeld: !!ScrollBar.vertical && ScrollBar.vertical.pressed // a drag, for the pool (TrackListViewport)
 
         anchors.top: head.bottom
         anchors.bottom: parent.bottom
@@ -166,8 +167,8 @@ Item {
 
         delegate: TrackRow {
             required property var model
-            // Optional cells do not request native roles while their column is
-            // hidden. Keep the row body pooled so scrolling reuses its objects.
+            // Hidden columns and pooled rows read no optional roles, a pooled row answers no pointer and lets its cover go, and a list that scrolls itself keeps each built body through its pool.
+            resident: !list.fitContent && !list.viewport
             rowKind: list.snapshotRows ? 0 : model.rowKind
             number: list.snapshotRows ? index + 1 : model.number || 0
             headerLabel: list.snapshotRows ? "" : model.headerLabel || ""
@@ -184,7 +185,7 @@ Item {
             qualityDetail: columns.sheet && columns.qualityShown ? model.qualityDetail || "" : ""
             duration: columns.timeShown ? model.duration || "" : ""
             plays: columns.playsShown ? model.plays || 0 : 0
-            art: rowKind !== 0 || columns.artShown ? model.art || "" : ""
+            art: inViewport && (rowKind !== 0 || columns.artShown) ? model.art || "" : ""
             credits: inViewport ? JSON.parse(model.credits || "{}") : ({})
             explicitContent: model.explicitContent === true
             aiGenerated: model.aiGenerated === true
@@ -201,16 +202,16 @@ Item {
             favorite: inViewport && columns.favoriteShown && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered || list.activeFocus && index === list.cursorRow
-            actionHovered: index === view.hovered ? view.actionHovered : 0
-            moveHovered: index === view.hovered ? view.moveHovered : 0
+            actionHovered: visible && index === view.hovered ? view.actionHovered : 0
+            moveHovered: visible && index === view.hovered ? view.moveHovered : 0
             artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
             groupActionsEnabled: list.groupActionsEnabled
             groupStart: ListView.section !== "" && ListView.section !== ListView.previousSection
-            ListView.onPooled: visible = false; ListView.onReused: visible = true
+            ListView.onPooled: pooled = true; ListView.onReused: pooled = false
         }
 
-        onContentYChanged: pointer.track()
+        onContentYChanged: pointer.scrolled()
     }
 
     TrackListPointer {
@@ -230,10 +231,7 @@ Item {
     // Measures where each artist of a row's credit is; one for the list.
     CreditLine { id: credit; visible: false }
 
-    TrackMenu {
-        id: actions
-        model: list.model
-    }
+    TrackMenu { id: actions; model: list.model }
 
     QueueMenu { id: discMenu; model: list.model; z: 3 }
 

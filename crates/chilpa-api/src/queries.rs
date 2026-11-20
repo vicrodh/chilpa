@@ -26,12 +26,16 @@ impl QueryWorker {
                         }
                         Err(e) => {
                             eprintln!("chilpa-queries: {e}; will retry on the next job");
-                            job(Err(&e));
+                            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job(Err(&e))));
                             continue;
                         }
                     }
                 }
-                if let Some(reader) = &reader { job(Ok(reader)); }
+                if let Some(reader) = &reader {
+                    if std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| job(Ok(reader)))).is_err() {
+                        eprintln!("chilpa-queries: a query panicked; continuing with the next job");
+                    }
+                }
             }
         })?;
         Ok(Self { jobs })
@@ -59,7 +63,10 @@ impl Chilpa {
     /// Neither a failed initialization nor a failed spawn is cached.
     pub fn query_worker(&mut self) -> Option<QueryWorker> {
         if self.library().is_none() {
-            eprintln!("chilpa-queries: {}; will retry on the next job", self.now.error);
+            // An upgrade under way is the startup cover's to say, not a fault.
+            if !self.library_upgrading() {
+                eprintln!("chilpa-queries: {}; will retry on the next job", self.now.error);
+            }
             return None;
         }
         QueryWorker::start(chilpa_library::Library::default_path(), self.catalog.clone())

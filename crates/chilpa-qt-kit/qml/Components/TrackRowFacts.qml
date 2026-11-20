@@ -27,8 +27,9 @@ Item {
         font.pointSize: Type.small
         color: Theme.color.textSecondary
     }
+    // A pooled row keeps what it had and builds nothing.
     Loader {
-        active: facts.row.cols.bitsShown || facts.row.cols.rateShown
+        active: facts.row.inViewport ? facts.row.cols.bitsShown || facts.row.cols.rateShown : item !== null
         anchors.fill: parent
         sourceComponent: Item {
             Text {

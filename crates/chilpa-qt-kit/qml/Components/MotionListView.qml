@@ -5,6 +5,7 @@ import "../Theme/Viewport.js" as Viewport
 ListView {
     id: view
     property Flickable motionViewport: null
+    property bool positioning: false // while the list places a row it jumps to (TrackListViewport.jumpTo)
     readonly property real visibleContentTop: motionViewport ? motionViewport.contentY - Viewport.topIn(contentItem, motionViewport.contentItem) : contentY
     readonly property bool motionVisible: visible && (!motionViewport || Viewport.topIn(view, motionViewport.contentItem) + height > motionViewport.contentY && Viewport.topIn(view, motionViewport.contentItem) < motionViewport.contentY + motionViewport.height)
     readonly property int motionDuration: motionVisible ? Motion.panel : 0
@@ -23,7 +24,7 @@ ListView {
         bank.active = motionDuration > 0
         if (!bank.active) {
             for (const [item, point] of targets) {
-                if (item && item.parent) { item.x = point.x; item.y = point.y; item.opacity = item.motionOpacity ?? 1 }
+                if (item && item.parent) { item.x = point.x; item.y = point.y; item.opacity = item.motionOpacity === undefined ? 1 : Qt.binding(() => item.motionOpacity) } // a row with one follows it again
             }
             // ListView schedules its layout. Forcing it here feeds geometry
             // back into motionVisible while that binding is still evaluating.

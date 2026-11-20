@@ -11,6 +11,11 @@ const DEFAULT_REMOTE_MB: u64 = 200;
 // ordinary scrolling. A 128 MiB ceiling evicted the warm grid cache.
 const DERIVATIVE_BYTES: u64 = 512 * 1024 * 1024;
 const TRIM_AFTER_BYTES: u64 = 16 * 1024 * 1024;
+/// A file used or written this recently may be one a reader was just handed,
+/// or a `.making-` temporary still being written (its time is when it was
+/// created); the sweep leaves both. A temporary a crash left behind is swept
+/// once it is older than this.
+const RECENT: std::time::Duration = std::time::Duration::from_secs(30);
 static REMOTE_MB: AtomicU64 = AtomicU64::new(DEFAULT_REMOTE_MB);
 static STORED: AtomicU64 = AtomicU64::new(0);
 static WORKING: AtomicBool = AtomicBool::new(false);
@@ -180,16 +185,18 @@ fn visit(root: &Path, take: &mut impl FnMut(&Path, u64, SystemTime)) {
 fn prune(roots: &[PathBuf], limit: u64, pinned: &std::collections::HashSet<PathBuf>) -> u64 {
     let mut files = Vec::new();
     let mut total = 0_u64;
+    let now = SystemTime::now();
     for root in roots {
-        visit(root, &mut |path, bytes, modified| {
+        visit(root, &mut |path, bytes, used| {
             if path.extension().is_some_and(|ext| matches!(ext.to_str(), Some("jpg" | "png" | "webp"))) {
                 total = total.saturating_add(bytes);
-                if !pinned.contains(path) { files.push((modified, bytes, path.to_path_buf())); }
+                let recent = !now.duration_since(used).is_ok_and(|age| age >= RECENT);
+                if !recent && !pinned.contains(path) { files.push((used, bytes, path.to_path_buf())); }
             }
         });
     }
     if total <= limit { return 0 }
-    files.sort_unstable_by_key(|(modified, _, _)| *modified);
+    files.sort_unstable_by_key(|(used, _, _)| *used);
     let mut freed = 0;
     for (_, bytes, path) in files {
         if total <= limit { break }
@@ -205,6 +212,13 @@ fn prune(roots: &[PathBuf], limit: u64, pinned: &std::collections::HashSet<PathB
 mod tests {
     use super::*;
 
+    /// Last used and written an hour ago: old enough for the sweep.
+    fn age(path: &Path) {
+        let hour_ago = SystemTime::now() - std::time::Duration::from_secs(3600);
+        std::fs::File::options().write(true).open(path).unwrap()
+            .set_times(std::fs::FileTimes::new().set_accessed(hour_ago).set_modified(hour_ago)).unwrap();
+    }
+
     #[test]
     fn usage_and_trimming_read_pins_without_assembling_local_releases() {
         let dir = tempfile::tempdir().unwrap();
@@ -216,6 +230,7 @@ mod tests {
         let disposable = remote.join("disposable.jpg");
         std::fs::write(&pinned, [1_u8; 10]).unwrap();
         std::fs::write(&disposable, [2_u8; 10]).unwrap();
+        age(&disposable);
         let library = chilpa_library::Library::open(&database).unwrap();
         let source = library.source_id("local", "default").unwrap();
         library.connection().execute("INSERT INTO albums(id, title, album_artist) VALUES (1, 'Record', 'Artist')", []).unwrap();
@@ -278,5 +293,43 @@ mod tests {
         assert!(!old.exists());
         assert!(pinned.exists());
         assert!(newest.exists());
+    }
+
+    #[test]
+    fn a_derivative_made_from_another_derivative_is_counted_and_swept() {
+        let dir = tempfile::tempdir().unwrap();
+        let original = dir.path().join("cover.png");
+        image::RgbImage::from_pixel(512, 512, image::Rgb([20, 80, 140])).save(&original).unwrap();
+        let covers = dir.path().join("covers");
+        let large = crate::covers::derivative_in(&covers, &original, 256).unwrap();
+        let small = crate::covers::derivative_in(&covers, &original, 128).unwrap();
+        let expected = std::fs::metadata(&large).unwrap().len() + std::fs::metadata(&small).unwrap().len();
+        let usage = scan_usage(dir.path(), &dir.path().join("missing-library.db"));
+        assert_eq!((usage.derivatives.files, usage.derivatives.bytes), (2, expected));
+        age(&large);
+        age(&small);
+        assert_eq!(prune(&derivative_dirs(dir.path()), 0, &Default::default()), expected);
+        assert!(!large.exists() && !small.exists());
+    }
+
+    #[test]
+    fn a_sweep_leaves_a_temporary_being_written_and_a_derivative_just_made() {
+        let dir = tempfile::tempdir().unwrap();
+        let covers = dir.path().join("covers");
+        std::fs::create_dir_all(&covers).unwrap();
+        let old = covers.join("old-128.jpg");
+        let just_made = covers.join("new-128.jpg");
+        let abandoned = covers.join(".making-crash.jpg");
+        for path in [&old, &just_made, &abandoned] {
+            std::fs::write(path, [1_u8; 10]).unwrap();
+        }
+        age(&old);
+        age(&abandoned);
+        let mut writing = tempfile::Builder::new().prefix(".making-").suffix(".jpg").tempfile_in(&covers).unwrap();
+        std::io::Write::write_all(writing.as_file_mut(), &[2_u8; 10]).unwrap();
+        prune(&derivative_dirs(dir.path()), 0, &Default::default());
+        writing.persist(covers.join("made-128.jpg")).expect("the temporary being written survives the sweep");
+        assert!(just_made.exists(), "a derivative just made survives the sweep");
+        assert!(!old.exists() && !abandoned.exists(), "an old derivative and an abandoned temporary are swept");
     }
 }

@@ -50,7 +50,8 @@ Item {
                 readonly property real over: Math.max(0, implicitWidth - slide.width)
                 height: slide.height
                 text: slide.line ? slide.line.text : ""
-                font: slide.line ? slide.line.font : Qt.font({})
+                // A line destroyed while it slides leaves the copy a moment without one.
+                font: slide.line ? slide.line.font : Qt.font({ pointSize: Type.row })
                 color: slide.line ? slide.line.color : Theme.color.textPrimary
                 verticalAlignment: slide.line ? slide.line.verticalAlignment : Text.AlignTop
                 // As the line draws it: a credit with links is marked up, and plain would show the markup.

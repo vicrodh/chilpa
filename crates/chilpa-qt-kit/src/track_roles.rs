@@ -18,6 +18,20 @@ pub fn header(header: &chilpa_api::GroupHeader, role: i32) -> QVariant {
     }
 }
 
+/// A snapshot slot whose identity disappeared keeps the track role types so
+/// a recycled QML delegate cannot retain values from its previous row.
+pub fn missing(role: i32) -> QVariant {
+    let text = || QVariant::from(&QString::default());
+    match role - 256 {
+        0 | 1 | 6 | 8 | 29 => QVariant::from(&0i32),
+        9 | 10 | 16 | 21 | 24 | 26 => QVariant::from(&false),
+        13 | 14 | 30 => QVariant::from(&0i64),
+        15 => QVariant::from(&format::art_url("")),
+        2..=5 | 7 | 11 | 12 | 17..=20 | 22 | 23 | 25 | 27 | 28 => text(),
+        _ => QVariant::default(),
+    }
+}
+
 pub fn track(track: &chilpa_api::TrackRow, role: i32, number: i32, playing: bool, selected: bool, group: &str) -> QVariant {
     let text = |s: &str| QVariant::from(&QString::from(s));
     match role - 256 {
@@ -57,5 +71,28 @@ pub fn track(track: &chilpa_api::TrackRow, role: i32, number: i32, playing: bool
             else { text(&app::t(match track.quality.tier.rank() { 1 => "Lossy", 2 => "Lossless", 3 => "Hi-Res", _ => "Unknown" })) }
         },
         _ => QVariant::default(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The 31 roles the track list publishes, from `Qt::UserRole`.
+    const ROLES: i32 = 31;
+
+    #[test]
+    fn a_missing_row_publishes_a_typed_empty_value_for_every_role() {
+        for role in 256..256 + ROLES {
+            assert!(missing(role).is_valid(), "role {} of a missing row has no value, so a recycled delegate keeps the old one", role - 256);
+        }
+        let text = QVariant::from(&QString::default());
+        assert!(missing(256 + 13) == QVariant::from(&0i64), "a missing row names no track");
+        for role in [9, 10, 16] {
+            assert!(missing(256 + role) == QVariant::from(&false), "a missing row is neither playing, selected nor available (role {role})");
+        }
+        for role in [2, 3, 4, 5] {
+            assert!(missing(256 + role) == text, "a missing row shows no text (role {role})");
+        }
     }
 }

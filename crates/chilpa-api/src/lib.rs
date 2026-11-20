@@ -173,6 +173,7 @@ mod servers;
 pub mod settings_rows;
 pub mod graphics_boot;
 pub mod startup_chain;
+mod library_upgrade;
 pub mod settings_schema;
 mod artist_page;
 mod now_about;
@@ -623,6 +624,8 @@ pub struct Chilpa {
     core: chilpa_core::Core,
     pub(crate) pending_volume: Option<u8>,
     library: Option<chilpa_library::Library>,
+    /// A library older than this Chilpa, brought up before anything reads it.
+    upgrade: library_upgrade::LibraryUpgrade,
     /// The plays asked of the player and not yet seen end, each with the
     /// listens it opened.
     plays: plays::Plays,
@@ -784,6 +787,7 @@ impl Chilpa {
             core: chilpa_core::Core::new(),
             pending_volume: None,
             library: None,
+            upgrade: library_upgrade::LibraryUpgrade::detect(chilpa_library::Library::default_path()),
             plays: Default::default(),
             rows_epoch: 0,
             scrobbler: None,
@@ -875,12 +879,18 @@ impl Chilpa {
     /// The library, opened the first time it is used.
     pub(crate) fn library(&mut self) -> Option<&chilpa_library::Library> {
         if self.library.is_none() {
+            // Refused without an error: the startup cover says what happens.
+            if self.upgrade.holds() { return None; }
             match chilpa_core::open_library() {
                 Ok(lib) => {
                     self.library = Some(lib);
                     self.load_chosen_remote_art();
                 }
                 Err(e) => {
+                    // Said even when it is older: an upgrade under way never
+                    // gets here, and one this start did not see (the file
+                    // swapped, or unreadable when it was looked at) would
+                    // otherwise show an empty library with no reason.
                     self.now.error = chilpa_i18n::t_args("the library could not be opened: {}", &[&e.to_string()]);
                     return None;
                 }
@@ -1261,6 +1271,7 @@ impl Chilpa {
 
     /// Collects whatever has happened and updates the state the view sees.
     pub fn poll(&mut self) -> &NowPlaying {
+        self.advance_library_upgrade();
         if self.sleep_until.is_some_and(|deadline| std::time::Instant::now() >= deadline) {
             self.sleep_until = None;
             self.stop();

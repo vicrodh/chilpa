@@ -11,11 +11,15 @@ Item {
     id: tips
 
     required property Item watching
-    // The line saying itself whole, while the pointer is on it.
+    // The line saying itself whole: kept, still shown, until the pointer leaves it when a menu hid its tooltip on purpose; let go of when it hides or another item takes the tooltip, looking again at once only while no item holds it. The one let go of when it hid is looked at again when shown.
     property Item showing: null
+    property Item hid: null
+    onShowingChanged: if (!showing && TipState.target === null) rest.restart()
+    Connections { target: TipState; function onTargetChanged() { if (tips.showing && TipState.target !== tips.showing && (!tips.showing.visible || TipState.target)) { tips.hid = tips.showing; tips.showing = null } } }
+    Connections { target: tips.showing; function onVisibleChanged() { if (tips.showing && !tips.showing.visible && TipState.target !== tips.showing) { tips.hid = tips.showing; tips.showing = null } } }
+    Connections { target: tips.hid; function onVisibleChanged() { if (tips.hid && tips.hid.visible) rest.restart() } }
 
-    width: 0
-    height: 0
+    width: 0; height: 0
 
     function under(item) {
         const at = item.mapFromItem(null, hover.position)
@@ -23,9 +27,8 @@ Item {
     }
 
     function letGo() {
-        if (showing)
-            TipState.hide(showing)
-        showing = null
+        TipState.hide(showing)
+        showing = hid = null
     }
 
     function look() {

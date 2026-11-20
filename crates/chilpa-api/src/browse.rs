@@ -391,11 +391,19 @@ impl<T> Default for PageCache<T> {
     fn default() -> Self { Self { pages: Default::default(), order: Default::default() } }
 }
 impl<T> PageCache<T> {
+    pub fn insert(&mut self, page: usize, rows: Vec<T>) {
+        self.insert_shared(page, std::rc::Rc::new(rows));
+    }
+    fn insert_shared(&mut self, page: usize, rows: std::rc::Rc<Vec<T>>) {
+        self.pages.insert(page, rows);
+        self.order.retain(|cached| *cached != page);
+        self.order.push_back(page);
+    }
+
     pub fn read(&mut self, page: usize, capacity: usize, load: impl FnOnce() -> Vec<T>) -> std::rc::Rc<Vec<T>> {
         if let Some(rows) = self.pages.get(&page) { return rows.clone(); }
         let rows = std::rc::Rc::new(load());
-        self.pages.insert(page, rows.clone());
-        self.order.push_back(page);
+        self.insert_shared(page, rows.clone());
         if self.order.len() > capacity {
             if let Some(old) = self.order.pop_front() { self.pages.remove(&old); }
         }
@@ -438,10 +446,23 @@ impl Reader {
     /// library resolves without one statement holding thousands of
     /// parameters.
     pub fn paths(&self, ids: &[i64]) -> Vec<String> {
+        self.paths_with_start(ids, ids.len()).0
+    }
+
+    /// Resolves a snapshot without letting missing ids move the row playback
+    /// starts from. `None` means the requested row itself disappeared.
+    pub fn paths_with_start(&self, ids: &[i64], row: usize) -> (Vec<String>, Option<usize>) {
         let local: Vec<_> = ids.iter().copied().filter(|id| *id > 0).collect();
         let mut paths = self.lib.track_paths(&local).unwrap_or_default();
         if let Some(catalog) = &self.catalog { paths.extend(catalog.tracks_by_ids(ids).into_iter().map(|(t, _)| (t.id, t.path))); }
-        ids.iter().filter_map(|id| paths.get(id).cloned()).collect()
+        let mut found = Vec::with_capacity(ids.len());
+        let mut start = None;
+        for (at, id) in ids.iter().enumerate() {
+            let Some(path) = paths.get(id) else { continue };
+            if at == row { start = Some(found.len()); }
+            found.push(path.clone());
+        }
+        (found, start)
     }
 
     pub fn album_paths(&self, ids: &[i64]) -> Vec<String> {
@@ -808,11 +829,11 @@ impl Chilpa {
 
     /// The rows of those ids, in that order. By primary key: the same cost
     /// anywhere in a snapshot.
-    pub fn track_rows(&mut self, ids: &[i64]) -> Vec<TrackRow> {
+    pub fn track_rows(&mut self, ids: &[i64]) -> Vec<Option<TrackRow>> {
         let local: Vec<_> = ids.iter().copied().filter(|id| *id >= 0).collect();
         let mut rows: std::collections::HashMap<_, _> = self.library().map(|lib| lib.tracks_by_ids(&local).unwrap_or_default()).unwrap_or_default().into_iter().map(row_of).map(|t| (t.id, t)).collect();
         rows.extend(self.catalog.tracks_by_ids(ids).into_iter().map(|(t, art)| (t.id, crate::source_catalog::view::row_of(&t, art))));
-        ids.iter().filter_map(|id| rows.get(id).cloned()).collect()
+        ids.iter().map(|id| rows.get(id).cloned()).collect()
     }
 
     /// Those albums, in the order given. By primary key.

@@ -41,7 +41,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
     ET.ElementTree(resources).write(temporary / "resources.qrc", encoding="utf-8")
     subprocess.run([str(libexec / "rcc"), "--binary", str(temporary / "resources.qrc"), "-o", str(temporary / "resources.rcc")], check=True)
     loader = root / "crates/chilpa-qt-kit/tests/resource_loader.cpp"
-    fence = root / "crates/chilpa-qt-kit/cxx/frame_fence.cpp"
+    held = root / "crates/chilpa-qt-kit/tests/held_images.cpp"
+    fence =root / "crates/chilpa-qt-kit/cxx/frame_fence.cpp"
     fence_header = fence.with_suffix(".h")
     fence_moc = temporary / "moc_frame_fence.cpp"
     subprocess.run([str(libexec / "moc"), str(fence_header), "-o", str(fence_moc)], check=True)
@@ -62,7 +63,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-qml-test-") as directory:
         subprocess.run([str(libexec / "moc"), str(spectrum.with_suffix(".h")), "-o", str(spectrum_moc)], check=True)
         spectrum_sources = [str(spectrum), str(spectrum_moc)]
     flags = shlex.split(subprocess.check_output(["pkg-config", "--cflags", "--libs", "Qt6Quick", "Qt6Qml"], text=True))
-    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(fence), str(fence_moc), str(lifetime), str(lifetime_moc), str(surface), str(surface_moc), str(pointer), str(pointer_moc), *spectrum_sources,
+    subprocess.run(["c++", "-std=c++17", "-shared", "-fPIC", str(loader), str(held), str(fence), str(fence_moc), str(lifetime), str(lifetime_moc), str(surface), str(surface_moc), str(pointer), str(pointer_moc), *spectrum_sources,
                     "-o", str(temporary / "loader.so"), *flags], check=True)
     imports = temporary / "imports"
     shutil.copytree(root / "crates/chilpa-qt/tests/qml/imports", imports)

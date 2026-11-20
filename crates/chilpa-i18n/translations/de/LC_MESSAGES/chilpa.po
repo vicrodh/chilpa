@@ -696,6 +696,9 @@ msgstr "Markiert den laufenden Titel mit animierten Equalizer-Balken. Standardm�
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Animierter Hintergrund aus dem Albumcover hinter der ganzen App. Hoher Ressourcenverbrauch: GPU-beschleunigt."
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr "Ein anderes Chilpa aktualisiert gerade diese Bibliothek. Es wird gewartet…"
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1363,6 +1366,9 @@ msgstr "Speicheridentität prüfen"
 
 msgid "Checking the account…"
 msgstr "Konto wird geprüft…"
+
+msgid "Checking the result…"
+msgstr "Ergebnis wird geprüft…"
 
 msgid "Checking your audio stack…"
 msgstr "Dein Audio-Stack wird geprüft…"
@@ -5174,6 +5180,12 @@ msgstr "Noch nichts gespeichert."
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr "Hier musst du nichts eingeben. Du brauchst einen Browser, in dem du dich bei deinem Plex-Konto anmelden kannst."
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr "Nichts ist verloren gegangen: Die Bibliothek ist so, wie sie vor diesem Schritt war, und eine Kopie von vor dem Update liegt unter {}."
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr "Nichts ist verloren gegangen: Die Bibliothek ist so, wie sie vor diesem Schritt war."
+
 msgid "Nov"
 msgstr "Nov."
 
@@ -5993,6 +6005,15 @@ msgstr "Käufe"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Lege einen Plugin-Ordner im Plugin-Verzeichnis von Chilpa ab und öffne die App erneut."
 
+msgid "Put the copy back and quit"
+msgstr "Kopie wiederherstellen und beenden"
+
+msgid "Putting the copy back did not finish."
+msgstr "Das Wiederherstellen der Kopie wurde nicht abgeschlossen."
+
+msgid "Putting the copy back…"
+msgstr "Kopie wird wiederhergestellt…"
+
 msgid "Q"
 msgstr ""
 
@@ -6763,6 +6784,9 @@ msgstr "Gespeicherte Ergebnisse bleiben zwischen den Sitzungen erhalten."
 msgid "Saved to {} and read back from it."
 msgstr "Wird auf {} gespeichert und von dort zurückgelesen."
 
+msgid "Saving a copy of the library first…"
+msgstr "Zuerst wird eine Kopie der Bibliothek gespeichert…"
+
 msgid "Saving selection…"
 msgstr ""
 
@@ -7430,6 +7454,9 @@ msgstr "Von Chilpa erzeugte Statistiken"
 msgid "Status"
 msgstr "Status"
 
+msgid "Step {} of {}: {}"
+msgstr "Schritt {} von {}: {}"
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7728,6 +7755,12 @@ msgstr "Die Prüfung ist beendet, aber die vorherige Abtastrate konnte nicht wie
 msgid "The connection is not encrypted."
 msgstr "Die Verbindung ist nicht verschlüsselt."
 
+msgid "The copy could not be put back: {}"
+msgstr "Die Kopie konnte nicht wiederhergestellt werden: {}"
+
+msgid "The copy from before the update is at {}."
+msgstr "Die Kopie von vor dem Update liegt unter {}."
+
 msgid "The current track has no such destination."
 msgstr "Der aktuelle Titel hat kein solches Ziel."
 
@@ -7878,6 +7911,9 @@ msgstr ""
 msgid "The library could not be read."
 msgstr "Die Bibliothek konnte nicht gelesen werden."
 
+msgid "The library could not be updated"
+msgstr "Die Bibliothek konnte nicht aktualisiert werden"
+
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
 
@@ -7887,8 +7923,17 @@ msgstr "Die Bibliothek war weiter mit einer anderen Aufgabe beschäftigt, deshal
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "Die Bibliothek war weiter mit einer anderen Aufgabe beschäftigt. Nichts weiter wurde entfernt; versuche es gleich noch einmal."
 
+msgid "The library update stopped unexpectedly."
+msgstr "Das Update der Bibliothek wurde unerwartet beendet."
+
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr "Die Bibliothek wurde nicht verändert, und die Kopie von vor dem Update liegt weiterhin unter {}."
+
+msgid "The library was updated, but the check after it failed"
+msgstr "Die Bibliothek wurde aktualisiert, aber die anschließende Prüfung ist fehlgeschlagen"
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""
@@ -8386,6 +8431,9 @@ msgstr ""
 
 msgid "This genre is no longer present on the album."
 msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
+msgstr "Das passiert nur einmal nach einem Update und kann bei einer großen Bibliothek einige Minuten dauern. Chilpa öffnet sich von selbst, wenn es fertig ist."
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "Das dauert länger als gewöhnlich. MusicBrainz ist möglicherweise ausgelastet. Versuche es gleich noch einmal."
@@ -9628,6 +9676,9 @@ msgstr "Aufruf von „{}“, das niemand genehmigt hat"
 msgid "cannot be done"
 msgstr "nicht möglich"
 
+msgid "changing how the library is stored"
+msgstr "Speicherformat der Bibliothek wird geändert"
+
 msgid "choose at least one folder that holds your music"
 msgstr "wähle mindestens einen Ordner, der deine Musik enthält"
 
@@ -9708,6 +9759,9 @@ msgstr "ab"
 
 msgid "from a file"
 msgstr "aus einer Datei"
+
+msgid "giving every track a number that is never used again"
+msgstr "jeder Titel erhält eine Nummer, die nie wieder vergeben wird"
 
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "dein Konto selbst außerhalb von Chilpa verwalten: Es gibt an, deine Zugangsdaten unter seinem eigenen Namen im System-Schlüsselbund abzulegen. Chilpa sieht sie nicht, kann sie nicht löschen und kann nichts davon prüfen"
@@ -10723,6 +10777,9 @@ msgstr "dieser Computer konnte das Netzwerk nicht durchsuchen"
 
 msgid "this device delivers bit-perfect in no common format"
 msgstr "dieses Gerät liefert in keinem gängigen Format Bit-perfect"
+
+msgid "this library has to be updated first; start Chilpa to update it"
+msgstr "diese Bibliothek muss zuerst aktualisiert werden; starte Chilpa, um sie zu aktualisieren"
 
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr "diese Bibliothek hat Version {}, und dieses Chilpa versteht bis zu {}; aktualisiere Chilpa, statt sie mit einer alten Version zu öffnen"

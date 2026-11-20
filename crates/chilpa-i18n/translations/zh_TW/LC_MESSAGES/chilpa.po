@@ -703,6 +703,9 @@ msgstr "以等化器動態長條圖呈現目前播放曲目的標記。預設關
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "在整個應用程式背景顯示動態專輯封面。資源消耗較高：使用 GPU 加速。"
 
+msgid "Another Chilpa is updating this library. Waiting for it…"
+msgstr "另一個 Chilpa 正在更新這個音樂庫。正在等待…"
+
 msgid "Another Chilpa process is updating this library. Try opening it again shortly."
 msgstr ""
 
@@ -1369,6 +1372,9 @@ msgstr "正在檢查儲存空間識別"
 
 msgid "Checking the account…"
 msgstr "正在檢查帳號…"
+
+msgid "Checking the result…"
+msgstr "正在檢查結果…"
 
 msgid "Checking your audio stack…"
 msgstr "正在檢查你的音訊堆疊…"
@@ -5177,6 +5183,12 @@ msgstr "尚無儲存內容。"
 msgid "Nothing to type here. You need a browser where you can sign in to your Plex account."
 msgstr "此處無需輸入任何內容。你需要使用一款支援登入 Plex 帳戶的瀏覽器。"
 
+msgid "Nothing was lost: the library is as it was before this step, and a copy from before the update is at {}."
+msgstr "沒有遺失任何資料：音樂庫維持在這個步驟之前的狀態，更新前的副本位於 {}。"
+
+msgid "Nothing was lost: the library is as it was before this step."
+msgstr "沒有遺失任何資料：音樂庫維持在這個步驟之前的狀態。"
+
 msgid "Nov"
 msgstr "11 月"
 
@@ -5996,6 +6008,15 @@ msgstr "購買項目"
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "將外掛資料夾放入 Chilpa 的 plugins 目錄並重新開啟應用程式。"
 
+msgid "Put the copy back and quit"
+msgstr "還原副本並結束"
+
+msgid "Putting the copy back did not finish."
+msgstr "還原副本未完成。"
+
+msgid "Putting the copy back…"
+msgstr "正在還原副本…"
+
 msgid "Q"
 msgstr ""
 
@@ -6765,6 +6786,9 @@ msgstr "已儲存的結果在不同作業階段間仍可使用。"
 msgid "Saved to {} and read back from it."
 msgstr ""
 
+msgid "Saving a copy of the library first…"
+msgstr "正在先儲存音樂庫的副本…"
+
 msgid "Saving selection…"
 msgstr "正在儲存選取內容…"
 
@@ -7430,6 +7454,9 @@ msgstr "由 Chilpa 產生的統計資料"
 msgid "Status"
 msgstr "狀態"
 
+msgid "Step {} of {}: {}"
+msgstr "第 {} 步，共 {} 步：{}"
+
 msgid "Stereo and crossfeed"
 msgstr ""
 
@@ -7726,6 +7753,12 @@ msgstr "檢查已完成，但無法還原先前的取樣率。"
 msgid "The connection is not encrypted."
 msgstr "此連線未加密。"
 
+msgid "The copy could not be put back: {}"
+msgstr "無法還原副本：{}"
+
+msgid "The copy from before the update is at {}."
+msgstr "更新前的副本位於 {}。"
+
 msgid "The current track has no such destination."
 msgstr "目前曲目沒有此目的地。"
 
@@ -7876,6 +7909,9 @@ msgstr ""
 msgid "The library could not be read."
 msgstr ""
 
+msgid "The library could not be updated"
+msgstr "無法更新音樂庫"
+
 msgid "The library entry changed while metadata was being edited."
 msgstr ""
 
@@ -7885,8 +7921,17 @@ msgstr ""
 msgid "The library stayed busy with another task. Nothing more was taken out; try again in a moment."
 msgstr "音樂庫正忙於執行其他任務。未移除任何額外內容；請稍後再試。"
 
+msgid "The library update stopped unexpectedly."
+msgstr "音樂庫更新意外停止。"
+
 msgid "The library update stopped while preparing its backup at {}: {}"
 msgstr ""
+
+msgid "The library was not changed, and the copy from before the update is still at {}."
+msgstr "音樂庫沒有變更，更新前的副本仍位於 {}。"
+
+msgid "The library was updated, but the check after it failed"
+msgstr "音樂庫已更新，但之後的檢查失敗"
 
 msgid "The limiter adds no delay. Automatic EQ headroom does not cancel compressor pre-gain or makeup gain."
 msgstr ""
@@ -8383,6 +8428,9 @@ msgstr ""
 
 msgid "This genre is no longer present on the album."
 msgstr ""
+
+msgid "This happens once after an update and can take a few minutes with a large library. Chilpa opens by itself when it is done."
+msgstr "這只會在更新後發生一次，音樂庫較大時可能需要幾分鐘。完成後 Chilpa 會自動開啟。"
 
 msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
 msgstr "耗時比平時更久。MusicBrainz 可能忙碌中。請稍後再試。"
@@ -9624,6 +9672,9 @@ msgstr "呼叫「{}」，但尚未經核准"
 msgid "cannot be done"
 msgstr "無法執行"
 
+msgid "changing how the library is stored"
+msgstr "正在變更音樂庫的儲存方式"
+
 msgid "choose at least one folder that holds your music"
 msgstr "請至少選擇一個存放音樂的資料夾"
 
@@ -9704,6 +9755,9 @@ msgstr "來自"
 
 msgid "from a file"
 msgstr "來自檔案"
+
+msgid "giving every track a number that is never used again"
+msgstr "正在為每首曲目指定不會再重複使用的編號"
 
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "在 Chilpa 之外自行處理你的帳號：該外掛表示會在系統金鑰圈中以其自身名稱保存你的憑證。Chilpa 無法看見、無法刪除亦無法檢查該過程"
@@ -10717,6 +10771,9 @@ msgstr "此電腦無法搜尋網路"
 
 msgid "this device delivers bit-perfect in no common format"
 msgstr "此裝置在常見格式下均無法提供位元完美播放"
+
+msgid "this library has to be updated first; start Chilpa to update it"
+msgstr "這個音樂庫必須先更新；請啟動 Chilpa 來更新"
 
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr "此音樂庫版本為 {}，而此 Chilpa 最高僅支援 {}; 請更新 Chilpa 以開啓，勿使用舊版"

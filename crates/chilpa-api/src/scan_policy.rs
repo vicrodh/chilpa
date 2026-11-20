@@ -93,6 +93,8 @@ impl Chilpa {
     }
 
     pub(crate) fn advance_scan(&mut self) {
+        // A scheduled scan waits for the library's upgrade to end.
+        if self.library_upgrading() { return; }
         self.scan_status();
         if self.scan.is_some() || !self.scan_runtime.intent.is_empty() || self.scan_runtime.policies.is_empty()
             || Instant::now() < self.scan_runtime.next_check { return; }

@@ -14,6 +14,8 @@ CascadingMenu {
     id: menu
     property TrackListModel model
     property int row: -1
+    // The row is a position: once rows move under an open menu it names another track.
+    Connections { target: menu.model; function onModelReset() { menu.close() } function onRowsInserted() { menu.close() } function onRowsRemoved() { menu.close() } function onRowsMoved() { menu.close() } }
 
     function show(at, left, top) {
         row = at
@@ -40,7 +42,6 @@ CascadingMenu {
         y = top
         open()
     }
-
     onActionChosen: (entry) => {
         const act = entry.act
         if (act.startsWith("offline:")) {
@@ -81,7 +82,6 @@ CascadingMenu {
         else
             model.go(row, act)
     }
-
     PlaylistPicker { id: picker; parent: menu.parent }
     Confirmations.ModelActionConfirmation { id: removal }
 }
