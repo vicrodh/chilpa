@@ -40,6 +40,19 @@ fn proposals_follow_beets_mapping_and_keep_the_real_metadata_source() {
 }
 
 #[test]
+fn a_song_is_not_proposed_as_its_own_work_and_a_part_proposes_the_whole_work() {
+    let mut candidate = candidate();
+    candidate.mappings[0].work = "Found 2".into();
+    candidate.mappings[1].work = "Suite No. 1, Op. 9: II. Found 1".into();
+    let mut editor = Editor { state:EditorState::Ready, draft:Some(plain()), release:Some(release(&candidate)),
+        beets:BeetsState { enabled:true, candidates:vec![candidate], selected:Some(0), ..BeetsState::default() }, ..Editor::default() };
+    editor.rebuild_preview(); editor.refresh();
+    let changes = &editor.view.lookup.changes;
+    assert!(!changes.iter().any(|change| change.key == "track:1:work"), "a song's own title is not its work");
+    assert_eq!(changes.iter().find(|change| change.key == "track:2:work").unwrap().proposed, "Suite No. 1, Op. 9");
+}
+
+#[test]
 fn applying_selected_fields_preserves_unselected_tracks_and_curated_genres() {
     let mut api = Chilpa::with_listed(Vec::new(),Vec::new());
     api.metadata = ready();
