@@ -5,6 +5,7 @@ mod taxonomy;
 mod distance;
 mod art;
 pub(super) use art::art;
+pub(crate) use art::digest as art_digest;
 use resolution::resolve;
 pub(super) use resolution::Resolution;
 use taxonomy::graph;

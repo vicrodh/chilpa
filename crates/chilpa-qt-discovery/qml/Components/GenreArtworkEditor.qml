@@ -1,6 +1,7 @@
 import QtQuick
 import app.chilpa.kit
 import app.chilpa.artwork
+import app.chilpa.discovery
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -9,6 +10,8 @@ Modal {
     id: editor
     objectName: "genreArtworkEditor"
     property string key: ""
+    // The published default a role shows while nothing is chosen for it.
+    property string artKey: ""
     readonly property url cardImage: opened ? Artwork.genre(key, Artwork.rev) : ""
     readonly property url headerImage: opened ? Artwork.genreHeader(key, Artwork.rev) : ""
     Column {
@@ -22,6 +25,7 @@ Modal {
                 readonly property bool card: modelData === "card"
                 readonly property url image: card ? editor.cardImage : editor.headerImage
                 readonly property bool chosen: image.toString() !== ""
+                GenreArtModel { id: fallback; key: editor.artKey; header: !field.card; active: editor.opened && !field.chosen }
                 width: parent.width; spacing: Metrics.gap8
                 Text { text: field.card ? I18n.tr("Card image", I18n.rev) : I18n.tr("Header image", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
                 Row {
@@ -29,12 +33,13 @@ Modal {
                     Item {
                         width: Math.min(parent.width / 2, Metrics.sceneCardWidth); height: width // derived: one half of the selector row
                         ArtTile {
+                            id: preview
                             objectName: field.card ? "genreCardPreview" : "genreHeaderPreview"
                             anchors.centerIn: parent
                             width: parent.width; height: field.card ? width : width / 4 // derived: square card or 4:1 banner
                             radius: field.card ? width / 2 : Metrics.radiusCard // derived: circular card preview
-                            source: field.image; contain: !field.card
-                            Text { anchors.centerIn: parent; visible: !field.chosen; text: I18n.tr("Default", I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
+                            source: field.chosen ? field.image : fallback.source; contain: !field.card
+                            Text { anchors.centerIn: parent; visible: !preview.ready; text: I18n.tr("Default", I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
                         }
                     }
                     Column {

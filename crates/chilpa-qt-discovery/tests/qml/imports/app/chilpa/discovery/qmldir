@@ -1,2 +1,3 @@
 module app.chilpa.discovery
 DiscoveryModel 1.0 DiscoveryModel.qml
+GenreArtModel 1.0 GenreArtModel.qml

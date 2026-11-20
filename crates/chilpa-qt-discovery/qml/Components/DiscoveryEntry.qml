@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.discovery
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -15,7 +16,8 @@ Button {
     readonly property bool recording: entry.kind === "recording"
     readonly property bool genre: entry.kind === "genre"
     readonly property bool composer: entry.kind === "composer"
-    readonly property string genreImage: entry.portrait || (entry.art?.key ? "qrc:/qt/qml/app/chilpa/discovery/assets/genres/" + entry.art.key + ".jpg" : (entry.images || [])[0] || "")
+    // A genre without an image is a flat tile in a color of its own name.
+    readonly property int tint: Array.from(entry.name || "").reduce((sum, letter) => (sum * 31 + letter.charCodeAt(0)) % 65521, 0) // derived: a stable hash
     function initials() { return (entry.name || "").split(/\s+/).filter(Boolean).slice(0, 2).map(word => word[0]).join("").toUpperCase() }
     implicitHeight: genre || composer ? Metrics.sceneCardHeight : Metrics.discoveryEntryHeight
     padding: genre || composer ? 0 : Metrics.gap16
@@ -45,10 +47,24 @@ Button {
                 id: genreArt
                 objectName: "discoveryGenrePortrait"
                 radius: width / 2 // derived: the artist card's circular image
-                source: card.activeImages ? card.genreImage : ""
-                Text { anchors.centerIn: parent; visible: !genreArt.ready; text: card.initials(); color: Theme.color.textSecondary; font.pointSize: Type.section }
+                tint: card.tint
+                source: !card.activeImages ? "" : card.entry.portrait || defaultArt.source
+                GenreArtModel {
+                    id: defaultArt
+                    objectName: "discoveryGenreDefaultArt"
+                    key: card.entry.art?.key || ""
+                    active: card.activeImages && !card.entry.portrait
+                }
+                Text {
+                    anchors.fill: parent; anchors.margins: parent.width / 6 // derived: inside the circle
+                    visible: !genreArt.ready
+                    text: card.entry.name || ""; textFormat: Text.PlainText
+                    horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.WrapAtWordBoundaryOrAnywhere; maximumLineCount: 3; elide: Text.ElideRight
+                    font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.textPrimary
+                }
                 HoverHandler {
-                    onHoveredChanged: hovered && card.entry.art?.key && !card.entry.portrait
+                    onHoveredChanged: hovered && card.entry.art?.key && !card.entry.portrait && genreArt.ready
                         ? TipState.show([card.entry.art.credit,card.entry.art.license,card.entry.art.licenseUrl,card.entry.art.page].filter(Boolean).join("\n"), genreArt) : TipState.hide(genreArt)
                 }
                 onSourceChanged: if (source.toString() === "") TipState.hide(genreArt)

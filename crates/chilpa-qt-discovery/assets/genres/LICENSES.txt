@@ -1,5 +1,0 @@
-These photographs retain their individual licenses, independently of the
-application's source-code license. Author, source page, license URL, original
-file name, source digest and asset digest are recorded for each image in
-crates/chilpa-api/data/genre-art.json. The application also displays the photo
-credit and license on hover. Commons thumbnails were converted to JPEG.
