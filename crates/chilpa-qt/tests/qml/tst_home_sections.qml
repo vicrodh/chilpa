@@ -53,8 +53,8 @@ TestCase {
         }
         Sources.show({homeLibraries: [{id: "fixture", name: "Fixture", enabled: true}]})
         home.homeRefresh++
-        tryVerify(() => shelves().length === 7)
-        compare(shelves()[6], "source:fixture:recent")
+        // Refresh retains cached descriptors until the source's next frame.
+        tryVerify(() => shelves().length === 7 && shelves()[6] === "source:fixture:recent")
         compare(home.sections.length, 8, "disabled source shelves remain available for Customize")
         home.change(7, "enabled", true)
         tryVerify(() => shelves().length === 8, 1000, "a disabled source shelf can be chosen for Home")
