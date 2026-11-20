@@ -91,7 +91,30 @@ fn a_record_whose_tracks_were_not_read_still_counts_and_shows() {
     let (_, snapshot) = refresh(&reader, index, &filter, TrackOrder::Artist);
     assert_eq!(snapshot.album_ids, [-11]);
     assert!(snapshot.ids.is_empty(), "no track of it is known to play");
-    assert_eq!(snapshot.totals.tracks, 6, "the summary says what the source said it holds");
+    assert_eq!(snapshot.totals.tracks, 0, "the album estimate does not count as a track row");
+    assert_eq!(snapshot.totals.duration_ms, 0);
+}
+
+#[test]
+fn breakdown_sums_loaded_tracks_and_survives_filters() {
+    let (reader, index) = fixture();
+    let server = reader.lib.source_id("server", "fixture").unwrap();
+    reader.lib.connection().execute("INSERT INTO tracks(id, source_id, external_id, title, album_id, duration_ms, added_at)
+        VALUES(30, ?1, 'fixture:30', 'Server song', 2, 1000, 1)", [server]).unwrap();
+    let source = ((1, vec![("guest".into(), true, true)]), Arc::new(index));
+    let mut filter = Filter::default();
+    filter.choose(0, &["1966".into()]);
+    let (_, shown, counts) = reader.refresh_library_using(&filter, TrackOrder::Artist, || true, source.clone()).unwrap();
+    assert_eq!((shown.totals.albums, shown.totals.tracks), (1, 0));
+    assert_eq!((counts.local, counts.servers, counts.server_tracks), (3, 1, 1));
+    assert_eq!(counts.plugins, [("Guest".into(), 2)]);
+    assert_eq!(counts.total.tracks, 6);
+    assert_eq!(counts.total.tracks, counts.local + counts.server_tracks + counts.plugins.iter().map(|(_, tracks)| tracks).sum::<usize>());
+
+    let (_, all, full) = reader.refresh_library_using(&Filter::default(), TrackOrder::Title, || true, source).unwrap();
+    assert_eq!(full, counts);
+    assert_eq!(full.total, all.totals);
+    assert_eq!(all.ids.len(), full.total.tracks);
 }
 
 #[test]
@@ -117,13 +140,33 @@ fn the_sources_take_their_place_in_every_order() {
 }
 
 #[test]
-fn tracks_takes_the_saved_tracks_only_and_says_where_each_letter_starts() {
+fn tracks_include_album_tracks_and_group_only_loaded_rows() {
     let (reader, index) = fixture();
     let found = reader.tracks_using("title\u{1f}name\u{1f}", &Filter::default(), &index);
-    assert_eq!(found.snapshot.ids, [10, 20, 11, -2], "a track of a saved record is not a saved track");
-    assert_eq!(found.letters, r#"[["B",0],["M",1],["S",3]]"#);
+    assert_eq!(found.snapshot.ids, [-1, 10, 20, 11, -2]);
+    assert_eq!(found.letters, r#"[["A",0],["B",1],["M",2],["S",4]]"#);
     let rated = reader.tracks_using("title\u{1f}off\u{1f}\u{1f}5", &Filter::default(), &index);
     assert!(rated.snapshot.ids.is_empty(), "nothing has five stars");
+}
+
+#[test]
+fn equivalent_filters_keep_the_same_integrated_membership_in_all_three_views() {
+    let (reader, index) = fixture();
+    for filter in [
+        Filter::default(),
+        Filter { qualities: vec!["hires".into()], ..Default::default() },
+        Filter { excluded_sources: vec!["plugin:guest".into()], ..Default::default() },
+    ] {
+        let library = reader.library_snapshot(&filter, TrackOrder::Title, &index, None, None).0;
+        let tracks = reader.tracks_using("title\u{1f}off\u{1f}\u{1f}\u{1f}{}", &filter, &index);
+        let albums = reader.albums_view_using("title", "", "", &filter, &index);
+        assert_eq!(tracks.snapshot.ids, library.ids);
+        let mut album_ids = library.album_ids;
+        album_ids.sort_unstable();
+        let mut view_ids = albums.ids;
+        view_ids.sort_unstable();
+        assert_eq!(view_ids, album_ids);
+    }
 }
 
 #[test]
@@ -150,11 +193,11 @@ fn saved_tracks_join_their_genre_and_the_missing_genre_group() {
     reader.lib.set_track_genres(20, &[]).unwrap();
     let index = SourceIndex::new(index.items, index.sources);
     let found = reader.tracks_using("title\u{1f}genre\u{1f}", &Filter::default(), &index);
-    assert_eq!(found.snapshot.ids, [10, 11, -2, -3, 20]);
-    assert_eq!(found.sections, [(0, "Jazz".into()), (3, chilpa_i18n::t("No genre"))]);
-    assert_eq!(crate::section_at(&found.sections, 2), Some("Jazz"), "case variants share one section");
+    assert_eq!(found.snapshot.ids, [-1, 10, 11, -2, -3, 20]);
+    assert_eq!(found.sections, [(0, "jazz".into()), (4, chilpa_i18n::t("No genre"))]);
+    assert_eq!(crate::section_at(&found.sections, 2), Some("jazz"), "case variants share the first track's heading");
     let descending = reader.tracks_using("title-desc\u{1f}genre\u{1f}", &Filter::default(), &index);
-    assert_eq!(descending.snapshot.ids, [-2, 11, 10, 20, -3], "only the tracks inside each group reverse");
+    assert_eq!(descending.snapshot.ids, [-2, 11, 10, -1, 20, -3], "only the tracks inside each group reverse");
     assert_eq!(descending.sections.len(), 2);
 }
 
@@ -162,10 +205,10 @@ fn saved_tracks_join_their_genre_and_the_missing_genre_group() {
 fn saved_tracks_merge_into_dates_labels_and_composers() {
     let (reader, index) = fixture();
     for (by, expected, sections) in [
-        ("year", vec![20, -2, 10, 11], vec![(0, "1959".to_string()), (2, "1958".into())]),
-        ("decade", vec![10, 20, 11, -2], vec![(0, "1950s".into())]),
-        ("label", vec![10, 20, 11, -2], vec![(0, "Blue Note".into()), (3, "Impulse!".into())]),
-        ("composer", vec![-2, 10, 20, 11], vec![(0, "John Coltrane".into()), (1, chilpa_i18n::t("No composer"))]),
+        ("year", vec![-1, 20, -2, 10, 11], vec![(0, "1965".into()), (1, "1959".into()), (3, "1958".into())]),
+        ("decade", vec![-1, 10, 20, 11, -2], vec![(0, "1960s".into()), (1, "1950s".into())]),
+        ("label", vec![10, 20, 11, -1, -2], vec![(0, "Blue Note".into()), (3, "Impulse!".into())]),
+        ("composer", vec![-1, -2, 10, 20, 11], vec![(0, "John Coltrane".into()), (2, chilpa_i18n::t("No composer"))]),
     ] {
         let found = reader.tracks_using(&format!("title\u{1f}{by}\u{1f}"), &Filter::default(), &index);
         assert_eq!(found.snapshot.ids, expected, "{by}");
@@ -204,12 +247,12 @@ fn measure_tracks_groups_on_a_library_copy() {
 }
 
 #[test]
-fn albums_merges_the_saved_records_in_its_order_and_groups_them_with_the_library() {
+fn albums_merges_records_and_albums_of_saved_tracks_in_the_requested_order() {
     let (reader, index) = fixture();
     let found = reader.albums_view_using("year", "", "", &Filter::default(), &index);
-    assert_eq!(found.ids, [-11, -10, 2, 1], "a saved track's record is not a saved record");
+    assert_eq!(found.ids, [-11, -10, -12, 2, 1], "an individually saved track contributes its album");
     let by_genre = reader.albums_view_using("artist", "genre", "", &Filter::default(), &index);
-    assert_eq!(by_genre.groups.iter().map(|(_, l)| l.as_str()).collect::<Vec<_>>(), ["Free Jazz", "Hard Bop", "Jazz"]);
+    assert_eq!(by_genre.groups.iter().map(|(_, l)| l.as_str()).collect::<Vec<_>>(), ["Free Jazz", "Hard Bop", "Jazz", "Modal"]);
     let typed = reader.albums_view_using("artist", "", "supreme", &Filter::default(), &index);
     assert_eq!(typed.ids, [-10]);
 }
@@ -334,9 +377,9 @@ fn discovery_album_selection_keeps_saved_track_albums_and_filters_before_copy_gr
     use std::collections::HashSet;
     let (reader, index) = fixture();
     let within = HashSet::from([1, -12]);
-    let legacy: Vec<_> = reader.albums_view_using("title", "", "", &Filter::default(), &index).ids
+    let global: Vec<_> = reader.albums_view_using("title", "", "", &Filter::default(), &index).ids
         .into_iter().filter(|id| within.contains(id)).collect();
-    assert_eq!(legacy, [1], "the old global grid excluded the saved-track-only album");
+    assert_eq!(global, [1,-12], "the global grid includes albums represented by saved tracks");
     assert_eq!(reader.albums_view_within("title", "", &within, &index).ids, [1,-12]);
     assert_eq!(reader.albums_view_within("title-desc", "", &within, &index).ids, [-12,1]);
     assert_eq!(reader.albums_view_within("title", "Kind", &within, &index).ids, [-12]);

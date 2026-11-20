@@ -1,15 +1,16 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.controls
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Controls
 import "qrc:/qt/qml/app/chilpa/ambient/qml/Patterns" as Backdrop
 import "qrc:/qt/qml/app/chilpa/mini/qml/Screens" as Mini
 import "qrc:/qt/qml/app/chilpa/immersive/qml/Screens" as Overlay
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "Patterns"
 
 // The window (design/02): the floating sidebar, the tab bar, the screen of
@@ -17,8 +18,8 @@ import "Patterns"
 Window {
     id: window
 
-    readonly property int sidebarWidth: sidebar.shown
-    readonly property int contentLeft: sidebarWidth > 0 ? Metrics.spaceWindow * 2 + sidebarWidth : Metrics.spaceWindow // derived: a margin on each side of the sidebar
+    readonly property real sidebarWidth: sidebar.shown
+    readonly property real contentLeft: Metrics.spaceWindow + sidebarWidth + Math.min(1, sidebarWidth / Metrics.sidebarCollapsed) * Metrics.spaceWindow
     // The metadata editor wants the width: the queue and the lyrics step
     // aside while it is open and come back as they were when it closes,
     // unless one of them is opened in the meantime.
@@ -47,30 +48,20 @@ Window {
     Backdrop.AppBackground {
         visible: !DisplayMode.active || !DisplayMode.provider || DisplayMode.provider.ambient !== false
         anchors.fill: parent
-        plane: DisplayMode.active ? Qt.rect(0, 0, window.width, window.height) : Qt.rect(host.x, host.y, host.width, host.height)
+        plane: DisplayMode.active ? Qt.rect(0, 0, window.width, window.height) : Qt.rect(contentPlane.x, contentPlane.y, contentPlane.width, contentPlane.height)
     }
 
     // The screen scrolls under nothing but the player: it is cut at the
     // tab bar, which stays on top of it.
-    ScreenHost {
-        id: host
-        resizing: sidebar.dragging || right.dragged >= 0
-        x: window.contentLeft
-        y: plan.planeTop
-        width: resizing && heldWidth >= 0 ? heldWidth : (right.visible ? right.x : window.width) - Metrics.spaceWindow - x
-        // Under the dynamic background the plane is a card that ends at the
-        // window's margin, so the screens end there too.
-        height: window.height - y - plan.contentBottom
-        clip: true
-    }
-
-    // The content is a plane like the panels beside it. Under the dynamic
-    // background the field shows through its corners instead.
-    PlaneCorners {
-        visible: !DisplayMode.active && !Theme.ambient
-        x: host.x
-        y: host.y
-        width: host.width
+    Driving.ContentPlane {
+        id: contentPlane
+        moving: sidebar.moving || right.moving
+        leftInset: window.contentLeft
+        rightInset: Metrics.spaceWindow + right.width + Math.min(1, right.width / Math.max(1, right.settled)) * Metrics.spaceWindow
+        topInset: plan.planeTop
+        bottomInset: plan.contentBottom
+        cornered: !DisplayMode.active && !Theme.ambient
+        ScreenHost { id: host; anchors.fill: parent }
     }
 
     TabBar {
@@ -86,10 +77,11 @@ Window {
         window: window
     }
 
-    RightPanelFrame {
+    Driving.RightPanelFrame {
         id: right
         z: 2
         open: !DisplayMode.active && (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
+        mediaContent: MediaListeningPanel { document: JSON.parse(Sources.snapshot || "{}"); onClosed: SettingsModel.lyricsOpen = false }
         x: window.width - width - Metrics.spaceWindow
         y: plan.planeTop
         height: window.height - y - plan.planeBottom
@@ -109,7 +101,7 @@ Window {
         y: DisplayMode.active ? window.height - height - Metrics.spaceWindow : plan.barY
         Behavior on y { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
     }
-    Driving.PlayerPlan { id: plan; window: window; content: host; tall: player.implicitHeight; away: idle.away }
+    Driving.PlayerPlan { id: plan; window: window; content: contentPlane; tall: player.implicitHeight; away: idle.away }
 
     PlayerIdle {
         id: idle
@@ -120,13 +112,13 @@ Window {
     SelectionBar {
         z: 4
         visible: !DisplayMode.active && AlbumActions.selectedCount > 0
-        x: DisplayMode.active ? (window.width - width) / 2 : host.x + (host.width - width) / 2 // derived: centered over the content
+        x: DisplayMode.active ? (window.width - width) / 2 : contentPlane.x + (contentPlane.width - width) / 2 // derived: centered over the content
         y: window.height - height - Metrics.selectionBottom
     }
 
     Toast {
         z: 5
-        x: DisplayMode.active ? (window.width - width) / 2 : host.x + (host.width - width) / 2 // derived: centered over the content
+        x: DisplayMode.active ? (window.width - width) / 2 : contentPlane.x + (contentPlane.width - width) / 2 // derived: centered over the content
         y: window.height - height - (!DisplayMode.active && AlbumActions.selectedCount > 0 ? Metrics.toastWithSelectionBottom : Metrics.toastBottom)
     }
 
@@ -140,7 +132,7 @@ Window {
     }
 
     Tooltip { watching: window.contentItem }
-    QueueProgress { anchors.right: parent.right; anchors.rightMargin: Metrics.spaceWindow; y: plan.planeTop + Metrics.gap8; z: 7 }
+    Controls.QueueProgress { anchors.right: parent.right; anchors.rightMargin: Metrics.spaceWindow; y: plan.planeTop + Metrics.gap8; z: 7 }
 
     WindowGrips { anchors.fill: parent; window: window }
     DevHooks { window: window }

@@ -488,6 +488,19 @@ impl Library {
         rows.collect()
     }
 
+    /// With grouping applied, count only the self-hosted tracks still in the snapshot.
+    pub fn server_track_count_in(&self, ids: &std::collections::HashSet<i64>) -> rusqlite::Result<usize> {
+        let mut stmt = self.db.prepare(
+            "SELECT t.id FROM tracks t JOIN sources s ON s.id = t.source_id
+             WHERE s.provider = 'server' AND s.enabled = 1 AND t.present = 1",
+        )?;
+        let mut count = 0;
+        for id in stmt.query_map([], |row| row.get::<_, i64>(0))? {
+            if ids.contains(&id?) { count += 1; }
+        }
+        Ok(count)
+    }
+
     /// Numeric technical choices, bounded to 4096 distinct positive values.
     /// Unknown metadata stays unknown instead of becoming a zero-bit file.
     pub fn facet_technical(&self, filter: &Filter, name: &str) -> rusqlite::Result<Vec<FacetEntry>> {
@@ -789,13 +802,38 @@ impl Library {
     /// statement with thousands of parameters.
     /// I read queue paths without credits, artwork, ratings or play counts.
     pub fn track_paths(&self, ids: &[i64]) -> rusqlite::Result<std::collections::HashMap<i64, String>> {
+        self.track_paths_with(ids, "")
+    }
+
+    pub fn playable_track_paths(&self, ids: &[i64]) -> rusqlite::Result<std::collections::HashMap<i64, String>> {
+        self.track_paths_with(ids, "AND present = 1 AND reachable = 1 AND source_id IN (SELECT id FROM sources WHERE enabled = 1)")
+    }
+
+    fn track_paths_with(&self, ids: &[i64], condition: &str) -> rusqlite::Result<std::collections::HashMap<i64, String>> {
         let mut found = std::collections::HashMap::new();
         for chunk in ids.chunks(500) {
             let marks = vec!["?"; chunk.len()].join(",");
-            let mut stmt = self.db.prepare(&format!("SELECT id, external_id FROM tracks WHERE id IN ({marks})"))?;
+            let mut stmt = self.db.prepare(&format!("SELECT id, external_id FROM tracks WHERE id IN ({marks}) {condition}"))?;
             for row in stmt.query_map(params_from_iter(chunk.iter()), |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))? {
                 let (id, path) = row?;
                 found.insert(id, path);
+            }
+        }
+        Ok(found)
+    }
+
+    /// One bounded batch of album paths. Each record's rows retain disc order.
+    pub fn playable_album_paths(&self, ids: &[i64]) -> rusqlite::Result<std::collections::HashMap<i64, Vec<String>>> {
+        let mut found = std::collections::HashMap::<i64, Vec<String>>::new();
+        for chunk in ids.chunks(500) {
+            let marks = vec!["?"; chunk.len()].join(",");
+            let mut stmt = self.db.prepare(&format!("SELECT album_id, external_id FROM tracks
+                WHERE album_id IN ({marks}) AND present = 1 AND reachable = 1
+                AND source_id IN (SELECT id FROM sources WHERE enabled = 1)
+                ORDER BY album_id, coalesce(release_disc, disc_number), track_number, title COLLATE NOCASE, id"))?;
+            for row in stmt.query_map(params_from_iter(chunk.iter()), |row| Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?)))? {
+                let (album, path) = row?;
+                found.entry(album).or_default().push(path);
             }
         }
         Ok(found)

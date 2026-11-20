@@ -8,23 +8,6 @@ use chilpa_library::OrderKey;
 use std::cmp::Ordering;
 use std::collections::HashSet;
 
-/// Which items a screen takes: Library takes every integrated record and
-/// track, Tracks only the saved tracks.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Scope {
-    Library,
-    Tracks,
-}
-
-impl Scope {
-    fn takes(self, item: &SourceItem) -> bool {
-        match self {
-            Scope::Library => true,
-            Scope::Tracks => item.saved_track && item.track != 0,
-        }
-    }
-}
-
 /// What an item is ordered by, as a track of the library would be.
 pub(crate) fn key_of(item: &SourceItem) -> OrderKey {
     OrderKey {
@@ -61,11 +44,11 @@ pub(crate) fn group_label(key: &OrderKey, by: &str) -> String {
 /// in. With `letters_by`, also where each group starts among the tracks.
 /// With `grouping`, a record the library and a source both keep counts once.
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter, order: TrackOrder, index: &SourceIndex, stars: &Stars, scope: Scope, letters_by: Option<&str>, grouping: Option<Grouping>)
+pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter, order: TrackOrder, index: &SourceIndex, stars: &Stars, letters_by: Option<&str>, grouping: Option<Grouping>)
     -> (Snapshot, Vec<(usize, String)>) {
     let filter = Prepared::new(f);
     let mut extra: Vec<(&OrderKey, &SourceItem)> = index.keys.iter().zip(&index.items)
-        .filter(|(_, item)| scope.takes(item) && filter.passes(item, stars)).collect();
+        .filter(|(_, item)| filter.passes(item, stars)).collect();
     if let Some(grouping) = grouping.filter(|_| !extra.is_empty()) {
         let mut albums = local.album_ids.clone();
         albums.extend(extra.iter().map(|(_, item)| item.album).filter(|id| *id != 0));
@@ -101,7 +84,7 @@ pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter,
     // Where each source record goes among the library's records: after the
     // ones whose first track came before its own.
     let (mut seen, mut placed, mut inserts) = (HashSet::new(), HashSet::new(), Vec::new());
-    let (mut tracks, mut duration) = (0, local.totals.duration_ms);
+    let mut duration = local.totals.duration_ms;
     let mut local_rows = keys.iter().zip(local.ids.iter().copied()).peekable();
     let mut extra = extra.into_iter().peekable();
     loop {
@@ -120,12 +103,10 @@ pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter,
         }
         let (key, item) = extra.next().expect("peeked");
         if item.album != 0 && placed.insert(item.album) { inserts.push((seen.len(), item.album)); }
-        duration += item.duration_ms;
         if item.track != 0 {
+            duration += item.duration_ms;
             note(key, ids.len());
             ids.push(item.track);
-        } else {
-            tracks += item.tracks;
         }
     }
     let mut album_ids = Vec::with_capacity(local.album_ids.len() + inserts.len());
@@ -135,6 +116,6 @@ pub(crate) fn snapshot(mut local: Snapshot, mut keys: Vec<OrderKey>, f: &Filter,
         album_ids.push(album);
     }
     album_ids.extend(inserts.map(|(_, id)| id));
-    let totals = crate::Totals { tracks: ids.len() + tracks, albums: album_ids.len(), duration_ms: duration };
+    let totals = crate::Totals { tracks: ids.len(), albums: album_ids.len(), duration_ms: duration };
     (Snapshot { ids, album_ids, totals }, sections)
 }

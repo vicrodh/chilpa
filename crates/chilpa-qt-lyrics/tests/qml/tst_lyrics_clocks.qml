@@ -1,4 +1,5 @@
 import QtQuick
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns"
 import QtTest
 import app.chilpa
 import app.chilpa.kit

@@ -66,7 +66,13 @@ Item {
 
     Tools.AlbumGridInteraction { id: interaction; objectName: "albumGridInteraction"; grid: grid }
 
-    implicitHeight: shelf ? interaction.shelfHeight(view, rowHeight) + Metrics.cardRing * 2 : view.contentHeight // derived: room for both selection rings
+    // Measure after delegate layout: a shelf's height also participates in its
+    // rows' viewport and quick-view geometry, so it cannot read them in a binding.
+    property real measuredShelfHeight: 0
+    readonly property var shelfShape: shelf ? [rowHeight, view.contentItem.children] : []
+    onShelfShapeChanged: if (shelf) shelfSizing.restart()
+    Timer { id: shelfSizing; interval: 0; onTriggered: grid.measuredShelfHeight = interaction.shelfHeight(view, grid.rowHeight) }
+    implicitHeight: shelf ? Math.max(rowHeight, measuredShelfHeight) + Metrics.cardRing * 2 : view.contentHeight // derived: room for both selection rings
 
     Tools.MotionListView {
         id: view
@@ -115,6 +121,7 @@ Item {
             required property int index
             required property var model
             owner: grid
+            onHeightChanged: if (grid.shelf) shelfSizing.restart()
             first: grid.windowCount >= 0 ? index * grid.columns : model.first
             span: grid.windowCount >= 0 ? Math.min(grid.columns, grid.windowCount - first) : model.span
             revision: grid.windowCount >= 0 ? grid.model.rev : model.revision

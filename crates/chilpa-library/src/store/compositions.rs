@@ -14,6 +14,22 @@ pub struct Composition {
     pub composers: Vec<String>,
     pub albums: usize,
     pub tracks: usize,
+    pub recordings: usize,
+    pub duration_ms: u64,
+    pub example_track: i64,
+    pub sources: Vec<String>,
+}
+
+pub struct CompositionPart {
+    pub id: i64,
+    pub album: i64,
+    pub name: String,
+    pub artist: String,
+    pub disc: i64,
+    pub number: i64,
+    pub duration_ms: u64,
+    pub source: String,
+    pub year: Option<i32>,
 }
 
 /// Work tags share an identity only with the same stated composers. Unicode
@@ -39,7 +55,8 @@ pub(crate) fn register(db: &Connection) -> rusqlite::Result<()> {
 // Display credits stay separate from the normalized comparison key. Unknown
 // authors cannot make unrelated records share an identity.
 const WORKS: &str = "WITH credited AS (
-    SELECT t.id, t.album_id, trim(t.work) AS title,
+    SELECT t.id, t.album_id, trim(t.work) AS title, t.artist, t.duration_ms,
+        CASE WHEN s.provider = 'local' THEN '' ELSE coalesce(nullif(s.label, ''), s.provider) END AS source,
         (SELECT json_group_array(name) FROM (SELECT c.name FROM composers c
             JOIN track_composers tc ON tc.composer_id = c.id
             WHERE tc.track_id = t.id ORDER BY c.name COLLATE NOCASE, c.id)) AS composers
@@ -54,10 +71,17 @@ const CONDITION: &str = " WHERE (?1 = '' OR EXISTS (SELECT 1 FROM json_each(comp
     AND (?2 = '' OR instr(chilpa_fold(title), chilpa_fold(?2)) > 0 OR EXISTS
         (SELECT 1 FROM json_each(composers) WHERE instr(chilpa_fold(value), chilpa_fold(?2)) > 0))";
 
+const SUMMARY: &str = "SELECT work_key, min(title), composers, count(DISTINCT coalesce(album_id, -id)), count(*),
+    count(DISTINCT json_array(coalesce(album_id, -id), chilpa_work_sort(artist))),
+    sum(max(0, duration_ms)), min(id), json_group_array(DISTINCT source) FROM identified";
+
 fn composition(row: &rusqlite::Row<'_>) -> rusqlite::Result<Composition> {
     let composers: String = row.get(2)?;
+    let sources: String = row.get(8)?;
     Ok(Composition { key: row.get(0)?, title: row.get(1)?, composers: serde_json::from_str(&composers).unwrap_or_default(),
-        albums: row.get::<_, i64>(3)? as usize, tracks: row.get::<_, i64>(4)? as usize })
+        albums: row.get::<_, i64>(3)? as usize, tracks: row.get::<_, i64>(4)? as usize,
+        recordings: row.get::<_, i64>(5)? as usize, duration_ms: row.get::<_, i64>(6)?.max(0) as u64, example_track: row.get(7)?,
+        sources: serde_json::from_str(&sources).unwrap_or_default() })
 }
 
 impl Library {
@@ -72,8 +96,8 @@ impl Library {
     pub fn compositions(&self, composer: &str, text: &str, page: usize) -> rusqlite::Result<(Vec<Composition>, usize)> {
         let condition = CONDITION;
         let total = self.composition_count(composer, text)?;
-        let sql = format!("{WORKS} SELECT work_key, min(title), composers, count(DISTINCT coalesce(album_id, -id)), count(*)
-            FROM identified{condition} GROUP BY work_key ORDER BY chilpa_work_sort(min(title)) COLLATE BINARY, work_key LIMIT ?3 OFFSET ?4");
+        let sql = format!("{WORKS} {SUMMARY}{condition}
+            GROUP BY work_key ORDER BY chilpa_work_sort(min(title)) COLLATE BINARY, work_key LIMIT ?3 OFFSET ?4");
         let mut statement = self.db.prepare(&sql)?;
         let rows = statement.query_map(params![composer, text.trim(), PAGE_SIZE as i64, page.saturating_mul(PAGE_SIZE).min(i64::MAX as usize) as i64], composition)?.collect::<rusqlite::Result<Vec<_>>>()?;
         Ok((rows, total))
@@ -87,21 +111,27 @@ impl Library {
 
     pub fn visit_compositions_ordered(&self, composer: &str, text: &str, descending: bool, mut visit: impl FnMut(Composition)) -> rusqlite::Result<()> {
         let direction = if descending { "DESC" } else { "ASC" };
-        let sql = format!("{WORKS} SELECT work_key, min(title), composers, count(DISTINCT coalesce(album_id, -id)), count(*)
-            FROM identified{CONDITION} GROUP BY work_key ORDER BY chilpa_work_sort(min(title)) COLLATE BINARY {direction}, work_key {direction}");
+        let sql = format!("{WORKS} {SUMMARY}{CONDITION}
+            GROUP BY work_key ORDER BY chilpa_work_sort(min(title)) COLLATE BINARY {direction}, work_key {direction}");
         let mut statement = self.db.prepare(&sql)?;
         for row in statement.query_map(params![composer, text.trim()], composition)? { visit(row?); }
         Ok(())
     }
 
     /// Every part of the selected work, in recording/disc/track order.
-    pub fn composition_tracks(&self, key: &str) -> rusqlite::Result<Vec<i64>> {
-        let sql = format!("{WORKS} SELECT t.id FROM identified w JOIN tracks t ON t.id = w.id
+    pub fn composition_parts(&self, key: &str) -> rusqlite::Result<Vec<CompositionPart>> {
+        let sql = format!("{WORKS} SELECT t.id, coalesce(t.album_id, 0), coalesce(nullif(a.title, ''), t.title),
+            t.artist, coalesce(t.release_disc, t.disc_number, 0), coalesce(t.track_number, 0), max(0, t.duration_ms), w.source, a.year
+            FROM identified w JOIN tracks t ON t.id = w.id
             LEFT JOIN albums a ON a.id = t.album_id WHERE w.work_key = ?1
             ORDER BY a.year, a.title COLLATE NOCASE, coalesce(t.album_id, -t.id),
                 coalesce(t.release_disc, t.disc_number), t.track_number, t.id");
         let mut statement = self.db.prepare(&sql)?;
-        let rows = statement.query_map([key], |row| row.get(0))?.collect();
+        let rows = statement.query_map([key], |row| Ok(CompositionPart {
+            id: row.get(0)?, album: row.get(1)?, name: row.get(2)?, artist: row.get(3)?,
+            disc: row.get(4)?, number: row.get(5)?, duration_ms: row.get::<_, i64>(6)?.max(0) as u64,
+            source: row.get(7)?, year: row.get(8)?,
+        }))?.collect();
         rows
     }
 }
@@ -133,7 +163,8 @@ mod tests {
         assert_eq!(works.iter().map(|work| work.tracks).sum::<usize>(), 3);
         let (works, total) = lib.compositions("first writer", "son", 0).unwrap();
         assert_eq!((total, works[0].tracks), (1, 2));
-        assert_eq!(lib.composition_tracks(&works[0].key).unwrap(), [1, 2]);
+        assert_eq!(lib.composition_parts(&works[0].key).unwrap().into_iter().map(|part| part.id).collect::<Vec<_>>(), [1, 2]);
+        assert_eq!(works[0].recordings, 1);
         assert_eq!(lib.db.total_changes(), changes);
     }
 

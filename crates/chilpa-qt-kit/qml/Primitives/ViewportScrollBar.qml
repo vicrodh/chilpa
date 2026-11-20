@@ -6,7 +6,6 @@ import "../Theme/Viewport.js" as Viewport
 // I keep the thumb in a margin beside the viewport's clipped delegates.
 ScrollBar {
     id: bar
-    // My explicit thumb dimensions already include the full painted area.
     padding: 0
     property var viewport: null
     property var area: null
@@ -15,6 +14,9 @@ ScrollBar {
     // One passive inset layer per control, released with the control.
     property Item insetLayer: null
     readonly property bool inset: parent === viewport || parent === insetLayer
+    // Async component completion may attach me after my first placement. Reclaim
+    // the chosen surface when Qt reparents me; no polling or extra inset layers.
+    onParentChanged: if (viewport && parent === viewport && (overlayParent || gutter >= 0 || insetLayer)) placement.restart()
     // A horizontally scrolled table keeps its vertical thumb at the visible edge.
     property real rightEdge: NaN
     // A floating player can cover the viewport without covering its controls.
@@ -41,7 +43,6 @@ ScrollBar {
         color: Theme.color.textTertiary
         opacity: bar.pressed ? 1 : 0.85
     }
-    // A default sibling already shares the viewport's coordinate space.
     function mappedOrigin(surface) { return overlayParent ? Viewport.pointIn(viewport, surface) : Qt.point(viewport.x, viewport.y) }
     Component.onCompleted: {
         viewport = parent
@@ -53,40 +54,36 @@ ScrollBar {
             area.width = Qt.binding(function() { return sideways ? viewport.width : gutter + bar.width })
             area.height = Qt.binding(function() { return sideways ? (bar.reservedBottom > 0 ? bar.height : gutter + bar.height) : Math.max(0, viewport.height - bar.reservedBottom) })
         }
+        placement.start()
     }
-    // The deferred placement belongs to this control and dies with it.
+    // Start only after this owner captures its viewport. A child timer can
+    // complete and fire earlier while a page is incubated across frames.
     Timer {
+        id: placement
         interval: 0
-        running: true
         onTriggered: {
             if (!bar || !bar.viewport) return
-            // Keep the bar inside clipped pages. A positive gutter uses a
-            // free margin beside the viewport.
+            // Negative gutters stay clipped; positive gutters use the free margin.
             const surface = overlayParent || (gutter < 0 ? viewport : viewport.parent)
             if (surface === viewport && viewport.contentY !== undefined) {
                 // The attached control otherwise restores the full viewport size.
-                insetLayer = layerComponent.createObject(viewport)
-                if (!insetLayer) return
-                insetLayer.z = Qt.binding(function() { return bar.z })
+                if (!insetLayer) {
+                    insetLayer = layerComponent.createObject(viewport)
+                    if (!insetLayer) return
+                    insetLayer.z = Qt.binding(function() { return bar.z })
+                }
                 bar.parent = insetLayer
             } else bar.parent = surface
             active = Qt.binding(function() { return hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewportArea && viewportArea.hovered) || !!(viewport && viewport.moving) })
-            if (sideways) {
-                x = Qt.binding(function() { return inset ? 0 : bar.mappedOrigin(bar.parent).x })
-                y = Qt.binding(function() { return (inset ? 0 : bar.mappedOrigin(bar.parent).y) + Math.max(0, viewport.height - bar.reservedBottom + bar.horizontalGutter - height / 2) }) // derived: center the control in the margin
-                width = Qt.binding(function() { return viewport.width })
-                height = Qt.binding(function() { return Metrics.gap4 })
-            } else {
-                x = Qt.binding(function() { return (inset ? 0 : bar.mappedOrigin(bar.parent).x) + (isNaN(rightEdge) ? viewport.width : rightEdge) + gutter - width / 2 }) // derived: center the control in the margin
-                y = Qt.binding(function() { return inset ? 0 : bar.mappedOrigin(bar.parent).y })
-                height = Qt.binding(function() { return Math.max(0, viewport.height - bar.reservedBottom) })
-            }
+            // Both axes share the origin; only the thumb's cross-axis offset differs.
+            x = Qt.binding(function() { return (inset ? 0 : bar.mappedOrigin(bar.parent).x) + (sideways ? 0 : (isNaN(rightEdge) ? viewport.width : rightEdge) + gutter - width / 2) })
+            y = Qt.binding(function() { return (inset ? 0 : bar.mappedOrigin(bar.parent).y) + (sideways ? Math.max(0, viewport.height - bar.reservedBottom + bar.horizontalGutter - height / 2) : 0) })
+            height = Qt.binding(function() { return sideways ? Metrics.gap4 : Math.max(0, viewport.height - bar.reservedBottom) })
+            if (sideways) width = Qt.binding(function() { return viewport.width })
         }
     }
-    active: hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewportArea && viewportArea.hovered)
     Component.onDestruction: { if (area) area.destroy(); if (viewportArea) viewportArea.destroy(); if (insetLayer) insetLayer.destroy() }
-    // A positive gutter lives outside a clipped viewport, so its hover area
-    // must be a sibling that reaches the thumb.
+    // A positive gutter needs a sibling hover area outside the clipped viewport.
     Component { id: layerComponent; Item { anchors.fill: parent } }
     Component { id: hoverComponent; HoverHandler { acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad } }
     Component { id: bridgeComponent; Item { property alias hovered: bridgeHover.hovered; HoverHandler { id: bridgeHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad } } }

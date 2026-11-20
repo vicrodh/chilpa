@@ -24,6 +24,7 @@ QtObject {
     readonly property string cloudUpload: "\ue091"
     readonly property string copy: "\ue09e"
     readonly property string database: "\ue0ad"
+    readonly property string dices: "\ue2c5"
     readonly property string disc: "\ue0af"
     readonly property string eject: "\ue733"
     readonly property string ellipsis: "\ue0b6"

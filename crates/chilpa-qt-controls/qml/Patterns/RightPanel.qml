@@ -11,9 +11,11 @@ Rectangle {
     id: card
 
     property Component mediaContent
+    property bool queueShown: SettingsModel.queueOpen
+    property bool lyricsShown: SettingsModel.lyricsOpen
     readonly property var source: JSON.parse(Sources.snapshot || "{}")
     readonly property bool spoken: !!source.playing_entry && ["radio", "podcasts"].indexOf(source.medium) >= 0
-    readonly property bool both: SettingsModel.queueOpen && SettingsModel.lyricsOpen
+    readonly property bool both: queueShown && lyricsShown
     // While the divider is dragged: the queue's height, and what it was when
     // the drag started.
     property real dragged: -1
@@ -21,8 +23,8 @@ Rectangle {
     // Half and half until the divider is moved; a share and not a height,
     // so the split keeps its proportion when the window changes size.
     readonly property real share: SettingsModel.queueShare > 0 ? SettingsModel.queueShare / Metrics.shareUnits : 0.5
-    readonly property real queueHeight: !SettingsModel.queueOpen ? 0
-        : !SettingsModel.lyricsOpen ? height
+    readonly property real queueHeight: !queueShown ? 0
+        : !lyricsShown ? height
         : clamp(dragged >= 0 ? dragged : height * share)
 
     // Anywhere between the two minimums (design/04 7).
@@ -37,7 +39,7 @@ Rectangle {
     Edge {}
 
     QueuePanel {
-        visible: SettingsModel.queueOpen
+        visible: card.queueShown
         width: parent.width
         height: card.queueHeight
         onClosed: SettingsModel.queueOpen = false
@@ -59,14 +61,14 @@ Rectangle {
     }
 
     Loader {
-        active: card.spoken && SettingsModel.lyricsOpen
-        visible: SettingsModel.lyricsOpen && card.spoken
+        active: visible
+        visible: card.lyricsShown && card.spoken
         sourceComponent: card.mediaContent
         y: card.queueHeight; width: parent.width; height: parent.height - y
     }
 
     LyricsPanel {
-        visible: SettingsModel.lyricsOpen && !card.spoken
+        visible: card.lyricsShown && !card.spoken
         y: card.queueHeight
         width: parent.width
         height: parent.height - y

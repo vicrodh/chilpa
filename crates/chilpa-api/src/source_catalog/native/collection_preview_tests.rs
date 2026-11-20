@@ -53,7 +53,7 @@ fn hydrated_preview_rows_are_released_after_close_or_late_job_completion() {
             assert!(catalog.lock().store.cards.contains_key(&id));
         }
         let mut answer = json!({"album":album,"tracks":[{"kind":"track","ref":"track:1","title":"Song"}]});
-        take_record_tracks(&mut catalog.lock(), "fixture", id, CardKind::Album, "album", &mut answer, 2);
+        take_record_tracks(&mut catalog.lock(), "fixture", id, "album", &mut answer, 2);
         assert_eq!(catalog.lock().store.tracks.len(), 1);
         fetch::finish(&catalog, &job, Ok(()));
         if !close_early {
@@ -79,7 +79,7 @@ fn releasing_a_hydrated_playlist_keeps_queue_parents_and_preexisting_tracks() {
     let mut answer = json!({"playlist":playlist,"tracks":[old,
         {"kind":"track","ref":"track:queued","album_ref":"album:queued","title":"Queued"},
         {"kind":"track","ref":"track:temporary","album_ref":"album:temporary","title":"Temporary"}]});
-    take_record_tracks(&mut catalog.lock(), "fixture", id, CardKind::Playlist, "playlist", &mut answer, 2);
+    take_record_tracks(&mut catalog.lock(), "fixture", id, "playlist", &mut answer, 2);
     let path = crate::source_opener::entry_of("fixture", "track:queued");
     catalog.protect_tracks([path.clone()].into());
     fetch::persist(&catalog, |snapshot| {

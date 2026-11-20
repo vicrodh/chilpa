@@ -86,7 +86,8 @@ TitledFlow {
     }
     DiscoveryWorkTable {
         width: Metrics.settingsMaxWidth; height: Metrics.queueMin
-        entries: [{kind:"work",name:"Suite",composers:["Composer"],albums:3,tracks:12}]
+        entries: [{kind:"work",name:"Suite",composers:["Composer"],recordings:3,tracks:12,duration:2500000,sources:["Local"]},
+                  {kind:"work",name:"Overture",composers:["Composer"],recordings:2,tracks:2,duration:450000,sources:["Local","Source"]}]
     }
     DiscoveryTracks { width: Metrics.discoveryEntryWidth * 2; height: Metrics.queueMin } // derived: the same two-card preview width
     DiscoveryAlbums { width:Metrics.settingsMaxWidth; height:Metrics.queueMin }
@@ -94,5 +95,10 @@ TitledFlow {
     DiscoveryStatus { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; loading:true }
     DiscoveryStatus { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; failure:"A library read failed" }
     DiscoveryStatus { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; empty:true; emptyText:"No albums in this selection" }
+    GenrePluginShelves {
+        width: Metrics.settingsMaxWidth
+        rows: [{id:"fixture", name:"Example source", newReleases:[{id:-1,name:"New album",credit:"Artist",image:""}],
+            artists:[{key:"fixture native:artist:1",name:"New artist",image:""}]}]
+    }
     GenreOverview { width:Metrics.settingsMaxWidth; height:Metrics.queueMin; name:"Jazz"; about:({summary:{albums:4,images:[]},items:[],total:0}) }
 }

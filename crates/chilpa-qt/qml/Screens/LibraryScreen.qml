@@ -47,6 +47,7 @@ Item {
         id: records
         kind: "library"
         group: page.group
+        filterContext: String(Library.rev)
         contentRev: Library.rev + Library.contentRev
         columns: result.columns
     }
@@ -59,6 +60,14 @@ Item {
         title: I18n.tr("Library", I18n.rev)
         count: Library.summary
         countRight: true
+        countTool: IconButton {
+            objectName: "libraryCountInfo"
+            enabled: Library.countDetails !== ""
+            tip: I18n.tr("Library counts", I18n.rev)
+            glyph: Icons.infoCircle
+            round: true
+            onClicked: countDetails.open()
+        }
 
         IconButton {
             id: sourceButton
@@ -117,6 +126,8 @@ Item {
         }
     }
 
+    LibraryCountDialog { id: countDetails }
+
     // Which sources count, then the query's conditions after a rule.
     Item {
         id: crumbs
@@ -154,7 +165,7 @@ Item {
         visible: page.panesShown
         refineMode: toggle.refineMode
         room: page.height - y - Metrics.contentBottom
-        summary: tracks.summary
+        summary: Library.showing
         columns: Component { LibraryPanes { shown: Library.albumless ? page.panes.filter(c => c !== "album") : page.panes } }
     }
 
@@ -185,6 +196,8 @@ Item {
         x: head.x
         width: head.width
         tracks: tracks
+        albums: records
+        summary: Library.showing
         enabled: !Library.busy
         albumless: Library.albumless
         onAlbumlessToggled: Library.showAlbumless(!Library.albumless)

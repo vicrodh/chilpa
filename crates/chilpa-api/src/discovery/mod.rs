@@ -167,6 +167,18 @@ impl Reader {
         self.albums_view_within(order, text, &within, &self.source_index().1)
     }
 
+    fn genre_plugin_page(&self, key: &str, selected: &Selection, page: usize) -> Value {
+        let empty = || json!({"items": [], "total": 0, "plugins": []});
+        if page != 0 || selected.kind != "genre" || selected.name.trim().is_empty() { return empty(); }
+        let Some(catalog) = &self.catalog else { return empty(); };
+        let plugins = catalog.genre_plugin_cards(&selected.name);
+        let in_library = if plugins.iter().any(|plugin| !plugin.artists.is_empty()) {
+            self.discovery_artists(key).into_iter().map(|entry| chilpa_library::store::query::fold(&entry.artist.name)).collect()
+        } else { HashSet::new() };
+        let rows = plugins.into_iter().filter_map(|plugin| plugin.rails(&in_library)).collect::<Vec<_>>();
+        json!({"items": [], "total": 0, "plugins": rows})
+    }
+
     /// JSON for a virtualized page. Search examines the full inventory before
     /// pagination; a genre search can jump directly to a deeply nested style.
     pub fn discovery_page(&self, kind: &str, key: &str, text: &str, page: usize) -> Value {
@@ -194,15 +206,11 @@ impl Reader {
             Ok(selected) => selected,
             Err(error) => return json!({"error":error,"items":[],"total":0}),
         };
-        if kind == "recordings" { return self.recordings_page_ordered(&selected, &text, page, options.descending()); }
+        if kind == "genre_plugins" { return self.genre_plugin_page(key, &selected, page); }
+        if kind == "recordings" { return self.recordings_page_ordered(&selected, &text, page, options.descending(), &index); }
         if kind == "compositions" || selected.kind == "composer" {
             let composer = if selected.kind == "composer" { selected.name.as_str() } else { "" };
-            return match self.discovery_compositions_ordered(composer, &text, page, options.descending()) {
-                Ok((works, total)) => json!({"total":total, "items":works.into_iter().map(|work| json!({
-                    "kind":"work", "name":work.title, "work":work.key, "composers":work.composers,
-                    "albums":work.albums, "tracks":work.tracks})).collect::<Vec<_>>()}),
-                Err(error) => json!({"error":error.to_string(), "items":[], "total":0}),
-            };
+            return self.compositions_page(composer, &text, page, options.descending(), &index);
         }
         if kind == "composers" {
             let mut names: Vec<_> = self.discovery_names(true).into_iter()

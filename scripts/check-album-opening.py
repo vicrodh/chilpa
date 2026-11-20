@@ -36,7 +36,8 @@ with tempfile.TemporaryDirectory(prefix="chilpa-album-opening-") as directory:
     smoke = profile / "albums.qml"
     smoke.write_text(fixture.read_text().replace("property var albums: []", "property var albums: " + json.dumps(albums)).replace("property var titles: []", "property var titles: " + json.dumps(titles)))
     environment = dict(os.environ, XDG_CONFIG_HOME=str(profile / "config"), XDG_DATA_HOME=str(profile / "data"), XDG_CACHE_HOME=str(profile / "cache"), XDG_RUNTIME_DIR=str(profile / "runtime"), QT_QPA_PLATFORM="offscreen", CHILPA_RENDERER="software", CHILPA_ALBUM_TIMINGS="1", CHILPA_QML_SMOKE=str(smoke))
-    result = subprocess.run(["timeout", "--signal=TERM", "--kill-after=2s", "30s", "dbus-run-session", "--", sys.argv[1]], env=environment, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    # The QML fixture owns the scenario deadline after the renderer and window start.
+    result = subprocess.run(["timeout", "--signal=TERM", "--kill-after=2s", "55s", "dbus-run-session", "--", sys.argv[1]], env=environment, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     output = Path(sys.argv[3]).resolve() if len(sys.argv) > 3 else profile / "album-opening.log"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(result.stdout)

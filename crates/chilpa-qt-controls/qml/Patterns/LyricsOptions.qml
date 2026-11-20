@@ -5,7 +5,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "../Components"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 // How the lyrics are read, from the panel's header: whether the sung line
 // is followed, the size, the language of the translation, the color of the

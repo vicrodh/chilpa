@@ -1,10 +1,9 @@
 import QtQuick
 import QtTest
 import app.chilpa
-import "../../../chilpa-qt/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns"
 
-// The lyrics flyout (a Pattern of the window, tested from here so the
-// window stays under its line budget) mirrors the "Translate lyrics" toggle of Settings:
+// The lyrics flyout mirrors the "Translate lyrics" toggle of Settings:
 // both keep the same preference, and the flyout reads it again each time
 // it opens.
 TestCase {

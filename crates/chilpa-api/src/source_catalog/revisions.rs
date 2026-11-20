@@ -63,6 +63,8 @@ impl Catalog {
             .filter_map(|id| inner.store.tracks.shared(id)).collect();
         let mut artwork = std::collections::hash_map::DefaultHasher::new();
         let mut inherited_formats = std::collections::hash_map::DefaultHasher::new();
+        // Playlist member covers are observed by the realized rows, not by a page reset.
+        let playlist = card.as_ref().is_some_and(|card| card.kind == super::store::CardKind::Playlist);
         let mut hash_card = |card: &Card| {
             card.art.hash(&mut artwork);
             inner.store.chosen.get(&(card.plugin.clone(), card.identity.clone())).hash(&mut artwork);
@@ -71,13 +73,17 @@ impl Catalog {
         if let Some(card) = &card { hash_card(card); }
         for track in &tracks {
             if let Some(parent) = inner.store.cards.get(&track.album_id) {
-                hash_card(parent);
+                if !playlist { hash_card(parent); }
                 if track.format.is_none() && parent.kind == super::store::CardKind::Album && parent.plugin == track.plugin {
                     parent.format.hash(&mut inherited_formats);
                 }
             }
         }
-        for track in &tracks { inner.art_received.contains(&track.image).hash(&mut artwork); }
+        if playlist {
+            if let Some(card) = &card { inner.art_received.contains(inner.store.card_image(card)).hash(&mut artwork); }
+        } else {
+            for track in &tracks { inner.art_received.contains(&track.image).hash(&mut artwork); }
+        }
         let artwork = artwork.finish();
         let inherited_formats = inherited_formats.finish();
         if inner.entity_revisions.len() >= 64 && !inner.entity_revisions.contains_key(&id) {
@@ -147,6 +153,30 @@ mod tests {
         catalog.lock().store.take_item("other", &json!({"kind":"album","ref":"album:9","title":"Other"}), 201);
         catalog.publish(false);
         assert_eq!(catalog.entity_revision(id), entity, "unrelated catalog additions do not rebuild this playlist");
+    }
+
+    #[test]
+    fn playlist_covers_load_on_demand_without_invalidating_the_rows() {
+        let catalog = Catalog::new();
+        let (id, second) = {
+            let mut inner = catalog.lock();
+            let first = inner.store.take_item_track("fixture", &json!({"kind":"track","ref":"track:1",
+                "album_ref":"album:1","title":"First","image":"https://example.invalid/first.jpg"}), None, 1).unwrap();
+            let second = inner.store.take_item_track("fixture", &json!({"kind":"track","ref":"track:2",
+                "album_ref":"album:2","title":"Second","image":"https://example.invalid/second.jpg"}), None, 1).unwrap();
+            let id = inner.store.take_item("fixture", &json!({"kind":"playlist","ref":"playlist:1","title":"List"}), 1).unwrap();
+            inner.store.cards.get_mut(&id).unwrap().tracks = Some(vec![first, second]);
+            (id, second)
+        };
+        let original = catalog.entity_revision(id);
+        catalog.visible_art_of_track(second);
+        assert_eq!(catalog.lock().queue.covers.iter().collect::<Vec<_>>(), ["https://example.invalid/second.jpg"]);
+        catalog.lock().art_received.insert("https://example.invalid/second.jpg".into());
+        assert_eq!(catalog.entity_revision(id), original, "a member cover does not reload the playlist");
+        catalog.lock().art_received.insert("https://example.invalid/first.jpg".into());
+        let cover = catalog.entity_revision(id);
+        assert_eq!(cover.0, original.0);
+        assert_ne!(cover.1, original.1, "the playlist's fallback cover still updates");
     }
 
     #[test]

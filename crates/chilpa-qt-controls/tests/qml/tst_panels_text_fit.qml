@@ -38,7 +38,7 @@ TestCase {
     Component { id: mergeDialog; QueueMergeDialog {} }
     Component { id: confirmation; Kit.ConfirmationDialog {} }
     Component { id: playlistRemoval; Kit.ModelActionConfirmation {} }
-    Component { id: progress; Kit.QueueProgress {} }
+    Component { id: progress; QueueProgress {} }
     Component { id: footer; QueueFooter {} }
     Component { id: loopRow; LoopRow {} }
     Component { id: shortcutsSheet; ShortcutsSheet {} }

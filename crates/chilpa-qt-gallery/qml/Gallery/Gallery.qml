@@ -51,6 +51,7 @@ Window {
             GalleryDiscovery { width: parent.width }
             GalleryArticles { width: parent.width }
             GalleryPatterns { id: patterns; width: parent.width }
+            GalleryCollectionPlayback { width: parent.width }
             // The pages the other shell crates bring.
             Repeater {
                 model: GalleryPages.pages()

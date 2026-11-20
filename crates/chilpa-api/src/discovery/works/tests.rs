@@ -3,9 +3,9 @@ use super::*;
 fn reader() -> Reader {
     let lib = chilpa_library::Library::in_memory().unwrap();
     lib.connection().execute_batch("INSERT INTO sources(id,provider,instance) VALUES (1,'local','default');
-        INSERT INTO albums(id,title,album_artist) VALUES (1,'Local interpretation','Player');
-        INSERT INTO tracks(id,source_id,external_id,title,artist,album_id,work,added_at) VALUES
-            (1,1,'/part','Part I','Player',1,'Suite',1);").unwrap();
+        INSERT INTO albums(id,title,album_artist,year,artwork_path) VALUES (1,'Local interpretation','Player',1987,'/covers/local.jpg');
+        INSERT INTO tracks(id,source_id,external_id,title,artist,album_id,work,added_at,duration_ms) VALUES
+            (1,1,'/part','Part I','Player',1,'Suite',1,500);").unwrap();
     lib.set_track_composers(1, &["Writer".into()]).unwrap();
     Reader::of(lib)
 }
@@ -13,7 +13,7 @@ fn reader() -> Reader {
 fn source(id: i64, number: i64) -> SourceItem {
     SourceItem { track:id, album:-10, plugin:"guest".into(), work:"Suite".into(), composers:vec!["Writer".into()],
         album_title:"Source interpretation".into(), title:format!("Part {number}"), artists:vec!["Quartet".into()],
-        number:Some(number), disc:Some(1), duration_ms:1000, saved_album:true, playable:true, ..Default::default() }
+        number:Some(number), disc:Some(1), duration_ms:1000, year:Some(2007), saved_album:true, playable:true, ..Default::default() }
 }
 
 #[test]
@@ -22,11 +22,19 @@ fn source_works_merge_with_sql_tags_without_discarding_their_interpretations() {
     let index = SourceIndex::new(vec![source(-2,2),source(-1,1)], vec![]);
     let (works, total) = reader.discovery_compositions_using("Writer", "", 0, &index).unwrap();
     assert_eq!((total, works[0].tracks, works[0].albums), (1,3,2));
+    assert_eq!((works[0].recordings, works[0].duration_ms), (2,2500));
+    let page = reader.compositions_page("Writer", "", 0, false, &index);
+    assert_eq!(page["items"][0]["artwork"], "/covers/local.jpg");
     let mut selection = Selection { kind:"work".into(), work:works[0].key.clone(), ..Default::default() };
-    let rows = reader.work_parts_using(&selection, &index).unwrap();
-    let recordings = recordings(rows, "", 0);
+    let local = reader.recordings_page_ordered(&selection, "1987", 0, false, &index);
+    assert_eq!(local["total"], 1);
+    assert_eq!(local["items"][0]["artwork"], "/covers/local.jpg");
+    assert_eq!(local["items"][0]["year"], 1987);
+    let recordings = reader.recordings_page_ordered(&selection, "", 0, false, &index);
     assert_eq!(recordings["total"], 2);
     let remote = recordings["items"].as_array().unwrap().iter().find(|row| row["album"] == -10).unwrap();
+    assert_eq!(remote["source"], "guest");
+    assert_eq!(remote["year"], 2007);
     selection.recording = remote["recording"].as_str().unwrap().into();
     let parts = snapshot(reader.work_parts_using(&selection, &index).unwrap());
     assert_eq!(parts.ids, [-1,-2]);

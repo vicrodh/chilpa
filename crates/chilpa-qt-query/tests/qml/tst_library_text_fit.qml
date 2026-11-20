@@ -49,7 +49,7 @@ TestCase {
         SettingsModel.libraryView = "grid"
         Library.albumless = false
         Library.busy = false
-        Library.summary = ""
+        Library.summary = ""; Library.showing = ""
         Library.order = "artist"
         Library.albumOrder = "artist"
         Library.queries = ["", "", "", "", "", "", "", "", ""]
@@ -135,7 +135,7 @@ TestCase {
                 SettingsModel.libraryView = view === "albumless" ? "grid" : view
                 const page = createTemporaryObject(libraryPage, test, { width: width, height: 860 })
                 longest(page)
-                find(page, "libraryTrackSummary")[0].parent.tracks.summary = trackSummary()
+                Library.showing = trackSummary()
                 if (view === "albumless") {
                     Library.showAlbumless(true)
                     tryVerify(() => find(page, "albumlessTracks").length === 1, 2000)

@@ -239,7 +239,7 @@ TestCase {
         rows.forceLayout()
         verify(waitForRendering(page))
         const rowHeight = rows.itemAtIndex(0).height
-        compare(rows.cacheBuffer, rows.height * Metrics.trackScrollCacheShare)
+        compare(rows.cacheBuffer, Math.trunc(rows.height * Metrics.trackScrollCacheShare))
         compare(rows.itemAtIndex(0).number, 1, "snapshot numbering comes from its position without a metadata role")
         const limit = Math.ceil(rows.height / rowHeight) * (2 + 2 * Metrics.trackScrollCacheShare) + 10
         for (const at of [100, 300, 550]) {
@@ -513,6 +513,10 @@ TestCase {
         compare(model.filterRev, before + 1, "local content still invalidates the sheet")
         Library.remoteRev++
         compare(model.filterRev, before + 2, "source content still invalidates the sheet")
+        const qualities = Library.qualities
+        Library.qualities = ["lossy"]
+        compare(model.filterRev, before + 3, "shared quality filters also change the Tracks result")
+        Library.qualities = qualities
     }
     function test_marks_only_refresh_queries_that_filter_marks() {
         const page = createTemporaryObject(screenMaker, test, {width:1000,height:700})

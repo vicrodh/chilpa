@@ -24,6 +24,8 @@ pub mod qobject {
         #[qproperty(bool, busy)]
         #[qproperty(bool, albumless)]
         #[qproperty(QString, summary)]
+        #[qproperty(QString, showing)]
+        #[qproperty(QString, count_details)]
         #[qproperty(QStringList, source_keys)] #[qproperty(QStringList, source_labels)]
         #[qproperty(QStringList, source_counts)] #[qproperty(QStringList, excluded_sources)]
         #[qproperty(QStringList, source_icons)]
@@ -76,11 +78,10 @@ pub mod qobject {
 }
 
 use crate::{app, browse, worker};
-use chilpa_api::{Facets, Filter, Snapshot, TrackOrder};
+use chilpa_api::{Facets, Filter, LibraryCounts, Snapshot, TrackOrder};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QList, QString, QStringList};
+use cxx_qt_lib::{QString, QStringList};
 use std::pin::Pin;
-use std::rc::Rc;
 
 #[derive(Default)]
 pub struct LibraryRust {
@@ -92,6 +93,8 @@ pub struct LibraryRust {
     busy: bool,
     albumless: bool,
     summary: QString,
+    showing: QString,
+    count_details: QString,
     source_keys: QStringList, source_labels: QStringList, source_counts: QStringList, source_icons: QStringList,
     excluded_sources: QStringList, qualities: QStringList, formats: QStringList,
     extra_filtered: bool,
@@ -110,11 +113,7 @@ const ORDER_KEY: &str = "ui.library.order";
 
 const ORDER: [&str; 9] = ["year", "genre", "label", "composer", "rating", "artist", "album", "bits", "rate"];
 
-fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
-    let mut list = QList::<QString>::default();
-    for item in items { list.append(QString::from(&item)); }
-    QStringList::from(&list)
-}
+fn strings(items: impl IntoIterator<Item = String>) -> QStringList { chilpa_qt_kit::format::strings(items.into_iter()) }
 
 impl qobject::Library {
     pub fn show_albumless(mut self: Pin<&mut Self>, on: bool) {
@@ -183,36 +182,32 @@ impl qobject::Library {
     pub fn clear(mut self: Pin<&mut Self>) {
         browse::write(|s| s.filter = Filter::default());
         self.as_mut().set_albumless(false);
-        self.as_mut().set_query_text(QString::default());
         self.as_mut().set_queries(strings(vec![String::new(); ORDER.len()]));
-        self.as_mut().set_excluded_sources(QStringList::default());
-        self.as_mut().set_qualities(QStringList::default());
-        self.as_mut().set_formats(QStringList::default());
-        self.as_mut().set_extra_filtered(false);
+        self.as_mut().publish_extra();
         self.query_changed();
     }
 
     pub fn toggle_filter(mut self: Pin<&mut Self>, kind: &QString, key: &QString) {
-        let (kind, key) = (kind.to_string(), key.to_string());
-        browse::write(|state| state.filter.toggle_extra(&kind, &key));
-        let (sources, qualities, formats) = browse::read(|state| (
-            state.filter.excluded_sources.clone(), state.filter.qualities.clone(), state.filter.formats.clone()
-        ));
-        let active = !(sources.is_empty() && qualities.is_empty() && formats.is_empty());
-        self.as_mut().set_excluded_sources(strings(sources));
-        self.as_mut().set_qualities(strings(qualities));
-        self.as_mut().set_formats(strings(formats));
-        self.as_mut().set_extra_filtered(active);
+        browse::write(|state| state.filter.toggle_extra(&kind.to_string(), &key.to_string()));
+        self.as_mut().publish_extra();
         self.refresh();
     }
 
     pub fn reset_extra(mut self: Pin<&mut Self>) {
         browse::write(|state| state.filter.reset_extra());
-        self.as_mut().set_excluded_sources(QStringList::default());
-        self.as_mut().set_qualities(QStringList::default());
-        self.as_mut().set_formats(QStringList::default());
-        self.as_mut().set_extra_filtered(false);
+        self.as_mut().publish_extra();
         self.refresh();
+    }
+
+    fn publish_extra(mut self: Pin<&mut Self>) {
+        let (sources, qualities, formats, active) = browse::read(|s| (
+            strings(s.filter.excluded_sources.clone()), strings(s.filter.qualities.clone()),
+            strings(s.filter.formats.clone()), s.filter.extra_filtered(),
+        ));
+        self.as_mut().set_excluded_sources(sources);
+        self.as_mut().set_qualities(qualities);
+        self.as_mut().set_formats(formats);
+        self.as_mut().set_extra_filtered(active);
     }
 
     pub fn order(&self) -> QString {
@@ -253,40 +248,31 @@ impl qobject::Library {
         let thread = self.qt_thread();
         worker::submit(move |reader| {
             // The first reading is never given up: the startup cover waits for it.
-            let Some((facets, snapshot)) = reader.refresh(&filter, order, || generation == 1 || requested.load(std::sync::atomic::Ordering::Relaxed) == generation) else { return };
-            let _ = thread.queue(move |library| library.arrive(generation, facets, snapshot));
+            let Some((facets, snapshot, counts)) = reader.refresh_library(&filter, order, || generation == 1 || requested.load(std::sync::atomic::Ordering::Relaxed) == generation) else { return };
+            let _ = thread.queue(move |library| library.arrive(generation, facets, snapshot, counts));
         });
     }
 
     /// An older request's answer is dropped, unless nothing was shown yet:
     /// at startup new requests come faster than one is answered.
-    fn arrive(mut self: Pin<&mut Self>, generation: u64, facets: Facets, snapshot: Snapshot) {
+    fn arrive(mut self: Pin<&mut Self>, generation: u64, facets: Facets, snapshot: Snapshot, counts: LibraryCounts) {
         let latest = generation == self.rust().generation;
         if !latest && *self.rev() != 0 {
             return;
         }
-        if browse::read(|s| s.snapshot.as_ref() == &snapshot && s.facets.as_ref() == &facets && s.page_revision == self.rust().content_rev) {
-            self.as_mut().set_busy(!latest);
-            return;
-        }
-        let totals = snapshot.totals;
+        let (total, showing, details) = app::with(|api| api.library_count_lines(counts, snapshot.totals));
+        self.as_mut().set_summary(QString::from(total));
+        self.as_mut().set_showing(QString::from(showing));
+        self.as_mut().set_count_details(QString::from(details));
+        let facets = browse::publish(facets, snapshot, self.rust().content_rev);
+        let Some(facets) = facets else { self.set_busy(!latest); return; };
         self.as_mut().set_source_keys(strings(facets.sources.iter().map(|entry| entry.key.clone())));
         self.as_mut().set_source_labels(strings(facets.sources.iter().map(|entry| entry.label.clone())));
         self.as_mut().set_source_counts(strings(facets.sources.iter().map(|entry| entry.albums.to_string())));
         self.as_mut().set_source_icons(strings(facets.sources.iter().map(|entry| entry.icon.clone())));
-        browse::write(|s| {
-            if s.snapshot.ids != snapshot.ids || s.snapshot.album_ids != snapshot.album_ids || s.page_revision != self.rust().content_rev {
-                s.album_pages = Rc::default(); s.track_pages = Rc::default();
-                s.page_revision = self.rust().content_rev;
-            }
-            s.facets = Rc::new(facets);
-            s.snapshot = Rc::new(snapshot);
-        });
-        let line = app::with(|api| api.library_summary(totals));
-        self.as_mut().set_summary(QString::from(&line));
-        self.as_mut().set_busy(!latest);
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
+        self.set_busy(!latest);
     }
 }
 

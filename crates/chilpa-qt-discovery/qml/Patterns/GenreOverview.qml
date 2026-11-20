@@ -132,6 +132,16 @@ Item {
                 onWantedActiveChanged:overview.showShelf(artists,wantedActive)
                 sourceComponent: overview.artistsContent
             }
+            GenrePluginShelves {
+                id: plugins
+                width: parent.width
+                genreKey: overview.key
+                viewport: view
+                // The column does not position an empty shelf. Use the preceding row while results are still unknown.
+                readonly property real shelfStart: artists.y + artists.height
+                nearViewport: overview.layoutReady && overview.visible && shelfStart <= view.contentY + view.height + Metrics.sceneCardHeight
+                    && shelfStart + height + Metrics.sceneCardHeight >= view.contentY
+            }
             Row {
                 width: parent.width; spacing: Metrics.gap12; visible: overview.subgenres.length > 0
                 Text { width: Math.max(0, parent.width - allSubgenres.width - parent.spacing); anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Subgenres", I18n.rev); elide: Text.ElideRight; font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.textPrimary }

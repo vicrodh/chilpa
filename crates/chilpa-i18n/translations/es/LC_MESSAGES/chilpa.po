@@ -585,6 +585,9 @@ msgstr "Todos los temas"
 msgid "All time"
 msgstr "Todo"
 
+msgid "All tracks"
+msgstr "Todas las pistas"
+
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "Autoriza a Chilpa en Discogs y pega el código aquí abajo."
 
@@ -779,6 +782,9 @@ msgstr "Arreglista"
 
 msgid "Artist"
 msgstr "Artista"
+
+msgid "Artist discovery"
+msgstr "Descubre artistas"
 
 msgid "Artist mix"
 msgstr "Mix del artista"
@@ -3533,6 +3539,12 @@ msgstr "Inicio"
 msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
 msgstr "Cuánto tiempo guarda Litterbox una portada subida. Si el álbum sigue sonando, se vuelve a subir antes de que venza."
 
+msgid "How many tracks should be added to the queue?"
+msgstr "¿Cuántas pistas quieres agregar a la cola?"
+
+msgid "How many tracks should be shuffled from the whole collection?"
+msgstr "¿Cuántas pistas quieres elegir al azar de toda la colección?"
+
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Cuánto se difumina el fondo de pantalla detrás de la ventana: 0% lo deja nítido, 100% es el máximo."
 
@@ -4150,6 +4162,9 @@ msgstr "La comprobación de la biblioteca falló"
 
 msgid "Library check interrupted"
 msgstr "Comprobación de biblioteca interrumpida"
+
+msgid "Library counts"
+msgstr "Conteo de la biblioteca"
 
 msgid "Library folders"
 msgstr "Carpetas de la biblioteca"
@@ -4786,6 +4801,9 @@ msgstr "Plugin nuevo"
 
 msgid "New queue"
 msgstr "Nueva queue"
+
+msgid "New releases from your plugins"
+msgstr "Novedades de tus plugins"
 
 msgid "New tab"
 msgstr "Nueva pestaña"
@@ -5540,6 +5558,9 @@ msgstr "Filtros paramétricos"
 msgid "Parentheses group; NOT works like the minus"
 msgstr "Los paréntesis agrupan; NOT funciona como el menos"
 
+msgid "Parts"
+msgstr "Partes"
+
 msgid "Password"
 msgstr "Contraseña"
 
@@ -5879,6 +5900,9 @@ msgstr "Preparando los cambios de metadata…"
 msgid "Preparing playlists"
 msgstr "Preparando playlists"
 
+msgid "Preparing queue"
+msgstr "Preparando la cola"
+
 msgid "Preparing results…"
 msgstr "Preparando resultados…"
 
@@ -6119,6 +6143,9 @@ msgstr "Arreglos en radio y DSD"
 msgid "Radio asks for each song's cover once, and the cover stays on screen. Native DSD through PipeWire now plays on a real DAC, with PipeWire 1.6 or later."
 msgstr "La radio pide la portada de cada canción una sola vez, y la portada se queda en pantalla. El DSD nativo por PipeWire ya suena en un DAC real, con PipeWire 1.6 o más reciente."
 
+msgid "Random album"
+msgstr "Álbum aleatorio"
+
 msgid "Rate"
 msgstr "Calificar"
 
@@ -6277,6 +6304,9 @@ msgstr "Playlists escuchadas recientemente"
 
 msgid "Recently played playlists in the library"
 msgstr "Playlists escuchadas recientemente en la biblioteca"
+
+msgid "Recording"
+msgstr ""
 
 msgid "Recording engineer"
 msgstr "Ingeniero de grabación"
@@ -7017,6 +7047,9 @@ msgstr "Música seleccionada"
 msgid "Selected output"
 msgstr "Salida seleccionada"
 
+msgid "Self-hosted ({})"
+msgstr "Servidores propios ({})"
+
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr "Envía la portada del álbum desde esta computadora a litterbox.catbox.moe, un servicio público de archivos, para que Discord pueda mostrarla. Cualquiera con el enlace puede abrirla hasta que venza. Solo se envía la imagen: ni nombre ni ruta de archivo."
 
@@ -7218,6 +7251,9 @@ msgstr "Mostrar/Ocultar ventana"
 msgid "Showing"
 msgstr "Mostrando"
 
+msgid "Showing {}"
+msgstr "Mostrando {}"
+
 msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "Se muestran {} de {} pistas. Elige un artista o un servidor para ver el resto."
 
@@ -7363,6 +7399,9 @@ msgstr "Este resultado no incluye una correspondencia para algunos archivos sele
 
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr "Algunos archivos seleccionados no estaban incluidos en esta búsqueda. Vuelve a buscar la metadata del álbum seleccionado."
+
+msgid "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
+msgstr "El conteo incluye las canciones que ya están cargadas en tu biblioteca. Los álbumes pueden aparecer antes de que se carguen sus pistas."
 
 msgid "Songs"
 msgstr "Canciones"
@@ -11227,6 +11266,11 @@ msgid "{} record or track edited here is one the server no longer lists; its edi
 msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
 msgstr[0] "{} disco o pista editado aquí ya no aparece en el servidor; sus cambios se conservan."
 msgstr[1] "{} discos o pistas editados aquí ya no aparecen en el servidor; sus cambios se conservan."
+
+msgid "{} recording"
+msgid_plural "{} recordings"
+msgstr[0] "{} grabación"
+msgstr[1] "{} grabaciones"
 
 msgid "{} required"
 msgstr "{} necesarios"

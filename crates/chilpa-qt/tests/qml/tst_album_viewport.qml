@@ -31,6 +31,7 @@ TestCase {
         }
     }
     function init() {
+        failOnWarning(/Binding loop|ReferenceError|TypeError/)
         page = createTemporaryObject(fixture, this)
         verify(page)
         tryVerify(() => findChild(page, "albumAnimatedCover") !== null)
@@ -76,6 +77,27 @@ TestCase {
         page.grid.scrollView.contentX = page.grid.cardWidth * 2
         tryVerify(() => records.artPriorities[next] === true)
         compare(page.contentY, 0)
+    }
+    function test_shelf_height_follows_late_quickview_metadata_without_feedback() {
+        const grid=page.grid, records=grid.model
+        records.maxRows=1
+        records.clear()
+        for (let index=0;index<6;index++) records.append({first:index,span:1,group:"",revision:0})
+        grid.scrollView.forceLayout()
+        waitForRendering(grid)
+        const base=grid.height
+        records.expanded=0
+        let quick=null
+        tryVerify(()=> { quick=findChild(grid.scrollView.itemAtIndex(0),"albumQuickLoader");return quick?.item?.height>0 })
+        const panel=quick.item.children.find(child=>child.albumDetail!==undefined)
+        verify(panel)
+        const detail=panel.albumDetail
+        const firstHeight=quick.item.height
+        detail.meta="Late release information with credits and format. ".repeat(20)
+        tryVerify(()=>quick.item.height>firstHeight)
+        tryVerify(()=>grid.height>base+quick.item.height)
+        records.expanded=-1
+        tryCompare(grid,"height",base)
     }
     function test_mapping_preserves_ancestor_scale_rotation_and_reparenting() {
         page.grid.x = 100

@@ -585,6 +585,9 @@ msgstr "Tous les thèmes"
 msgid "All time"
 msgstr "Depuis toujours"
 
+msgid "All tracks"
+msgstr ""
+
 msgid "Allow Chilpa on Discogs, then paste the code below."
 msgstr "Autorisez Chilpa sur Discogs, puis collez le code ci-dessous."
 
@@ -779,6 +782,9 @@ msgstr "Arrangeur"
 
 msgid "Artist"
 msgstr "Artiste"
+
+msgid "Artist discovery"
+msgstr ""
 
 msgid "Artist mix"
 msgstr "Mix de l'artiste"
@@ -3533,6 +3539,12 @@ msgstr "Accueil"
 msgid "How long Litterbox keeps an uploaded cover. While the album still plays, it is uploaded again before then."
 msgstr "Durée pendant laquelle Litterbox conserve une pochette envoyée. Tant que l'album joue, elle est renvoyée avant son expiration."
 
+msgid "How many tracks should be added to the queue?"
+msgstr ""
+
+msgid "How many tracks should be shuffled from the whole collection?"
+msgstr ""
+
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Intensité du flou du fond d'écran derrière la fenêtre : 0 % le laisse net, 100 % est le flou maximal."
 
@@ -4150,6 +4162,9 @@ msgstr "Échec de la vérification de la bibliothèque"
 
 msgid "Library check interrupted"
 msgstr "Vérification de la bibliothèque interrompue"
+
+msgid "Library counts"
+msgstr ""
 
 msgid "Library folders"
 msgstr "Dossiers de la bibliothèque"
@@ -4786,6 +4801,9 @@ msgstr "Nouveau plugin"
 
 msgid "New queue"
 msgstr "Nouvelle file d'attente"
+
+msgid "New releases from your plugins"
+msgstr ""
 
 msgid "New tab"
 msgstr "Nouvel onglet"
@@ -5540,6 +5558,9 @@ msgstr ""
 msgid "Parentheses group; NOT works like the minus"
 msgstr "Les parenthèses regroupent ; NOT fait comme le moins"
 
+msgid "Parts"
+msgstr ""
+
 msgid "Password"
 msgstr "Mot de passe"
 
@@ -5879,6 +5900,9 @@ msgstr ""
 msgid "Preparing playlists"
 msgstr "Préparation des playlists"
 
+msgid "Preparing queue"
+msgstr ""
+
 msgid "Preparing results…"
 msgstr "Préparation des résultats…"
 
@@ -6119,6 +6143,9 @@ msgstr ""
 msgid "Radio asks for each song's cover once, and the cover stays on screen. Native DSD through PipeWire now plays on a real DAC, with PipeWire 1.6 or later."
 msgstr ""
 
+msgid "Random album"
+msgstr ""
+
 msgid "Rate"
 msgstr "Noter"
 
@@ -6277,6 +6304,9 @@ msgstr "Playlists écoutées récemment"
 
 msgid "Recently played playlists in the library"
 msgstr "Playlists écoutées récemment dans la bibliothèque"
+
+msgid "Recording"
+msgstr ""
 
 msgid "Recording engineer"
 msgstr "Ingénieur du son à l’enregistrement"
@@ -7017,6 +7047,9 @@ msgstr "Musique sélectionnée"
 msgid "Selected output"
 msgstr "Sortie sélectionnée"
 
+msgid "Self-hosted ({})"
+msgstr ""
+
 msgid "Send the album's cover from this computer to litterbox.catbox.moe, a public file host, so Discord can show it. Anyone with its link can open it until it expires. Only the picture goes: no name, no file path."
 msgstr "Envoie la pochette de l'album depuis cet ordinateur vers litterbox.catbox.moe, un hébergeur de fichiers public, pour que Discord puisse l'afficher. Toute personne qui a le lien peut l'ouvrir jusqu'à son expiration. Seule l'image part : ni nom, ni chemin de fichier."
 
@@ -7218,6 +7251,9 @@ msgstr "Afficher/Masquer la fenêtre"
 msgid "Showing"
 msgstr "Affichage"
 
+msgid "Showing {}"
+msgstr ""
+
 msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "{} pistes affichées sur {}. Choisissez un artiste ou un serveur pour voir le reste."
 
@@ -7362,6 +7398,9 @@ msgid "Some selected files have no mapping in this candidate. Adjust the selecti
 msgstr ""
 
 msgid "Some selected files were outside this lookup. Look up the selected group again."
+msgstr ""
+
+msgid "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
 msgstr ""
 
 msgid "Songs"
@@ -11227,6 +11266,11 @@ msgid "{} record or track edited here is one the server no longer lists; its edi
 msgid_plural "{} records or tracks edited here are ones the server no longer lists; their edits are kept."
 msgstr[0] "{} disque ou piste modifié ici n'est plus listé par le serveur ; ses modifications sont conservées."
 msgstr[1] "{} disques ou pistes modifiés ici ne sont plus listés par le serveur ; leurs modifications sont conservées."
+
+msgid "{} recording"
+msgid_plural "{} recordings"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} required"
 msgstr ""

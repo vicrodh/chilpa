@@ -55,3 +55,4 @@ cloud-upload
 user-star
 disc
 award
+dices

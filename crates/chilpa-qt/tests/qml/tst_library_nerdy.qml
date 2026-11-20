@@ -12,6 +12,28 @@ TestCase {
     Component { id: factory; LibraryScreen {} }
     Loader { id: page; anchors.fill: parent; active: false; sourceComponent: factory }
     function cleanup() { page.active = false; SettingsModel.libraryView = "grid"; AlbumActions.technicalOf = {} }
+    function test_counts_align_with_the_controls_and_open_the_breakdown() {
+        Library.summary = "10 albums · 140 songs"
+        Library.showing = "Showing 3 albums · 70 songs"
+        Library.countDetails = JSON.stringify({local: 100, servers: 1, serverTracks: 5, plugins: [["Fixture", 35]], showing: "3 albums · 70 songs"})
+        try {
+            page.active = true
+            const button = findChild(page.item, "libraryCountInfo")
+            const tally = findChild(page.item, "libraryTrackSummary")
+            const loose = findChild(page.item, "albumlessToggle")
+            compare(tally.text, Library.showing)
+            compare(tally.mapToItem(page.item, 0, tally.height / 2).y, loose.mapToItem(page.item, 0, loose.height / 2).y)
+            mouseClick(button)
+            const dialog = findChild(page.item, "libraryCountDialog")
+            tryCompare(dialog, "opened", true)
+            dialog.close()
+        } finally {
+            Library.summary = ""
+            Library.showing = "3 songs"
+            Library.countDetails = ""
+        }
+    }
+
     function test_column_choices_persist_per_view_and_include_technical_values() {
         const oldNerdy = SettingsModel.kept("ui.library.nerdyColumns")
         const oldList = SettingsModel.kept("ui.library.listColumns")

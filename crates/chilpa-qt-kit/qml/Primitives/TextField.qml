@@ -7,6 +7,8 @@ Rectangle {
     id: root
 
     property alias text: input.text
+    property alias validator: input.validator
+    property alias inputMethodHints: input.inputMethodHints
     property string placeholder
     property bool secret: false
     // A cell of a table: no fill and no corners until it has the keyboard.

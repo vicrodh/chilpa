@@ -48,7 +48,7 @@ TestCase {
     }
 
     function test_source_refreshes_coalesce_behind_the_acknowledgement() {
-        const side = frame.children.find(child => typeof child.refreshSources === "function")
+        const side = findChild(frame, "sidebarContent")
         Sources.refreshCount = 0
         router.phase = "acknowledging"
         side.refreshSources()
@@ -83,6 +83,36 @@ TestCase {
 
     function handle() {
         return frame.children.find(child => child.moved !== undefined && child.released !== undefined)
+    }
+
+    function test_button_motion_leaves_the_sidebar_layout_at_its_settled_width() {
+        SettingsModel.sidebarMode = "open"
+        tryCompare(frame, "shown", Metrics.sidebarWidth)
+        const side = findChild(frame, "sidebarContent")
+        SettingsModel.sidebarMode = "closed"
+        tryVerify(() => frame.moving && frame.shown > 0 && frame.shown < Metrics.sidebarWidth)
+        compare(side.width, Metrics.sidebarWidth)
+        tryCompare(frame, "shown", 0)
+        compare(side.visible, false)
+        SettingsModel.sidebarMode = "open"
+        tryCompare(frame, "shown", Metrics.sidebarWidth)
+        compare(side.width, Metrics.sidebarWidth)
+    }
+
+    function test_drag_remains_captured_past_the_closed_edge() {
+        SettingsModel.sidebarMode = "open"
+        tryCompare(frame, "shown", Metrics.sidebarWidth)
+        const grip = handle()
+        grip.started()
+        grip.moved(-Metrics.sidebarWidth - 20)
+        compare(frame.dragging, true)
+        tryCompare(frame, "shown", 0)
+        grip.moved(40)
+        verify(frame.dragging)
+        tryCompare(frame, "shown", Metrics.sidebarWidth + 40)
+        grip.canceled()
+        compare(frame.dragging, false)
+        tryCompare(frame, "shown", Metrics.sidebarWidth)
     }
 
     function test_a_snap_during_a_drag_slides_and_the_pointer_is_followed_otherwise() {

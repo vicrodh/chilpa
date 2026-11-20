@@ -8,6 +8,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as ControlsUi
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/offline/qml/Components" as OfflineParts
 
@@ -34,11 +36,14 @@ Item {
     readonly property bool grouped: group !== "off"
     // Where each letter starts, read again each time the list arrives.
     property var letters: []
+    property int sourceFilterRev: 0
+    readonly property string sourceFilterScope: JSON.stringify([Array.from(Library.excludedSources), Array.from(Library.qualities), Array.from(Library.formats)])
+    onSourceFilterScopeChanged: ++sourceFilterRev
 
     TrackListModel {
         id: tracks
         key: [page.order === "default" ? "" : page.order, page.group, page.typed, "", JSON.stringify(tableState.effective)].join("\u001f")
-        filterRev: Library.contentRev + Library.remoteRev + (tableState.marksFiltered ? Ratings.rev : 0)
+        filterRev: page.sourceFilterRev + Library.contentRev + Library.remoteRev + (tableState.marksFiltered ? Ratings.rev : 0)
         playingPath: Player.path
     }
 
@@ -76,6 +81,22 @@ Item {
         onGrouped: value => { page.group = value; SettingsModel.keep("ui.tracks.group", value) }
         onColumned: columns => { columnFilter.close(); tableState.keepColumns(columns) }
         onSelectionToggled: { page.selectionMode = !page.selectionMode; tracks.clearSelection() }
+
+        IconButton {
+            id: sourcesButton
+            anchors.verticalCenter: parent.verticalCenter
+            tip: I18n.tr("Quality, format and source filters", I18n.rev)
+            glyph: Icons.filter
+            round: true
+            checked: Library.extraFiltered || sources.opened
+            onClicked: sources.opened ? sources.close() : sources.open()
+
+            SourcesPopover {
+                id: sources
+                x: sourcesButton.width - width
+                y: sourcesButton.height + Metrics.gap6
+            }
+        }
     }
 
     readonly property var sourceNames: {
@@ -100,6 +121,19 @@ Item {
         onCleared: { columnFilter.close(); page.columnFilters = ({}); page.typed = ""; head.clearSearch(); tableState.sourceNames = ({}) }
     }
 
+    ControlsUi.CollectionPlayback {
+        id: actions
+        anchors.top: trail.bottom
+        anchors.topMargin: Metrics.gap12
+        x: head.x
+        availableWidth: head.width
+        model: tracks
+        available: tracks.ready && tracks.count > 0
+        filtered: page.typed.trim() !== "" || tableState.filtered || Library.extraFiltered
+        scope: [tracks.key, tracks.filterRev].join("|")
+        label: I18n.tr("Tracks", I18n.rev)
+    }
+
     // The group the first row shown is in, above the rows: bands between
     // the rows made the view misjudge far rows, and the first scroll after
     // a far jump leapt hundreds of rows. Each group's first row carries a
@@ -108,7 +142,7 @@ Item {
     Text {
         id: groupName
         objectName: "tracksGroupName"
-        anchors.top: trail.bottom
+        anchors.top: actions.bottom
         anchors.topMargin: Metrics.gap12
         x: head.x
         width: sheet.width
@@ -216,7 +250,7 @@ Item {
         objectName: "tracksEmptyState"
         visible: tracks.ready && !Library.busy && tracks.count === 0
         anchors.centerIn: sheet
-        text: page.typed !== "" || tableState.filtered ? I18n.tr("No tracks match your search.", I18n.rev) : I18n.tr("No tracks in the selected libraries yet.", I18n.rev)
+        text: page.typed !== "" || tableState.filtered || Library.extraFiltered ? I18n.tr("No tracks match your search.", I18n.rev) : I18n.tr("No tracks in the selected libraries yet.", I18n.rev)
         font.pointSize: Type.body
         color: Theme.color.textSecondary
     }

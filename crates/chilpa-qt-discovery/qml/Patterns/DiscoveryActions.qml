@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 Column {
     id: root
+    property string mode: "genres"
     property var selected: ({})
     property var about: ({})
     property var choices: []
@@ -19,6 +20,17 @@ Column {
     signal openRequested(var entry)
     signal tabRequested(int tab)
     spacing: Metrics.gap12
+    Text {
+        visible: !root.overview
+        width: parent.width
+        text: root.work ? I18n.tr("Available parts, grouped by album and performer. Work tags do not confirm a complete recording.", I18n.rev)
+            : root.composer ? I18n.tr("Explore works, recordings and albums credited to this composer.", I18n.rev)
+            : root.mode === "genres" ? I18n.tr("Follow a style into its subgenres, or search for one directly.", I18n.rev)
+            : root.mode === "composers" ? I18n.tr("The people behind the music in your library.", I18n.rev)
+            : I18n.tr("Works identified by work and composer tags. Recordings keep their album and performer context.", I18n.rev)
+        wrapMode: Text.WordWrap; textFormat: Text.PlainText
+        font.pointSize: Type.body; color: Theme.color.textSecondary
+    }
     Flow {
         width: parent.width; spacing: Metrics.gap8
         visible: root.work && (root.selected.composers || []).length > 0

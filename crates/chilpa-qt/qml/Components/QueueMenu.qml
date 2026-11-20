@@ -11,6 +11,7 @@ CascadingMenu {
     id: menu
 
     property TrackListModel model
+    property var collectionAction: null
     property string laterLabel
     property bool canRemove: false
     property int offlinePlaylistId: 0
@@ -33,7 +34,7 @@ CascadingMenu {
 
     function showAt(left, top) {
         const icons = {queue: Lucide.listEnd, next: Lucide.listStart, later: Lucide.listPlus}
-        entries = JSON.parse(model.menuJson(-1)).map(entry => Object.assign({}, entry, {glyph: icons[entry.act] || "", family: Lucide.font})).concat(canRemove ? [
+        entries = JSON.parse(collectionAction ? QueueActivity.collectionMenu() : model.menuJson(-1)).map(entry => Object.assign({}, entry, {glyph: icons[entry.act] || "", family: Lucide.font})).concat(canRemove ? [
             { separator: true },
             { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
         ] : [])
@@ -46,6 +47,10 @@ CascadingMenu {
 
     onActionChosen: entry => {
         const action = entry.act
+        if (collectionAction) {
+            collectionAction(action, entry.text)
+            return
+        }
         if (action.startsWith("offline:")) {
             Offline.call(action.split(":")[1], "playlist", JSON.stringify([offlinePlaylistId]))
             return

@@ -1,7 +1,6 @@
 //! A source's saved records and tracks on the library's own screens.
 //!
-//! What the listener integrated -- a source's saved albums into Albums, its
-//! saved tracks into Tracks -- is read from the catalog into a compact index
+//! The saved albums and tracks selected for integration share a compact index
 //! once per catalog revision. Library, Albums and Tracks filter it with the
 //! same `Filter` the database answers, cascade its facets column by column as
 //! the database does, and merge it into their snapshots by the keys the
@@ -25,7 +24,7 @@ pub(crate) use versions::{chosen as chosen_copies, copies, dropped as dropped_co
 
 pub use groups::AlbumGroup;
 pub(crate) use facets::merge as merge_facets;
-pub(crate) use merge::{snapshot as merge_snapshot, Scope};
+pub(crate) use merge::snapshot as merge_snapshot;
 
 use crate::{FacetEntry, Filter};
 
@@ -71,9 +70,9 @@ pub(crate) struct SourceItem {
     pub tier: &'static str,
     /// The library's format key ("flac", "ogg", ...), empty when unknown.
     pub format: &'static str,
-    /// In the source's saved tracks: Tracks shows it.
+    /// Individually saved in the source.
     pub saved_track: bool,
-    /// On one of the source's saved records: Albums shows that record.
+    /// Membership in one of the source's saved records.
     pub saved_album: bool,
     /// An explicit album heart, independent of saved-library membership.
     pub favorite_album: bool,

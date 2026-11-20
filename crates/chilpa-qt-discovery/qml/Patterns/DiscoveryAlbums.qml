@@ -9,6 +9,8 @@ Item {
     property string key: ""
     property string filter: ""
     property string order: "title"
+    readonly property alias collection: records
+    readonly property bool playable: records.ready && records.error === "" && records.albums > 0
     readonly property alias scrollView: grid.scrollView
     readonly property bool ready: records.ready
     readonly property string error: records.error

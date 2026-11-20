@@ -8,6 +8,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as ControlsUi
 
 // Albums (design/06): every record in the library, as cards or as rows,
 // through the sources and qualities chosen, and grouped or not. It scrolls
@@ -34,6 +35,7 @@ Item {
         order: page.source ? sourceControls.sort : Library.albumOrder
         group: page.source ? sourceControls.grouping : page.group
         filter: find.typed
+        filterContext: page.source ? "" : JSON.stringify([Array.from(Library.excludedSources), Array.from(Library.qualities), Array.from(Library.formats)])
         contentRev: Library.contentRev + Library.rev + Library.remoteRev + Library.remoteArtRev
         columns: grid.columns
     }
@@ -173,11 +175,27 @@ Item {
         }
     }
 
+    ControlsUi.CollectionPlayback {
+        id: actions
+        visible: !page.source
+        anchors.top: kinds.bottom
+        anchors.topMargin: visible ? Metrics.gap12 : 0
+        x: head.x
+        availableWidth: head.width
+        height: visible ? implicitHeight : 0
+        model: all
+        showRandomAlbum: true
+        available: visible && all.ready && all.albums > 0 && all.error === "" && !Library.busy
+        filtered: find.typed.trim() !== "" || Library.extraFiltered
+        scope: JSON.stringify([all.filter, all.order, all.group, all.filterContext])
+        label: I18n.tr("Albums", I18n.rev)
+    }
+
     AlbumGrid {
         id: grid
         objectName: "albumsPageGrid"
         visible: all.ready && all.error === ""
-        anchors.top: kinds.bottom
+        anchors.top: actions.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
         x: head.x

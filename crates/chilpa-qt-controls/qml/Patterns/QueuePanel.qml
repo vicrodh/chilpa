@@ -7,7 +7,7 @@ import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
-import "../Components"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 // The active queue drives local playback, casting and ListenList.
 Item {

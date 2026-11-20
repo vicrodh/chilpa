@@ -28,6 +28,7 @@ mod revalidation;
 mod native;
 mod library_index;
 mod genre_anchor;
+pub(crate) mod genre_discovery;
 pub(crate) mod integrated_index;
 pub(crate) mod genres;
 mod composers;
@@ -86,6 +87,9 @@ enum Job {
     Track(String),
 }
 
+pub(crate) type AlbumPaths = HashMap<i64, Vec<String>>;
+type AlbumPathsReady = Box<dyn FnOnce(AlbumPaths) + Send>;
+
 /// Something asked of records whose tracks were not read yet.
 pub(crate) struct Deferred {
     pub albums: Vec<i64>,
@@ -93,6 +97,8 @@ pub(crate) struct Deferred {
     pub shuffled: bool,
     pub origin: Option<crate::queue_origin::QueueOrigin>,
     asked: Instant,
+    pub paths_ready: Option<AlbumPathsReady>,
+    unresolved: usize,
 }
 
 #[derive(Default)]
@@ -752,20 +758,77 @@ impl Catalog {
         read.cards.first().or(read.tracks.first()).copied().unwrap_or_default()
     }
 
+    /// Copies just queue paths from the catalog, without revalidating metadata.
+    pub(crate) fn playable_track_paths(&self, ids: &[i64]) -> HashMap<i64, String> {
+        let inner = self.lock();
+        ids.iter().filter_map(|id| inner.store.tracks.get(id))
+            .filter(|track| track.playable && !residency::source_inactive(&inner, &track.plugin))
+            .map(|track| (track.id, track.path.clone())).collect()
+    }
+
+    pub(crate) fn playable_album_paths(&self, ids: &[i64]) -> AlbumPaths {
+        let inner = self.lock();
+        ids.iter().filter_map(|id| {
+            let card = inner.store.cards.get(id)?;
+            if residency::source_inactive(&inner, &card.plugin) { return None; }
+            let paths = card.tracks.as_ref()?.iter().filter_map(|track| inner.store.tracks.get(track))
+                .filter(|track| track.playable).map(|track| track.path.clone()).collect();
+            Some((*id, paths))
+        }).collect()
+    }
+
+    /// The bulk action waits while a card can still supply tracks.
+    fn album_unresolved(inner: &Inner, id: i64) -> bool {
+        if inner.card_errors.contains_key(&id) { return false; }
+        match inner.store.cards.get(&id) {
+            Some(card) => card.tracks.is_none() && !residency::source_inactive(inner, &card.plugin),
+            None => inner.store.cold_sources.values().any(|source| source.cards.contains_key(&id)),
+        }
+    }
+
     /// Waits for records' tracks, then does what was asked with them.
     pub fn defer(&self, albums: Vec<i64>, act: &str, shuffled: bool, origin: Option<crate::queue_origin::QueueOrigin>) {
-        let mut inner = self.lock();
-        for id in &albums {
-            if inner.store.cold_sources.values().any(|source| source.cards.contains_key(id)) { inner.card_errors.remove(id); }
-            if inner.store.cards.get(id).is_some_and(|c| c.tracks.is_none()) {
-                inner.card_errors.remove(id);
-                self.queue(&mut inner, Job::Tracks(*id), true);
-            }
+        self.defer_action(Deferred { albums, act: act.into(), shuffled, origin, asked: Instant::now(), paths_ready: None, unresolved: 0 });
+    }
+
+    pub(crate) fn with_album_paths(&self, albums: Vec<i64>, ready: AlbumPathsReady) {
+        let pending = {
+            let inner = self.lock();
+            albums.iter().any(|id| Self::album_unresolved(&inner, *id))
+        };
+        if pending {
+            self.defer_action(Deferred {
+                unresolved: albums.len(), albums, act: String::new(), shuffled: false,
+                origin: None, asked: Instant::now(), paths_ready: Some(ready),
+            });
+        } else {
+            ready(self.playable_album_paths(&albums));
         }
-        inner.deferred.retain(|d| d.act != act || d.albums != albums);
-        inner.deferred.push(Deferred { albums, act: act.into(), shuffled, origin, asked: Instant::now() });
+    }
+
+    fn defer_action(&self, deferred: Deferred) {
+        let mut inner = self.lock();
+        for id in &deferred.albums {
+            let missing = inner.store.cards.get(id).is_some_and(|card| card.tracks.is_none());
+            if missing || inner.store.cold_sources.values().any(|source| source.cards.contains_key(id)) {
+                inner.card_errors.remove(id);
+            }
+            if missing && deferred.paths_ready.is_none() { self.queue(&mut inner, Job::Tracks(*id), true); }
+        }
+        if deferred.paths_ready.is_some() { self.request_album_tracks(&mut inner, &deferred.albums); }
+        inner.deferred.retain(|d| d.act != deferred.act || d.albums != deferred.albums);
+        inner.deferred.push(deferred);
         inner.residency.changed();
         self.wake.notify_one();
+    }
+
+    fn request_album_tracks(&self, inner: &mut Inner, albums: &[i64]) {
+        // One window of 16 missing albums per bulk action, owned by the
+        // catalog until it resolves or the action's inactivity timeout elapses.
+        let missing: Vec<_> = albums.iter().copied()
+            .filter(|id| inner.store.cards.contains_key(id) && Self::album_unresolved(inner, *id))
+            .take(16).collect();
+        for id in missing { self.queue(inner, Job::Tracks(id), true); }
     }
 
     /// The deferred actions whose records are all read now. Those that
@@ -774,7 +837,21 @@ impl Catalog {
         let mut inner = self.lock();
         let deferred = std::mem::take(&mut inner.deferred);
         let mut ready = Vec::new();
-        for d in deferred {
+        for mut d in deferred {
+            if d.paths_ready.is_some() {
+                let unresolved = d.albums.iter().filter(|id| Self::album_unresolved(&inner, **id)).count();
+                if unresolved < d.unresolved {
+                    d.unresolved = unresolved;
+                    d.asked = Instant::now();
+                }
+                if unresolved == 0 || d.asked.elapsed() >= ACTION_PATIENCE {
+                    ready.push(d);
+                } else {
+                    self.request_album_tracks(&mut inner, &d.albums);
+                    inner.deferred.push(d);
+                }
+                continue;
+            }
             let read = d.albums.iter().all(|id| *id >= 0 || inner.store.cards.get(id).is_some_and(|c| c.tracks.is_some()));
             let failed = d.albums.iter().any(|id| inner.card_errors.contains_key(id)
                 || (*id < 0 && !inner.store.cards.contains_key(id) && !inner.store.cold_sources.values().any(|source| source.cards.contains_key(id))));
@@ -1008,6 +1085,18 @@ impl Catalog {
             return;
         }
         self.queue(&mut inner, Job::Track(path.to_string()), true);
+    }
+
+    pub(super) fn visible_art_of_track(&self, id: i64) -> String {
+        let mut inner = self.lock();
+        let Some(track) = inner.store.tracks.get(&id) else { return String::new(); };
+        let art = inner.store.art_of(track);
+        if art.is_empty() {
+            let image = inner.store.cards.get(&track.album_id).map(|card| card.image.as_str())
+                .filter(|image| !image.is_empty()).unwrap_or(&track.image).to_owned();
+            self.want_cover(&mut inner, &image);
+        }
+        art
     }
 
     /// Asks for a track's cover when a list shows it without one: a track

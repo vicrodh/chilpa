@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import app.chilpa
 import app.chilpa.folders
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -20,51 +19,67 @@ Item {
     function openSource(action, id, text) { content.openSource(action, id, text) }
     function deferNavigation(action) { content.deferNavigation(action) }
 
-    // The width being dragged, or -1 when nothing is.
-    property real dragged: -1
+    property var drag: null
     property real grabbed: 0
-
-    // Between the planes' top and bottom: the player's layout moves them.
-    readonly property int head: Metrics.shellTop
-    readonly property int tall: height - head - Metrics.shellBottom // derived: down to the window's margin, or the bar's
-    readonly property bool dragging: dragged >= 0
-    // The mode while dragging is where the drag would land from where it was.
-    property string dragMode: ""
-    readonly property string mode: dragging ? dragMode : SettingsModel.sidebarMode
-    readonly property int openWidth: dragging ? SettingsModel.sidebarWidthAt(dragged, window.width)
-        : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
-    // The width it shows, sliding between its modes the way QBZ's does; a
-    // drag follows the pointer, and a mode it snaps to still slides
-    // (QBZ's `sidebarSnapping`).
     property bool snapping: false
-    property int shown: mode === "closed" ? 0 : mode === "collapsed" ? Metrics.sidebarCollapsed : openWidth
-    Behavior on shown { enabled: !frame.dragging || frame.snapping; NumberAnimation { duration: Motion.networkSlide; easing.type: Easing.InOutQuad } }
-    readonly property int settled: SettingsModel.sidebarMode === "closed" ? 0
-        : SettingsModel.sidebarMode === "collapsed" ? Metrics.sidebarCollapsed
-        : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
+    readonly property bool dragging: drag !== null
+    readonly property bool moving: dragging || slide.running
+    readonly property int head: Metrics.shellTop
+    readonly property int tall: height - head - Metrics.shellBottom
+    readonly property int kept: SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
+    readonly property string mode: dragging ? drag.mode : SettingsModel.sidebarMode
+    readonly property int targetWidth: mode === "closed" ? 0 : mode === "collapsed" ? Metrics.sidebarCollapsed
+        : dragging ? drag.width : kept
+
+    property real shown: targetWidth
+    Behavior on shown {
+        enabled: !frame.dragging || frame.snapping
+        NumberAnimation { id: slide; duration: Motion.networkSlide; easing.type: Easing.InOutQuad }
+    }
 
     Shadow {
-        visible: frame.shown > 0 && !frame.dragging
-        x: Metrics.spaceWindow
-        y: frame.head
-        width: frame.shown
-        height: frame.tall
+        visible: frame.shown > 0 && !frame.moving
+        x: viewport.x
+        y: viewport.y
+        width: viewport.width
+        height: viewport.height
         radius: Metrics.radiusPanel
         offset.y: Metrics.shadowSubtleY
         blur: Metrics.shadowSubtleBlur
         color: Theme.color.shadowSubtle
     }
 
-    Sidebar {
-        id: content
-        router: frame.router
-        visible: frame.shown > 0
-        collapsed: frame.mode === "collapsed"
+    Item {
+        id: viewport
         x: Metrics.spaceWindow
         y: frame.head
         width: frame.shown
         height: frame.tall
+        visible: width > 0
+        clip: frame.moving
+
+        Rectangle {
+            anchors.fill: parent
+            visible: frame.dragging && viewport.width > content.width
+            radius: Metrics.radiusPanel
+            color: content.color
+        }
+
+        Sidebar {
+            id: content
+            objectName: "sidebarContent"
+            router: frame.router
+            // Keep the current layout on close. In an open drag only the
+            // viewport width changes until the grip is released.
+            collapsed: frame.mode === "closed" ? frame.lastMode === "collapsed" : frame.mode === "collapsed"
+            width: collapsed ? Metrics.sidebarCollapsed : frame.kept
+            height: viewport.height
+            x: frame.dragging ? 0 : Math.min(0, viewport.width - width)
+        }
     }
+
+    property string lastMode: "open"
+    onModeChanged: if (mode !== "closed") lastMode = mode
 
     ResizeHandle {
         visible: frame.dragging || SettingsModel.sidebarMode !== "closed"
@@ -74,21 +89,23 @@ Item {
         // Dragging from the press, as QBZ's `resizing`: the first move
         // already follows the pointer instead of sliding to it.
         onStarted: {
-            frame.grabbed = frame.settled
-            frame.dragMode = SettingsModel.sidebarMode
-            frame.dragged = frame.grabbed
+            frame.grabbed = frame.shown
+            frame.drag = { mode: SettingsModel.sidebarMode, width: frame.kept }
         }
         onMoved: (delta) => {
-            const width = frame.grabbed + delta
-            const next = SettingsModel.sidebarModeFrom(frame.dragMode, width, frame.window.width)
-            frame.snapping = next !== frame.dragMode
-            frame.dragged = width
-            frame.dragMode = next
+            const raw = frame.grabbed + delta
+            const next = SettingsModel.sidebarModeFrom(frame.mode, raw, frame.window.width)
+            frame.snapping = next !== frame.mode || (frame.snapping && (next === "closed" || next === "collapsed"))
+            frame.drag = { mode: next, width: SettingsModel.sidebarWidthAt(raw, frame.window.width), raw: raw }
         }
         onReleased: {
-            if (frame.dragged >= 0)
-                SettingsModel.placeSidebar(frame.dragMode, frame.dragged, frame.window.width)
-            frame.dragged = -1
+            if (frame.drag && frame.drag.raw !== undefined)
+                SettingsModel.placeSidebar(frame.mode, frame.drag.raw, frame.window.width)
+            frame.drag = null
+            frame.snapping = false
+        }
+        onCanceled: {
+            frame.drag = null
             frame.snapping = false
         }
     }
