@@ -108,17 +108,17 @@ Rectangle {
                 width: parent.width
 
                 Repeater {
-                    model: side.localPages.concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.letterX, family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
+                    model: side.localPages.concat([{ screen: "playlistManager", glyph: Icons.playlist, text: I18n.tr("Playlists", I18n.rev), collapsedOnly: true }], side.panels.map(p => ({ screen: "source", key: p.id, glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.letterX, family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
                         .concat(side.downloadPlugins.map(p => ({ screen: "pluginDownloads", key: p.id, glyph: Icons.download, image: p.icon || "", text: p.name, tint: true, download: true })))
 
                     Column {
                         id: group
                         required property var modelData
                         required property int index
-                        width: parent.width
+                        width: parent.width; visible: !group.modelData.collapsedOnly || side.collapsed // open, the playlists have their own section
 
                         Text {
-                            visible: group.index === side.localPages.length && side.panels.length > 0 && !side.collapsed
+                            visible: group.index === side.localPages.length + 1 && side.panels.length > 0 && !side.collapsed // derived: after the playlists entry
                             height: visible ? Metrics.navItemHeight : 0
                             x: Metrics.navItemPadding
                             text: I18n.tr("Streaming", I18n.rev)
@@ -126,7 +126,7 @@ Rectangle {
                             color: Theme.color.textTertiary; verticalAlignment: Text.AlignVCenter
                         }
                         Text {
-                            visible: group.modelData.download === true && group.index === side.localPages.length + side.panels.length && !side.collapsed
+                            visible: group.modelData.download === true && group.index === side.localPages.length + 1 + side.panels.length && !side.collapsed // derived: after the playlists entry
                             height: visible ? Metrics.navItemHeight : 0
                             x: Metrics.navItemPadding
                             text: I18n.tr("Downloads", I18n.rev)
