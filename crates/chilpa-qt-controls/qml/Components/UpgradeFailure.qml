@@ -22,6 +22,9 @@ Column {
         const shown = buttons()
         if (shown.length > 0) shown[0].forceActiveFocus()
     }
+    // Shown, it takes the keyboard. Once the panel is visible its buttons
+    // are too, and which of them shows settles with the rest of the bindings.
+    onVisibleChanged: if (visible) Qt.callLater(focusFirst)
     function step(by) {
         const shown = buttons()
         if (shown.length === 0) return

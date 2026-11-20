@@ -49,8 +49,6 @@ Rectangle {
     function seeLibrary() { if (!upgrading && (!Library.busy || Library.rev > 0)) libraryRead = true }
     function look() { LibraryUpgrade.refresh(); Sources.refresh() }
     onUpgradingChanged: seeLibrary()
-    // A failure takes the keyboard to its buttons.
-    onFailedChanged: if (failed) failurePanel.focusFirst()
     Connections {
         target: Library
         function onBusyChanged() { splash.seeLibrary() }

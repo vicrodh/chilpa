@@ -231,12 +231,22 @@ pub fn marker_path(library: &Path) -> PathBuf {
 /// The version of the copy an unfinished upgrade took, and the version that
 /// upgrade leads to, when the copy beside the library is still that one.
 pub fn unfinished_copy(library: &Path) -> Option<(i64, i64)> {
+    let (copied, target) = marked_versions(library)?;
+    (copy_version(library) == Some(copied)).then_some((copied, target))
+}
+
+/// The version of the copy and the target the marker names, when it can be
+/// read.
+fn marked_versions(library: &Path) -> Option<(i64, i64)> {
     let marked = std::fs::read_to_string(marker_path(library)).ok()?;
     let mut numbers = marked.split_whitespace().map(str::parse::<i64>);
     let (Some(Ok(copied)), Some(Ok(target))) = (numbers.next(), numbers.next()) else { return None };
+    Some((copied, target))
+}
+
+fn copy_version(library: &Path) -> Option<i64> {
     let copy = Connection::open_with_flags(backup_path(library), rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
-    let version: i64 = copy.query_row("PRAGMA user_version", [], |row| row.get(0)).ok()?;
-    (version == copied).then_some((copied, target))
+    copy.query_row("PRAGMA user_version", [], |row| row.get(0)).ok()
 }
 
 /// Removes a marker left beside a library that is already current: the
@@ -385,14 +395,28 @@ fn copy_at_hand(library: &Path, from: i64) -> bool {
 
 /// A copy this upgrade took earlier that is no longer trusted (the library
 /// was written since) stays, under its own name, before a new one replaces
-/// it: `library.db.before-upgrade-54` for one taken at 54.
+/// it: `library.db.before-upgrade-54` for one taken at 54. So does a copy
+/// beside a marker that cannot be read: what the marker said is lost, and
+/// the copy may be the only one from before the upgrade. A name already
+/// taken is never written over: `library.db.before-upgrade-54-2` follows.
 fn keep_earlier_copy(library: &Path, from: i64) -> rusqlite::Result<()> {
-    let Some((copied, target)) = unfinished_copy(library) else { return Ok(()) };
-    if copied > from || from >= target { return Ok(()); }
     let copy = backup_path(library);
-    let mut name = copy.file_name().unwrap_or_default().to_os_string();
-    name.push(format!("-{copied}"));
-    let kept = copy.with_file_name(name);
+    let label = match unfinished_copy(library) {
+        Some((copied, target)) if copied <= from && from < target => copied.to_string(),
+        None if marker_path(library).exists() && marked_versions(library).is_none() && copy.exists() =>
+            copy_version(library).map_or_else(|| "unknown".to_owned(), |version| version.to_string()),
+        _ => return Ok(()),
+    };
+    let named = |suffix: &str| {
+        let mut name = copy.file_name().unwrap_or_default().to_os_string();
+        name.push(format!("-{suffix}"));
+        copy.with_file_name(name)
+    };
+    let (mut kept, mut taken) = (named(&label), 1);
+    while kept.exists() {
+        taken += 1;
+        kept = named(&format!("{label}-{taken}"));
+    }
     std::fs::rename(&copy, &kept).map_err(|error| io_error(&kept, error))
 }
 
@@ -405,18 +429,11 @@ fn keep_earlier_copy(library: &Path, from: i64) -> rusqlite::Result<()> {
 /// time and not a hash of the contents: reading a large library whole costs
 /// seconds, and any write that reaches the file moves its time.
 fn seal(library: &Path) {
-    let path = marker_path(library);
-    let Ok(marked) = std::fs::read_to_string(&path) else { return };
-    let mut numbers = marked.split_whitespace();
-    let (Some(copied), Some(target)) = (numbers.next(), numbers.next()) else { return };
+    let Some((copied, target)) = marked_versions(library) else { return };
     let emptied = Connection::open(library).and_then(|db| db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| row.get::<_, i64>(0)));
     if !emptied.is_ok_and(|busy| busy == 0) { return; }
     let Some((length, modified)) = fingerprint(library) else { return };
-    let sealed = File::create(&path).and_then(|mut file| {
-        file.write_all(format!("{copied} {target} {length} {modified}").as_bytes())?;
-        file.sync_all()
-    }).map_err(|error| io_error(&path, error)).and_then(|()| sync_folder(&path));
-    if let Err(error) = sealed {
+    if let Err(error) = write_marker(library, &format!("{copied} {target} {length} {modified}")) {
         eprintln!("library: the marker of the unfinished upgrade could not record the library: {error}");
     }
 }
@@ -439,10 +456,22 @@ fn untouched(library: &Path) -> bool {
 }
 
 fn mark(library: &Path, version: i64) -> rusqlite::Result<()> {
+    write_marker(library, &format!("{version} {VERSION}"))
+}
+
+/// The marker is written whole or not at all: the text goes to a file of its
+/// own in the same folder, synced, which takes the marker's name in one
+/// rename, and the folder is synced. Written in place, it would be empty for
+/// a moment, and a run killed then would find no copy to keep and write its
+/// own over the one from before the upgrade.
+fn write_marker(library: &Path, text: &str) -> rusqlite::Result<()> {
     let path = marker_path(library);
-    let mut file = File::create(&path).map_err(|error| io_error(&path, error))?;
-    file.write_all(format!("{version} {VERSION}").as_bytes()).and_then(|()| file.sync_all())
-        .map_err(|error| io_error(&path, error))?;
+    let parent = path.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
+    let mut staged = tempfile::Builder::new().prefix(MARKING).tempfile_in(parent).map_err(|error| io_error(&path, error))?;
+    staged.write_all(text.as_bytes()).and_then(|()| staged.as_file().sync_all()).map_err(|error| io_error(&path, error))?;
+    #[cfg(test)]
+    pause("marker-staged");
+    staged.persist(&path).map_err(|error| io_error(&path, error.error))?;
     sync_folder(&path)
 }
 
@@ -467,20 +496,26 @@ fn unmark(library: &Path) -> rusqlite::Result<()> {
     }
 }
 
-/// A copy killed halfway leaves its private folder behind; nothing else can
-/// be writing one while this process holds the lock.
+/// A copy killed halfway leaves its private folder behind, and a marker
+/// killed before its rename its file. Nothing else can be writing a copy
+/// while this process holds the lock; a marker is sealed outside it, and one
+/// whose file goes from under it stays as it was.
 fn clear_staging(library: &Path) {
     let destination = backup_path(library);
     let parent = destination.parent().filter(|path| !path.as_os_str().is_empty()).unwrap_or_else(|| Path::new("."));
     let Ok(entries) = std::fs::read_dir(parent) else { return };
     for entry in entries.flatten() {
-        if entry.file_name().to_string_lossy().starts_with(STAGING) && entry.file_type().is_ok_and(|kind| kind.is_dir()) {
+        let (name, kind) = (entry.file_name().to_string_lossy().into_owned(), entry.file_type().ok());
+        if name.starts_with(STAGING) && kind.is_some_and(|kind| kind.is_dir()) {
             let _ = std::fs::remove_dir_all(entry.path());
+        } else if name.starts_with(MARKING) && kind.is_some_and(|kind| kind.is_file()) {
+            let _ = std::fs::remove_file(entry.path());
         }
     }
 }
 
 const STAGING: &str = ".library-upgrade-";
+const MARKING: &str = ".library-marker-";
 const RESTORING: &str = ".library-restore-";
 
 #[cfg(test)]
