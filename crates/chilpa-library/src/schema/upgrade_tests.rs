@@ -451,6 +451,61 @@ fn failed_at_56(path: &Path) {
     assert_eq!(version_of(path), 55);
 }
 
+/// The marker, where there is one, names a copy and a target: a kill never
+/// leaves it empty or cut short.
+fn marker_whole(path: &Path) -> bool {
+    let marker = upgrade::marker_path(path);
+    let Ok(text) = std::fs::read_to_string(&marker) else { return !marker.exists() };
+    text.split_whitespace().take(2).filter(|number| number.parse::<i64>().is_ok()).count() == 2
+}
+
+/// Whether a file beside the library other than its copy, kept under a name
+/// of the copy's, holds `bytes`.
+fn kept_aside(path: &Path, bytes: &[u8]) -> bool {
+    std::fs::read_dir(path.parent().unwrap()).unwrap().map(|entry| entry.unwrap().path()).any(|kept| {
+        kept != backup_path(path) && kept.file_name().unwrap().to_string_lossy().starts_with("library.db.before-upgrade")
+            && std::fs::read(&kept).unwrap() == bytes
+    })
+}
+
+#[test]
+fn a_copy_beside_a_marker_that_cannot_be_read_is_kept() {
+    // What a kill inside a marker written in place left: the marker empty or
+    // cut short, beside the copy from before the upgrade.
+    for marker in ["", "5"] {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("library.db");
+        failed_at_56(&path);
+        let copy = std::fs::read(backup_path(&path)).unwrap();
+        std::fs::write(upgrade::marker_path(&path), marker).unwrap();
+        Connection::open(&path).unwrap().execute_batch("DROP TABLE local_release_members;").unwrap();
+        heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap();
+        assert_eq!(version_of(&path), VERSION);
+        assert!(kept_aside(&path, &copy), "marker {marker:?}: the copy from before the upgrade is kept: {:?}", listing(directory.path()));
+    }
+}
+
+#[test]
+fn a_kill_while_the_marker_is_rewritten_leaves_the_earlier_one_whole() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("library.db");
+    failed_at_56(&path);
+    let (marker, copy) = (std::fs::read(upgrade::marker_path(&path)).unwrap(), std::fs::read(backup_path(&path)).unwrap());
+    // The same step fails again, and the run is killed while it records the
+    // library it left in the marker.
+    let ready = directory.path().join("marker-staged");
+    let pause = std::ffi::OsString::from(format!("marker-staged={}", ready.display()));
+    drop(child_until("schema::upgrade_tests::child_upgrades_until_killed",
+        &[("CHILPA_TEST_UPGRADE_LIBRARY_KILLED", path.clone().into()), ("CHILPA_TEST_UPGRADE_PAUSE", pause)], &ready));
+    assert_eq!(std::fs::read(upgrade::marker_path(&path)).unwrap(), marker, "the marker is still the earlier one, whole");
+    assert_eq!(upgrade::unfinished_copy(&path), Some((54, VERSION)));
+    // The next run keeps that copy and clears what the killed one staged.
+    Connection::open(&path).unwrap().execute_batch("DROP TABLE local_release_members;").unwrap();
+    heard(&path, &upgrade::Stop::default(), |_| {}).0.unwrap();
+    assert!(kept_aside(&path, &copy));
+    assert!(!listing(directory.path()).iter().any(|name| name.starts_with(".library-marker-")), "{:?}", listing(directory.path()));
+}
+
 fn restore_leftovers(directory: &Path) -> bool {
     std::fs::read_dir(directory).unwrap().any(|entry| entry.unwrap().file_name().to_string_lossy().starts_with(".library-restore-"))
 }
@@ -511,6 +566,7 @@ fn a_kill_between_staging_and_the_swap_leaves_the_library_in_place() {
     drop(child_until("schema::upgrade_tests::child_restores_until_killed",
         &[("CHILPA_TEST_RESTORE_LIBRARY", path.clone().into()), ("CHILPA_TEST_UPGRADE_PAUSE", pause)], &ready));
     assert!(path.exists(), "a kill before the swap leaves the library where it was");
+    assert!(marker_whole(&path));
     assert_eq!(version_of(&path), 55);
     assert!(intact(&path));
     assert!(upgrade::restorable(&path));
@@ -625,6 +681,7 @@ fn killed_at(point: &str) -> (tempfile::TempDir, std::path::PathBuf) {
     drop(child_until("schema::upgrade_tests::child_upgrades_until_killed",
         &[("CHILPA_TEST_UPGRADE_LIBRARY_KILLED", path.clone().into()), ("CHILPA_TEST_UPGRADE_PAUSE", pause)], &ready));
     assert_eq!(version_of(&path), 54, "nothing of the library changed yet");
+    assert!(marker_whole(&path));
     assert!(intact(&path));
     assert_eq!(version_of(&backup_path(&path)), 54, "the copy was published whole");
     (directory, path)
