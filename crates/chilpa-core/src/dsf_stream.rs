@@ -121,50 +121,65 @@ impl DsfStream {
     }
 }
 
-/// The speaker ids a DSDIFF's one CHNL chunk names, in their order, read
-/// from the first 64 KiB, where the properties come before the samples.
-/// None when they cannot be known for certain: no CHNL, more than one, or
-/// samples that do not start within what was read.
+/// The speaker ids of a DSDIFF's one CHNL chunk, in their order. Every
+/// chunk of the form is walked, as the DSDIFF reader walks it, jumping over
+/// the samples: None when there is no CHNL, more than one anywhere in the
+/// file, or the walk cannot finish cleanly.
 fn dsdiff_channels(path: &Path) -> Option<Vec<[u8; 4]>> {
-    /// A chunk header at `at`: its id, where its body starts and how long it
-    /// is. Every offset is checked against the bytes read before it grows,
-    /// so nothing past 64 KiB is ever added to.
-    fn chunk(head: &[u8], at: usize) -> Option<(&[u8], usize, usize)> {
-        if at > head.len() { return None; }
-        let len = usize::try_from(u64::from_be_bytes(head.get(at + 4..at + 12)?.try_into().ok()?)).ok()?;
-        Some((head.get(at..at + 4)?, at + 12, len))
+    use std::io::{Seek, SeekFrom};
+    /// The most chunks a form may hold here; a real file has a handful.
+    const CHUNKS: usize = 1024;
+    /// The most of one PROP chunk read; its properties take a few dozen bytes.
+    const PROP: u64 = 64 * 1024;
+    fn header(file: &mut std::fs::File, at: u64) -> Option<([u8; 4], u64)> {
+        let mut bytes = [0u8; 12];
+        file.seek(SeekFrom::Start(at)).ok()?;
+        file.read_exact(&mut bytes).ok()?;
+        Some((bytes[..4].try_into().ok()?, u64::from_be_bytes(bytes[4..].try_into().ok()?)))
     }
-    /// Where the chunk after a body starts, padded to an even length.
-    fn after(body: usize, len: usize) -> Option<usize> { body.checked_add(len)?.checked_add(len % 2) }
-    let mut head = Vec::new();
-    std::fs::File::open(path).ok()?.take(64 * 1024).read_to_end(&mut head).ok()?;
-    if head.get(..4)? != b"FRM8" || head.get(12..16)? != b"DSD " { return None; }
-    let (mut at, mut found) = (16, None);
-    loop {
-        let (id, body, len) = chunk(&head, at)?;
-        match id {
-            b"PROP" => {
-                if head.get(body..body + 4)? != b"SND " { return None; }
-                let end = body.checked_add(len)?;
-                let mut sub = body + 4;
-                while sub < end {
-                    let (sub_id, sub_body, sub_len) = chunk(&head, sub)?;
-                    if sub_id == b"CHNL" {
-                        // DSDIFF allows one; a second is a contradiction.
-                        if found.is_some() { return None; }
-                        let count = usize::from(u16::from_be_bytes(head.get(sub_body..sub_body + 2)?.try_into().ok()?));
-                        if 2 + 4 * count > sub_len { return None; }
-                        found = Some((0..count).map(|i| head.get(sub_body + 2 + 4 * i..sub_body + 6 + 4 * i).and_then(|id| id.try_into().ok())).collect::<Option<Vec<[u8; 4]>>>()?);
-                    }
-                    sub = after(sub_body, sub_len)?;
-                }
+    let mut file = std::fs::File::open(path).ok()?;
+    let length = file.metadata().ok()?.len();
+    let (id, form) = header(&mut file, 0)?;
+    let mut kind = [0u8; 4];
+    file.read_exact(&mut kind).ok()?;
+    if &id != b"FRM8" || &kind != b"DSD " { return None; }
+    let end = 12u64.checked_add(form)?.min(length);
+    let (mut at, mut found, mut chunks) = (16u64, None, 0);
+    while at.checked_add(12)? <= end {
+        chunks += 1;
+        if chunks > CHUNKS { return None; }
+        let (id, len) = header(&mut file, at)?;
+        if &id == b"PROP" {
+            if len > PROP { return None; }
+            let mut prop = vec![0u8; usize::try_from(len).ok()?];
+            file.read_exact(&mut prop).ok()?;
+            for ids in prop_channels(&prop)? {
+                // DSDIFF allows one; a second is a contradiction.
+                if found.replace(ids).is_some() { return None; }
             }
-            // The samples: every property was stated before them.
-            b"DSD " | b"DST " => return found,
-            _ => {}
         }
-        at = after(body, len)?;
+        at = (at + 12).checked_add(len)?.checked_add(len % 2)?;
     }
+    found
+}
+
+/// The ids of every CHNL chunk a PROP body holds. Its length is at most
+/// 64 KiB, so no offset into it can overflow.
+fn prop_channels(prop: &[u8]) -> Option<Vec<Vec<[u8; 4]>>> {
+    if prop.get(..4)? != b"SND " { return None; }
+    let (mut out, mut at) = (Vec::new(), 4usize);
+    while at < prop.len() {
+        let id = prop.get(at..at + 4)?;
+        let len = usize::try_from(u64::from_be_bytes(prop.get(at + 4..at + 12)?.try_into().ok()?)).ok()?;
+        let body = at + 12;
+        if id == b"CHNL" {
+            let count = usize::from(u16::from_be_bytes(prop.get(body..body + 2)?.try_into().ok()?));
+            if 2 + 4 * count > len { return None; }
+            out.push((0..count).map(|i| prop.get(body + 2 + 4 * i..body + 6 + 4 * i).and_then(|id| id.try_into().ok())).collect::<Option<Vec<[u8; 4]>>>()?);
+        }
+        at = body.checked_add(len)?.checked_add(len % 2)?;
+    }
+    Some(out)
 }
 
 /// The DSF channel type for a channel count: mono, stereo, three channels,
@@ -482,9 +497,10 @@ mod tests {
     /// channel; `compression` is what CMPR says.
     fn dff(name: &str, bytes: usize, compression: &[u8; 4]) -> std::path::PathBuf { dff_of(name, bytes, compression, b"SLFTSRGT", 2_822_400) }
     /// `ids` are the CHNL speaker ids, four bytes each.
-    fn dff_of(name: &str, bytes: usize, compression: &[u8; 4], ids: &[u8], rate: u32) -> std::path::PathBuf { dff_with(name, bytes, compression, ids, rate, &[]) }
-    /// `extra` goes into PROP after CHNL, as raw chunks.
-    fn dff_with(name: &str, bytes: usize, compression: &[u8; 4], ids: &[u8], rate: u32, extra: &[u8]) -> std::path::PathBuf {
+    fn dff_of(name: &str, bytes: usize, compression: &[u8; 4], ids: &[u8], rate: u32) -> std::path::PathBuf { dff_with(name, bytes, compression, ids, rate, &[], &[]) }
+    /// `extra` goes into PROP after CHNL, and `tail` into the form after the
+    /// samples, both as raw chunks.
+    fn dff_with(name: &str, bytes: usize, compression: &[u8; 4], ids: &[u8], rate: u32, extra: &[u8], tail: &[u8]) -> std::path::PathBuf {
         let count = (ids.len() / 4) as u16;
         fn chunk(id: &[u8; 4], payload: &[u8]) -> Vec<u8> {
             let mut out = id.to_vec();
@@ -508,6 +524,7 @@ mod tests {
         form.extend(chunk(b"FVER", &0x0105_0000u32.to_be_bytes()));
         form.extend(chunk(b"PROP", &prop));
         form.extend(chunk(if compression == b"DST " { b"DST " } else { b"DSD " }, &samples));
+        form.extend_from_slice(tail);
         let path = std::env::temp_dir().join(format!("chilpa-dsf-stream-{name}.dff"));
         std::fs::write(&path, chunk(b"FRM8", &form)).unwrap();
         path
@@ -556,10 +573,18 @@ mod tests {
         second.extend_from_slice(&10u64.to_be_bytes());
         second.extend_from_slice(&2u16.to_be_bytes());
         second.extend_from_slice(b"C   LFE ");
-        let twice = dff_with("dsdiff-two-chnl", 64, b"DSD ", b"SLFTSRGT", 2_822_400, &second);
+        let twice = dff_with("dsdiff-two-chnl", 64, b"DSD ", b"SLFTSRGT", 2_822_400, &second, &[]);
         assert!(chilpa_dsd::DffReader::open(&twice).is_ok(), "the reader takes it");
         assert!(DsfStream::open(&twice).is_err(), "two CHNL chunks contradict each other");
-        for p in [path, out, dst, four, center, fast, mono, main, twice] { let _ = std::fs::remove_file(p); }
+        let mut late = b"PROP".to_vec();
+        late.extend_from_slice(&(4 + second.len() as u64).to_be_bytes());
+        late.extend_from_slice(b"SND ");
+        late.extend_from_slice(&second);
+        let after = dff_with("dsdiff-late-chnl", 64, b"DSD ", b"SLFTSRGT", 2_822_400, &[], &late);
+        assert!(DsfStream::open(&after).is_err(), "a CHNL after the samples contradicts the first one too");
+        let trailing = dff_with("dsdiff-trailing", 64, b"DSD ", b"SLFTSRGT", 2_822_400, &[], b"DIIN\0\0\0\0\0\0\0\0");
+        assert!(DsfStream::open(&trailing).is_ok(), "a chunk after the samples that states no layout changes nothing");
+        for p in [path, out, dst, four, center, fast, mono, main, twice, after, trailing] { let _ = std::fs::remove_file(p); }
     }
 
     #[test]
