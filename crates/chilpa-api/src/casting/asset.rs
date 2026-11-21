@@ -120,6 +120,14 @@ pub(super) fn resolve(path: &str) -> Result<(ExternalAsset, Metadata, Presentati
         bits: tags.as_ref().and_then(|t| t.bit_depth), rate: tags.as_ref().and_then(|t| t.sample_rate_hz),
         repackaged: false,
     };
+    // A DSDIFF goes out as DSF too, which more renderers read. One that
+    // carries DST cannot be laid out again and goes out as it is.
+    if mime == "audio/x-dff" {
+        if let Ok(stream) = chilpa_core::dsf_stream::DsfStream::open(path) {
+            let presentation = Presentation { bits: Some(1), rate: Some(stream.rate_hz()), repackaged: true, ..presentation };
+            return Ok((ExternalAsset { length: stream.length(), mime: "audio/x-dsf".into(), source: Arc::new(Repackaged(stream)) }, metadata, presentation));
+        }
+    }
     Ok((ExternalAsset { length: info.len(), mime: mime.into(), source: Arc::new(FileSource(path.into())) }, metadata, presentation))
 }
 
@@ -172,6 +180,47 @@ mod tests {
         let path = std::env::temp_dir().join(format!("chilpa-cast-asset-{name}.iso"));
         std::fs::write(&path, img).unwrap();
         path
+    }
+
+    /// A two-channel DSDIFF; `compression` is what CMPR says.
+    fn dff(name: &str, compression: &[u8; 4]) -> PathBuf {
+        fn chunk(id: &[u8; 4], payload: &[u8]) -> Vec<u8> {
+            let mut out = id.to_vec();
+            out.extend_from_slice(&(payload.len() as u64).to_be_bytes());
+            out.extend_from_slice(payload);
+            if payload.len() % 2 == 1 { out.push(0); }
+            out
+        }
+        let mut prop = b"SND ".to_vec();
+        prop.extend(chunk(b"FS  ", &2_822_400u32.to_be_bytes()));
+        let mut channels = 2u16.to_be_bytes().to_vec();
+        channels.extend_from_slice(b"SLFTSRGT");
+        prop.extend(chunk(b"CHNL", &channels));
+        let mut compression_chunk = compression.to_vec();
+        compression_chunk.push(3);
+        compression_chunk.extend_from_slice(b"raw");
+        prop.extend(chunk(b"CMPR", &compression_chunk));
+        let mut form = b"DSD ".to_vec();
+        form.extend(chunk(b"FVER", &0x0105_0000u32.to_be_bytes()));
+        form.extend(chunk(b"PROP", &prop));
+        form.extend(chunk(if compression == b"DST " { b"DST " } else { b"DSD " }, &vec![0x69; 2 * 9000]));
+        let path = std::env::temp_dir().join(format!("chilpa-cast-asset-{name}.dff"));
+        std::fs::write(&path, chunk(b"FRM8", &form)).unwrap();
+        path
+    }
+
+    #[test]
+    fn a_dsdiff_is_cast_as_dsf_unless_it_carries_dst() {
+        let plain = dff("plain", b"DSD ");
+        let (asset, _, presentation) = resolve(plain.to_str().unwrap()).unwrap_or_else(|_| panic!("a DSDIFF resolves"));
+        assert_eq!(asset.mime, "audio/x-dsf");
+        assert_eq!(asset.length, chilpa_core::dsf_stream::DsfStream::open(&plain).unwrap().length());
+        assert!(presentation.repackaged);
+        let dst = dff("dst", b"DST ");
+        let (asset, _, presentation) = resolve(dst.to_str().unwrap()).unwrap_or_else(|_| panic!("a DST DSDIFF still resolves"));
+        assert_eq!((asset.mime.as_str(), asset.length), ("audio/x-dff", std::fs::metadata(&dst).unwrap().len()), "it goes out as it is");
+        assert!(!presentation.repackaged);
+        for p in [plain, dst] { let _ = std::fs::remove_file(p); }
     }
 
     #[test]
