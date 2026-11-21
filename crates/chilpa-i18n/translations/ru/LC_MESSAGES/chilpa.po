@@ -6883,6 +6883,9 @@ msgstr "СТАТУС"
 msgid "SURFACES"
 msgstr "ПОВЕРХНОСТИ"
 
+msgid "Same DSD bits repackaged as DSF · no transcoding by Chilpa · receiver processing unknown"
+msgstr "Те же биты DSD, переупакованные в DSF · Chilpa не перекодирует · обработка в ресивере неизвестна"
+
 msgid "Sample format"
 msgstr "Формат отсчётов"
 

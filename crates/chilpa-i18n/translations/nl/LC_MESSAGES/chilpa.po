@@ -6877,6 +6877,9 @@ msgstr "STATUS"
 msgid "SURFACES"
 msgstr "OPPERVLAKKEN"
 
+msgid "Same DSD bits repackaged as DSF · no transcoding by Chilpa · receiver processing unknown"
+msgstr "Dezelfde DSD-bits, opnieuw verpakt als DSF · geen transcodering door Chilpa · verwerking door ontvanger onbekend"
+
 msgid "Sample format"
 msgstr "Sampleformaat"
 

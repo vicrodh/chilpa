@@ -161,7 +161,7 @@ impl Chilpa {
                 Event::Loaded(metadata, mime, presentation) => {
                     self.casting.connected = true; self.casting.loaded = true; self.casting.loading = false; self.casting.error.clear();
                     self.now.title = metadata.title; self.now.artist = metadata.artist; self.now.album = metadata.album;
-                    self.now.total_seconds = metadata.duration; self.now.format = chilpa_i18n::t("Original bytes · no transcoding by Chilpa · receiver processing unknown");
+                    self.now.total_seconds = metadata.duration; self.now.format = if presentation.repackaged { chilpa_i18n::t("Same DSD bits repackaged as DSF · no transcoding by Chilpa · receiver processing unknown") } else { chilpa_i18n::t("Original bytes · no transcoding by Chilpa · receiver processing unknown") };
                     self.now.quality = crate::Quality::of_track(&self.now.path, Some(mime.trim_start_matches("audio/")), presentation.bits, presentation.rate);
                     self.now.artwork_path = presentation.artwork.map(|p| p.display().to_string()).unwrap_or_default();
                     let path = std::path::PathBuf::from(&self.now.path);

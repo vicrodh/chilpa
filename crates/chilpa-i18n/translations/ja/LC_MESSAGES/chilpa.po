@@ -6871,6 +6871,9 @@ msgstr "ステータス"
 msgid "SURFACES"
 msgstr "サーフェス"
 
+msgid "Same DSD bits repackaged as DSF · no transcoding by Chilpa · receiver processing unknown"
+msgstr "同じDSDビットをDSFに再パッケージ · Chilpaによるトランスコードなし · レシーバー側の処理は不明"
+
 msgid "Sample format"
 msgstr "サンプルフォーマット"
 

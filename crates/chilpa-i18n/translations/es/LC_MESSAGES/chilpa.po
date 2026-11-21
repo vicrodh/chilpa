@@ -6877,6 +6877,9 @@ msgstr "ESTADO"
 msgid "SURFACES"
 msgstr "SUPERFICIES"
 
+msgid "Same DSD bits repackaged as DSF · no transcoding by Chilpa · receiver processing unknown"
+msgstr "Mismos bits DSD reempaquetados como DSF · sin transcodificar por Chilpa · procesamiento del receptor desconocido"
+
 msgid "Sample format"
 msgstr "Formato de muestra"
 

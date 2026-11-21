@@ -6879,6 +6879,9 @@ msgstr "狀態"
 msgid "SURFACES"
 msgstr "表面/介面"
 
+msgid "Same DSD bits repackaged as DSF · no transcoding by Chilpa · receiver processing unknown"
+msgstr "相同的 DSD 位元重新封裝為 DSF · Chilpa 未轉碼 · 接收端處理未知"
+
 msgid "Sample format"
 msgstr "取樣格式"
 
