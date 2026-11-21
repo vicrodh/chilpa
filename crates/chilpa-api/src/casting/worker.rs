@@ -14,6 +14,7 @@ pub(super) struct Worker {
 }
 impl Worker {
     pub fn new() -> Self {
+        chilpa_cast::trace::install(chilpa_core::trace_playback);
         let (tx, orders) = mpsc::channel();
         let (events, rx) = mpsc::channel();
         let latest = Arc::new(AtomicU64::new(0));

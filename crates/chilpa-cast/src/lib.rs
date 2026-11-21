@@ -4,6 +4,7 @@ pub mod chromecast;
 pub mod discovery;
 pub mod media_server;
 pub mod registry;
+pub mod trace;
 
 use std::net::SocketAddr;
 use serde::Serialize;
@@ -61,4 +62,7 @@ pub trait RemoteTransport {
     fn disconnect(&mut self) -> Result<()> { self.stop() }
 }
 
-pub const CONTENT_FEATURES: &str = "DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000";
+/// Byte-range seek and streaming flags, no `DLNA.ORG_PN`: the value the
+/// reference player sends on every media response and in the DIDL
+/// `protocolInfo`, which strict renderers cross-check.
+pub const CONTENT_FEATURES: &str = "DLNA.ORG_OP=01;DLNA.ORG_FLAGS=01700000000000000000000000000000";
