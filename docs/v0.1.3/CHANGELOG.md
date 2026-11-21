@@ -54,7 +54,7 @@
   - Plugins can add full-window views and players, once you approve them.
   - Source sign-in windows work on macOS.
   - The update notice names the running and the offered version and no longer sits over the player bar. Restart Chilpa now restarts it even with close to tray on.
-  - A Flatpak from Chilpa's own repository. Flathub has tightened its rules for AI-generated content, so Chilpa will not be on Flathub until it has been active for four months. Inside Flatpak, updates come from Flatpak, not from Chilpa.
+  - A Flatpak from Chilpa's own repository. Flathub has tightened its rules for AI-generated content, so Chilpa will not be on Flathub until it has been around for a few months and has an active community. Inside Flatpak, updates come from Flatpak, not from Chilpa.
   - The Linux AppImage carries the audio runtime it needs.
   - A Nix flake to build and develop Chilpa, by @jakumule (#32).
   - German and English translation fixes by @TheMelmacian (#35), and a Traditional Chinese translation by @bruce-awareit (#42).
