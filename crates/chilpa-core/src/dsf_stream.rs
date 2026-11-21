@@ -17,9 +17,6 @@ use std::{io::{self, Read}, path::Path, sync::Arc};
 const BLOCK: usize = 4096;
 /// The DSD, fmt and data chunk headers, in that order.
 pub const HEADER: u64 = 28 + 52 + 12;
-/// The idle pattern of a DSD stream, earliest bit most significant: what a
-/// gap the source cannot fill carries instead of a click.
-const SILENCE: u8 = 0x69;
 
 type Opener = Arc<dyn Fn() -> Result<Box<dyn DsdSource>, String> + Send + Sync>;
 
@@ -31,16 +28,24 @@ pub struct DsfStream {
 }
 
 impl DsfStream {
-    /// Opens a track of a SACD image (`sacd:<image>#<number>`) as DSF.
+    /// Opens a track of a SACD image (`sacd:<image>#<number>`) or a DSDIFF
+    /// file as DSF. A DSDIFF that carries DST is refused, with the reason the
+    /// DSDIFF reader gives.
     pub fn open(path: &Path) -> Result<Self, String> {
-        let Some((image, number)) = crate::sacd_tracks::parse(path) else {
-            return Err("not a track of a disc image".into());
-        };
-        let (tags, _) = crate::sacd_tracks::about(&image, number)
-            .ok_or_else(|| chilpa_i18n::t_args("the image has no track {}", &[&number.to_string()]))?;
-        let info = crate::sacd_tracks::open(&image, number)?.info().clone();
-        let open: Opener = Arc::new(move || crate::sacd_tracks::open(&image, number).map(|r| Box::new(r) as Box<dyn DsdSource>));
-        Self::from_source(info, open, Some(tags))
+        if let Some((image, number)) = crate::sacd_tracks::parse(path) {
+            let (tags, _) = crate::sacd_tracks::about(&image, number)
+                .ok_or_else(|| chilpa_i18n::t_args("the image has no track {}", &[&number.to_string()]))?;
+            let info = crate::sacd_tracks::open(&image, number)?.info().clone();
+            let open: Opener = Arc::new(move || crate::sacd_tracks::open(&image, number).map(|r| Box::new(r) as Box<dyn DsdSource>));
+            return Self::from_source(info, open, Some(tags));
+        }
+        if path.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("dff")) {
+            let info = crate::dsd_playback::open_dsd_file(path).map_err(|e| e.to_string())?.info().clone();
+            let file = path.to_path_buf();
+            let open: Opener = Arc::new(move || crate::dsd_playback::open_dsd_file(&file).map_err(|e| e.to_string()));
+            return Self::from_source(info, open, None);
+        }
+        Err("neither a disc track nor a DSDIFF file".into())
     }
 
     /// A stream over any DSD source; `open` gives a fresh reader for each
@@ -128,19 +133,31 @@ struct Packer {
 }
 
 impl Packer {
-    /// Opens the source at group `index`, as near as it can land.
+    /// Opens the source at group `index`: at the nearest point at or before
+    /// it, the samples in between read and dropped, so a range holds exactly
+    /// what the whole file holds there.
     fn start_at(&mut self, index: u64) -> io::Result<()> {
         let mut source = (self.open)().map_err(io::Error::other)?;
         let target = index * BLOCK as u64 * 8;
         // A fresh source already stands at the first sample.
-        let landed = if target == 0 { 0 } else { source.seek(target).map_err(|e| io::Error::other(e.to_string()))?.unwrap_or(0) };
-        if landed <= target {
-            self.drop = (target - landed) / 8;
-        } else {
-            // The source has no samples there: the gap is silence.
-            let gap = ((landed - target) / 8) as usize;
-            for queue in &mut self.queues { queue.extend(std::iter::repeat(SILENCE).take(gap)); }
+        let mut landed = 0;
+        if target > 0 {
+            // A source can land after the point asked for: a DST disc finds a
+            // frame by the first one that starts in a sector. It is asked
+            // again from earlier, further back each time, until it lands at
+            // or before the target; the start is the last resort.
+            let (mut probe, mut back) = (target, BLOCK as u64 * 8);
+            loop {
+                match source.seek(probe).map_err(|e| io::Error::other(e.to_string()))? {
+                    Some(at) if at <= target => { landed = at; break; }
+                    // It cannot move, and stands at the start.
+                    None => break,
+                    Some(_) if probe == 0 => { source = (self.open)().map_err(io::Error::other)?; break; }
+                    Some(_) => { probe = probe.saturating_sub(back); back = back.saturating_mul(2); }
+                }
+            }
         }
+        self.drop = (target - landed) / 8;
         self.source = Some(source);
         self.group_index = index;
         self.fill()
@@ -200,9 +217,13 @@ impl Read for Packer {
 mod tests {
     use super::*;
 
+    /// How a test source answers a seek.
+    #[derive(Clone, Copy, Debug)]
+    enum Lands { Before, After, Never }
     /// Frames of 1,000 bytes per channel, each byte telling its channel and
-    /// position apart, landing on frame boundaries when asked to seek.
-    struct Frames { info: DsdInfo, next: u64, seekable: bool }
+    /// position apart, landing on a frame boundary when asked to seek: the one
+    /// at or before the sample, the one after it, or none.
+    struct Frames { info: DsdInfo, next: u64, lands: Lands }
     impl Frames {
         const FRAME: u64 = 1000;
         fn byte(channel: usize, index: u64) -> u8 { (index.wrapping_mul(31) as u8) ^ (channel as u8).wrapping_mul(0x5b) }
@@ -218,15 +239,19 @@ mod tests {
             Ok(Some(blocks))
         }
         fn seek(&mut self, sample: u64) -> Result<Option<u64>, chilpa_dsd::DsdError> {
-            if !self.seekable { return Ok(None); }
-            self.next = (sample / 8 / Self::FRAME) * Self::FRAME;
+            let total = self.info.samples / 8;
+            self.next = match self.lands {
+                Lands::Never => return Ok(None),
+                Lands::Before => (sample / 8 / Self::FRAME) * Self::FRAME,
+                Lands::After => ((sample / 8).div_ceil(Self::FRAME) * Self::FRAME).min(total),
+            };
             Ok(Some(self.next * 8))
         }
     }
-    fn stream(channels: u16, bytes: u64, seekable: bool) -> DsfStream {
+    fn stream(channels: u16, bytes: u64, lands: Lands) -> DsfStream {
         let info = DsdInfo { dsd_rate_hz: 2_822_400, channels, samples: bytes * 8 };
         let made = info.clone();
-        DsfStream::from_source(info, Arc::new(move || Ok(Box::new(Frames { info: made.clone(), next: 0, seekable }) as Box<dyn DsdSource>)), None).unwrap()
+        DsfStream::from_source(info, Arc::new(move || Ok(Box::new(Frames { info: made.clone(), next: 0, lands }) as Box<dyn DsdSource>)), None).unwrap()
     }
     fn all(s: &DsfStream, start: u64, length: u64) -> Vec<u8> {
         let mut out = Vec::new();
@@ -239,7 +264,7 @@ mod tests {
         for channels in [1u16, 2, 6] {
             // Not a whole number of blocks, so the last one is padded.
             let bytes = 3 * BLOCK as u64 + 777;
-            let s = stream(channels, bytes, true);
+            let s = stream(channels, bytes, Lands::Before);
             let file = all(&s, 0, s.length());
             assert_eq!(file.len() as u64, s.length());
             let path = std::env::temp_dir().join(format!("chilpa-dsf-stream-{channels}.dsf"));
@@ -260,14 +285,14 @@ mod tests {
 
     #[test]
     fn any_range_reads_what_the_whole_file_holds_there() {
-        for seekable in [true, false] {
-            let s = stream(2, 5 * BLOCK as u64 + 123, seekable);
+        for lands in [Lands::Before, Lands::After, Lands::Never] {
+            let s = stream(2, 5 * BLOCK as u64 + 123, lands);
             let file = all(&s, 0, s.length());
             let group = 2 * BLOCK as u64;
             for (start, length) in [(0, 10), (50, 100), (HEADER, 1), (HEADER + group - 3, 9), (HEADER + 3 * group + 17, group + 5),
                 (s.length() - 40, 40), (s.length() - 40, 4000), (HEADER + 2 * group, 0)] {
                 let end = (start + length).min(s.length()) as usize;
-                assert_eq!(all(&s, start, length), &file[start as usize..end], "start {start} length {length} seekable {seekable}");
+                assert_eq!(all(&s, start, length), &file[start as usize..end], "start {start} length {length} lands {lands:?}");
             }
         }
     }
@@ -375,14 +400,73 @@ mod tests {
             for (c, block) in blocks.into_iter().enumerate() { got[c].extend(block); }
         }
         for c in 0..2 { assert_eq!(&got[c][..expected[c].len()], &expected[c][..], "channel {c}"); }
-        assert!(DsfStream::open(std::path::Path::new("/music/a.dff")).is_err(), "only disc tracks, for now");
+        assert!(DsfStream::open(std::path::Path::new("/music/missing.dff")).is_err(), "a file that is not there");
+        assert!(DsfStream::open(std::path::Path::new("/music/a.flac")).is_err(), "not DSD");
         let _ = std::fs::remove_file(path);
         let _ = std::fs::remove_file(iso);
     }
 
+    /// A two-channel DSDIFF as `chilpa-dsd`'s own tests write it, with
+    /// `bytes` bytes per channel; `compression` is what CMPR says.
+    fn dff(name: &str, bytes: usize, compression: &[u8; 4]) -> std::path::PathBuf {
+        fn chunk(id: &[u8; 4], payload: &[u8]) -> Vec<u8> {
+            let mut out = id.to_vec();
+            out.extend_from_slice(&(payload.len() as u64).to_be_bytes());
+            out.extend_from_slice(payload);
+            if payload.len() % 2 == 1 { out.push(0); }
+            out
+        }
+        let mut prop = b"SND ".to_vec();
+        prop.extend(chunk(b"FS  ", &2_822_400u32.to_be_bytes()));
+        let mut channels = 2u16.to_be_bytes().to_vec();
+        channels.extend_from_slice(b"SLFTSRGT");
+        prop.extend(chunk(b"CHNL", &channels));
+        let mut compression_chunk = compression.to_vec();
+        compression_chunk.push(3);
+        compression_chunk.extend_from_slice(b"raw");
+        prop.extend(chunk(b"CMPR", &compression_chunk));
+        let samples: Vec<u8> = (0..bytes).flat_map(|i| { let v = (i * 7 % 251) as u8; [v, !v ^ (i as u8)] }).collect();
+        let mut form = b"DSD ".to_vec();
+        form.extend(chunk(b"FVER", &0x0105_0000u32.to_be_bytes()));
+        form.extend(chunk(b"PROP", &prop));
+        form.extend(chunk(if compression == b"DST " { b"DST " } else { b"DSD " }, &samples));
+        let path = std::env::temp_dir().join(format!("chilpa-dsf-stream-{name}.dff"));
+        std::fs::write(&path, chunk(b"FRM8", &form)).unwrap();
+        path
+    }
+
+    #[test]
+    fn a_dsdiff_goes_out_with_its_own_bits_and_any_range_matches() {
+        let bytes = 3 * BLOCK + 555;
+        let path = dff("dsdiff", bytes, b"DSD ");
+        let stream = DsfStream::open(&path).unwrap();
+        assert!(stream.tags().is_none(), "a file's tags are read from the file");
+        let mut original = chilpa_dsd::DffReader::open(&path).unwrap();
+        let mut expected = vec![Vec::new(); 2];
+        while let Some(blocks) = original.next_block().unwrap() {
+            for (c, block) in blocks.into_iter().enumerate() { expected[c].extend(block); }
+        }
+        let file = all(&stream, 0, stream.length());
+        let out = std::env::temp_dir().join("chilpa-dsf-stream-dsdiff.dsf");
+        std::fs::write(&out, &file).unwrap();
+        let mut reader = chilpa_dsd::DsfReader::open(&out).unwrap();
+        let mut got = vec![Vec::new(); 2];
+        while let Some(blocks) = reader.next_block().unwrap() {
+            for (c, block) in blocks.into_iter().enumerate() { got[c].extend(block); }
+        }
+        for c in 0..2 { assert_eq!(&got[c][..bytes], &expected[c][..], "channel {c}"); }
+        let group = 2 * BLOCK as u64;
+        for (start, length) in [(HEADER + group + 5, 3 * BLOCK as u64), (stream.length() - 9, 9), (10, HEADER)] {
+            assert_eq!(all(&stream, start, length), &file[start as usize..(start + length) as usize], "start {start}");
+        }
+        let dst = dff("dsdiff-dst", 64, b"DST ");
+        assert!(DsfStream::open(&dst).is_err(), "a DST DSDIFF cannot be laid out again");
+        for p in [path, out, dst] { let _ = std::fs::remove_file(p); }
+    }
+
     #[test]
     fn the_header_states_length_layout_and_bit_order() {
-        let s = stream(2, BLOCK as u64 * 2 + 1, true);
+        let s = stream(2, BLOCK as u64 * 2 + 1, Lands::Before);
         let h = all(&s, 0, HEADER);
         assert_eq!(&h[..4], b"DSD ");
         assert_eq!(u64::from_le_bytes(h[12..20].try_into().unwrap()), s.length());
