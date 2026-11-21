@@ -114,6 +114,7 @@ Installs or updates Chilpa for your user, on Linux and macOS. If macOS refuses t
 | macOS app (DMG, ZIP) | Apple Silicon, Intel | In app |
 | DEB, RPM | Linux x86_64, ARM64 | Package manager |
 | AUR, Gentoo overlay | Linux x86_64, ARM64 | Package manager |
+| Flatpak | Linux x86_64 | `flatpak update` |
 
 <details>
 <summary>Install from a package manager</summary>
@@ -136,9 +137,12 @@ eselect repository add chilpa git https://github.com/vicrodh/chilpa-overlay.git
 emaint sync -r chilpa
 echo 'media-sound/chilpa-bin ~amd64' | sudo tee -a /etc/portage/package.accept_keywords/chilpa
 emerge --ask media-sound/chilpa-bin
+
+# Flatpak (the runtime comes from Flathub)
+flatpak install --user https://flatpak.chilpa.app/app.chilpa.Chilpa.flatpakref
 ```
 
-openSUSE, signing key and ARM64 notes: [INSTALL.md](INSTALL.md).
+openSUSE, signing keys, ARM64 and what the Flatpak sandbox allows: [INSTALL.md](INSTALL.md).
 
 </details>
 
