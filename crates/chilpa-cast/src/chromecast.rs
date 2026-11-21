@@ -89,7 +89,7 @@ impl RemoteTransport for Chromecast {
             Some("BUFFERING" | "LOADING") => State::Buffering,
             Some("IDLE") if entry["idleReason"] == "FINISHED" => State::Finished, _ => State::Stopped,
         };
-        Ok(Status { state, position: entry["currentTime"].as_f64(), duration: entry["media"]["duration"].as_f64(), volume: receiver["status"]["volume"]["level"].as_f64(), muted: receiver["status"]["volume"]["muted"].as_bool() })
+        Ok(Status { state, position: entry["currentTime"].as_f64(), duration: entry["media"]["duration"].as_f64(), volume: receiver["status"]["volume"]["level"].as_f64(), muted: receiver["status"]["volume"]["muted"].as_bool(), transport: None })
     }
     fn disconnect(&mut self) -> Result<()> {
         if !self.session.is_empty() { self.ask("receiver-0", RECEIVER, json!({"type":"STOP","sessionId":self.session}))?; }

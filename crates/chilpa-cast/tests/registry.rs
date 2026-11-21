@@ -478,7 +478,8 @@ fn checking_a_real_renderer_sends_only_description_reads() {
             let Some(request) = server.recv_timeout(Duration::from_millis(20)).unwrap() else { continue };
             log.lock().unwrap().push(format!("{} {}", request.method(), request.url()));
             let broken = log.lock().unwrap().len() == 3;
-            let xml = "<root><device><deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType><friendlyName>Busy renderer</friendlyName><UDN>uuid:busy</UDN><serviceList><service><serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType><controlURL>/transport</controlURL></service></serviceList></device></root>";
+            // Every element the reference player's description parser requires.
+            let xml = "<root xmlns=\"urn:schemas-upnp-org:device-1-0\"><specVersion><major>1</major><minor>0</minor></specVersion><device><deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType><friendlyName>Busy renderer</friendlyName><manufacturer>Test</manufacturer><modelName>Busy</modelName><UDN>uuid:busy</UDN><serviceList><service><serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType><serviceId>urn:upnp-org:serviceId:AVTransport</serviceId><SCPDURL></SCPDURL><controlURL>/transport</controlURL><eventSubURL></eventSubURL></service></serviceList></device></root>";
             let _ = if broken { request.respond(tiny_http::Response::from_string("gone").with_status_code(500)) } else { request.respond(tiny_http::Response::from_string(xml)) };
         }
     });

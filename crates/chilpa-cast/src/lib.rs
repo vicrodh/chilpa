@@ -48,6 +48,9 @@ pub enum State { Playing, Paused, Buffering, #[default] Stopped, Finished }
 pub struct Status {
     pub state: State, pub position: Option<f64>, pub duration: Option<f64>,
     pub volume: Option<f64>, pub muted: Option<bool>,
+    /// The renderer's own transport state word, where it has one (DLNA):
+    /// the end of a track is judged on it.
+    pub transport: Option<String>,
 }
 /// I exchange only a public URL with the renderer, never origin credentials.
 pub trait RemoteTransport {
@@ -59,6 +62,9 @@ pub trait RemoteTransport {
     fn volume(&mut self, level: f64) -> Result<()>;
     fn mute(&mut self, muted: bool) -> Result<()>;
     fn status(&mut self) -> Result<Status>;
+    /// A track was handed over and not stopped since. A transport that cannot
+    /// tell says yes, so it is stopped before every load.
+    fn loaded(&self) -> bool { true }
     fn disconnect(&mut self) -> Result<()> { self.stop() }
 }
 

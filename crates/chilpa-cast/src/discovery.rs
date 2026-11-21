@@ -2,13 +2,39 @@ use crate::{dlna, Device, Error, Result};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{collections::HashSet, net::UdpSocket, time::{Duration, Instant}};
 
-/// I collect all SSDP replies before fetching descriptions, so a broken
-/// description cannot hide another renderer in the same search window.
+/// All SSDP replies are collected before any description is fetched, so a
+/// broken description cannot hide another renderer in the same window.
 pub fn dlna(window: Duration) -> Result<Vec<Device>> { dlna_until(window, &AtomicBool::new(true)) }
 pub fn dlna_until(window: Duration, running: &AtomicBool) -> Result<Vec<Device>> {
-    let locations = search("urn:schemas-upnp-org:device:MediaRenderer:1", window, running)?;
+    let locations = renderers(window, running)?;
     let mut seen = HashSet::new();
-    Ok(locations.into_iter().take_while(|_| running.load(Ordering::Acquire)).filter_map(|url| dlna::describe(&url).ok()).map(|d| d.device).filter(|d| seen.insert(d.id.clone())).collect())
+    Ok(locations.into_iter().take_while(|_| running.load(Ordering::Acquire)).filter_map(|url| dlna::describe(&url).ok()).filter(|d| seen.insert(d.id.clone())).collect())
+}
+/// The description addresses of the renderers that answer within `window`,
+/// each once, asked with the reference player's search: rupnp's M-SEARCH for
+/// `MediaRenderer:1` with MX 3. A reply that cannot be read is skipped, not
+/// the end of the window.
+pub fn renderers(window: Duration, running: &AtomicBool) -> Result<Vec<String>> {
+    use futures_util::TryStreamExt;
+    use rupnp::ssdp::{SearchTarget, URN};
+    let target = SearchTarget::URN(URN::Device("schemas-upnp-org".into(), "MediaRenderer".into(), 1));
+    let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|_| Error::Network)?;
+    runtime.block_on(async {
+        let stream = rupnp::ssdp::search(&target, window, 3, None).await.map_err(|_| Error::Network)?;
+        let mut stream = std::pin::pin!(stream);
+        let (mut locations, mut seen) = (Vec::new(), HashSet::new());
+        while running.load(Ordering::Acquire) && locations.len() < 128 {
+            match stream.try_next().await {
+                Ok(Some(reply)) => {
+                    let location = reply.location().trim().to_string();
+                    if seen.insert(location.clone()) { locations.push(location); }
+                }
+                Ok(None) => break,
+                Err(error) => crate::trace::event("cast.dlna", "search_reply_skipped", format_args!("{error}")),
+            }
+        }
+        Ok(locations)
+    })
 }
 /// The description addresses of the devices of one type that answer an SSDP
 /// search within `window`, each once. A media server is found the same way

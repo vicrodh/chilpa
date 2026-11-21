@@ -1120,3 +1120,13 @@ subtabs
 imh
 # The address attribute of a link in Qt StyledText.
 href
+# DLNA control on rupnp and tokio: crate names, UPnP description terms
+# (unique device name, service control protocol description), the `pn` that
+# CamelCase leaves of `UPnPError`, and the renderer teardown.
+rupnp
+tokio
+util
+udn
+scpd
+pn
+teardown

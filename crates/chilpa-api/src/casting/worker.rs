@@ -51,6 +51,7 @@ impl Drop for Worker {
 }
 fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest: Arc<AtomicU64>, session: Arc<AtomicU64>) {
     let mut remote: Option<Box<dyn RemoteTransport>> = None;
+    let mut kind = Kind::Dlna;
     let mut server: Option<MediaServer> = None;
     let mut end: Option<End> = None;
     let mut listening: Option<super::reporting::Listening> = None;
@@ -102,11 +103,13 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                             if let Some(mut player) = player { player.shutdown(); }
                             if connection != session.load(Ordering::Acquire) { return Ok(()); }
                             let mut transport: Box<dyn RemoteTransport> = match device.kind {
-                                Kind::Dlna => Box::new(chilpa_cast::dlna::Dlna::connect(chilpa_cast::dlna::describe(&device.description)?)),
+                                Kind::Dlna => Box::new(chilpa_cast::dlna::Dlna::connect(&device)?),
                                 Kind::Chromecast => Box::new(chilpa_cast::chromecast::Chromecast::connect(device.address)?),
                             };
                             if connection != session.load(Ordering::Acquire) { let _ = transport.disconnect(); return Ok(()); }
-                            let _ = transport.stop();
+                            // A DLNA connection already stopped what the renderer kept.
+                            if transport.loaded() { let _ = transport.stop(); }
+                            kind = device.kind;
                             server = Some(MediaServer::start_guarded(device.address, Some(latest.clone()))?);
                             remote = Some(transport);
                             if connection != session.load(Ordering::Acquire) { return Ok(()); }
@@ -120,8 +123,9 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                             server.revoke();
                             let transport = remote.as_mut().ok_or(chilpa_cast::Error::Network)?;
                             // Buffered audio from the previous track must stop even
-                            // when resolving the replacement fails.
-                            let _ = transport.stop();
+                            // when resolving the replacement fails. A renderer with
+                            // nothing loaded gets no Stop, as the reference player does.
+                            if transport.loaded() { let _ = transport.stop(); }
                             let (asset, metadata, mut presentation) = asset::resolve(&path)?;
                             if stamp != latest.load(Ordering::Acquire) { return Ok(()); }
                             let mime = asset.mime.clone();
@@ -136,7 +140,9 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                             // Like the reference player, I let the renderer open the
                             // media before seeking. Failure is a control error: the
                             // loaded track remains controllable and visible.
-                            if position > 0.0 { resume = Some((Instant::now() + Duration::from_secs(2), position)); }
+                            // DLNA resumes only past five seconds, as the reference player does.
+                            let worth = if kind == Kind::Dlna { position > 5.0 } else { position > 0.0 };
+                            if worth { resume = Some((Instant::now() + Duration::from_secs(2), position)); }
                             if paused {
                                 if let Err(error) = transport.pause() { let _ = events.send((connection, stamp, serial, Event::ControlFailed(error.to_string()))); }
                             }
@@ -206,7 +212,11 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
         if last.elapsed() < Duration::from_secs(1) { continue; }
         last = Instant::now();
         if let Some(transport) = remote.as_mut() {
-            match transport.status() {
+            // The next poll waits a full second after this one answers, as the
+            // reference player sleeps between reads.
+            let status = transport.status();
+            last = Instant::now();
+            match status {
                 Ok(status) => {
                     failures = 0;
                     if let Some(report) = &mut listening { report.tick(&status, Instant::now()); }

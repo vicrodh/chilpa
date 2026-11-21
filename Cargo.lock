@@ -543,14 +543,12 @@ dependencies = [
  "mdns-sd",
  "native-tls",
  "openssl",
- "roxmltree 0.21.1",
  "rupnp",
  "serde",
  "serde_json",
  "tempfile",
  "tiny_http",
  "tokio",
- "ureq",
 ]
 
 [[package]]
