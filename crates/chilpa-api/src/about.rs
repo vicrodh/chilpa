@@ -37,7 +37,7 @@ impl crate::Chilpa {
             "platform": platform_label(),
             "build": build.trim(),
             "author": profile("vicrodh"),
-            "contributors": [profile("afonsojramos"), profile("jakumule"), profile("TheMelmacian")],
+            "contributors": [profile("afonsojramos"), profile("bruce-awareit"), profile("jakumule"), profile("TheMelmacian")],
             "links": [{ "label": chilpa_i18n::t("Website"), "url": "https://chilpa.app" }],
         })
         .to_string()
@@ -52,8 +52,8 @@ mod tests {
         let doc: serde_json::Value = serde_json::from_str(&api.about_document("", "")).unwrap();
         assert_eq!(doc["author"]["name"], "vicrodh");
         let contributors = doc["contributors"].as_array().unwrap();
-        assert_eq!(contributors.len(), 3);
-        for (person, handle) in contributors.iter().zip(["afonsojramos", "jakumule", "TheMelmacian"]) {
+        assert_eq!(contributors.len(), 4);
+        for (person, handle) in contributors.iter().zip(["afonsojramos", "bruce-awareit", "jakumule", "TheMelmacian"]) {
             assert_eq!(person["name"], handle);
             assert_eq!(person["url"], format!("https://github.com/{handle}"));
             assert_eq!(person["avatar"], format!("{handle}.png"));

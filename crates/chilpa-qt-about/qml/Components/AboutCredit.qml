@@ -36,7 +36,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: Frame.avatar
             height: width
-            // Four 40px images at most; their owners are the visible About body.
+            // Five 40px images at most; their owners are the visible About body.
             sourceSize: Qt.size(Frame.avatarDecode, Frame.avatarDecode)
             source: chip.person.avatar ? "qrc:/qt/qml/app/chilpa/about/assets/contributors/" + chip.person.avatar : ""
         }

@@ -67,24 +67,38 @@
 
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.2/assets/captures/04_artist_page_light.png</image>
+      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.3/assets/captures/04_artist_page_light.png</image>
       <caption>An artist page with popular tracks, the latest release and similar artists</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.2/assets/captures/05_refine_light.png</image>
+      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.3/assets/captures/05_refine_light.png</image>
       <caption>The library narrowed with Refine</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.2/assets/captures/02_bit-perfect_light.png</image>
+      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.3/assets/captures/02_bit-perfect_light.png</image>
       <caption>A queue and the route of the current track to the output device</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.2/assets/captures/06_immersive_lyrics.png</image>
+      <image>https://raw.githubusercontent.com/vicrodh/chilpa/v0.1.3/assets/captures/06_immersive_lyrics.png</image>
       <caption>The immersive view with synchronized lyrics</caption>
     </screenshot>
   </screenshots>
 
   <releases>
+    <release version="0.1.3" date="2026-11-20">
+      <url type="details">https://github.com/vicrodh/chilpa/releases/tag/v0.1.3</url>
+      <description>
+        <p>Genres, composers and compositions, and media servers in both directions.</p>
+        <ul>
+          <li>A genre tree with an image for 1,182 genres, a Composers view with changeable portraits, and Compositions that open on the classical repertoire with each work's composer, period and form</li>
+          <li>Plex, Jellyfin and OpenSubsonic playlists, favorites and star ratings stay in step with the server, and DLNA/UPnP servers can be a library source</li>
+          <li>Tracks, albums and playlists from a self-hosted music server can be made available offline</li>
+          <li>Scrobbling to Koito, Libre.fm and a GNU FM server, and a Recap page in Stats</li>
+          <li>Protect my library keeps Chilpa from changing music files or servers</li>
+          <li>More search options, a customizable sidebar, a hardened playback engine and general performance work</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.2" date="2026-11-03">
       <url type="details">https://github.com/vicrodh/chilpa/releases/tag/v0.1.2</url>
       <description>

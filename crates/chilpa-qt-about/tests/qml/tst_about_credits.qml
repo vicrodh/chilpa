@@ -21,7 +21,7 @@ TestCase {
         compare(requests.signalArguments[0][0], "https://github.com/vicrodh")
         const flow = findChild(credits, "aboutContributorFlow")
         const people = flow.children.filter(item => item.objectName === "aboutContributor")
-        compare(people.map(item => item.handle).sort(), ["TheMelmacian", "afonsojramos", "jakumule"].sort())
+        compare(people.map(item => item.handle).sort(), ["TheMelmacian", "afonsojramos", "bruce-awareit", "jakumule"].sort())
         verify(people[people.length - 1].y > people[0].y, "narrow layouts wrap the profiles")
         for (const person of people) {
             verify(person.x + person.width <= flow.width)
@@ -32,6 +32,6 @@ TestCase {
             keyClick(Qt.Key_Return)
             compare(requests.signalArguments[requests.count - 1][0], person.url)
         }
-        compare(requests.count, 4)
+        compare(requests.count, 5, "the author and four contributors")
     }
 }
