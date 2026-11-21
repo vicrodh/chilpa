@@ -110,7 +110,10 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                             // A DLNA connection already stopped what the renderer kept.
                             if transport.loaded() { let _ = transport.stop(); }
                             kind = device.kind;
-                            server = Some(MediaServer::start_guarded(device.address, Some(latest.clone()))?);
+                            // A DLNA URL serves until the next track is published, a stop
+                            // or a disconnect revokes it, as the reference player's does;
+                            // a Cast URL also dies the moment the generation moves.
+                            server = Some(if device.kind == Kind::Dlna { MediaServer::start(device.address)? } else { MediaServer::start_guarded(device.address, Some(latest.clone()))? });
                             remote = Some(transport);
                             if connection != session.load(Ordering::Acquire) { return Ok(()); }
                             failures = 0;
@@ -120,14 +123,19 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                             end = None;
                             resume = None;
                             let server = server.as_ref().ok_or(chilpa_cast::Error::Network)?;
-                            server.revoke();
                             let transport = remote.as_mut().ok_or(chilpa_cast::Error::Network)?;
-                            // Buffered audio from the previous track must stop even
-                            // when resolving the replacement fails. A renderer with
-                            // nothing loaded gets no Stop, as the reference player does.
-                            if transport.loaded() { let _ = transport.stop(); }
+                            // A Cast receiver stops before the replacement resolves, so
+                            // its buffered audio stops even when resolving fails. A DLNA
+                            // renderer keeps playing until the replacement is ready, and
+                            // its load stops it right before SetAVTransportURI, as the
+                            // reference player does; a failure stops it on the error path.
+                            if kind != Kind::Dlna {
+                                server.revoke();
+                                if transport.loaded() { let _ = transport.stop(); }
+                            }
                             let (asset, metadata, mut presentation) = asset::resolve(&path)?;
                             if stamp != latest.load(Ordering::Acquire) { return Ok(()); }
+                            if kind == Kind::Dlna { server.revoke(); }
                             let mime = asset.mime.clone();
                             chilpa_core::trace_playback("cast", "asset_ready", format_args!("generation={stamp} mime={mime} bytes={}", asset.length));
                             let url = server.publish(asset)?;
@@ -212,10 +220,10 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
         if last.elapsed() < Duration::from_secs(1) { continue; }
         last = Instant::now();
         if let Some(transport) = remote.as_mut() {
-            // The next poll waits a full second after this one answers, as the
-            // reference player sleeps between reads.
+            // A DLNA poll waits a full second after the renderer answers, as the
+            // reference player sleeps between reads; Cast keeps its cadence.
             let status = transport.status();
-            last = Instant::now();
+            if kind == Kind::Dlna { last = Instant::now(); }
             match status {
                 Ok(status) => {
                     failures = 0;
