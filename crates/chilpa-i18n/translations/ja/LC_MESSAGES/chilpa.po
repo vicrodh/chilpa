@@ -2757,6 +2757,9 @@ msgstr "ドラッグするか↑↓を使って、カスタムの順序を維持
 msgid "Driver query; playback has not been tested"
 msgstr "ドライバーへの問い合わせ。再生は未テストです"
 
+msgid "Duet"
+msgstr "二重奏曲"
+
 msgid "Duplicate DSP preset ID."
 msgstr "DSPプリセットのIDが重複しています。"
 

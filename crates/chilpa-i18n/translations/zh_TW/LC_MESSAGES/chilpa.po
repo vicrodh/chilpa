@@ -2765,6 +2765,9 @@ msgstr "拖曳或使用 ↑↓ 來維持自訂順序。"
 msgid "Driver query; playback has not been tested"
 msgstr "驅動程式查詢；尚未測試播放"
 
+msgid "Duet"
+msgstr "二重奏"
+
 msgid "Duplicate DSP preset ID."
 msgstr "重複的 DSP 預設值 ID。"
 

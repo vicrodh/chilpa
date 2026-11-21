@@ -2759,6 +2759,9 @@ msgstr "Sleep of gebruik ↑↓ om een eigen volgorde te behouden."
 msgid "Driver query; playback has not been tested"
 msgstr "Driverquery; afspelen is niet getest"
 
+msgid "Duet"
+msgstr "Duet"
+
 msgid "Duplicate DSP preset ID."
 msgstr "Dubbele DSP-preset-id."
 

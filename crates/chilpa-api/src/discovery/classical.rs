@@ -78,12 +78,14 @@ const COMPOUND: &[(&str, &[&str])] = &[
     ("concerto", &["concerto grosso", "sinfonia concertante", "symphonie concertante"]),
 ];
 const SINGLE: &[(&str, &[&str])] = &[
-    ("symphony", &["symphony", "symphonies", "sinfonie", "symphonie", "sinfonia", "sinfonias"]),
+    // "Sinfonia" also names Baroque keyboard pieces and overtures, so it names no form.
+    ("symphony", &["symphony", "symphonies", "sinfonie", "symphonie"]),
     ("concerto", &["concerto", "concertos", "concerti", "konzert", "concierto", "concertino"]),
     ("sonata", &["sonata", "sonatas", "sonate", "sonaten", "sonatina", "sonatine"]),
     ("quartet", &["quartet", "quartets", "quartett", "quatuor", "cuarteto", "quartetto"]),
     ("quintet", &["quintet", "quintett", "quintette", "quintetto"]),
     ("trio", &["trio", "trios"]),
+    ("duet", &["duet", "duets", "duett", "duetto", "duettos", "duo"]),
     ("suite", &["suite", "suites"]),
     ("partita", &["partita", "partitas"]),
     ("prelude", &["prelude", "preludes", "praludium", "praeludium", "preludio"]),
@@ -149,7 +151,7 @@ pub(crate) fn form_of(text: &str) -> Option<&'static str> {
 pub(crate) fn form_label(form: &str) -> String {
     let text = match form {
         "tone_poem" => chilpa_i18n::mark("Tone poem"), "song_cycle" => chilpa_i18n::mark("Song cycle"), "prelude_fugue" => chilpa_i18n::mark("Prelude and fugue"), "symphony" => chilpa_i18n::mark("Symphony"),
-        "concerto" => chilpa_i18n::mark("Concerto"), "sonata" => chilpa_i18n::mark("Sonata"), "quartet" => chilpa_i18n::mark("Quartet"), "quintet" => chilpa_i18n::mark("Quintet"), "trio" => chilpa_i18n::mark("Trio"),
+        "concerto" => chilpa_i18n::mark("Concerto"), "sonata" => chilpa_i18n::mark("Sonata"), "quartet" => chilpa_i18n::mark("Quartet"), "quintet" => chilpa_i18n::mark("Quintet"), "trio" => chilpa_i18n::mark("Trio"), "duet" => chilpa_i18n::mark("Duet"),
         "suite" => chilpa_i18n::mark("Suite"), "partita" => chilpa_i18n::mark("Partita"), "prelude" => chilpa_i18n::mark("Prelude"), "fugue" => chilpa_i18n::mark("Fugue"), "toccata" => chilpa_i18n::mark("Toccata"),
         "fantasia" => chilpa_i18n::mark("Fantasia"), "cantata" => chilpa_i18n::mark("Cantata"), "oratorio" => chilpa_i18n::mark("Oratorio"), "mass" => chilpa_i18n::mark("Mass"), "requiem" => chilpa_i18n::mark("Requiem"),
         "passion" => chilpa_i18n::mark("Passion"), "motet" => chilpa_i18n::mark("Motet"), "opera" => chilpa_i18n::mark("Opera"), "operetta" => chilpa_i18n::mark("Operetta"), "aria" => chilpa_i18n::mark("Aria"), "song" => chilpa_i18n::mark("Song"),

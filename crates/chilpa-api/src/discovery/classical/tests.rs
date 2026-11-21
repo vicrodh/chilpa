@@ -36,6 +36,8 @@ fn a_title_names_its_form() {
     assert_eq!(form_of("Präludium und Fuge"), Some("prelude_fugue"));
     assert_eq!(form_of("Song-cycle"), Some("song_cycle"), "a catalogue's work type names a form too");
     assert_eq!(form_of("Wildest Dreams"), None);
+    assert_eq!(form_of("15 Sinfonias"), None, "a Baroque sinfonia is not a symphony");
+    assert_eq!(form_of("4 Duettos"), Some("duet"));
 }
 
 #[test]

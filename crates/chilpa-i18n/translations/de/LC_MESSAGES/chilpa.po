@@ -2759,6 +2759,9 @@ msgstr "Ziehe oder nutze ↑↓, um eine eigene Reihenfolge zu behalten."
 msgid "Driver query; playback has not been tested"
 msgstr "Treiberabfrage; Wiedergabe wurde nicht getestet"
 
+msgid "Duet"
+msgstr "Duett"
+
 msgid "Duplicate DSP preset ID."
 msgstr "Doppelte DSP-Preset-ID."
 
