@@ -23,7 +23,7 @@ fn source_works_merge_with_sql_tags_without_discarding_their_interpretations() {
     let (works, total) = reader.discovery_compositions_using("Writer", "", 0, &index).unwrap();
     assert_eq!((total, works[0].tracks, works[0].albums), (1,3,2));
     assert_eq!((works[0].recordings, works[0].duration_ms), (2,2500));
-    let page = reader.compositions_page("Writer", "", 0, false, &index);
+    let page = reader.compositions_page("Writer", "", 0, false, false, &index);
     assert_eq!(page["items"][0]["artwork"], "/covers/local.jpg");
     let mut selection = Selection { kind:"work".into(), work:works[0].key.clone(), ..Default::default() };
     let local = reader.recordings_page_ordered(&selection, "1987", 0, false, &index);
@@ -92,4 +92,28 @@ fn unicode_search_finds_both_library_and_source_work_tags_without_rewriting_iden
     assert_eq!(local[0].title, "Préludes");
     let (remote, _) = reader.discovery_compositions_using("", "evocations", 0, &index).unwrap();
     assert_eq!(remote[0].title, "Évocations");
+}
+
+#[test]
+fn a_source_part_title_names_its_work_and_the_classical_switch_keeps_classical_works() {
+    let reader = reader();
+    let mut cantata = source(-1, 1);
+    cantata.work.clear(); cantata.title = "Cantata, JLB 5: I. Chorus".into(); cantata.composers = vec!["Johann Ludwig Bach".into()];
+    let mut part = cantata.clone(); part.track = -2; part.number = Some(2); part.title = "Cantata, JLB 5: II. Aria".into();
+    let mut song = source(-3, 1); song.work.clear(); song.title = "Song - Live".into(); song.composers = vec!["Band Member".into()];
+    let mut riff = source(-4, 1); riff.work = "Riff".into(); riff.composers = vec!["Band Member".into()];
+    let index = SourceIndex::new(vec![cantata, part, song, riff], vec![]);
+    assert_eq!(reader.compositions_page("", "", 0, false, false, &index)["total"], 3, "Suite, the cantata and Riff; a song title names no work");
+    let only = reader.compositions_page("", "", 0, false, true, &index);
+    assert_eq!(only["total"], 1, "only the composer in the table is classical");
+    let cantata = &only["items"][0];
+    assert_eq!((cantata["name"].as_str(), cantata["tracks"].as_u64()), (Some("Cantata, JLB 5"), Some(2)));
+    assert_eq!((cantata["period"]["value"].as_str(), cantata["form"]["value"].as_str()), (Some("baroque"), Some("cantata")));
+    assert_eq!(only["columns"]["date"], false);
+    let selection = Selection { kind:"work".into(), work:cantata["work"].as_str().unwrap().into(), ..Default::default() };
+    assert_eq!(snapshot(reader.work_parts_using(&selection, &index).unwrap()).ids, [-1, -2]);
+    reader.lib.connection().execute_batch("INSERT INTO genres(id,name) VALUES (1,'Baroque');
+        INSERT INTO track_genres(track_id,genre_id) VALUES (1,1);").unwrap();
+    let only = reader.compositions_page("", "", 0, false, true, &index);
+    assert_eq!(only["total"], 2, "a work with a track of a classical genre is classical");
 }

@@ -6,6 +6,7 @@ mod genres;
 mod genre_summary;
 mod album_population;
 mod works;
+mod classical;
 mod options;
 mod sources;
 mod presentation;
@@ -240,19 +241,24 @@ impl Reader {
         if kind == "recordings" { return self.recordings_page_ordered(&selected, &text, page, options.descending(), &index); }
         if kind == "compositions" || selected.kind == "composer" {
             let composer = if selected.kind == "composer" { selected.name.as_str() } else { "" };
-            return self.compositions_page(composer, &text, page, options.descending(), &index);
+            return self.compositions_page(composer, &text, page, options.descending(), options.classical && composer.is_empty(), &index);
         }
         if kind == "composers" {
+            let classical = options.classical.then(|| self.classical_using(&index).1);
             let mut names: Vec<_> = self.discovery_names(true).into_iter()
-                .filter(|(name, _)| chilpa_library::store::query::fold(name).contains(&text)).collect();
+                .filter(|(name, _)| chilpa_library::store::query::fold(name).contains(&text))
+                .filter(|(name, _)| classical.as_ref().is_none_or(|classical| classical.composer(name))).collect();
             names.sort_by_cached_key(|(name, albums)| (if options.order == "albums" { std::cmp::Reverse(*albums) } else { std::cmp::Reverse(0) }, name.to_lowercase(), name.clone()));
             if options.descending() { names.reverse(); }
             let total = names.len();
             let items: Vec<_> = names.into_iter().skip(page.saturating_mul(PAGE)).take(PAGE).map(|(name, albums)| {
                 let portrait = self.lib.artist_artwork(&name).ok().flatten().unwrap_or_default();
-                json!({"kind":"composer", "name":name, "albums":albums, "portrait":portrait})
+                let known = classical::composer(&name);
+                json!({"kind":"composer", "name":name, "albums":albums, "portrait":portrait,
+                    "years":known.map(|known| known.years()).unwrap_or_default(),
+                    "period":known.map(|known| classical::period_label(known.period)).unwrap_or_default()})
             }).collect();
-            return json!({"total":total,"items":items});
+            return json!({"total":total,"items":items,"classical":options.classical});
         }
         let excluded: &[String] = if selected.album_scope { &selected.excluded_sources }
             else { options.excluded_sources.as_deref().unwrap_or(&selected.excluded_sources) };

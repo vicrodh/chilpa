@@ -235,8 +235,9 @@ impl Session {
                 if !mapping.composers.is_empty() {
                     proposed.insert("composers".into(), json!(mapping.composers));
                 }
-                if !mapping.work.is_empty() {
-                    proposed.insert("work".into(), json!(mapping.work));
+                let title = candidate.release.tracks[mapping.index].title.as_str();
+                if let Some(work) = chilpa_library::work_titles::proposed_work(&mapping.work, title) {
+                    proposed.insert("work".into(), json!(work));
                 }
                 let identity_requested = fields
                     .iter()

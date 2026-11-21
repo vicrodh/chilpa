@@ -37,6 +37,7 @@ Item {
             return [entry.artist || "", entry.source || "", I18n.trCount("{} part", "{} parts", entry.tracks || 0, I18n.rev), seconds > 0 ? duration : ""].filter(Boolean).join(" · ")
         }
         if (entry.kind === "work") return (entry.composers || []).join(" · ") || I18n.tr("Composer not tagged", I18n.rev)
+        if (entry.kind === "composer" && entry.years) return [entry.years, entry.period].filter(Boolean).join(" · ")
         return I18n.trCount("{} album", "{} albums", entry.albums || 0, I18n.rev)
     }
     GridView {
@@ -68,7 +69,12 @@ Item {
                 entry: modelData; detail: parentView.detail(modelData)
                 enabled: !!modelData.kind
                 onClicked: parentView.activated(modelData)
+                onMenuRequested: (x, y) => {
+                    const at = mapToItem(parentView, x, y)
+                    pictureMenu.popupAt(cell.modelData.name || "", picture, at.x, at.y)
+                }
             }
         }
     }
+    ComposerPictureMenu { id: pictureMenu; anchors.fill: parent }
 }

@@ -519,6 +519,12 @@ msgstr "Tous les artistes"
 msgid "All categories"
 msgstr "Toutes les catégories"
 
+msgid "All composers"
+msgstr "Tous les compositeurs"
+
+msgid "All compositions"
+msgstr "Toutes les œuvres"
+
 msgid "All discs"
 msgstr "Tous les disques"
 
@@ -777,6 +783,9 @@ msgstr "avril"
 msgid "Architecture"
 msgstr "Architecture"
 
+msgid "Aria"
+msgstr "Aria"
+
 msgid "Arranger"
 msgstr "Arrangeur"
 
@@ -1011,11 +1020,20 @@ msgstr "Image de fond"
 msgid "Balance · −100 left / +100 right"
 msgstr "Balance · −100 gauche / +100 droite"
 
+msgid "Ballade"
+msgstr "Ballade"
+
+msgid "Ballet"
+msgstr "Ballet"
+
 msgid "Band pass"
 msgstr ""
 
 msgid "Barcode"
 msgstr "Code-barres"
+
+msgid "Baroque"
+msgstr "Baroque"
 
 msgid "Bars"
 msgstr "Barres"
@@ -1208,8 +1226,17 @@ msgstr "Annulation de la mise à jour…"
 msgid "Cancelling…"
 msgstr ""
 
+msgid "Canon"
+msgstr "Canon"
+
+msgid "Cantata"
+msgstr "Cantate"
+
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Limite l'amplification pour que le pic le plus fort reste sous la pleine échelle. Désactivé, les pistes faibles atteignent la cible même si leurs pics écrêtent."
+
+msgid "Capriccio"
+msgstr "Caprice"
 
 msgid "Card image"
 msgstr "Image de la carte"
@@ -1243,6 +1270,9 @@ msgstr "Catégories"
 
 msgid "Ceiling"
 msgstr ""
+
+msgid "Chaconne"
+msgstr "Chaconne"
 
 msgid "Change cover"
 msgstr "Changer la pochette"
@@ -1733,6 +1763,15 @@ msgstr ""
 msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr "Choisissez « Rendre disponible hors ligne » dans le menu d’un album, d’une playlist ou de pistes d’un serveur."
 
+msgid "Chorale"
+msgstr "Choral"
+
+msgid "Classical"
+msgstr "Classique"
+
+msgid "Classical period"
+msgstr "Classicisme"
+
 msgid "Clean"
 msgstr "Sans contenu explicite"
 
@@ -1964,6 +2003,9 @@ msgstr "Rapport du compresseur · 1–6"
 msgid "Compressor threshold · −60–0 dB"
 msgstr "Seuil du compresseur · −60–0 dB"
 
+msgid "Concerto"
+msgstr "Concerto"
+
 msgid "Config files you can create:"
 msgstr "Fichiers de configuration que vous pouvez créer :"
 
@@ -2017,6 +2059,9 @@ msgstr "Erreur de connexion"
 
 msgid "Container"
 msgstr "Conteneur"
+
+msgid "Contemporary"
+msgstr "Contemporain"
 
 msgid "Content advisory"
 msgstr "Classification du contenu"
@@ -2624,6 +2669,9 @@ msgstr "Distribution"
 msgid "Distribution version"
 msgstr "Version de la distribution"
 
+msgid "Divertimento"
+msgstr "Divertimento"
+
 msgid "DoP carrier · {}"
 msgstr "Porteuse DoP · {}"
 
@@ -2710,6 +2758,9 @@ msgstr "Faites glisser ou utilisez ↑↓ pour garder un ordre personnalisé."
 
 msgid "Driver query; playback has not been tested"
 msgstr "Requête au pilote ; la lecture n’a pas été testée"
+
+msgid "Duet"
+msgstr "Duo"
 
 msgid "Duplicate DSP preset ID."
 msgstr "ID de préréglage DSP en double."
@@ -2933,9 +2984,6 @@ msgstr ""
 msgid "Explore"
 msgstr "Explorer"
 
-msgid "Explore works, recordings and albums credited to this composer."
-msgstr ""
-
 msgid "Export"
 msgstr "Exporter"
 
@@ -2989,6 +3037,9 @@ msgstr "Échecs uniquement"
 
 msgid "Failed to load albums"
 msgstr "Échec du chargement des albums"
+
+msgid "Fantasia"
+msgstr "Fantaisie"
 
 msgid "Favorite"
 msgstr "Favori"
@@ -3179,6 +3230,9 @@ msgstr "Oublier un appareil…"
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "Oublie les paroles trouvées jusqu'ici, et les pistes connues pour n'en avoir aucune. Elles seront cherchées à nouveau à la lecture des pistes."
 
+msgid "Form"
+msgstr "Forme"
+
 msgid "Format"
 msgstr "Format"
 
@@ -3232,6 +3286,9 @@ msgstr "À partir de cette année"
 
 msgid "From this week"
 msgstr "De cette semaine"
+
+msgid "Fugue"
+msgstr "Fugue"
 
 msgid "Full"
 msgstr "Complet"
@@ -3322,6 +3379,9 @@ msgstr "Commencer"
 
 msgid "Getting started"
 msgstr "Premiers pas"
+
+msgid "Gigue"
+msgstr "Gigue"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr "GitHub limite les requêtes depuis ce réseau. Réessayez plus tard."
@@ -3679,6 +3739,9 @@ msgstr ""
 msgid "Imported"
 msgstr "Importé"
 
+msgid "Impromptu"
+msgstr "Impromptu"
+
 msgid "In a Jellyfin app where you are signed in, open Quick Connect and type this code. Chilpa notices by itself."
 msgstr "Dans une application Jellyfin où vous êtes connecté, ouvrez Quick Connect et saisissez ce code. Chilpa s'en aperçoit tout seul."
 
@@ -3826,6 +3889,9 @@ msgstr ""
 msgid "Instrument"
 msgstr "Instrument"
 
+msgid "Instrumentation"
+msgstr "Effectif"
+
 msgid "Integrations"
 msgstr "Intégrations"
 
@@ -3840,6 +3906,9 @@ msgstr "Échelle de l’interface"
 
 msgid "Interface size"
 msgstr "Taille de l'interface"
+
+msgid "Intermezzo"
+msgstr "Intermezzo"
 
 msgid "Interrupted"
 msgstr "Interrompu"
@@ -3915,6 +3984,9 @@ msgstr "Valeur de préférence non valide ; vérifiez ses choix dans Paramètre
 
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr "Non valide — doit contenir alsa_output ou alsa_input"
+
+msgid "Invention"
+msgstr "Invention"
 
 msgid "Invert left polarity"
 msgstr "Inverser la polarité gauche"
@@ -4391,6 +4463,9 @@ msgstr "Vue des paroles"
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "Les paroles sans traduction sont envoyées à l'API de paroles de Chilpa."
 
+msgid "Madrigal"
+msgstr "Madrigal"
+
 msgid "Magazine"
 msgstr "Magazine"
 
@@ -4433,6 +4508,9 @@ msgstr "Marquer comme non écouté"
 msgid "Mark the start first with :loop a."
 msgstr "Marquez d'abord le début avec :loop a."
 
+msgid "Mass"
+msgstr "Messe"
+
 msgid "Mastering engineer"
 msgstr "Ingénieur de mastering"
 
@@ -4457,8 +4535,14 @@ msgstr "Maximum 32/384"
 msgid "May"
 msgstr "mai"
 
+msgid "Mazurka"
+msgstr "Mazurka"
+
 msgid "Media info"
 msgstr "Infos sur le média"
+
+msgid "Medieval"
+msgstr "Médiéval"
 
 msgid "Member Of"
 msgstr "Membre de"
@@ -4502,6 +4586,9 @@ msgstr "Vue par défaut du mini-lecteur"
 msgid "Minimize"
 msgstr "Réduire"
 
+msgid "Minuet"
+msgstr "Menuet"
+
 msgid "Minutes"
 msgstr "Minutes"
 
@@ -4525,6 +4612,9 @@ msgstr "Ingénieur de mixage"
 
 msgid "Mode not reported"
 msgstr "Mode non signalé"
+
+msgid "Modern"
+msgstr "Moderne"
 
 msgid "Mon"
 msgstr "lun."
@@ -4603,6 +4693,9 @@ msgstr "Les plus lus"
 
 msgid "Most played tracks"
 msgstr "Pistes les plus écoutées"
+
+msgid "Motet"
+msgstr "Motet"
 
 msgid "Mounted storage"
 msgstr ""
@@ -4874,6 +4967,12 @@ msgstr "Aucune sortie audio n’est encore connue ; réessayez dans un instant."
 msgid "No changes to apply."
 msgstr ""
 
+msgid "No classical composers yet. Choose All composers to see every composer credit."
+msgstr "Aucun compositeur classique pour l’instant. Choisissez Tous les compositeurs pour voir tous les crédits de compositeur."
+
+msgid "No classical compositions yet. Choose All compositions to see every work."
+msgstr "Aucune œuvre classique pour l’instant. Choisissez Toutes les œuvres pour voir chaque œuvre."
+
 msgid "No composer"
 msgstr "Sans compositeur"
 
@@ -5083,6 +5182,9 @@ msgstr "Sans année"
 
 msgid "No year; genre, label and composer take none too"
 msgstr "Sans année ; genre, label et compositeur acceptent aussi none"
+
+msgid "Nocturne"
+msgstr "Nocturne"
 
 msgid "None"
 msgstr "Aucun"
@@ -5465,6 +5567,9 @@ msgstr "Ouverture : {} · Audibilité : {}"
 msgid "Opening…"
 msgstr "Ouverture…"
 
+msgid "Opera"
+msgstr "Opéra"
+
 msgid "Operating system"
 msgstr "Système d’exploitation"
 
@@ -5477,8 +5582,14 @@ msgstr ""
 msgid "Operation stopped with errors"
 msgstr ""
 
+msgid "Operetta"
+msgstr "Opérette"
+
 msgid "Optional access token for private playlists"
 msgstr "Jeton d'accès facultatif pour les playlists privées"
+
+msgid "Oratorio"
+msgstr "Oratorio"
 
 msgid "Original audio"
 msgstr "Audio original"
@@ -5534,6 +5645,9 @@ msgstr "Format de sortie"
 msgid "Output identity could not be saved."
 msgstr "Impossible d’enregistrer l’identité de la sortie."
 
+msgid "Overture"
+msgstr "Ouverture"
+
 msgid "Overview"
 msgstr ""
 
@@ -5558,8 +5672,17 @@ msgstr ""
 msgid "Parentheses group; NOT works like the minus"
 msgstr "Les parenthèses regroupent ; NOT fait comme le moins"
 
+msgid "Partita"
+msgstr "Partita"
+
 msgid "Parts"
 msgstr ""
+
+msgid "Passacaglia"
+msgstr "Passacaille"
+
+msgid "Passion"
+msgstr "Passion"
 
 msgid "Password"
 msgstr "Mot de passe"
@@ -5638,6 +5761,9 @@ msgstr "Interprète"
 
 msgid "Performers"
 msgstr "Interprètes"
+
+msgid "Period"
+msgstr "Période"
 
 msgid "Permission required"
 msgstr "Autorisation requise"
@@ -5861,6 +5987,9 @@ msgstr ""
 msgid "Points show individual filter gains. Drag to adjust frequency and gain; scroll over a point to adjust Q. Locked filters stay fixed."
 msgstr ""
 
+msgid "Polonaise"
+msgstr "Polonaise"
+
 msgid "Popular Tracks"
 msgstr "Pistes populaires"
 
@@ -5884,6 +6013,12 @@ msgstr "PCM inchangé selon la prédiction ; décodage DoP et sortie audible non
 
 msgid "Preferred GPU"
 msgstr "GPU préféré"
+
+msgid "Prelude"
+msgstr "Prélude"
+
+msgid "Prelude and fugue"
+msgstr "Prélude et fugue"
 
 msgid "Preparing Mood analysis"
 msgstr "Préparation de l'analyse d'humeur"
@@ -6056,6 +6191,9 @@ msgstr "Filtres de qualité, de format et de source"
 msgid "Quarantined"
 msgstr "En quarantaine"
 
+msgid "Quartet"
+msgstr "Quatuor"
+
 msgid "Queries"
 msgstr "Requêtes"
 
@@ -6112,6 +6250,9 @@ msgstr ""
 
 msgid "Quick view"
 msgstr "Aperçu rapide"
+
+msgid "Quintet"
+msgstr "Quintette"
 
 msgid "Quit"
 msgstr "Quitter"
@@ -6493,6 +6634,9 @@ msgstr "Suppression de {}"
 msgid "Removing…"
 msgstr "Suppression…"
 
+msgid "Renaissance"
+msgstr "Renaissance"
+
 msgid "Rename"
 msgstr "Renommer"
 
@@ -6567,6 +6711,9 @@ msgstr "Chemin de sortie demandé"
 
 msgid "Requests: {}"
 msgstr "Demande : {}"
+
+msgid "Requiem"
+msgstr "Requiem"
 
 msgid "Rescan"
 msgstr "Réanalyser"
@@ -6676,6 +6823,9 @@ msgstr "Vérifiez les autorisations demandées avant d'installer."
 msgid "Reviewing changes…"
 msgstr ""
 
+msgid "Rhapsody"
+msgstr "Rhapsodie"
+
 msgid "Rich"
 msgstr "Détaillé"
 
@@ -6687,6 +6837,12 @@ msgstr ""
 
 msgid "Right delay · 0–30 ms"
 msgstr "Retard droit · 0–30 ms"
+
+msgid "Romantic"
+msgstr "Romantisme"
+
+msgid "Rondo"
+msgstr "Rondo"
 
 msgid "Route"
 msgstr "Chemin"
@@ -6843,6 +6999,9 @@ msgstr "Analyse en cours…"
 
 msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
 msgstr "Les vérifications planifiées s’exécutent lorsque Chilpa est ouvert. Les vérifications au démarrage ont lieu une fois à l’ouverture. Les fichiers inchangés sont ignorés."
+
+msgid "Scherzo"
+msgstr "Scherzo"
 
 msgid "Scope of this check"
 msgstr "Portée de cette vérification"
@@ -7082,6 +7241,9 @@ msgstr "Des limites d’entrée séparées ne prouvent pas toutes les combinaiso
 
 msgid "September"
 msgstr "septembre"
+
+msgid "Serenade"
+msgstr "Sérénade"
 
 msgid "Server"
 msgstr "Serveur"
@@ -7400,8 +7562,17 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Sonata"
+msgstr "Sonate"
+
+msgid "Song"
+msgstr "Chanson"
+
 msgid "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
 msgstr ""
+
+msgid "Song cycle"
+msgstr "Cycle de mélodies"
 
 msgid "Songs"
 msgstr "Pistes"
@@ -7592,6 +7763,9 @@ msgstr "Abonnements"
 msgid "Success"
 msgstr "Succès"
 
+msgid "Suite"
+msgstr "Suite"
+
 msgid "Sun"
 msgstr "dim."
 
@@ -7600,6 +7774,9 @@ msgstr "Ligne chantée"
 
 msgid "Surface"
 msgstr "Surface"
+
+msgid "Symphony"
+msgstr "Symphonie"
 
 msgid "Sync cancelled"
 msgstr ""
@@ -8732,6 +8909,9 @@ msgstr "Pour bouger"
 msgid "To use a different account, add it as a separate server."
 msgstr "Pour utiliser un autre compte, ajoutez-le comme serveur distinct."
 
+msgid "Toccata"
+msgstr "Toccata"
+
 msgid "Today"
 msgstr "Aujourd'hui"
 
@@ -8758,6 +8938,9 @@ msgstr ""
 
 msgid "Tone enabled"
 msgstr ""
+
+msgid "Tone poem"
+msgstr "Poème symphonique"
 
 msgid "Too many device storage locations were reported."
 msgstr ""
@@ -8872,6 +9055,9 @@ msgstr "Arborescence"
 
 msgid "Trending shows"
 msgstr "Émissions populaires"
+
+msgid "Trio"
+msgstr "Trio"
 
 msgid "Try again"
 msgstr "Réessayer"
@@ -9179,6 +9365,9 @@ msgstr "Nom de nœud valide"
 msgid "Value"
 msgstr ""
 
+msgid "Variations"
+msgstr "Variations"
+
 msgid "Verify files after transfer"
 msgstr ""
 
@@ -9282,6 +9471,9 @@ msgstr "Flou du fond d'écran"
 
 msgid "Wallpaper, blurred"
 msgstr "Fond d'écran flouté"
+
+msgid "Waltz"
+msgstr "Valse"
 
 msgid "Warning"
 msgstr "Avertissement"
@@ -9412,8 +9604,8 @@ msgstr "Des mots dans le titre de l’album et dans celui de la piste"
 msgid "Work"
 msgstr "Œuvre"
 
-msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
-msgstr ""
+msgid "Works named by work tags or by the titles of their parts, with their composers. Recordings keep their album and performer context."
+msgstr "Œuvres nommées par leur étiquette d’œuvre ou par les titres de leurs parties, avec leurs compositeurs. Les enregistrements gardent leur album et leurs interprètes."
 
 msgid "Write XML"
 msgstr "Écrire le XML"
@@ -11398,6 +11590,9 @@ msgstr "{} bits / {}"
 
 msgid "{}s"
 msgstr "{}s"
+
+msgid "Étude"
+msgstr "Étude"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "« {} » contient des modifications non enregistrées. Si vous ouvrez ce disque, elles seront perdues."

@@ -21,6 +21,7 @@ pub mod schema;
 pub mod sidecar;
 pub mod smart;
 pub mod store;
+pub mod work_titles;
 
 pub use album_folder::VARIOUS_ARTISTS;
 pub use playlist::Playlist;

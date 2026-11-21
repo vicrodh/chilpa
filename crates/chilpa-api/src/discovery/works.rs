@@ -3,25 +3,38 @@
 //! work retains sort keys, a borrowed entry and its album ids for this query.
 //! Live collection roots may exceed the source index's pruning target; only
 //! 60 owned work cards cross the facade. No cache or worker is added.
-use super::{Selection, PAGE};
+use super::{classical::{self, Classical}, Selection, PAGE};
 use crate::{library_sources::{SourceIndex, SourceItem}, Reader, Snapshot, Totals};
 use chilpa_library::store::{compositions::{Composition, work_key}, query::fold};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
-fn key(item: &SourceItem) -> String {
-    work_key(&item.work, &item.composers, json!(format!("{}:{}", item.plugin, if item.album != 0 { item.album } else { item.track })))
+/// The work a source track names: its tag, or the work its title prints
+/// before a part marker when it has a composer.
+fn work_of(item: &SourceItem) -> Option<String> {
+    let tagged = item.work.trim_matches(' ');
+    if !tagged.trim().is_empty() { return Some(tagged.to_string()); }
+    chilpa_library::work_titles::work_from_title(&item.title, &item.composers)
 }
+
+fn key_of(item: &SourceItem, work: &str) -> String {
+    work_key(work, &item.composers, json!(format!("{}:{}", item.plugin, if item.album != 0 { item.album } else { item.track })))
+}
+
+#[cfg(test)]
+fn key(item: &SourceItem) -> String { key_of(item, &work_of(item).unwrap_or_default()) }
 
 fn rank(title: &str, key: &str) -> (String, String) { (title.to_lowercase(), key.to_string()) }
 
 struct Remote<'a> {
     first: &'a SourceItem,
+    title: String,
     albums: HashSet<i64>,
     recordings: HashSet<(&'a str, i64, String)>,
     sources: BTreeSet<&'a str>,
     tracks: usize,
     duration_ms: u64,
+    classical_genre: bool,
 }
 
 fn source_labels(index: &SourceIndex) -> HashMap<&str, &str> {
@@ -32,49 +45,87 @@ fn source_label<'a>(labels: &HashMap<&str, &'a str>, plugin: &'a str) -> &'a str
     labels.get(plugin).copied().filter(|label| !label.is_empty()).unwrap_or(plugin)
 }
 
-fn remote<'a>(index: &'a SourceIndex, composer: &str, text: &str) -> BTreeMap<(String, String), Remote<'a>> {
+fn remote<'a>(index: &'a SourceIndex, composer: &str, text: &str, classical: &Classical) -> BTreeMap<(String, String), Remote<'a>> {
     let text = fold(text);
     let composer = composer.to_lowercase();
     let mut works = BTreeMap::<(String, String), Remote<'a>>::new();
-    for item in index.items.iter().filter(|item| item.track != 0 && !item.work.trim().is_empty()) {
+    for item in index.items.iter().filter(|item| item.track != 0) {
         if !composer.is_empty() && !item.composers.iter().any(|name| name.to_lowercase() == composer) { continue; }
-        if !fold(&item.work).contains(&text) && !item.composers.iter().any(|name| fold(name).contains(&text)) { continue; }
-        let work = works.entry(rank(item.work.trim_matches(' '), &key(item)))
-            .or_insert_with(|| Remote { first: item, albums: HashSet::new(), recordings: HashSet::new(), sources: BTreeSet::new(), tracks: 0, duration_ms: 0 });
-        if item.work < work.first.work { work.first = item; }
+        let Some(title) = work_of(item) else { continue };
+        if !fold(&title).contains(&text) && !item.composers.iter().any(|name| fold(name).contains(&text)) { continue; }
+        let at = rank(&title, &key_of(item, &title));
+        let work = works.entry(at).or_insert_with(|| Remote { first: item, title: title.clone(), albums: HashSet::new(), recordings: HashSet::new(),
+            sources: BTreeSet::new(), tracks: 0, duration_ms: 0, classical_genre: false });
+        if title < work.title { work.first = item; work.title = title; }
         if item.album != 0 { work.albums.insert(item.album); }
         let recording_album = if item.album != 0 { item.album } else { -item.track };
         work.recordings.insert((&item.plugin, recording_album, item.artists.first().map_or_else(String::new, |artist| artist.to_lowercase())));
         work.sources.insert(&item.plugin);
         work.tracks += 1;
         work.duration_ms += item.duration_ms;
+        work.classical_genre |= classical.genre(&item.genres);
     }
     works
 }
 
 fn owned(((_, key), work): ((String, String), Remote<'_>), labels: &HashMap<&str, &str>) -> Composition {
-    Composition { key, title: work.first.work.trim_matches(' ').to_string(), composers: work.first.composers.clone(),
+    Composition { key, title: work.title, composers: work.first.composers.clone(),
         albums: work.albums.len(), tracks: work.tracks, recordings: work.recordings.len(), duration_ms: work.duration_ms,
-        example_track: work.first.track, sources: work.sources.into_iter().map(|plugin| source_label(labels, plugin).to_owned()).collect() }
+        example_track: work.first.track, sources: work.sources.into_iter().map(|plugin| source_label(labels, plugin).to_owned()).collect(),
+        classical_genre: work.classical_genre }
 }
 
+/// What a page of works reports beside its rows: whether any work of the
+/// whole result has a date or an instrumentation, so empty columns stay hidden.
+#[derive(Default)]
+struct Columns { date: bool, instrumentation: bool }
+
 impl Reader {
-    pub(super) fn compositions_page(&self, composer: &str, text: &str, page: usize, descending: bool, index: &SourceIndex) -> Value {
-        let (works, total) = match self.compositions_ordered_using(composer, text, page, index, descending) {
+    /// The classical genres of the library's tags and sources, and who
+    /// composes in them.
+    pub(super) fn classical_using(&self, index: &SourceIndex) -> (Vec<String>, Classical) {
+        let tags: Vec<String> = self.discovery_names_using(false, &[], index).into_iter().map(|(name, _)| name).collect();
+        let genres = super::genres::Inventory::new(&tags).matching("Classical");
+        let mut found = Classical::new(&genres, self.lib.composers_in_genres(&genres).unwrap_or_default());
+        let credited: Vec<&[String]> = index.items.iter().filter(|item| found.genre(&item.genres)).map(|item| item.composers.as_slice()).collect();
+        for names in credited { found.add_composers(names); }
+        (genres, found)
+    }
+
+    pub(super) fn compositions_page(&self, composer: &str, text: &str, page: usize, descending: bool, only_classical: bool, index: &SourceIndex) -> Value {
+        let (genres, classical) = self.classical_using(index);
+        if page == 0 { self.read_ahead_classical_records(index, &classical); }
+        let mut columns = Columns::default();
+        let (works, total) = match self.compositions_ordered_using(composer, text, page, index, descending, &genres, &classical, only_classical, &mut columns) {
             Ok(page) => page,
             Err(error) => return json!({"error":error,"items":[],"total":0}),
         };
-        let artwork = self.composition_artwork(works.iter().map(|work| work.example_track));
+        let artwork = self.composition_artwork(works.iter().map(|(work, _)| work.example_track));
         let local = chilpa_i18n::t("Local");
-        let items: Vec<_> = works.into_iter().map(|work| {
+        let items: Vec<_> = works.into_iter().map(|(work, is_classical)| {
             let mut sources: Vec<_> = work.sources.into_iter().map(|name| if name.is_empty() { local.clone() } else { name }).collect();
             sources.sort();
             sources.dedup();
+            let facts = classical::facts(&work.title, &work.composers);
             json!({"kind":"work","name":work.title,"work":work.key,"composers":work.composers,
                 "albums":work.albums,"tracks":work.tracks,"recordings":work.recordings,"duration":work.duration_ms,
-                "sources":sources,"artwork":artwork.get(&work.example_track)})
+                "sources":sources,"artwork":artwork.get(&work.example_track),"classical":is_classical,
+                "form":facts.form,"period":facts.period,"date":facts.date,"instrumentation":facts.instrumentation})
         }).collect();
-        json!({"total":total,"items":items})
+        let about = (!composer.is_empty()).then(|| classical::composer(composer)).flatten().map(|known| json!({
+            "name":known.name,"years":known.years(),"period":classical::period_label(known.period)}));
+        json!({"total":total,"items":items,"classical":only_classical,"composer":about,
+            "columns":{"date":columns.date,"instrumentation":columns.instrumentation}})
+    }
+
+    /// Saved source records of a classical genre whose tracks were never
+    /// read carry no works yet: their tracks are read ahead while a work
+    /// page is shown, 16 records per request.
+    fn read_ahead_classical_records(&self, index: &SourceIndex, classical: &Classical) {
+        let Some(catalog) = &self.catalog else { return };
+        let records: Vec<i64> = index.items.iter().filter(|item| item.track == 0 && item.album < 0 && classical.genre(&item.genres))
+            .map(|item| item.album).take(16).collect();
+        if !records.is_empty() { catalog.read_ahead_tracks(&records); }
     }
 
     fn composition_artwork(&self, ids: impl Iterator<Item = i64>) -> HashMap<i64, String> {
@@ -90,21 +141,29 @@ impl Reader {
 
     #[cfg(test)]
     pub(super) fn discovery_compositions_using(&self, composer: &str, text: &str, page: usize, index: &SourceIndex) -> Result<(Vec<Composition>, usize), String> {
-        self.compositions_ordered_using(composer, text, page, index, false)
+        let (rows, total) = self.compositions_ordered_using(composer, text, page, index, false, &[], &Classical::default(), false, &mut Columns::default())?;
+        Ok((rows.into_iter().map(|(work, _)| work).collect(), total))
     }
 
-    fn compositions_ordered_using(&self, composer: &str, text: &str, page: usize, index: &SourceIndex, descending: bool) -> Result<(Vec<Composition>, usize), String> {
+    #[allow(clippy::too_many_arguments)]
+    fn compositions_ordered_using(&self, composer: &str, text: &str, page: usize, index: &SourceIndex, descending: bool,
+        genres: &[String], classical: &Classical, only_classical: bool, columns: &mut Columns) -> Result<(Vec<(Composition, bool)>, usize), String> {
         let labels = source_labels(index);
-        let extra = remote(index, composer, text).into_iter();
+        let extra = remote(index, composer, text, classical).into_iter();
         let extra: Box<dyn Iterator<Item = _>> = if descending { Box::new(extra.rev()) } else { Box::new(extra) };
         let mut extra = extra.peekable();
         let (mut rows, mut total) = (Vec::with_capacity(PAGE), 0usize);
         let offset = page.saturating_mul(PAGE);
         let mut take = |work: Composition| {
-            if total >= offset && rows.len() < PAGE { rows.push(work); }
+            let is_classical = classical.work(&work.composers, work.classical_genre);
+            if only_classical && !is_classical { return; }
+            let facts = classical::facts(&work.title, &work.composers);
+            columns.date |= facts.date.is_some();
+            columns.instrumentation |= facts.instrumentation.is_some();
+            if total >= offset && rows.len() < PAGE { rows.push((work, is_classical)); }
             total += 1;
         };
-        self.lib.visit_compositions_ordered(composer, text, descending, |mut local| {
+        self.lib.visit_compositions_ordered(composer, text, descending, genres, |mut local| {
             let at = rank(&local.title, &local.key);
             while extra.peek().is_some_and(|(remote, _)| if descending { *remote > at } else { *remote < at }) { take(owned(extra.next().unwrap(), &labels)); }
             if extra.peek().is_some_and(|(remote, _)| *remote == at) {
@@ -113,6 +172,7 @@ impl Reader {
                 local.tracks += remote.tracks;
                 local.recordings += remote.recordings.len();
                 local.duration_ms += remote.duration_ms;
+                local.classical_genre |= remote.classical_genre;
                 local.sources.extend(remote.sources.into_iter().map(|plugin| source_label(&labels, plugin).to_owned()));
             }
             take(local);
@@ -134,7 +194,7 @@ impl Reader {
             source_name: if row.source.is_empty() { local.clone() } else { row.source },
             year: row.year,
         }).collect();
-        for item in index.items.iter().filter(|item| item.track != 0 && !item.work.is_empty() && key(item) == selected.work) {
+        for item in index.items.iter().filter(|item| item.track != 0 && work_of(item).is_some_and(|work| key_of(item, &work) == selected.work)) {
             parts.push(Part { id:item.track, album:item.album, name:if item.album_title.is_empty() { item.title.clone() } else { item.album_title.clone() },
                 artist:item.artists.first().cloned().unwrap_or_default(), disc:item.disc.unwrap_or(0), number:item.number.unwrap_or(0),
                 duration:item.duration_ms, source:format!("source:{}", item.plugin),

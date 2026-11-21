@@ -519,6 +519,12 @@ msgstr "Alle artiesten"
 msgid "All categories"
 msgstr "Alle categorieën"
 
+msgid "All composers"
+msgstr "Alle componisten"
+
+msgid "All compositions"
+msgstr "Alle composities"
+
 msgid "All discs"
 msgstr "Alle schijven"
 
@@ -777,6 +783,9 @@ msgstr "april"
 msgid "Architecture"
 msgstr "Architectuur"
 
+msgid "Aria"
+msgstr "Aria"
+
 msgid "Arranger"
 msgstr "Arrangeur"
 
@@ -1011,11 +1020,20 @@ msgstr "Achtergrondafbeelding"
 msgid "Balance · −100 left / +100 right"
 msgstr "Balans · −100 links / +100 rechts"
 
+msgid "Ballade"
+msgstr "Ballade"
+
+msgid "Ballet"
+msgstr "Ballet"
+
 msgid "Band pass"
 msgstr ""
 
 msgid "Barcode"
 msgstr "Streepjescode"
+
+msgid "Baroque"
+msgstr "Barok"
 
 msgid "Bars"
 msgstr "Balken"
@@ -1208,8 +1226,17 @@ msgstr "Update annuleren…"
 msgid "Cancelling…"
 msgstr ""
 
+msgid "Canon"
+msgstr "Canon"
+
+msgid "Cantata"
+msgstr "Cantate"
+
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "Begrenst de versterking zodat de luidste piek onder volle schaal blijft. Uit: stille nummers bereiken het doel, ook als hun pieken clippen."
+
+msgid "Capriccio"
+msgstr "Capriccio"
 
 msgid "Card image"
 msgstr "Kaartafbeelding"
@@ -1243,6 +1270,9 @@ msgstr "Categorieën"
 
 msgid "Ceiling"
 msgstr ""
+
+msgid "Chaconne"
+msgstr "Chaconne"
 
 msgid "Change cover"
 msgstr "Hoes wijzigen"
@@ -1733,6 +1763,15 @@ msgstr ""
 msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr "Kies ‘Offline beschikbaar maken’ in het menu van een album, afspeellijst of nummers van een server."
 
+msgid "Chorale"
+msgstr "Koraal"
+
+msgid "Classical"
+msgstr "Klassiek"
+
+msgid "Classical period"
+msgstr "Classicisme"
+
 msgid "Clean"
 msgstr "Geen expliciete inhoud"
 
@@ -1964,6 +2003,9 @@ msgstr "Compressorratio · 1–6"
 msgid "Compressor threshold · −60–0 dB"
 msgstr "Compressordrempel · −60–0 dB"
 
+msgid "Concerto"
+msgstr "Concert"
+
 msgid "Config files you can create:"
 msgstr "Configuratiebestanden die je kunt aanmaken:"
 
@@ -2017,6 +2059,9 @@ msgstr "Verbindingsfout"
 
 msgid "Container"
 msgstr "Container"
+
+msgid "Contemporary"
+msgstr "Hedendaags"
 
 msgid "Content advisory"
 msgstr "Inhoudsclassificatie"
@@ -2624,6 +2669,9 @@ msgstr "Distributie"
 msgid "Distribution version"
 msgstr "Distributieversie"
 
+msgid "Divertimento"
+msgstr "Divertimento"
+
 msgid "DoP carrier · {}"
 msgstr "DoP-drager · {}"
 
@@ -2710,6 +2758,9 @@ msgstr "Sleep of gebruik ↑↓ om een eigen volgorde te behouden."
 
 msgid "Driver query; playback has not been tested"
 msgstr "Driverquery; afspelen is niet getest"
+
+msgid "Duet"
+msgstr "Duet"
 
 msgid "Duplicate DSP preset ID."
 msgstr "Dubbele DSP-preset-id."
@@ -2933,9 +2984,6 @@ msgstr ""
 msgid "Explore"
 msgstr "Verkennen"
 
-msgid "Explore works, recordings and albums credited to this composer."
-msgstr ""
-
 msgid "Export"
 msgstr "Exporteren"
 
@@ -2989,6 +3037,9 @@ msgstr "Alleen mislukt"
 
 msgid "Failed to load albums"
 msgstr "Albums laden mislukt"
+
+msgid "Fantasia"
+msgstr "Fantasie"
 
 msgid "Favorite"
 msgstr "Favoriet"
@@ -3179,6 +3230,9 @@ msgstr "Een apparaat vergeten…"
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "Vergeet de tot nu toe gevonden songteksten en de nummers waarvan bekend is dat ze er geen hebben. Ze worden opnieuw opgezocht terwijl nummers worden afgespeeld."
 
+msgid "Form"
+msgstr "Vorm"
+
 msgid "Format"
 msgstr "Formaat"
 
@@ -3232,6 +3286,9 @@ msgstr "Vanaf dat jaar"
 
 msgid "From this week"
 msgstr "Van deze week"
+
+msgid "Fugue"
+msgstr "Fuga"
 
 msgid "Full"
 msgstr "Volledig"
@@ -3322,6 +3379,9 @@ msgstr "Aan de slag"
 
 msgid "Getting started"
 msgstr "Eerste stappen"
+
+msgid "Gigue"
+msgstr "Gigue"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr "GitHub beperkt de verzoeken vanaf dit netwerk. Probeer het later opnieuw."
@@ -3679,6 +3739,9 @@ msgstr ""
 msgid "Imported"
 msgstr "Geïmporteerd"
 
+msgid "Impromptu"
+msgstr "Impromptu"
+
 msgid "In a Jellyfin app where you are signed in, open Quick Connect and type this code. Chilpa notices by itself."
 msgstr "Open in een Jellyfin-app waarin je bent aangemeld Quick Connect en typ deze code. Chilpa merkt het vanzelf."
 
@@ -3826,6 +3889,9 @@ msgstr ""
 msgid "Instrument"
 msgstr "Instrument"
 
+msgid "Instrumentation"
+msgstr "Bezetting"
+
 msgid "Integrations"
 msgstr "Integraties"
 
@@ -3840,6 +3906,9 @@ msgstr "Interfaceschaal"
 
 msgid "Interface size"
 msgstr "Interfacegrootte"
+
+msgid "Intermezzo"
+msgstr "Intermezzo"
 
 msgid "Interrupted"
 msgstr "Onderbroken"
@@ -3915,6 +3984,9 @@ msgstr "Ongeldige voorkeurswaarde; controleer de keuzes in Instellingen."
 
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr "Ongeldig — moet alsa_output of alsa_input bevatten"
+
+msgid "Invention"
+msgstr "Inventie"
 
 msgid "Invert left polarity"
 msgstr "Linkerpolariteit omkeren"
@@ -4391,6 +4463,9 @@ msgstr "Songtekstweergave"
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "Songteksten zonder vertaling worden naar de songtekst-API van Chilpa gestuurd."
 
+msgid "Madrigal"
+msgstr "Madrigaal"
+
 msgid "Magazine"
 msgstr "Magazine"
 
@@ -4433,6 +4508,9 @@ msgstr "Markeren als niet afgespeeld"
 msgid "Mark the start first with :loop a."
 msgstr "Markeer eerst het begin met :loop a."
 
+msgid "Mass"
+msgstr "Mis"
+
 msgid "Mastering engineer"
 msgstr "Masteringtechnicus"
 
@@ -4457,8 +4535,14 @@ msgstr "Maximaal 32/384"
 msgid "May"
 msgstr "mei"
 
+msgid "Mazurka"
+msgstr "Mazurka"
+
 msgid "Media info"
 msgstr "Media-info"
+
+msgid "Medieval"
+msgstr "Middeleeuwen"
 
 msgid "Member Of"
 msgstr "Lid van"
@@ -4502,6 +4586,9 @@ msgstr "Standaardweergave minispeler"
 msgid "Minimize"
 msgstr "Minimaliseren"
 
+msgid "Minuet"
+msgstr "Menuet"
+
 msgid "Minutes"
 msgstr "Minuten"
 
@@ -4525,6 +4612,9 @@ msgstr "Mixtechnicus"
 
 msgid "Mode not reported"
 msgstr "Modus niet gemeld"
+
+msgid "Modern"
+msgstr "Modern"
 
 msgid "Mon"
 msgstr "ma"
@@ -4603,6 +4693,9 @@ msgstr "Meest afgespeeld"
 
 msgid "Most played tracks"
 msgstr "Meest afgespeelde nummers"
+
+msgid "Motet"
+msgstr "Motet"
 
 msgid "Mounted storage"
 msgstr ""
@@ -4874,6 +4967,12 @@ msgstr "Er is nog geen audio-uitvoer bekend; probeer het zo nog eens."
 msgid "No changes to apply."
 msgstr ""
 
+msgid "No classical composers yet. Choose All composers to see every composer credit."
+msgstr "Nog geen klassieke componisten. Kies Alle componisten om alle componistvermeldingen te zien."
+
+msgid "No classical compositions yet. Choose All compositions to see every work."
+msgstr "Nog geen klassieke composities. Kies Alle composities om elk werk te zien."
+
 msgid "No composer"
 msgstr "Geen componist"
 
@@ -5083,6 +5182,9 @@ msgstr "Geen jaar"
 
 msgid "No year; genre, label and composer take none too"
 msgstr "Zonder jaar; genre, label en componist kennen ook none"
+
+msgid "Nocturne"
+msgstr "Nocturne"
 
 msgid "None"
 msgstr "Geen"
@@ -5465,6 +5567,9 @@ msgstr "Opening: {} · Hoorbaarheid: {}"
 msgid "Opening…"
 msgstr "Wordt geopend…"
 
+msgid "Opera"
+msgstr "Opera"
+
 msgid "Operating system"
 msgstr "Besturingssysteem"
 
@@ -5477,8 +5582,14 @@ msgstr ""
 msgid "Operation stopped with errors"
 msgstr ""
 
+msgid "Operetta"
+msgstr "Operette"
+
 msgid "Optional access token for private playlists"
 msgstr "Optioneel toegangstoken voor privéafspeellijsten"
+
+msgid "Oratorio"
+msgstr "Oratorium"
 
 msgid "Original audio"
 msgstr "Originele audio"
@@ -5534,6 +5645,9 @@ msgstr "Uitvoerformaat"
 msgid "Output identity could not be saved."
 msgstr "De uitvoeridentiteit kon niet worden opgeslagen."
 
+msgid "Overture"
+msgstr "Ouverture"
+
 msgid "Overview"
 msgstr ""
 
@@ -5558,8 +5672,17 @@ msgstr ""
 msgid "Parentheses group; NOT works like the minus"
 msgstr "Haakjes groeperen; NOT werkt als de min"
 
+msgid "Partita"
+msgstr "Partita"
+
 msgid "Parts"
 msgstr ""
+
+msgid "Passacaglia"
+msgstr "Passacaglia"
+
+msgid "Passion"
+msgstr "Passie"
 
 msgid "Password"
 msgstr "Wachtwoord"
@@ -5638,6 +5761,9 @@ msgstr "Uitvoerend artiest"
 
 msgid "Performers"
 msgstr "Uitvoerenden"
+
+msgid "Period"
+msgstr "Periode"
 
 msgid "Permission required"
 msgstr "Toestemming vereist"
@@ -5861,6 +5987,9 @@ msgstr ""
 msgid "Points show individual filter gains. Drag to adjust frequency and gain; scroll over a point to adjust Q. Locked filters stay fixed."
 msgstr ""
 
+msgid "Polonaise"
+msgstr "Polonaise"
+
 msgid "Popular Tracks"
 msgstr "Populaire nummers"
 
@@ -5884,6 +6013,12 @@ msgstr "Ongewijzigde PCM voorspeld; DoP-decodering en hoorbare uitvoer zijn niet
 
 msgid "Preferred GPU"
 msgstr "Voorkeurs-GPU"
+
+msgid "Prelude"
+msgstr "Prelude"
+
+msgid "Prelude and fugue"
+msgstr "Prelude en fuga"
 
 msgid "Preparing Mood analysis"
 msgstr "Stemmingsanalyse voorbereiden"
@@ -6056,6 +6191,9 @@ msgstr "Filters voor kwaliteit, formaat en bron"
 msgid "Quarantined"
 msgstr "In quarantaine"
 
+msgid "Quartet"
+msgstr "Kwartet"
+
 msgid "Queries"
 msgstr "Zoekopdrachten"
 
@@ -6112,6 +6250,9 @@ msgstr ""
 
 msgid "Quick view"
 msgstr "Snelweergave"
+
+msgid "Quintet"
+msgstr "Kwintet"
 
 msgid "Quit"
 msgstr "Afsluiten"
@@ -6493,6 +6634,9 @@ msgstr "{} wordt verwijderd"
 msgid "Removing…"
 msgstr "Wordt verwijderd…"
 
+msgid "Renaissance"
+msgstr "Renaissance"
+
 msgid "Rename"
 msgstr "Hernoemen"
 
@@ -6567,6 +6711,9 @@ msgstr "Gevraagd uitvoerpad"
 
 msgid "Requests: {}"
 msgstr "Vraagt om: {}"
+
+msgid "Requiem"
+msgstr "Requiem"
 
 msgid "Rescan"
 msgstr "Opnieuw scannen"
@@ -6676,6 +6823,9 @@ msgstr "Controleer de gevraagde toestemmingen voordat je installeert."
 msgid "Reviewing changes…"
 msgstr ""
 
+msgid "Rhapsody"
+msgstr "Rapsodie"
+
 msgid "Rich"
 msgstr "Uitgebreid"
 
@@ -6687,6 +6837,12 @@ msgstr ""
 
 msgid "Right delay · 0–30 ms"
 msgstr "Rechtervertraging · 0–30 ms"
+
+msgid "Romantic"
+msgstr "Romantiek"
+
+msgid "Rondo"
+msgstr "Rondo"
 
 msgid "Route"
 msgstr "Route"
@@ -6843,6 +6999,9 @@ msgstr "Scannen…"
 
 msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
 msgstr "Geplande controles worden uitgevoerd terwijl Chilpa open is. Opstartcontroles worden eenmaal uitgevoerd bij het openen. Ongewijzigde bestanden worden overgeslagen."
+
+msgid "Scherzo"
+msgstr "Scherzo"
 
 msgid "Scope of this check"
 msgstr "Bereik van deze controle"
@@ -7082,6 +7241,9 @@ msgstr "Afzonderlijke invoerlimieten bewijzen niet elke combinatie van samplefre
 
 msgid "September"
 msgstr "september"
+
+msgid "Serenade"
+msgstr "Serenade"
 
 msgid "Server"
 msgstr "Server"
@@ -7400,8 +7562,17 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Sonata"
+msgstr "Sonate"
+
+msgid "Song"
+msgstr "Lied"
+
 msgid "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
 msgstr ""
+
+msgid "Song cycle"
+msgstr "Liederencyclus"
 
 msgid "Songs"
 msgstr "Nummers"
@@ -7592,6 +7763,9 @@ msgstr "Abonnementen"
 msgid "Success"
 msgstr "Succes"
 
+msgid "Suite"
+msgstr "Suite"
+
 msgid "Sun"
 msgstr "zo"
 
@@ -7600,6 +7774,9 @@ msgstr "Gezongen regel"
 
 msgid "Surface"
 msgstr "Oppervlak"
+
+msgid "Symphony"
+msgstr "Symfonie"
 
 msgid "Sync cancelled"
 msgstr ""
@@ -8732,6 +8909,9 @@ msgstr "Om op te bewegen"
 msgid "To use a different account, add it as a separate server."
 msgstr "Voeg een ander account toe als een afzonderlijke server."
 
+msgid "Toccata"
+msgstr "Toccata"
+
 msgid "Today"
 msgstr "Vandaag"
 
@@ -8758,6 +8938,9 @@ msgstr ""
 
 msgid "Tone enabled"
 msgstr ""
+
+msgid "Tone poem"
+msgstr "Symfonisch gedicht"
 
 msgid "Too many device storage locations were reported."
 msgstr ""
@@ -8872,6 +9055,9 @@ msgstr "Boomstructuur"
 
 msgid "Trending shows"
 msgstr "Populaire shows"
+
+msgid "Trio"
+msgstr "Trio"
 
 msgid "Try again"
 msgstr "Opnieuw proberen"
@@ -9179,6 +9365,9 @@ msgstr "Geldige nodenaam"
 msgid "Value"
 msgstr ""
 
+msgid "Variations"
+msgstr "Variaties"
+
 msgid "Verify files after transfer"
 msgstr ""
 
@@ -9282,6 +9471,9 @@ msgstr "Achtergrondvervaging"
 
 msgid "Wallpaper, blurred"
 msgstr "Vervaagde bureaubladachtergrond"
+
+msgid "Waltz"
+msgstr "Wals"
 
 msgid "Warning"
 msgstr "Waarschuwing"
@@ -9412,8 +9604,8 @@ msgstr "Woorden in de albumtitel en in de titel van het nummer"
 msgid "Work"
 msgstr "Werk"
 
-msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
-msgstr ""
+msgid "Works named by work tags or by the titles of their parts, with their composers. Recordings keep their album and performer context."
+msgstr "Werken benoemd door werktags of door de titels van hun delen, met hun componisten. Opnamen behouden hun album en uitvoerders."
 
 msgid "Write XML"
 msgstr "XML schrijven"
@@ -11398,6 +11590,9 @@ msgstr "{}-bit / {}"
 
 msgid "{}s"
 msgstr "{}s"
+
+msgid "Étude"
+msgstr "Etude"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "‘{}' heeft niet-opgeslagen wijzigingen. Als je dit album opent, gaan ze verloren."

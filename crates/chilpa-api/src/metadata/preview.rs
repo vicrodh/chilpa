@@ -135,7 +135,8 @@ impl Editor {
                 let Some(row) = draft.row(mapping.track) else { continue };
                 if self.selected_disc > 0 && release.tracks.get(mapping.index).is_none_or(|track| track.disc != self.selected_disc) { continue; }
                 plan.push(draft, Some(row), "composers", join(&mapping.composers), false);
-                plan.push(draft, Some(row), "work", mapping.work.clone(), false);
+                let title = release.tracks.get(mapping.index).map_or("", |track| track.title.as_str());
+                plan.push(draft, Some(row), "work", chilpa_library::work_titles::proposed_work(&mapping.work, title).unwrap_or_default(), false);
             }
         }
         self.preview_matched = plan.matched;

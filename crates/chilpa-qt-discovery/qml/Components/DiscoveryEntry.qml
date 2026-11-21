@@ -13,6 +13,9 @@ Button {
     property string detail: ""
     property bool activeImages: true
     signal openAlbum(int album)
+    // A right click, or the menu key, on a composer: where its picture menu opens.
+    signal menuRequested(real x, real y)
+    readonly property url picture: composer && portrait.item && portrait.item.ready ? portrait.item.source : ""
     readonly property bool recording: entry.kind === "recording"
     readonly property bool genre: entry.kind === "genre"
     readonly property bool composer: entry.kind === "composer"
@@ -26,6 +29,8 @@ Button {
     Accessible.description: detail
     Keys.onReturnPressed: clicked()
     Keys.onEnterPressed: clicked()
+    Keys.onMenuPressed: if (composer) menuRequested(width / 2, height / 2) // derived: the card's centre
+    TapHandler { acceptedButtons: Qt.RightButton; enabled: card.composer; onTapped: point => card.menuRequested(point.position.x, point.position.y) }
     background: Rectangle {
         radius: Metrics.radiusCard
         color: card.down ? Theme.color.stateSelected : card.hovered ? Theme.color.stateHover : Theme.color.surfacePanel

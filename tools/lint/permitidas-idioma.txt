@@ -1118,3 +1118,5 @@ upnp
 subtabs
 # Qt input method hint for numeric fields.
 imh
+# The address attribute of a link in Qt StyledText.
+href

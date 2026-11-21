@@ -518,6 +518,12 @@ msgstr "すべてのアーティスト"
 msgid "All categories"
 msgstr "すべてのカテゴリ"
 
+msgid "All composers"
+msgstr "すべての作曲者"
+
+msgid "All compositions"
+msgstr "すべての作品"
+
 msgid "All discs"
 msgstr "すべてのディスク"
 
@@ -776,6 +782,9 @@ msgstr "4月"
 msgid "Architecture"
 msgstr "アーキテクチャ"
 
+msgid "Aria"
+msgstr "アリア"
+
 msgid "Arranger"
 msgstr "編曲者"
 
@@ -1010,11 +1019,20 @@ msgstr "背景画像"
 msgid "Balance · −100 left / +100 right"
 msgstr "バランス · −100（左）/ +100（右）"
 
+msgid "Ballade"
+msgstr "バラード"
+
+msgid "Ballet"
+msgstr "バレエ"
+
 msgid "Band pass"
 msgstr ""
 
 msgid "Barcode"
 msgstr "バーコード"
+
+msgid "Baroque"
+msgstr "バロック"
 
 msgid "Bars"
 msgstr "バー"
@@ -1206,8 +1224,17 @@ msgstr "アップデートをキャンセル中…"
 msgid "Cancelling…"
 msgstr ""
 
+msgid "Canon"
+msgstr "カノン"
+
+msgid "Cantata"
+msgstr "カンタータ"
+
 msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr "最大ピークがフルスケールを超えないようブーストを制限します。オフにすると、ピークがクリップしても静かなトラックが目標に達します。"
+
+msgid "Capriccio"
+msgstr "カプリッチョ"
 
 msgid "Card image"
 msgstr "カード画像"
@@ -1241,6 +1268,9 @@ msgstr "カテゴリ"
 
 msgid "Ceiling"
 msgstr ""
+
+msgid "Chaconne"
+msgstr "シャコンヌ"
 
 msgid "Change cover"
 msgstr "カバーを変更"
@@ -1731,6 +1761,15 @@ msgstr ""
 msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr "サーバーのアルバム、プレイリスト、トラックのメニューで「オフラインで再生できるようにする」を選んでください。"
 
+msgid "Chorale"
+msgstr "コラール"
+
+msgid "Classical"
+msgstr "クラシック"
+
+msgid "Classical period"
+msgstr "古典派"
+
 msgid "Clean"
 msgstr "露骨な表現なし"
 
@@ -1962,6 +2001,9 @@ msgstr "コンプレッサーのレシオ · 1–6"
 msgid "Compressor threshold · −60–0 dB"
 msgstr "コンプレッサーのスレッショルド · −60–0 dB"
 
+msgid "Concerto"
+msgstr "協奏曲"
+
 msgid "Config files you can create:"
 msgstr "作成できる設定ファイル："
 
@@ -2015,6 +2057,9 @@ msgstr "接続エラー"
 
 msgid "Container"
 msgstr "コンテナ"
+
+msgid "Contemporary"
+msgstr "現代"
 
 msgid "Content advisory"
 msgstr "コンテンツの分類"
@@ -2622,6 +2667,9 @@ msgstr "ディストリビューション"
 msgid "Distribution version"
 msgstr "ディストリビューションのバージョン"
 
+msgid "Divertimento"
+msgstr "ディヴェルティメント"
+
 msgid "DoP carrier · {}"
 msgstr "DoPキャリア · {}"
 
@@ -2708,6 +2756,9 @@ msgstr "ドラッグするか↑↓を使って、カスタムの順序を維持
 
 msgid "Driver query; playback has not been tested"
 msgstr "ドライバーへの問い合わせ。再生は未テストです"
+
+msgid "Duet"
+msgstr "二重奏曲"
 
 msgid "Duplicate DSP preset ID."
 msgstr "DSPプリセットのIDが重複しています。"
@@ -2931,9 +2982,6 @@ msgstr ""
 msgid "Explore"
 msgstr "探索"
 
-msgid "Explore works, recordings and albums credited to this composer."
-msgstr ""
-
 msgid "Export"
 msgstr "エクスポート"
 
@@ -2987,6 +3035,9 @@ msgstr "失敗のみ"
 
 msgid "Failed to load albums"
 msgstr "アルバムを読み込めませんでした"
+
+msgid "Fantasia"
+msgstr "幻想曲"
 
 msgid "Favorite"
 msgstr "お気に入り"
@@ -3177,6 +3228,9 @@ msgstr "デバイスを削除…"
 msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr "これまでに見つかった歌詞と、歌詞がないと判明したトラックを消去します。トラックの再生時にもう一度検索されます。"
 
+msgid "Form"
+msgstr "形式"
+
 msgid "Format"
 msgstr "フォーマット"
 
@@ -3230,6 +3284,9 @@ msgstr "その年以降"
 
 msgid "From this week"
 msgstr "今週"
+
+msgid "Fugue"
+msgstr "フーガ"
 
 msgid "Full"
 msgstr "フル"
@@ -3320,6 +3377,9 @@ msgstr "はじめる"
 
 msgid "Getting started"
 msgstr "はじめに"
+
+msgid "Gigue"
+msgstr "ジーグ"
 
 msgid "GitHub is limiting requests from this network. Try again later."
 msgstr "このネットワークからのリクエストはGitHubによって制限されています。後でもう一度お試しください。"
@@ -3676,6 +3736,9 @@ msgstr ""
 msgid "Imported"
 msgstr "インポート済み"
 
+msgid "Impromptu"
+msgstr "即興曲"
+
 msgid "In a Jellyfin app where you are signed in, open Quick Connect and type this code. Chilpa notices by itself."
 msgstr "サインイン済みの Jellyfin アプリで Quick Connect を開き、このコードを入力してください。Chilpa が自動で気づきます。"
 
@@ -3823,6 +3886,9 @@ msgstr ""
 msgid "Instrument"
 msgstr "楽器"
 
+msgid "Instrumentation"
+msgstr "編成"
+
 msgid "Integrations"
 msgstr "連携"
 
@@ -3837,6 +3903,9 @@ msgstr "インターフェースの倍率"
 
 msgid "Interface size"
 msgstr "インターフェースのサイズ"
+
+msgid "Intermezzo"
+msgstr "間奏曲"
 
 msgid "Interrupted"
 msgstr "中断"
@@ -3912,6 +3981,9 @@ msgstr "環境設定の値が無効です。設定で選択肢を確認してく
 
 msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr "無効 — alsa_outputまたはalsa_inputを含む必要があります"
+
+msgid "Invention"
+msgstr "インヴェンション"
 
 msgid "Invert left polarity"
 msgstr "左の極性を反転"
@@ -4386,6 +4458,9 @@ msgstr "歌詞表示"
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "翻訳のない歌詞は、Chilpaの歌詞APIに送信されます。"
 
+msgid "Madrigal"
+msgstr "マドリガーレ"
+
 msgid "Magazine"
 msgstr "マガジン"
 
@@ -4428,6 +4503,9 @@ msgstr "未再生にする"
 msgid "Mark the start first with :loop a."
 msgstr "先に :loop a で開始点を指定してください。"
 
+msgid "Mass"
+msgstr "ミサ曲"
+
 msgid "Mastering engineer"
 msgstr "マスタリングエンジニア"
 
@@ -4452,8 +4530,14 @@ msgstr "最大 32/384"
 msgid "May"
 msgstr "5月"
 
+msgid "Mazurka"
+msgstr "マズルカ"
+
 msgid "Media info"
 msgstr "メディア情報"
+
+msgid "Medieval"
+msgstr "中世"
 
 msgid "Member Of"
 msgstr "所属"
@@ -4497,6 +4581,9 @@ msgstr "ミニプレーヤーの既定の表示"
 msgid "Minimize"
 msgstr "最小化"
 
+msgid "Minuet"
+msgstr "メヌエット"
+
 msgid "Minutes"
 msgstr "分"
 
@@ -4520,6 +4607,9 @@ msgstr "ミキシングエンジニア"
 
 msgid "Mode not reported"
 msgstr "モード情報なし"
+
+msgid "Modern"
+msgstr "近代"
 
 msgid "Mon"
 msgstr "月"
@@ -4598,6 +4688,9 @@ msgstr "再生回数順"
 
 msgid "Most played tracks"
 msgstr "最も再生したトラック"
+
+msgid "Motet"
+msgstr "モテット"
 
 msgid "Mounted storage"
 msgstr ""
@@ -4869,6 +4962,12 @@ msgstr "まだ音声出力が見つかりません。少し待ってからもう
 msgid "No changes to apply."
 msgstr ""
 
+msgid "No classical composers yet. Choose All composers to see every composer credit."
+msgstr "クラシックの作曲者はまだいません。「すべての作曲者」を選ぶと、すべての作曲者クレジットを表示します。"
+
+msgid "No classical compositions yet. Choose All compositions to see every work."
+msgstr "クラシックの作品はまだありません。「すべての作品」を選ぶと、すべての作品を表示します。"
+
 msgid "No composer"
 msgstr "作曲者なし"
 
@@ -5078,6 +5177,9 @@ msgstr "年なし"
 
 msgid "No year; genre, label and composer take none too"
 msgstr "年なし。ジャンル・レーベル・作曲者にも none が使えます"
+
+msgid "Nocturne"
+msgstr "夜想曲"
 
 msgid "None"
 msgstr "なし"
@@ -5460,6 +5562,9 @@ msgstr "オープン：{} · 可聴性：{}"
 msgid "Opening…"
 msgstr "開いています…"
 
+msgid "Opera"
+msgstr "オペラ"
+
 msgid "Operating system"
 msgstr "オペレーティングシステム"
 
@@ -5472,8 +5577,14 @@ msgstr ""
 msgid "Operation stopped with errors"
 msgstr ""
 
+msgid "Operetta"
+msgstr "オペレッタ"
+
 msgid "Optional access token for private playlists"
 msgstr "非公開プレイリスト用の任意のアクセストークン"
+
+msgid "Oratorio"
+msgstr "オラトリオ"
 
 msgid "Original audio"
 msgstr "元のオーディオ"
@@ -5529,6 +5640,9 @@ msgstr "出力形式"
 msgid "Output identity could not be saved."
 msgstr "出力の識別情報を保存できませんでした。"
 
+msgid "Overture"
+msgstr "序曲"
+
 msgid "Overview"
 msgstr ""
 
@@ -5553,8 +5667,17 @@ msgstr ""
 msgid "Parentheses group; NOT works like the minus"
 msgstr "括弧でまとめます。NOT はマイナスと同じです"
 
+msgid "Partita"
+msgstr "パルティータ"
+
 msgid "Parts"
 msgstr ""
+
+msgid "Passacaglia"
+msgstr "パッサカリア"
+
+msgid "Passion"
+msgstr "受難曲"
 
 msgid "Password"
 msgstr "パスワード"
@@ -5633,6 +5756,9 @@ msgstr "演奏者"
 
 msgid "Performers"
 msgstr "演奏者"
+
+msgid "Period"
+msgstr "時代"
 
 msgid "Permission required"
 msgstr "権限が必要"
@@ -5856,6 +5982,9 @@ msgstr ""
 msgid "Points show individual filter gains. Drag to adjust frequency and gain; scroll over a point to adjust Q. Locked filters stay fixed."
 msgstr ""
 
+msgid "Polonaise"
+msgstr "ポロネーズ"
+
 msgid "Popular Tracks"
 msgstr "人気のトラック"
 
@@ -5879,6 +6008,12 @@ msgstr "PCMが変更されないと予測されます。DoPのデコードと可
 
 msgid "Preferred GPU"
 msgstr "優先GPU"
+
+msgid "Prelude"
+msgstr "前奏曲"
+
+msgid "Prelude and fugue"
+msgstr "前奏曲とフーガ"
 
 msgid "Preparing Mood analysis"
 msgstr "ムード解析を準備しています"
@@ -6051,6 +6186,9 @@ msgstr "音質、フォーマット、ソースのフィルター"
 msgid "Quarantined"
 msgstr "隔離済み"
 
+msgid "Quartet"
+msgstr "四重奏曲"
+
 msgid "Queries"
 msgstr "クエリ"
 
@@ -6107,6 +6245,9 @@ msgstr ""
 
 msgid "Quick view"
 msgstr "クイックビュー"
+
+msgid "Quintet"
+msgstr "五重奏曲"
 
 msgid "Quit"
 msgstr "終了"
@@ -6487,6 +6628,9 @@ msgstr "{}を削除しています"
 msgid "Removing…"
 msgstr "削除中…"
 
+msgid "Renaissance"
+msgstr "ルネサンス"
+
 msgid "Rename"
 msgstr "名前を変更"
 
@@ -6561,6 +6705,9 @@ msgstr "要求された出力経路"
 
 msgid "Requests: {}"
 msgstr "要求: {}"
+
+msgid "Requiem"
+msgstr "レクイエム"
 
 msgid "Rescan"
 msgstr "再スキャン"
@@ -6670,6 +6817,9 @@ msgstr "インストールする前に、要求された権限を確認してく
 msgid "Reviewing changes…"
 msgstr ""
 
+msgid "Rhapsody"
+msgstr "狂詩曲"
+
 msgid "Rich"
 msgstr "リッチ"
 
@@ -6681,6 +6831,12 @@ msgstr ""
 
 msgid "Right delay · 0–30 ms"
 msgstr "右ディレイ · 0–30 ms"
+
+msgid "Romantic"
+msgstr "ロマン派"
+
+msgid "Rondo"
+msgstr "ロンド"
 
 msgid "Route"
 msgstr "経路"
@@ -6837,6 +6993,9 @@ msgstr "スキャン中…"
 
 msgid "Scheduled checks run while Chilpa is open. Startup checks run once when the app opens. Unchanged files are skipped."
 msgstr "定期確認はChilpaを開いている間に実行されます。起動時の確認はアプリを開いたときに1回実行されます。変更のないファイルはスキップされます。"
+
+msgid "Scherzo"
+msgstr "スケルツォ"
 
 msgid "Scope of this check"
 msgstr "このチェックの範囲"
@@ -7075,6 +7234,9 @@ msgstr "個別の入力上限から、サンプルレート、ワード幅、チ
 
 msgid "September"
 msgstr "9月"
+
+msgid "Serenade"
+msgstr "セレナード"
 
 msgid "Server"
 msgstr "サーバー"
@@ -7392,8 +7554,17 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Sonata"
+msgstr "ソナタ"
+
+msgid "Song"
+msgstr "歌曲"
+
 msgid "Song counts include the tracks loaded into your library. Albums can appear before their track lists are loaded."
 msgstr ""
+
+msgid "Song cycle"
+msgstr "歌曲集"
 
 msgid "Songs"
 msgstr "トラック"
@@ -7584,6 +7755,9 @@ msgstr "購読"
 msgid "Success"
 msgstr "成功"
 
+msgid "Suite"
+msgstr "組曲"
+
 msgid "Sun"
 msgstr "日"
 
@@ -7592,6 +7766,9 @@ msgstr "歌っている行"
 
 msgid "Surface"
 msgstr "サーフェス"
+
+msgid "Symphony"
+msgstr "交響曲"
 
 msgid "Sync cancelled"
 msgstr ""
@@ -8721,6 +8898,9 @@ msgstr "動きたいときに"
 msgid "To use a different account, add it as a separate server."
 msgstr "別のアカウントを使うには、別のサーバーとして追加してください。"
 
+msgid "Toccata"
+msgstr "トッカータ"
+
 msgid "Today"
 msgstr "今日"
 
@@ -8747,6 +8927,9 @@ msgstr ""
 
 msgid "Tone enabled"
 msgstr ""
+
+msgid "Tone poem"
+msgstr "交響詩"
 
 msgid "Too many device storage locations were reported."
 msgstr ""
@@ -8861,6 +9044,9 @@ msgstr "ツリー"
 
 msgid "Trending shows"
 msgstr "トレンドの番組"
+
+msgid "Trio"
+msgstr "三重奏曲"
 
 msgid "Try again"
 msgstr "もう一度試す"
@@ -9168,6 +9354,9 @@ msgstr "有効なノード名"
 msgid "Value"
 msgstr ""
 
+msgid "Variations"
+msgstr "変奏曲"
+
 msgid "Verify files after transfer"
 msgstr ""
 
@@ -9270,6 +9459,9 @@ msgstr "壁紙のぼかし"
 
 msgid "Wallpaper, blurred"
 msgstr "ぼかし壁紙"
+
+msgid "Waltz"
+msgstr "ワルツ"
 
 msgid "Warning"
 msgstr "警告"
@@ -9400,8 +9592,8 @@ msgstr "アルバム名とトラック名に含まれる語"
 msgid "Work"
 msgstr "作品"
 
-msgid "Works identified by work and composer tags. Recordings keep their album and performer context."
-msgstr ""
+msgid "Works named by work tags or by the titles of their parts, with their composers. Recordings keep their album and performer context."
+msgstr "作品タグまたはパートのタイトルから名付けられた作品と、その作曲者。録音はアルバムと演奏者の情報を保ちます。"
 
 msgid "Write XML"
 msgstr "XMLを書き込み"
@@ -11339,6 +11531,9 @@ msgstr "{}ビット / {}"
 
 msgid "{}s"
 msgstr "{}年代"
+
+msgid "Étude"
+msgstr "練習曲"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "「{}」には保存されていない変更があります。このアルバムを開くと失われます。"

@@ -5,6 +5,8 @@ pub(super) struct Options {
     pub order: String,
     pub scope: String,
     pub excluded_sources: Option<Vec<String>>,
+    /// Composers and compositions of the classical tradition only.
+    pub classical: bool,
 }
 impl Options {
     pub fn parse(value: &str) -> Option<Self> {
