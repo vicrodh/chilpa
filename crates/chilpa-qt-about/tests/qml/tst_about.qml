@@ -42,7 +42,7 @@ TestCase {
             verify(loader.item !== null)
             compare(findChild(loader.item, "aboutAuthor").handle, "vicrodh")
             const flow = findChild(loader.item, "aboutContributorFlow")
-            compare(flow.children.filter(item => item.objectName === "aboutContributor").length, 3)
+            compare(flow.children.filter(item => item.objectName === "aboutContributor").length, 4)
             about.close()
             tryCompare(about, "visible", false)
             compare(loader.item, null)
