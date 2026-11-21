@@ -74,16 +74,18 @@ Chilpa's own Flatpak repository, `flatpak.chilpa.app`, brings every new stable r
 
 ```sh
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --user https://flatpak.chilpa.app/app.chilpa.Chilpa.flatpakref
+flatpak install --user https://pkgs.chilpa.app/flatpak/app.chilpa.Chilpa.flatpakref
 flatpak run app.chilpa.Chilpa
 ```
 
 To add the repository first and install from it:
 
 ```sh
-flatpak remote-add --user --if-not-exists chilpa https://flatpak.chilpa.app/chilpa.flatpakrepo
+flatpak remote-add --user --if-not-exists chilpa https://pkgs.chilpa.app/flatpak/chilpa.flatpakrepo
 flatpak install --user chilpa app.chilpa.Chilpa
 ```
+
+The two `pkgs.chilpa.app/flatpak/` links redirect to the same files on `flatpak.chilpa.app`. Each request adds one to a public count by day, file, client (Flatpak, browser or other) and country, at `https://pkgs.chilpa.app/stats/flatpak.json`; no address or user agent is kept. Updates go to the repository directly and are not counted.
 
 Each release also carries a single-file bundle, `Chilpa-X.Y.Z-x86_64.flatpak`, with `SHA256SUMS-flatpak`. Once installed, it updates from the same repository:
 

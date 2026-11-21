@@ -139,7 +139,7 @@ echo 'media-sound/chilpa-bin ~amd64' | sudo tee -a /etc/portage/package.accept_k
 emerge --ask media-sound/chilpa-bin
 
 # Flatpak (the runtime comes from Flathub)
-flatpak install --user https://flatpak.chilpa.app/app.chilpa.Chilpa.flatpakref
+flatpak install --user https://pkgs.chilpa.app/flatpak/app.chilpa.Chilpa.flatpakref
 ```
 
 openSUSE, signing keys, ARM64 and what the Flatpak sandbox allows: [INSTALL.md](INSTALL.md).
