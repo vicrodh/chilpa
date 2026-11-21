@@ -10,7 +10,8 @@ Loader {
     required property string source
     property bool leaving: false
     property var scrollMemory: null
-    readonly property var scrollView: item?.contentY !== undefined ? item : item?.scrollView || null
+    readonly property var scrollView: item instanceof SourceListing ? item.scrollView
+        : item?.contentY !== undefined ? item : item?.scrollView || null
     property var presentation: ({})
     property var about: ({})
     function acceptPresentation() { if (!leaving) about = presentation }
