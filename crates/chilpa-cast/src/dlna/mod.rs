@@ -13,8 +13,8 @@ use std::{future::Future, time::Duration};
 const CONNECT_BUDGET: Duration = Duration::from_secs(10);
 /// The reference player's budget for Stop and disconnect at teardown.
 const TEARDOWN_BUDGET: Duration = Duration::from_millis(1500);
-/// The one read of the receiver's volume and mute at connect, both together:
-/// a silent RenderingControl must not hold the connection past this.
+/// The one read of the receiver's volume and mute at connect, both together,
+/// and only within what is left of `CONNECT_BUDGET`.
 const LEVEL_BUDGET: Duration = Duration::from_secs(2);
 
 fn runtime() -> Result<tokio::runtime::Runtime> {
@@ -69,12 +69,16 @@ pub struct Dlna {
 impl Dlna {
     pub fn connect(device: &Device) -> Result<Self> {
         let runtime = runtime()?;
+        let started = std::time::Instant::now();
         let connection = runtime.block_on(async {
             tokio::time::timeout(CONNECT_BUDGET, DlnaConnection::connect(&device.description, &device.name)).await
         }).map_err(|_| Error::Network)?.map_err(error)?;
-        // The slider starts where the receiver is. One read each, never again.
-        let (volume, muted) = if connection.has_rendering_control() {
-            runtime.block_on(async { tokio::time::timeout(LEVEL_BUDGET, async { (connection.get_volume().await.ok(), connection.get_mute().await.ok()) }).await.unwrap_or((None, None)) })
+        // The slider starts where the receiver is. One read each, never again,
+        // and the whole connection still ends within the reference player's
+        // ten seconds.
+        let left = CONNECT_BUDGET.saturating_sub(started.elapsed()).min(LEVEL_BUDGET);
+        let (volume, muted) = if connection.has_rendering_control() && !left.is_zero() {
+            runtime.block_on(async { tokio::time::timeout(left, async { (connection.get_volume().await.ok(), connection.get_mute().await.ok()) }).await.unwrap_or((None, None)) })
         } else { (None, None) };
         Ok(Self { runtime, connection, loaded: false, volume: volume.map(|v| f64::from(v.min(100)) / 100.0), muted })
     }

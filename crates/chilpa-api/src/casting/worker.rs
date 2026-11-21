@@ -124,18 +124,16 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                             resume = None;
                             let server = server.as_ref().ok_or(chilpa_cast::Error::Network)?;
                             let transport = remote.as_mut().ok_or(chilpa_cast::Error::Network)?;
-                            // A Cast receiver stops before the replacement resolves, so
-                            // its buffered audio stops even when resolving fails. A DLNA
-                            // renderer keeps playing until the replacement is ready, and
-                            // its load stops it right before SetAVTransportURI, as the
-                            // reference player does; a failure stops it on the error path.
-                            if kind != Kind::Dlna {
-                                server.revoke();
-                                if transport.loaded() { let _ = transport.stop(); }
-                            }
+                            // The previous URL is unregistered first, as the reference
+                            // player's media command begins. A Cast receiver also stops
+                            // before the replacement resolves, so its buffered audio stops
+                            // even when resolving fails; a DLNA load stops the renderer
+                            // right before SetAVTransportURI, and a failure stops it on
+                            // the error path.
+                            server.revoke();
+                            if kind != Kind::Dlna && transport.loaded() { let _ = transport.stop(); }
                             let (asset, metadata, mut presentation) = asset::resolve(&path)?;
                             if stamp != latest.load(Ordering::Acquire) { return Ok(()); }
-                            if kind == Kind::Dlna { server.revoke(); }
                             let mime = asset.mime.clone();
                             chilpa_core::trace_playback("cast", "asset_ready", format_args!("generation={stamp} mime={mime} bytes={}", asset.length));
                             let url = server.publish(asset)?;
