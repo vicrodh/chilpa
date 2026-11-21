@@ -12,6 +12,9 @@ The biggest update since the first release: 480 changes since 0.1.2. Chilpa now 
   - Lots of quality-of-life improvements: more search options and a sidebar you can customize. The playback engine was hardened in depth to keep the bit-perfect promise.
   - General optimizations. Everything should feel more fluid, with CPU and memory use kept under control.
   - A self-hosted Flatpak. Flathub has tightened its rules for AI-generated content, so Chilpa will not be published on Flathub until it has been active for four months. Until then, Chilpa offers its own Flatpak repository.
+  - A rebuilt DSP plugin. Rewritten from the ground up, more advanced and easier to use at the same time.
+  - Chilpa Nest, a new experimental plugin. It puts your albums back on the wall shelves where they belong. I hope you like it, and I would love your feedback on it.
+  - And a third-party plugin: "that" plugin you have been waiting for. ;)
 
 Thank you to everyone who opened issues, and to @jakumule (Nix flake, #32), @TheMelmacian (German and English translations, #35), @bruce-awareit (Traditional Chinese translation, #42) and @afonsojramos (Welcome deck fix).
 
