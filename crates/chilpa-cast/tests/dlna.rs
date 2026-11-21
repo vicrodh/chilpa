@@ -154,21 +154,39 @@ fn a_rejected_uri_is_never_played_and_the_renderer_is_reset() {
 }
 
 /// A description served once on loopback, as a renderer would.
-fn serve_once(body: String) -> (String, std::thread::JoinHandle<()>) {
+fn serve_once(body: String, status: u16) -> (String, std::thread::JoinHandle<()>) {
     let server = tiny_http::Server::http("127.0.0.1:0").unwrap();
     let addr = server.server_addr().to_ip().unwrap();
     let handle = std::thread::spawn(move || {
         if let Ok(Some(request)) = server.recv_timeout(Duration::from_secs(5)) {
-            let _ = request.respond(tiny_http::Response::from_string(body).with_header(tiny_http::Header::from_bytes("Content-Type", "text/xml").unwrap()));
+            let _ = request.respond(tiny_http::Response::from_string(body).with_status_code(status).with_header(tiny_http::Header::from_bytes("Content-Type", "text/xml").unwrap()));
         }
     });
     (format!("http://{addr}/description.xml"), handle)
 }
-fn describe(body: String) -> chilpa_cast::Result<Device> {
-    let (url, handle) = serve_once(body);
+fn describe_answered(body: String, status: u16) -> chilpa_cast::Result<Device> {
+    let (url, handle) = serve_once(body, status);
     let result = dlna::describe_within(&url, Duration::from_secs(4));
     handle.join().unwrap();
     result
+}
+fn describe(body: String) -> chilpa_cast::Result<Device> { describe_answered(body, 200) }
+#[test]
+fn an_address_that_answers_without_a_description_is_not_a_renderer() {
+    // The registry reads Description as "not a renderer" and Network as "no answer".
+    for status in [404, 500] {
+        assert_eq!(describe_answered(renderer_description("/control", ""), status).unwrap_err(), Error::Description, "{status}");
+    }
+    let closed = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let url = format!("http://{}/description.xml", closed.local_addr().unwrap());
+    drop(closed);
+    assert_eq!(dlna::describe_within(&url, Duration::from_secs(4)).unwrap_err(), Error::Network, "nobody listening is no answer");
+}
+#[test]
+fn a_description_past_the_byte_budget_is_cut_off() {
+    let started = std::time::Instant::now();
+    assert_eq!(describe(format!("<root>{}</root>", "x".repeat(600 * 1024))).unwrap_err(), Error::Description);
+    assert!(started.elapsed() < Duration::from_secs(4), "the budget ends the read, not the time limit");
 }
 fn renderer_description(control: &str, scpd: &str) -> String {
     format!("<?xml version=\"1.0\" encoding=\"utf-8\"?><root xmlns=\"urn:schemas-upnp-org:device-1-0\"><specVersion><major>1</major><minor>0</minor></specVersion><device><deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType><friendlyName>Legacy Renderer</friendlyName><manufacturer>Acme</manufacturer><modelName>Streamer</modelName><UDN>uuid:00000000-0000-0000-0000-000000000733</UDN><serviceList><service><serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType><serviceId>urn:upnp-org:serviceId:AVTransport</serviceId><SCPDURL>{scpd}</SCPDURL><controlURL>{control}</controlURL><eventSubURL></eventSubURL></service></serviceList></device></root>")

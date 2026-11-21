@@ -21,9 +21,18 @@ impl<B> HttpResponseExt for hyper::Response<B> {
 pub(crate) trait HyperBodyExt: Sized {
     async fn bytes(self) -> Result<bytes::Bytes>;
 }
+/// Chilpa: every body read has a byte budget. 512 KiB is far above any
+/// description or SOAP answer and stops a peer that sends without end.
+const BODY_LIMIT: usize = 512 * 1024;
 impl HyperBodyExt for hyper::body::Incoming {
     async fn bytes(self) -> Result<bytes::Bytes> {
-        Ok(self.collect().await?.to_bytes())
+        let collected = http_body_util::Limited::new(self, BODY_LIMIT).collect().await.map_err(|error| {
+            match error.downcast::<hyper::Error>() {
+                Ok(network) => Error::NetworkError(*network),
+                Err(other) => Error::InvalidResponse(other),
+            }
+        })?;
+        Ok(collected.to_bytes())
     }
 }
 

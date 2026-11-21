@@ -26,3 +26,10 @@ the locked release vendor archive for offline AUR/Gentoo builds.
 
 Remove this patch once an upstream release provides the same compatibility
 and passes those tests. This is not a general UPnP URL-resolution rewrite.
+
+## Chilpa addition: a byte budget on every body
+
+`HyperBodyExt::bytes` in src/utils.rs reads descriptions and SOAP answers
+through `http_body_util::Limited` with a 512 KiB budget. A peer that sends
+more gets `Error::InvalidResponse`; a network failure while reading is still
+`Error::NetworkError`. Nothing a real renderer sends comes near the budget.

@@ -13,6 +13,9 @@ use std::{future::Future, time::Duration};
 const CONNECT_BUDGET: Duration = Duration::from_secs(10);
 /// The reference player's budget for Stop and disconnect at teardown.
 const TEARDOWN_BUDGET: Duration = Duration::from_millis(1500);
+/// The one read of the receiver's volume and mute at connect, both together:
+/// a silent RenderingControl must not hold the connection past this.
+const LEVEL_BUDGET: Duration = Duration::from_secs(2);
 
 fn runtime() -> Result<tokio::runtime::Runtime> {
     tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|_| Error::Network)
@@ -38,7 +41,8 @@ pub fn describe_within(location: &str, limit: Duration) -> Result<Device> {
     let parsed = runtime()?.block_on(async { tokio::time::timeout(limit, rupnp::Device::from_url(url)).await })
         .map_err(|_| Error::Network)?
         .map_err(|e| match e {
-            rupnp::Error::XmlError(_) | rupnp::Error::XmlMissingElement(..) | rupnp::Error::ParseError(_) | rupnp::Error::InvalidResponse(_) | rupnp::Error::InvalidUtf8(_) => Error::Description,
+            // An address that answers, but not with a description, is not a renderer.
+            rupnp::Error::HttpErrorCode(_) | rupnp::Error::XmlError(_) | rupnp::Error::XmlMissingElement(..) | rupnp::Error::ParseError(_) | rupnp::Error::InvalidResponse(_) | rupnp::Error::InvalidUtf8(_) => Error::Description,
             _ => Error::Network,
         })?;
     let renderer = |spec: &rupnp::DeviceSpec| spec.device_type().to_string().contains(":device:MediaRenderer:");
@@ -70,7 +74,7 @@ impl Dlna {
         }).map_err(|_| Error::Network)?.map_err(error)?;
         // The slider starts where the receiver is. One read each, never again.
         let (volume, muted) = if connection.has_rendering_control() {
-            runtime.block_on(async { (connection.get_volume().await.ok(), connection.get_mute().await.ok()) })
+            runtime.block_on(async { tokio::time::timeout(LEVEL_BUDGET, async { (connection.get_volume().await.ok(), connection.get_mute().await.ok()) }).await.unwrap_or((None, None)) })
         } else { (None, None) };
         Ok(Self { runtime, connection, loaded: false, volume: volume.map(|v| f64::from(v.min(100)) / 100.0), muted })
     }
