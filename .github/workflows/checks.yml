@@ -51,6 +51,7 @@ jobs:
       - name: Test engine and release tooling
         run: |
           python3 -m unittest discover -s scripts/tests
+          node --test packaging/pkgs-worker/test/worker.test.mjs
           cargo test --locked -q -p chilpa-library --lib
           cargo test --locked -q -p chilpa-core --lib
           python3 scripts/run-api-tests-isolated.py -- cargo test --locked -q -p chilpa-api --lib

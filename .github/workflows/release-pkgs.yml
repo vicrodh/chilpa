@@ -123,6 +123,9 @@ jobs:
           fi
           echo "GNUPGHOME=$GNUPGHOME" >> "$GITHUB_ENV"
 
+      - name: Test the Worker
+        run: node --test packaging/pkgs-worker/test/worker.test.mjs
+
       - name: Build the signed repositories
         env:
           GPG_PASSPHRASE: ${{ secrets.PKGS_GPG_PASSPHRASE }}

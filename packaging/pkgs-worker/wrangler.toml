@@ -14,3 +14,10 @@ routes = [{ pattern = "pkgs.chilpa.app", custom_domain = true }]
 directory = "./public"
 binding = "ASSETS"
 run_worker_first = true
+
+# Counts of the Flatpak descriptor requests (src/index.js); the table is
+# created by the first count.
+[[d1_databases]]
+binding = "STATS"
+database_name = "chilpa-pkgs-stats"
+database_id = "56fa21f1-8e9a-45da-9254-568d313bbf74"
