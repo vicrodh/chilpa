@@ -41,6 +41,12 @@ impl DsfStream {
         }
         if path.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("dff")) {
             let info = crate::dsd_playback::open_dsd_file(path).map_err(|e| e.to_string())?.info().clone();
+            // The DSDIFF reader keeps how many channels there are, not which
+            // speakers they are, and DSF 1.01 states DSD64 and DSD128 only: a
+            // file beyond mono or stereo at those rates is left as it is.
+            if info.channels > 2 || !matches!(info.dsd_rate_hz, 2_822_400 | 5_644_800) {
+                return Err("a DSDIFF whose layout or rate DSF does not state".into());
+            }
             let file = path.to_path_buf();
             let open: Opener = Arc::new(move || crate::dsd_playback::open_dsd_file(&file).map_err(|e| e.to_string()));
             return Self::from_source(info, open, None);
@@ -97,9 +103,11 @@ impl DsfStream {
         let end = start.saturating_add(length).min(self.length());
         let mut packer = Packer {
             source: None, open: self.open.clone(), channels: self.channels(), header: self.header(), at: start, end,
-            group: Vec::new(), group_index: 0, groups: self.groups(), queues: vec![Vec::new(); self.channels()], drop: 0, done: false,
+            group: Vec::new(), group_index: 0, groups: self.groups(), queues: vec![Vec::new(); self.channels()], drop: 0,
+            total: self.info.samples.div_ceil(8), owed: 0, done: false,
         };
-        if end > HEADER {
+        // An empty range reads nothing, and opens nothing.
+        if end > HEADER && start < end {
             packer.start_at((start.max(HEADER) - HEADER) / self.group())?;
         }
         Ok(Box::new(packer))
@@ -129,6 +137,10 @@ struct Packer {
     /// Bytes per channel still to discard from the source: the part before
     /// the first group asked for that a seek could not skip.
     drop: u64,
+    /// Bytes per channel of the whole track, and those the source still owes
+    /// from where it landed: one that ends sooner is a cut, never silence.
+    total: u64,
+    owed: u64,
     done: bool,
 }
 
@@ -158,6 +170,7 @@ impl Packer {
             }
         }
         self.drop = (target - landed) / 8;
+        self.owed = self.total.saturating_sub(landed / 8);
         self.source = Some(source);
         self.group_index = index;
         self.fill()
@@ -171,10 +184,12 @@ impl Packer {
             match source.next_block().map_err(|e| io::Error::other(e.to_string()))? {
                 Some(blocks) => {
                     if blocks.len() != self.channels { return Err(io::Error::other("the source changed its channel count")); }
-                    let skip = (self.drop as usize).min(blocks[0].len());
+                    let skip = self.drop.min(blocks[0].len() as u64) as usize;
                     self.drop -= skip as u64;
+                    self.owed = self.owed.saturating_sub(blocks[0].len() as u64);
                     for (queue, block) in self.queues.iter_mut().zip(&blocks) { queue.extend_from_slice(&block[skip..]); }
                 }
+                None if self.owed > 0 => return Err(io::Error::other("the source ended before the length it stated")),
                 None => self.done = true,
             }
         }
@@ -193,7 +208,7 @@ impl Read for Packer {
         if self.at >= self.end || out.is_empty() { return Ok(0); }
         if self.at < HEADER {
             let from = self.at as usize;
-            let count = out.len().min(HEADER as usize - from).min((self.end - self.at) as usize);
+            let count = (out.len() as u64).min(HEADER - self.at).min(self.end - self.at) as usize;
             out[..count].copy_from_slice(&self.header[from..from + count]);
             self.at += count as u64;
             return Ok(count);
@@ -206,7 +221,7 @@ impl Read for Packer {
             self.fill()?;
         }
         let within = (data % group) as usize;
-        let count = out.len().min(self.group.len() - within).min((self.end - self.at) as usize);
+        let count = (out.len() as u64).min((self.group.len() - within) as u64).min(self.end - self.at) as usize;
         out[..count].copy_from_slice(&self.group[within..within + count]);
         self.at += count as u64;
         Ok(count)
@@ -223,7 +238,7 @@ mod tests {
     /// Frames of 1,000 bytes per channel, each byte telling its channel and
     /// position apart, landing on a frame boundary when asked to seek: the one
     /// at or before the sample, the one after it, or none.
-    struct Frames { info: DsdInfo, next: u64, lands: Lands }
+    struct Frames { info: DsdInfo, next: u64, lands: Lands, has: u64 }
     impl Frames {
         const FRAME: u64 = 1000;
         fn byte(channel: usize, index: u64) -> u8 { (index.wrapping_mul(31) as u8) ^ (channel as u8).wrapping_mul(0x5b) }
@@ -231,7 +246,7 @@ mod tests {
     impl DsdSource for Frames {
         fn info(&self) -> &DsdInfo { &self.info }
         fn next_block(&mut self) -> Result<Option<Vec<Vec<u8>>>, chilpa_dsd::DsdError> {
-            let total = self.info.samples / 8;
+            let total = self.has;
             if self.next >= total { return Ok(None); }
             let end = (self.next + Self::FRAME).min(total);
             let blocks = (0..usize::from(self.info.channels)).map(|c| (self.next..end).map(|i| Self::byte(c, i)).collect()).collect();
@@ -249,9 +264,13 @@ mod tests {
         }
     }
     fn stream(channels: u16, bytes: u64, lands: Lands) -> DsfStream {
+        short(channels, bytes, bytes, lands)
+    }
+    /// A source that states `bytes` per channel and has only `has`.
+    fn short(channels: u16, bytes: u64, has: u64, lands: Lands) -> DsfStream {
         let info = DsdInfo { dsd_rate_hz: 2_822_400, channels, samples: bytes * 8 };
         let made = info.clone();
-        DsfStream::from_source(info, Arc::new(move || Ok(Box::new(Frames { info: made.clone(), next: 0, lands }) as Box<dyn DsdSource>)), None).unwrap()
+        DsfStream::from_source(info, Arc::new(move || Ok(Box::new(Frames { info: made.clone(), next: 0, lands, has }) as Box<dyn DsdSource>)), None).unwrap()
     }
     fn all(s: &DsfStream, start: u64, length: u64) -> Vec<u8> {
         let mut out = Vec::new();
@@ -406,9 +425,10 @@ mod tests {
         let _ = std::fs::remove_file(iso);
     }
 
-    /// A two-channel DSDIFF as `chilpa-dsd`'s own tests write it, with
-    /// `bytes` bytes per channel; `compression` is what CMPR says.
-    fn dff(name: &str, bytes: usize, compression: &[u8; 4]) -> std::path::PathBuf {
+    /// A DSDIFF as `chilpa-dsd`'s own tests write it, with `bytes` bytes per
+    /// channel; `compression` is what CMPR says.
+    fn dff(name: &str, bytes: usize, compression: &[u8; 4]) -> std::path::PathBuf { dff_of(name, bytes, compression, 2, 2_822_400) }
+    fn dff_of(name: &str, bytes: usize, compression: &[u8; 4], count: u16, rate: u32) -> std::path::PathBuf {
         fn chunk(id: &[u8; 4], payload: &[u8]) -> Vec<u8> {
             let mut out = id.to_vec();
             out.extend_from_slice(&(payload.len() as u64).to_be_bytes());
@@ -417,15 +437,15 @@ mod tests {
             out
         }
         let mut prop = b"SND ".to_vec();
-        prop.extend(chunk(b"FS  ", &2_822_400u32.to_be_bytes()));
-        let mut channels = 2u16.to_be_bytes().to_vec();
-        channels.extend_from_slice(b"SLFTSRGT");
+        prop.extend(chunk(b"FS  ", &rate.to_be_bytes()));
+        let mut channels = count.to_be_bytes().to_vec();
+        channels.extend_from_slice(&b"MLFTMRGTC   LFE LS  RS  "[..4 * usize::from(count)]);
         prop.extend(chunk(b"CHNL", &channels));
         let mut compression_chunk = compression.to_vec();
         compression_chunk.push(3);
         compression_chunk.extend_from_slice(b"raw");
         prop.extend(chunk(b"CMPR", &compression_chunk));
-        let samples: Vec<u8> = (0..bytes).flat_map(|i| { let v = (i * 7 % 251) as u8; [v, !v ^ (i as u8)] }).collect();
+        let samples: Vec<u8> = (0..bytes).flat_map(|i| (0..count).map(move |c| ((i * 7 + usize::from(c) * 13) % 251) as u8)).collect();
         let mut form = b"DSD ".to_vec();
         form.extend(chunk(b"FVER", &0x0105_0000u32.to_be_bytes()));
         form.extend(chunk(b"PROP", &prop));
@@ -461,7 +481,33 @@ mod tests {
         }
         let dst = dff("dsdiff-dst", 64, b"DST ");
         assert!(DsfStream::open(&dst).is_err(), "a DST DSDIFF cannot be laid out again");
-        for p in [path, out, dst] { let _ = std::fs::remove_file(p); }
+        let four = dff_of("dsdiff-four", 64, b"DSD ", 4, 2_822_400);
+        assert!(chilpa_dsd::DffReader::open(&four).is_ok(), "the reader takes it");
+        assert!(DsfStream::open(&four).is_err(), "which speakers four channels are is not known here");
+        let fast = dff_of("dsdiff-dsd256", 64, b"DSD ", 2, 11_289_600);
+        assert!(chilpa_dsd::DffReader::open(&fast).is_ok(), "the reader takes it");
+        assert!(DsfStream::open(&fast).is_err(), "DSF 1.01 states DSD64 and DSD128 only");
+        assert!(DsfStream::open(&dff_of("dsdiff-dsd128", 64, b"DSD ", 1, 5_644_800)).is_ok(), "mono DSD128 goes out");
+        for p in [path, out, dst, four, fast] { let _ = std::fs::remove_file(p); }
+    }
+
+    #[test]
+    fn a_source_that_ends_before_its_length_is_a_cut_not_silence() {
+        let s = short(2, 3 * BLOCK as u64, 2 * BLOCK as u64 + 10, Lands::Before);
+        let mut out = Vec::new();
+        assert!(s.read(0, s.length()).unwrap().read_to_end(&mut out).is_err());
+    }
+
+    #[test]
+    fn an_empty_range_or_the_header_alone_opens_no_source() {
+        let info = DsdInfo { dsd_rate_hz: 2_822_400, channels: 2, samples: 3 * BLOCK as u64 * 8 };
+        let s = DsfStream::from_source(info, Arc::new(|| Err("must not open".into())), None).unwrap();
+        for (start, length) in [(HEADER + 100, 0), (0, HEADER), (10, 20)] {
+            let mut out = Vec::new();
+            s.read(start, length).unwrap().read_to_end(&mut out).unwrap();
+            assert_eq!(out.len() as u64, length, "start {start}");
+        }
+        assert!(s.read(HEADER, 1).is_err(), "a byte of samples does open it");
     }
 
     #[test]
