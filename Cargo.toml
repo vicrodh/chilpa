@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-exclude = ["vendor/oxideav-ac3", "vendor/oxideav-core", "vendor/symphonia-format-isomp4", "vendor/symphonia-format-ogg", "vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
+exclude = ["vendor/rupnp", "vendor/oxideav-ac3", "vendor/oxideav-core", "vendor/symphonia-format-isomp4", "vendor/symphonia-format-ogg", "vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
 members = [
     "crates/chilpa-models",
     "crates/chilpa-sync",
@@ -140,3 +140,6 @@ symphonia-format-isomp4 = { path = "vendor/symphonia-format-isomp4" }
 # Preserve Opus pre-skip on short EOS pages and all six frame-count bits.
 symphonia-format-ogg = { path = "vendor/symphonia-format-ogg" }
 qt-build-utils = { path = "crates/chilpa-qt-kit/vendor/qt-build-utils" }
+# UPnP service URLs that are empty or lack the leading slash, as the
+# reference player patches them; http stays current for every consumer.
+rupnp = { path = "vendor/rupnp" }
