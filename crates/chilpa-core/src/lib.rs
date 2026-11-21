@@ -11,6 +11,7 @@ pub mod analysis_job;
 #[cfg(target_os = "linux")]
 pub mod cd_playback;
 pub mod dsd_playback;
+pub mod dsf_stream;
 pub mod playback;
 pub mod backends;
 pub mod attempts;
