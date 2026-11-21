@@ -121,37 +121,49 @@ impl DsfStream {
     }
 }
 
-/// The speaker ids a DSDIFF's CHNL chunk names, in their order, read from
-/// the first 64 KiB, where the properties come before the samples.
+/// The speaker ids a DSDIFF's one CHNL chunk names, in their order, read
+/// from the first 64 KiB, where the properties come before the samples.
+/// None when they cannot be known for certain: no CHNL, more than one, or
+/// samples that do not start within what was read.
 fn dsdiff_channels(path: &Path) -> Option<Vec<[u8; 4]>> {
+    /// A chunk header at `at`: its id, where its body starts and how long it
+    /// is. Every offset is checked against the bytes read before it grows,
+    /// so nothing past 64 KiB is ever added to.
+    fn chunk(head: &[u8], at: usize) -> Option<(&[u8], usize, usize)> {
+        if at > head.len() { return None; }
+        let len = usize::try_from(u64::from_be_bytes(head.get(at + 4..at + 12)?.try_into().ok()?)).ok()?;
+        Some((head.get(at..at + 4)?, at + 12, len))
+    }
+    /// Where the chunk after a body starts, padded to an even length.
+    fn after(body: usize, len: usize) -> Option<usize> { body.checked_add(len)?.checked_add(len % 2) }
     let mut head = Vec::new();
     std::fs::File::open(path).ok()?.take(64 * 1024).read_to_end(&mut head).ok()?;
-    let size = |at: usize| -> Option<usize> { usize::try_from(u64::from_be_bytes(head.get(at..at + 8)?.try_into().ok()?)).ok() };
     if head.get(..4)? != b"FRM8" || head.get(12..16)? != b"DSD " { return None; }
-    let mut at = 16;
+    let (mut at, mut found) = (16, None);
     loop {
-        let (id, body) = (head.get(at..at + 4)?, at + 12);
-        let len = size(at + 4)?;
+        let (id, body, len) = chunk(&head, at)?;
         match id {
             b"PROP" => {
                 if head.get(body..body + 4)? != b"SND " { return None; }
                 let end = body.checked_add(len)?;
                 let mut sub = body + 4;
-                while sub + 12 <= end {
-                    let (sub_id, sub_body, sub_len) = (head.get(sub..sub + 4)?, sub + 12, size(sub + 4)?);
+                while sub < end {
+                    let (sub_id, sub_body, sub_len) = chunk(&head, sub)?;
                     if sub_id == b"CHNL" {
+                        // DSDIFF allows one; a second is a contradiction.
+                        if found.is_some() { return None; }
                         let count = usize::from(u16::from_be_bytes(head.get(sub_body..sub_body + 2)?.try_into().ok()?));
                         if 2 + 4 * count > sub_len { return None; }
-                        return (0..count).map(|i| head.get(sub_body + 2 + 4 * i..sub_body + 6 + 4 * i).and_then(|id| id.try_into().ok())).collect();
+                        found = Some((0..count).map(|i| head.get(sub_body + 2 + 4 * i..sub_body + 6 + 4 * i).and_then(|id| id.try_into().ok())).collect::<Option<Vec<[u8; 4]>>>()?);
                     }
-                    sub = sub_body.checked_add(sub_len)?.checked_add(sub_len % 2)?;
+                    sub = after(sub_body, sub_len)?;
                 }
-                return None;
             }
-            // The samples came first: no layout was stated before them.
-            b"DSD " | b"DST " => return None,
-            _ => at = body.checked_add(len)?.checked_add(len % 2)?,
+            // The samples: every property was stated before them.
+            b"DSD " | b"DST " => return found,
+            _ => {}
         }
+        at = after(body, len)?;
     }
 }
 
@@ -470,7 +482,9 @@ mod tests {
     /// channel; `compression` is what CMPR says.
     fn dff(name: &str, bytes: usize, compression: &[u8; 4]) -> std::path::PathBuf { dff_of(name, bytes, compression, b"SLFTSRGT", 2_822_400) }
     /// `ids` are the CHNL speaker ids, four bytes each.
-    fn dff_of(name: &str, bytes: usize, compression: &[u8; 4], ids: &[u8], rate: u32) -> std::path::PathBuf {
+    fn dff_of(name: &str, bytes: usize, compression: &[u8; 4], ids: &[u8], rate: u32) -> std::path::PathBuf { dff_with(name, bytes, compression, ids, rate, &[]) }
+    /// `extra` goes into PROP after CHNL, as raw chunks.
+    fn dff_with(name: &str, bytes: usize, compression: &[u8; 4], ids: &[u8], rate: u32, extra: &[u8]) -> std::path::PathBuf {
         let count = (ids.len() / 4) as u16;
         fn chunk(id: &[u8; 4], payload: &[u8]) -> Vec<u8> {
             let mut out = id.to_vec();
@@ -484,6 +498,7 @@ mod tests {
         let mut channels = count.to_be_bytes().to_vec();
         channels.extend_from_slice(ids);
         prop.extend(chunk(b"CHNL", &channels));
+        prop.extend_from_slice(extra);
         let mut compression_chunk = compression.to_vec();
         compression_chunk.push(3);
         compression_chunk.extend_from_slice(b"raw");
@@ -537,7 +552,14 @@ mod tests {
         assert!(DsfStream::open(&mono).is_ok(), "mono DSD128 goes out");
         let main = dff_of("dsdiff-main", 64, b"DSD ", b"MLFTMRGT", 2_822_400);
         assert!(DsfStream::open(&main).is_ok(), "main left and right are stereo too");
-        for p in [path, out, dst, four, center, fast, mono, main] { let _ = std::fs::remove_file(p); }
+        let mut second = b"CHNL".to_vec();
+        second.extend_from_slice(&10u64.to_be_bytes());
+        second.extend_from_slice(&2u16.to_be_bytes());
+        second.extend_from_slice(b"C   LFE ");
+        let twice = dff_with("dsdiff-two-chnl", 64, b"DSD ", b"SLFTSRGT", 2_822_400, &second);
+        assert!(chilpa_dsd::DffReader::open(&twice).is_ok(), "the reader takes it");
+        assert!(DsfStream::open(&twice).is_err(), "two CHNL chunks contradict each other");
+        for p in [path, out, dst, four, center, fast, mono, main, twice] { let _ = std::fs::remove_file(p); }
     }
 
     #[test]
