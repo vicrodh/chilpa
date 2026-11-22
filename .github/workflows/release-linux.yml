@@ -137,7 +137,14 @@ jobs:
           cargo test --locked -q -p chilpa-core --lib
           python3 scripts/run-api-tests-isolated.py -- cargo test --locked -q -p chilpa-api --lib
       - name: Build Linux binary
+        env:
+          # Signs requests to Chilpa's own services; see crates/chilpa-api/src/service_signature.rs.
+          CHILPA_SERVICE_KEY: ${{ secrets.CHILPA_SERVICE_KEY }}
         run: |
+          if [[ -z "$CHILPA_SERVICE_KEY" ]]; then
+            [[ "$GITHUB_EVENT_NAME" != push ]] || { echo "::error::the CHILPA_SERVICE_KEY secret is empty: the release would not sign its requests"; exit 1; }
+            echo "::warning::the CHILPA_SERVICE_KEY secret is empty: this build does not sign its requests"
+          fi
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
           cargo build --locked --release -p chilpa-qt
           scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/target/release/chilpa-qt"
@@ -233,7 +240,14 @@ jobs:
           cargo test --locked -q -p chilpa-core --lib
           python3 scripts/run-api-tests-isolated.py -- cargo test --locked -q -p chilpa-api --lib
       - name: Build macOS binary
+        env:
+          # Signs requests to Chilpa's own services; see crates/chilpa-api/src/service_signature.rs.
+          CHILPA_SERVICE_KEY: ${{ secrets.CHILPA_SERVICE_KEY }}
         run: |
+          if [[ -z "$CHILPA_SERVICE_KEY" ]]; then
+            [[ "$GITHUB_EVENT_NAME" != push ]] || { echo "::error::the CHILPA_SERVICE_KEY secret is empty: the release would not sign its requests"; exit 1; }
+            echo "::warning::the CHILPA_SERVICE_KEY secret is empty: this build does not sign its requests"
+          fi
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
           cargo build --locked --release -p chilpa-qt
       - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4

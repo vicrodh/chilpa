@@ -100,6 +100,8 @@ jobs:
           restore-keys: flatpak-downloads-
       - name: Build the Flatpak, its repository and its bundle, unsigned
         env:
+          # Written into the build's build-env by scripts/flatpak-sources.sh.
+          CHILPA_SERVICE_KEY: ${{ secrets.CHILPA_SERVICE_KEY }}
           BUILD_COMMIT: ${{ github.event_name == 'push' && github.sha || needs.identity.outputs.commit }}
         run: |
           scripts/package-flatpak.sh --output "$RUNNER_TEMP/flatpak" \

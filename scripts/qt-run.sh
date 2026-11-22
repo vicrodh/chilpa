@@ -75,6 +75,27 @@ if [[ -n "${JOBS:-}" ]]; then
   export CARGO_BUILD_JOBS="${JOBS}"
 fi
 
+# The key that signs requests to Chilpa's own services
+# (crates/chilpa-api/src/service_signature.rs). CHILPA_SERVICE_KEY wins;
+# otherwise the CHILPA_SERVICE_KEY_DEV line of the file CHILPA_SECRETS_FILE
+# names. Its value is never printed, only where it came from.
+service_key=none
+if [[ -n "${CHILPA_SERVICE_KEY:-}" ]]; then
+  service_key=environment
+elif [[ -n "${CHILPA_SECRETS_FILE:-}" && -r "${CHILPA_SECRETS_FILE}" ]]; then
+  CHILPA_SERVICE_KEY="$(sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}CHILPA_SERVICE_KEY_DEV=//p' "${CHILPA_SECRETS_FILE}" |
+    tail -n 1 | tr -d "\r\"' ")"
+  [[ -n "${CHILPA_SERVICE_KEY}" ]] && service_key=secrets-file
+fi
+if [[ "${service_key}" == none ]]; then
+  unset CHILPA_SERVICE_KEY
+  warn "no service key: this build sends its requests to Chilpa's services unsigned"
+else
+  [[ "${CHILPA_SERVICE_KEY}" =~ ^[0-9a-fA-F]{64}$ ]] || die "the service key (${service_key}) is not 64 hex characters"
+  export CHILPA_SERVICE_KEY
+  say "service key: ${service_key}"
+fi
+
 target_dir="$(
   cargo metadata --format-version 1 --no-deps |
     python3 -c 'import json, sys; print(json.load(sys.stdin)["target_directory"])'
@@ -136,8 +157,8 @@ if [[ "${profile}" == release ]]; then
   if [[ -x "${artifact_dir}/chilpa-web-sign-in" ]]; then
     printf '%s  %s\n' "$(sha256_file "${artifact_dir}/chilpa-web-sign-in")" chilpa-web-sign-in >> "${artifact_dir}/SHA256SUMS"
   fi
-  printf 'source_commit=%s\nsource_state=%s\nprofile=%s\nbuilt_at=%s\n' \
-    "${source_commit}" "${source_state}" "${profile}" "$(date --iso-8601=seconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S%z')" \
+  printf 'source_commit=%s\nsource_state=%s\nprofile=%s\nservice_key=%s\nbuilt_at=%s\n' \
+    "${source_commit}" "${source_state}" "${profile}" "${service_key}" "$(date --iso-8601=seconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S%z')" \
     > "${artifact_dir}/MANIFEST.txt"
 
   say "artifact=${artifact}"

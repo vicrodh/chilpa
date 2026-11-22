@@ -27,5 +27,13 @@ mkdir -p "$out"
 "${generator[@]}" "$root/Cargo.lock" -o "$out/cargo-sources.json.partial"
 mv "$out/cargo-sources.json.partial" "$out/cargo-sources.json"
 printf 'CHILPA_BUILD_COMMIT=%s\n' "$commit" > "$out/build-env"
+# The key that signs requests to Chilpa's own services, when this build has one
+# (crates/chilpa-api/src/service_signature.rs). generated/ is ignored by git
+# and the build bundles no sources, so the key leaves only inside the binary.
+if [[ -n "${CHILPA_SERVICE_KEY:-}" ]]; then
+  [[ "$CHILPA_SERVICE_KEY" =~ ^[0-9a-fA-F]{64}$ ]] || { printf 'CHILPA_SERVICE_KEY is not 64 hex characters\n' >&2; exit 2; }
+  chmod 600 "$out/build-env"
+  printf 'CHILPA_SERVICE_KEY=%s\n' "$CHILPA_SERVICE_KEY" >> "$out/build-env"
+fi
 printf 'flatpak-sources: %s crates, commit %s\n' \
   "$(grep -c '"type": "archive"' "$out/cargo-sources.json")" "$commit"
