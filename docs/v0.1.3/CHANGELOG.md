@@ -42,6 +42,8 @@
   - Back restarts the track; a second press goes to the previous one.
   - Lock output device (Settings > Audio) keeps every play on the output you chose.
   - Casting finds any kind of UPnP renderer and remembers the ones it saw.
+  - Casting to DLNA renderers now runs on QBZ's media server and control, and each track's address names its format. Marantz and other renderers that refused Chilpa's streams are asked to test it (#48).
+  - Tracks of a SACD image and DSDIFF files can be cast: they go out as DSF, the same DSD bits in a container more renderers read.
   - A volume key shows the level for two seconds.
 
 ## Metadata
