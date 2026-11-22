@@ -160,13 +160,38 @@ mod tests {
         }
     }
 
-    /// Answers one connection per reply, in order, and hands back what each
-    /// asked. It gives up after ten seconds, so a request that never comes
-    /// fails the test instead of hanging it.
-    fn answering(replies: Vec<String>) -> (u16, std::thread::JoinHandle<Vec<String>>) {
-        use std::io::{Read, Write};
+    fn loopback() -> std::net::TcpListener {
+        std::net::TcpListener::bind("127.0.0.1:0").unwrap()
+    }
+
+    /// A listener on an address `localhost` names, so a request to it has
+    /// another host than `127.0.0.1`. ureq tries every address the name has.
+    fn localhost() -> std::net::TcpListener {
+        use std::net::ToSocketAddrs;
+        ("localhost", 0).to_socket_addrs().unwrap().find_map(|address| std::net::TcpListener::bind(address).ok())
+            .expect("localhost names an address of this machine")
+    }
+
+    /// The request's head, read until the blank line that ends it.
+    fn head_of(peer: &mut std::net::TcpStream) -> String {
+        use std::io::Read;
+        let mut head = Vec::new();
+        let mut chunk = [0u8; 1024];
+        while !head.windows(4).any(|end| end == b"\r\n\r\n") && head.len() < 16 * 1024 {
+            match peer.read(&mut chunk) {
+                Ok(0) | Err(_) => break,
+                Ok(n) => head.extend_from_slice(&chunk[..n]),
+            }
+        }
+        String::from_utf8_lossy(&head).to_ascii_lowercase()
+    }
+
+    /// Answers one connection per reply, in order, and hands back the head
+    /// each one asked with. It gives up after ten seconds, so a request that
+    /// never comes fails the test instead of hanging it.
+    fn answering(server: std::net::TcpListener, replies: Vec<String>) -> (u16, std::thread::JoinHandle<Vec<String>>) {
+        use std::io::Write;
         use std::time::{Duration, Instant};
-        let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         server.set_nonblocking(true).unwrap();
         let port = server.local_addr().unwrap().port();
         let asked = std::thread::spawn(move || {
@@ -183,10 +208,8 @@ mod tests {
                 // An accepted socket inherits non-blocking on some systems.
                 peer.set_nonblocking(false).unwrap();
                 peer.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
-                let mut buffer = [0u8; 4096];
-                let n = peer.read(&mut buffer).unwrap_or(0);
+                asked.push(head_of(&mut peer));
                 peer.write_all(reply.as_bytes()).unwrap();
-                asked.push(String::from_utf8_lossy(&buffer[..n]).to_ascii_lowercase());
             }
             asked
         });
@@ -206,9 +229,9 @@ mod tests {
             .middleware(move |request: ureq::http::Request<ureq::SendBody>, next: ureq::middleware::MiddlewareNext| signing(Some(signer as &dyn Signer), request, next))
             .build());
 
-        let (elsewhere, after) = answering(vec![ok(Some(1_800_000_000))]);
-        let redirect = format!("HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:{elsewhere}/elsewhere\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
-        let (port, asked) = answering(vec![ok(Some(1_700_000_000)), ok(None), ok(None), redirect]);
+        let (elsewhere, after) = answering(localhost(), vec![ok(Some(1_800_000_000))]);
+        let redirect = format!("HTTP/1.1 302 Found\r\nLocation: http://localhost:{elsewhere}/elsewhere\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+        let (port, asked) = answering(loopback(), vec![ok(Some(1_700_000_000)), ok(None), ok(None), redirect]);
         let url = |path: &str| format!("http://127.0.0.1:{port}{path}?query=left-out");
         agent.get(&url("/signed-by-the-test")).call().unwrap();
         agent.get(&url("/signed-by-the-test")).header("Authorization", "Caller credential").call().unwrap();
@@ -224,8 +247,8 @@ mod tests {
         assert!(!asked[2].contains("authorization"), "a path it does not sign goes out as it was: {}", asked[2]);
         assert!(asked[3].contains("authorization: test get"), "{}", asked[3]);
         assert!(!after[0].contains("authorization"), "the signature does not follow a redirect: {}", after[0]);
-        assert_eq!(*signer.answered.lock().unwrap(), ["127.0.0.1 1700000000", "127.0.0.1 1800000000"],
-            "only signed requests are read, each from the reply that ended it");
+        assert_eq!(*signer.answered.lock().unwrap(), ["127.0.0.1 1700000000", "localhost 1800000000"],
+            "only signed requests are read, each from the host whose reply ended it");
     }
 
     #[test]
@@ -233,7 +256,7 @@ mod tests {
         let agent = agent(ureq::Agent::config_builder().http_status_as_error(false)
             .middleware(|request: ureq::http::Request<ureq::SendBody>, next: ureq::middleware::MiddlewareNext| signing(None, request, next))
             .build());
-        let (port, asked) = answering(vec![ok(None)]);
+        let (port, asked) = answering(loopback(), vec![ok(None)]);
         agent.get(&format!("http://127.0.0.1:{port}/signed-by-the-test")).call().unwrap();
         let asked = asked.join().unwrap();
         assert!(!asked[0].contains("authorization"), "{}", asked[0]);
