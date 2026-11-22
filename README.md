@@ -34,6 +34,10 @@ Sure, here is: [Releases](https://github.com/vicrodh/chilpa/releases)
 - Local music libraries, album editions, CDs and supported disc images.
 - All the formats that matters, FLAC, WAV, ALAC, DSD, DFF, and also the others Mp3, ogg, etc; CUE sheets support, SACD images: covered. 
 - Multiple queues, playlists, search and source-aware library browsing.
+- **Genres**: a genre tree of Chilpa's own, several levels deep, where a style
+  can sit under more than one parent, with an image for 1,182 genres. Your own
+  genre tags stay reachable, and composers and compositions open classical
+  music by work.
 - **Refine**: narrow the library with conditions on artist, genre, year,
   composer, label, rating, quality, source, etc. Save queries, load queries, play with the library, it's yours. 
 - **Listening stats**, local only, keep track of listening, visual features like
@@ -115,6 +119,8 @@ Installs or updates Chilpa for your user, on Linux and macOS. If macOS refuses t
 | DEB, RPM | Linux x86_64, ARM64 | Package manager |
 | AUR, Gentoo overlay | Linux x86_64, ARM64 | Package manager |
 | Flatpak | Linux x86_64 | `flatpak update` |
+
+The Flatpak comes from Chilpa's own repository, `flatpak.chilpa.app`. Flathub has tightened its rules for AI-generated content, so Chilpa will not be on Flathub until it has been around for a few months and has an active community.
 
 <details>
 <summary>Install from a package manager</summary>
