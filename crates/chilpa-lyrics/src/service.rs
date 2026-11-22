@@ -31,7 +31,9 @@ use std::time::Duration;
 /// The version of the question and the answer.
 pub const SCHEMA: u64 = 1;
 /// Where the service is. Released builds carry this address, so it never
-/// changes; what answers behind it can.
+/// changes; what answers behind it can. It answers official builds, which
+/// sign their requests. A fork or a build of your own runs its own service:
+/// https://github.com/vicrodh/chilpa-api#forks
 pub const ORIGIN: &str = "https://lyrics.chilpa.app";
 /// The path lyrics are asked at.
 pub const RESOLVE_PATH: &str = "/v1/lyrics/resolve";

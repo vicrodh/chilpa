@@ -1132,3 +1132,5 @@ pn
 teardown
 # HTTP range terms of RFC 9110 (416 Range Not Satisfiable).
 unsatisfiable
+# The keyed hash that signs requests to Chilpa's own services.
+hmac

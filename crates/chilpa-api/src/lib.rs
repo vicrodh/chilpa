@@ -78,6 +78,7 @@ mod preferences;
 pub mod saved_queries;
 pub mod device_sync;
 mod privacy;
+mod service_signature;
 pub use privacy::network_allowed;
 mod play_indicator;
 mod title_ticker;
@@ -774,6 +775,7 @@ impl Chilpa {
         // during startup has to come out in the same language as the rest.
         let saved = chilpa_core::settings::load();
         chilpa_core::network::configure(privacy::policy(&saved));
+        service_signature::install();
         storage_cache::start(saved.window.get("storage.remoteLimitMb").map(String::as_str));
         #[cfg(not(test))]
         chilpa_i18n::set_language(if saved.language.is_empty() { chilpa_i18n::from_environment() } else { &saved.language });

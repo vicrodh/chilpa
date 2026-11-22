@@ -6,6 +6,10 @@
 //! it. The key is not hidden from whoever holds the binary: it keeps a copy
 //! of the source from using the services by default, and nothing more.
 //!
+//! If requests to the services fail with 403 in a fork or a build of your
+//! own, this is why: deploy your own services and point the build to them,
+//! as https://github.com/vicrodh/chilpa-api#forks asks.
+//!
 //! A signature is HMAC-SHA256 over the method, the host, the path without
 //! its query, and the time. The services answer their own time in
 //! `X-Chilpa-Time`, and the next signature follows that clock, so a machine

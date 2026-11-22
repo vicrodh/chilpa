@@ -15,7 +15,9 @@ use super::{Failure, Kind, Listen};
 use serde_json::{json, Map, Value};
 
 /// Released builds carry this address, so it never changes; the worker
-/// behind it can.
+/// behind it can. It answers official builds, which sign their requests
+/// (`service_signature`). A fork or a build of your own runs its own worker:
+/// https://github.com/vicrodh/chilpa-api#forks
 const PROXY: &str = "https://api.chilpa.app/lastfm";
 
 /// Scrobbles in one request: Last.fm's own limit.

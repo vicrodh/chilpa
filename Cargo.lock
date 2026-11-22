@@ -463,6 +463,7 @@ dependencies = [
  "chilpa-tags",
  "chilpa-theme",
  "flate2",
+ "hmac",
  "image",
  "libc",
  "md-5",
