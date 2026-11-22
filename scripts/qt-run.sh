@@ -107,6 +107,10 @@ say "target=${target_dir}"
 build_started="$(date +%s)"
 cargo build -p chilpa-qt "${profile_args[@]}"
 [[ -x "${binary}" ]] || die "Cargo succeeded but ${binary} is missing"
+# The binary carries the service key masked; its text must not be in it.
+if [[ "${service_key}" != none ]] && LC_ALL=C grep -q -a -i -F -f <(printf '%s\n' "${CHILPA_SERVICE_KEY}") "${binary}"; then
+  die "the binary carries the service key's text; it must carry it masked"
+fi
 # The sign-in window for plugins whose browser sign-in ends on an address only
 # their own application receives (crates/chilpa-web-sign-in). It is built only
 # where Qt WebEngine 6.9 or later is installed; without it the link opens the

@@ -56,6 +56,9 @@ jobs:
           cargo test --locked -q -p chilpa-core --lib
           python3 scripts/run-api-tests-isolated.py -- cargo test --locked -q -p chilpa-api --lib
           cargo test --locked -q -p chilpa-bwrap --lib
+          # The request signer in the network guard, on the real agents (ADR-021 shield).
+          cargo test --locked -q -p chilpa-stream --lib network::
+          cargo test --locked -q -p chilpa-stream --test signer
 
   interface:
     runs-on: ubuntu-24.04
