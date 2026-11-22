@@ -62,5 +62,6 @@
   - German and English translation fixes by @TheMelmacian (#35), and a Traditional Chinese translation by @bruce-awareit (#42).
   - A Welcome card's button can set the deck aside to finish later, by @afonsojramos.
   - About credits each contributor by GitHub username, with a link to their profile.
+  - Official builds sign their requests to Chilpa's own services: lyrics and their translations, Last.fm scrobbling, Discogs metadata, podcast search and playlist import. Four weeks after this release, those services stop answering 0.1.2 and earlier; update before then to keep them. Forks and builds of your own can run their own services: https://github.com/vicrodh/chilpa-api#forks
 
 Physical DAC behavior and signed-in sources still need testing on each listener's own setup. Open an issue for anything that breaks.

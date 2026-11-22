@@ -16,6 +16,8 @@ The biggest update since the first release: 480 changes since 0.1.2. Chilpa now 
   - Chilpa Nest, a new experimental plugin. It puts your albums back on the wall shelves where they belong. I hope you like it, and I would love your feedback on it.
   - And a third-party plugin: "that" plugin you have been waiting for. ;)
 
+Heads-up for 0.1.2 and earlier: four weeks after this release, Chilpa's own services (lyrics, Last.fm scrobbling, Discogs metadata, podcast search and playlist import) answer only signed official builds. Update to keep them working. Forks and builds of your own can run their own services: https://github.com/vicrodh/chilpa-api#forks
+
 Thank you to everyone who opened issues, and to @jakumule (Nix flake, #32), @TheMelmacian (German and English translations, #35), @bruce-awareit (Traditional Chinese translation, #42) and @afonsojramos (Welcome deck fix).
 
 ---
