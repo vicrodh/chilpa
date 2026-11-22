@@ -112,7 +112,9 @@ jobs:
             exit 1
           fi
           [[ -n "$CHILPA_SERVICE_KEY" ]] || echo "::notice::this build does not sign its requests to Chilpa's services"
-          scripts/package-flatpak.sh --output "$RUNNER_TEMP/flatpak" \
+          # The builder reaches the host (to install the SDK, among others)
+          # through flatpak-spawn, which needs a session bus; a runner has none.
+          dbus-run-session -- scripts/package-flatpak.sh --output "$RUNNER_TEMP/flatpak" \
             --commit "$BUILD_COMMIT" --branch "$FLATPAK_BRANCH" \
             --state-dir "$RUNNER_TEMP/flatpak-state" --jobs 2 --install-deps \
             --bundle "Chilpa-$RELEASE_VERSION-x86_64-unsigned.flatpak"
@@ -123,7 +125,8 @@ jobs:
           key: ${{ steps.downloads.outputs.cache-primary-key }}
       - name: Lint the manifest, the build and the repository
         run: |
-          lint=(flatpak run --command=flatpak-builder-lint org.flatpak.Builder --gha-format)
+          # The same builder, so the same session bus.
+          lint=(dbus-run-session -- flatpak run --command=flatpak-builder-lint org.flatpak.Builder --gha-format)
           "${lint[@]}" manifest packaging/flatpak/app.chilpa.Chilpa.yml
           # Only the screenshot rules are waived: mirroring is Flathub's step.
           "${lint[@]}" --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json \
