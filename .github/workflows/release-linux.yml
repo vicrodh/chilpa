@@ -138,13 +138,16 @@ jobs:
           python3 scripts/run-api-tests-isolated.py -- cargo test --locked -q -p chilpa-api --lib
       - name: Build Linux binary
         env:
-          # Signs requests to Chilpa's own services; see crates/chilpa-api/src/service_signature.rs.
-          CHILPA_SERVICE_KEY: ${{ secrets.CHILPA_SERVICE_KEY }}
+          # Signs requests to Chilpa's own services (crates/chilpa-api/src/service_signature.rs).
+          # Only a tag, which the identity job holds to main, gets it: a manual
+          # dispatch builds whatever ref it names, so it builds unsigned.
+          CHILPA_SERVICE_KEY: ${{ github.event_name == 'push' && secrets.CHILPA_SERVICE_KEY || '' }}
         run: |
-          if [[ -z "$CHILPA_SERVICE_KEY" ]]; then
-            [[ "$GITHUB_EVENT_NAME" != push ]] || { echo "::error::the CHILPA_SERVICE_KEY secret is empty: the release would not sign its requests"; exit 1; }
-            echo "::warning::the CHILPA_SERVICE_KEY secret is empty: this build does not sign its requests"
+          if [[ "$GITHUB_EVENT_NAME" == push && ! "$CHILPA_SERVICE_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::the CHILPA_SERVICE_KEY secret is missing or not 64 hex characters: the release would not sign its requests"
+            exit 1
           fi
+          [[ -n "$CHILPA_SERVICE_KEY" ]] || echo "::notice::this build does not sign its requests to Chilpa's services"
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
           cargo build --locked --release -p chilpa-qt
           scripts/check-qml-startup.sh "$GITHUB_WORKSPACE/target/release/chilpa-qt"
@@ -241,13 +244,16 @@ jobs:
           python3 scripts/run-api-tests-isolated.py -- cargo test --locked -q -p chilpa-api --lib
       - name: Build macOS binary
         env:
-          # Signs requests to Chilpa's own services; see crates/chilpa-api/src/service_signature.rs.
-          CHILPA_SERVICE_KEY: ${{ secrets.CHILPA_SERVICE_KEY }}
+          # Signs requests to Chilpa's own services (crates/chilpa-api/src/service_signature.rs).
+          # Only a tag, which the identity job holds to main, gets it: a manual
+          # dispatch builds whatever ref it names, so it builds unsigned.
+          CHILPA_SERVICE_KEY: ${{ github.event_name == 'push' && secrets.CHILPA_SERVICE_KEY || '' }}
         run: |
-          if [[ -z "$CHILPA_SERVICE_KEY" ]]; then
-            [[ "$GITHUB_EVENT_NAME" != push ]] || { echo "::error::the CHILPA_SERVICE_KEY secret is empty: the release would not sign its requests"; exit 1; }
-            echo "::warning::the CHILPA_SERVICE_KEY secret is empty: this build does not sign its requests"
+          if [[ "$GITHUB_EVENT_NAME" == push && ! "$CHILPA_SERVICE_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::the CHILPA_SERVICE_KEY secret is missing or not 64 hex characters: the release would not sign its requests"
+            exit 1
           fi
+          [[ -n "$CHILPA_SERVICE_KEY" ]] || echo "::notice::this build does not sign its requests to Chilpa's services"
           export RUSTFLAGS="--remap-path-prefix=$GITHUB_WORKSPACE=. --remap-path-prefix=$HOME/.cargo=/cargo"
           cargo build --locked --release -p chilpa-qt
       - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4

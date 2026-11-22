@@ -59,7 +59,8 @@ jobs:
         run: python3 scripts/release_version.py --github-output "$GITHUB_OUTPUT"
 
   # Runs the checked-out ref's own build scripts, a manual dispatch's
-  # included, so it holds no secret, and what it hands on is data.
+  # included, so a dispatch holds no secret, and what it hands on is data.
+  # A tag, which the identity job holds to main, also gets the service key.
   build:
     needs: identity
     runs-on: ubuntu-24.04
@@ -100,10 +101,16 @@ jobs:
           restore-keys: flatpak-downloads-
       - name: Build the Flatpak, its repository and its bundle, unsigned
         env:
-          # Written into the build's build-env by scripts/flatpak-sources.sh.
-          CHILPA_SERVICE_KEY: ${{ secrets.CHILPA_SERVICE_KEY }}
+          # Written into the build's build-env by scripts/flatpak-sources.sh;
+          # only for a tag (see the comment on this job).
+          CHILPA_SERVICE_KEY: ${{ github.event_name == 'push' && secrets.CHILPA_SERVICE_KEY || '' }}
           BUILD_COMMIT: ${{ github.event_name == 'push' && github.sha || needs.identity.outputs.commit }}
         run: |
+          if [[ "$GITHUB_EVENT_NAME" == push && ! "$CHILPA_SERVICE_KEY" =~ ^[0-9a-fA-F]{64}$ ]]; then
+            echo "::error::the CHILPA_SERVICE_KEY secret is missing or not 64 hex characters: the release would not sign its requests"
+            exit 1
+          fi
+          [[ -n "$CHILPA_SERVICE_KEY" ]] || echo "::notice::this build does not sign its requests to Chilpa's services"
           scripts/package-flatpak.sh --output "$RUNNER_TEMP/flatpak" \
             --commit "$BUILD_COMMIT" --branch "$FLATPAK_BRANCH" \
             --state-dir "$RUNNER_TEMP/flatpak-state" --jobs 2 --install-deps \
