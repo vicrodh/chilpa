@@ -61,7 +61,9 @@ pub fn start(folder: &Path, entry: &str, data: &Path, cache: &Path) -> Result<(C
             .and_then(|_| serde_json::from_str::<Value>(&line).ok());
         let _ = sender.send(result);
     });
-    let reply = receiver.recv_timeout(Duration::from_secs(8)).ok().flatten();
+    // A freshly installed bundled runtime can take longer to load on macOS.
+    let startup_seconds = if cfg!(target_os = "macos") { 30 } else { 8 };
+    let reply = receiver.recv_timeout(Duration::from_secs(startup_seconds)).ok().flatten();
     if let Some(reply) = reply.filter(valid_reply) { return Ok((owned, reply)); }
     // Startup never ran user work: reap immediately rather than retaining a reader.
     if let Some(mut child) = owned.child.take() { let _ = child.kill(); let _ = child.wait(); }
