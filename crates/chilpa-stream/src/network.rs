@@ -79,9 +79,11 @@ pub(crate) fn agent(config: ureq::config::Config) -> ureq::Agent {
 /// passes `guard`, plugins' included.
 pub trait Signer: Send + Sync {
     /// The headers for a request to `host` (lower case, no trailing dot) at
-    /// `path` (no query), or none when it does not sign for that host.
+    /// `path` (no query), or none when it does not sign for that host. A
+    /// header the request already carries is kept, not replaced.
     fn sign(&self, method: &str, host: &str, path: &str) -> Vec<(&'static str, String)>;
-    /// The headers of the reply to a request it signed.
+    /// The headers of the reply to a request it signed, and the host that
+    /// sent them, which is another one when a redirect was followed.
     fn answered(&self, host: &str, headers: &ureq::http::HeaderMap);
 }
 
@@ -92,24 +94,37 @@ pub fn sign_with(signer: Box<dyn Signer>) -> bool {
     SIGNER.set(signer).is_ok()
 }
 
-pub(crate) fn guard(mut request: ureq::http::Request<ureq::SendBody>, next: ureq::middleware::MiddlewareNext)
+pub(crate) fn guard(request: ureq::http::Request<ureq::SendBody>, next: ureq::middleware::MiddlewareNext)
     -> Result<ureq::http::Response<ureq::Body>, ureq::Error> {
     check(&request.uri().to_string()).map_err(|why| ureq::Error::Io(std::io::Error::new(std::io::ErrorKind::PermissionDenied, why)))?;
-    let Some(signer) = SIGNER.get() else { return next.handle(request) };
-    let host = request.uri().host().unwrap_or_default().trim_end_matches('.').to_ascii_lowercase();
-    let headers = signer.sign(request.method().as_str(), &host, request.uri().path());
-    if headers.is_empty() {
-        return next.handle(request);
-    }
-    // Set, not appended: a header of the same name the caller wrote is replaced.
-    for (name, value) in headers {
-        if let (Ok(name), Ok(value)) = (ureq::http::HeaderName::from_bytes(name.as_bytes()), ureq::http::HeaderValue::from_str(&value)) {
-            request.headers_mut().insert(name, value);
+    signing(SIGNER.get().map(|signer| signer.as_ref()), request, next)
+}
+
+/// What `guard` does once the request is allowed, with the signer given.
+fn signing(signer: Option<&dyn Signer>, mut request: ureq::http::Request<ureq::SendBody>, next: ureq::middleware::MiddlewareNext)
+    -> Result<ureq::http::Response<ureq::Body>, ureq::Error> {
+    let Some(signer) = signer else { return next.handle(request) };
+    let mut signed = false;
+    for (name, value) in signer.sign(request.method().as_str(), &host_of(request.uri()), request.uri().path()) {
+        let (Ok(name), Ok(value)) = (ureq::http::HeaderName::from_bytes(name.as_bytes()), ureq::http::HeaderValue::from_str(&value)) else { continue };
+        // A header the caller set stays: its own credential goes out instead.
+        if let ureq::http::header::Entry::Vacant(slot) = request.headers_mut().entry(name) {
+            slot.insert(value);
+            signed = true;
         }
     }
+    if !signed {
+        return next.handle(request);
+    }
     let reply = next.handle(request)?;
-    signer.answered(&host, reply.headers());
+    // ureq follows redirects inside `handle`, so the reply can be another
+    // host's; it records whose on every reply it returns (ResponseUri).
+    signer.answered(&host_of(ureq::ResponseExt::get_uri(&reply)), reply.headers());
     Ok(reply)
+}
+
+fn host_of(uri: &ureq::http::Uri) -> String {
+    uri.host().unwrap_or_default().trim_end_matches('.').to_ascii_lowercase()
 }
 
 #[cfg(test)]
@@ -137,7 +152,7 @@ mod tests {
     impl Signer for OnePath {
         fn sign(&self, method: &str, host: &str, path: &str) -> Vec<(&'static str, String)> {
             if host != "127.0.0.1" || path != "/signed-by-the-test" { return Vec::new(); }
-            vec![("X-Test-Signature", format!("{method} {host} {path}")), ("x-test-replaced", "from the signer".into())]
+            vec![("authorization", format!("Test {method} {host} {path}"))]
         }
         fn answered(&self, host: &str, headers: &ureq::http::HeaderMap) {
             let time = headers.get("x-test-time").and_then(|value| value.to_str().ok()).unwrap_or("none");
@@ -145,49 +160,82 @@ mod tests {
         }
     }
 
-    /// Answers each of `replies` connections with `reply` and hands back what was asked.
-    fn answering(replies: usize, reply: &'static str) -> (u16, std::thread::JoinHandle<Vec<String>>) {
+    /// Answers one connection per reply, in order, and hands back what each
+    /// asked. It gives up after ten seconds, so a request that never comes
+    /// fails the test instead of hanging it.
+    fn answering(replies: Vec<String>) -> (u16, std::thread::JoinHandle<Vec<String>>) {
         use std::io::{Read, Write};
+        use std::time::{Duration, Instant};
         let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        server.set_nonblocking(true).unwrap();
         let port = server.local_addr().unwrap().port();
-        let asked = std::thread::spawn(move || (0..replies).map(|_| {
-            let (mut peer, _) = server.accept().unwrap();
-            let mut asked = [0u8; 4096];
-            let n = peer.read(&mut asked).unwrap_or(0);
-            peer.write_all(reply.as_bytes()).unwrap();
-            String::from_utf8_lossy(&asked[..n]).to_ascii_lowercase()
-        }).collect());
+        let asked = std::thread::spawn(move || {
+            let deadline = Instant::now() + Duration::from_secs(10);
+            let mut asked = Vec::new();
+            for reply in replies {
+                let mut peer = loop {
+                    match server.accept() {
+                        Ok((peer, _)) => break peer,
+                        Err(_) if Instant::now() < deadline => std::thread::sleep(Duration::from_millis(5)),
+                        Err(_) => return asked,
+                    }
+                };
+                // An accepted socket inherits non-blocking on some systems.
+                peer.set_nonblocking(false).unwrap();
+                peer.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+                let mut buffer = [0u8; 4096];
+                let n = peer.read(&mut buffer).unwrap_or(0);
+                peer.write_all(reply.as_bytes()).unwrap();
+                asked.push(String::from_utf8_lossy(&buffer[..n]).to_ascii_lowercase());
+            }
+            asked
+        });
         (port, asked)
     }
 
-    #[test]
-    fn a_signer_sets_its_headers_on_what_it_signs_and_reads_the_reply() {
-        let signer = Box::leak(Box::new(OnePath { answered: std::sync::Mutex::new(Vec::new()) }));
-        assert!(sign_with(Box::new(Forward(signer))), "the first signer is installed");
-        assert!(!sign_with(Box::new(Forward(signer))), "and a second is refused");
-
-        let (port, asked) = answering(2, "HTTP/1.1 200 OK\r\nX-Test-Time: 1700000000\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok");
-        let request = |path: &str| crate::send_request(serde_json::json!({
-            "url": format!("http://127.0.0.1:{port}{path}?query=left-out"), "method": "GET",
-            "headers": {"X-Test-Replaced": "from the plugin"}
-        }).to_string().as_bytes(), None);
-        request("/signed-by-the-test");
-        request("/not-signed");
-        let asked = asked.join().unwrap();
-
-        assert!(asked[0].contains("x-test-signature: get 127.0.0.1 /signed-by-the-test\r\n"), "{}", asked[0]);
-        assert!(asked[0].contains("x-test-replaced: from the signer\r\n"), "{}", asked[0]);
-        assert!(!asked[0].contains("from the plugin"), "the signer's header replaces the caller's: {}", asked[0]);
-        assert!(!asked[1].contains("x-test-signature"), "a path it does not sign goes out as it was: {}", asked[1]);
-        assert!(asked[1].contains("x-test-replaced: from the plugin\r\n"), "{}", asked[1]);
-        assert_eq!(*signer.answered.lock().unwrap(), ["127.0.0.1 1700000000"], "only the signed reply is read");
+    fn ok(time: Option<u64>) -> String {
+        let time = time.map(|time| format!("X-Test-Time: {time}\r\n")).unwrap_or_default();
+        format!("HTTP/1.1 200 OK\r\n{time}Content-Length: 2\r\nConnection: close\r\n\r\nok")
     }
 
-    /// The installed signer is a `Box`; this one hands each call to a signer the test keeps.
-    struct Forward(&'static OnePath);
+    #[test]
+    fn a_signer_adds_what_the_caller_did_not_set_and_its_signature_stops_at_a_redirect() {
+        // Its own agent: the process-wide signer stays free.
+        let signer: &'static OnePath = Box::leak(Box::new(OnePath { answered: std::sync::Mutex::new(Vec::new()) }));
+        let agent = agent(ureq::Agent::config_builder().http_status_as_error(false)
+            .middleware(move |request: ureq::http::Request<ureq::SendBody>, next: ureq::middleware::MiddlewareNext| signing(Some(signer as &dyn Signer), request, next))
+            .build());
 
-    impl Signer for Forward {
-        fn sign(&self, method: &str, host: &str, path: &str) -> Vec<(&'static str, String)> { self.0.sign(method, host, path) }
-        fn answered(&self, host: &str, headers: &ureq::http::HeaderMap) { self.0.answered(host, headers) }
+        let (elsewhere, after) = answering(vec![ok(Some(1_800_000_000))]);
+        let redirect = format!("HTTP/1.1 302 Found\r\nLocation: http://127.0.0.1:{elsewhere}/elsewhere\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+        let (port, asked) = answering(vec![ok(Some(1_700_000_000)), ok(None), ok(None), redirect]);
+        let url = |path: &str| format!("http://127.0.0.1:{port}{path}?query=left-out");
+        agent.get(&url("/signed-by-the-test")).call().unwrap();
+        agent.get(&url("/signed-by-the-test")).header("Authorization", "Caller credential").call().unwrap();
+        agent.get(&url("/not-signed")).call().unwrap();
+        agent.get(&url("/signed-by-the-test")).call().unwrap();
+        let asked = asked.join().unwrap();
+        let after = after.join().unwrap();
+        assert_eq!((asked.len(), after.len()), (4, 1), "every request arrived");
+
+        assert!(asked[0].contains("authorization: test get 127.0.0.1 /signed-by-the-test\r\n"), "{}", asked[0]);
+        assert!(asked[1].contains("authorization: caller credential\r\n") && !asked[1].contains("test get"),
+            "the caller's own header is kept: {}", asked[1]);
+        assert!(!asked[2].contains("authorization"), "a path it does not sign goes out as it was: {}", asked[2]);
+        assert!(asked[3].contains("authorization: test get"), "{}", asked[3]);
+        assert!(!after[0].contains("authorization"), "the signature does not follow a redirect: {}", after[0]);
+        assert_eq!(*signer.answered.lock().unwrap(), ["127.0.0.1 1700000000", "127.0.0.1 1800000000"],
+            "only signed requests are read, each from the reply that ended it");
+    }
+
+    #[test]
+    fn without_a_signer_the_request_goes_out_as_it_was() {
+        let agent = agent(ureq::Agent::config_builder().http_status_as_error(false)
+            .middleware(|request: ureq::http::Request<ureq::SendBody>, next: ureq::middleware::MiddlewareNext| signing(None, request, next))
+            .build());
+        let (port, asked) = answering(vec![ok(None)]);
+        agent.get(&format!("http://127.0.0.1:{port}/signed-by-the-test")).call().unwrap();
+        let asked = asked.join().unwrap();
+        assert!(!asked[0].contains("authorization"), "{}", asked[0]);
     }
 }
