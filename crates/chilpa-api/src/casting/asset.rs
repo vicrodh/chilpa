@@ -209,6 +209,69 @@ mod tests {
         path
     }
 
+    /// One GET of `url` on a connection of its own: status line and headers,
+    /// and the body.
+    fn get(url: &str) -> (String, Vec<u8>) {
+        use std::io::Write;
+        let rest = url.strip_prefix("http://").unwrap();
+        let (host, path) = rest.split_at(rest.find('/').unwrap());
+        let mut socket = std::net::TcpStream::connect(host).unwrap();
+        socket.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        write!(socket, "GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n").unwrap();
+        let mut answer = Vec::new();
+        socket.read_to_end(&mut answer).unwrap();
+        let split = answer.windows(4).position(|w| w == b"\r\n\r\n").unwrap() + 4;
+        (String::from_utf8_lossy(&answer[..split]).into_owned(), answer[split..].to_vec())
+    }
+    fn field<'a>(headers: &'a str, name: &str) -> Option<&'a str> {
+        headers.lines().filter_map(|l| l.split_once(':')).find(|(k, _)| k.eq_ignore_ascii_case(name)).map(|(_, v)| v.trim())
+    }
+    /// Publishes `asset` and checks that the address, the HTTP answer and the
+    /// DIDL a renderer gets all name the same format; gives back the body.
+    fn served(asset: ExternalAsset, format: &str) -> Vec<u8> {
+        let mime = asset.mime.clone();
+        let server = chilpa_cast::media_server::MediaServer::start("127.0.0.1:9".parse().unwrap()).unwrap();
+        let url = server.publish(asset).unwrap();
+        assert!(url.ends_with(&format!(".{format}")), "{url}");
+        assert_eq!(chilpa_cast::media_server::extension(&mime), Some(format));
+        let (headers, body) = get(&url);
+        assert!(headers.starts_with("HTTP/1.1 200"), "{headers}");
+        assert_eq!(field(&headers, "Content-Type"), Some(mime.as_str()));
+        assert_eq!(field(&headers, "contentFeatures.dlna.org"), Some(chilpa_cast::CONTENT_FEATURES));
+        assert_eq!(field(&headers, "Content-Length"), Some(body.len().to_string().as_str()));
+        let didl = chilpa_cast::dlna::device::build_didl_metadata(&url, &chilpa_cast::dlna::device::DlnaMetadata::default(), &mime);
+        assert!(didl.contains(&format!(r#"protocolInfo="http-get:*:{mime}:{}">{url}</res>"#, chilpa_cast::CONTENT_FEATURES)), "{didl}");
+        body
+    }
+
+    #[test]
+    fn a_flac_goes_out_byte_for_byte_with_its_format_named() {
+        // A real FLAC: two channels, 16 bits, 44.1 kHz.
+        let fixture = Path::new(env!("CARGO_MANIFEST_DIR")).join("../chilpa-decode/tests/fixtures/offline/silence.flac");
+        let original = std::fs::read(&fixture).unwrap();
+        let (asset, _, presentation) = resolve(fixture.to_str().unwrap()).unwrap_or_else(|_| panic!("a FLAC resolves"));
+        assert_eq!((asset.mime.as_str(), asset.length), ("audio/flac", original.len() as u64));
+        assert!(!presentation.repackaged);
+        assert_eq!(served(asset, "flac"), original, "the bytes the file holds, untouched");
+    }
+
+    #[test]
+    fn a_dsdiff_goes_out_as_dsf_and_a_dsf_as_it_is_both_named_dsf() {
+        let plain = dff("named", b"DSD ");
+        let (asset, _, presentation) = resolve(plain.to_str().unwrap()).unwrap_or_else(|_| panic!("a DSDIFF resolves"));
+        assert!(presentation.repackaged);
+        let length = asset.length;
+        let laid_out = served(asset, "dsf");
+        assert_eq!((laid_out.len() as u64, &laid_out[..4]), (length, &b"DSD "[..]));
+        let native = std::env::temp_dir().join("chilpa-cast-asset-native.dsf");
+        std::fs::write(&native, &laid_out).unwrap();
+        let (asset, _, presentation) = resolve(native.to_str().unwrap()).unwrap_or_else(|_| panic!("a DSF resolves"));
+        assert_eq!(asset.mime, "audio/x-dsf");
+        assert!(!presentation.repackaged, "a DSF goes out as it is");
+        assert_eq!(served(asset, "dsf"), laid_out);
+        for p in [plain, native] { let _ = std::fs::remove_file(p); }
+    }
+
     #[test]
     fn a_dsdiff_is_cast_as_dsf_unless_it_carries_dst() {
         let plain = dff("plain", b"DSD ");

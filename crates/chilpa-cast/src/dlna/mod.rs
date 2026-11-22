@@ -65,6 +65,11 @@ pub struct Dlna {
     /// not polled: the reference player only ever sets it.
     volume: Option<f64>,
     muted: Option<bool>,
+    /// The transport word last traced, cleared by each load so the first poll
+    /// of a track is traced; and whether position reads are failing. Both
+    /// keep the trace to changes, never one line per poll.
+    traced: Option<String>,
+    failing: bool,
 }
 impl Dlna {
     pub fn connect(device: &Device) -> Result<Self> {
@@ -80,7 +85,7 @@ impl Dlna {
         let (volume, muted) = if connection.has_rendering_control() && !left.is_zero() {
             runtime.block_on(async { tokio::time::timeout(left, async { (connection.get_volume().await.ok(), connection.get_mute().await.ok()) }).await.unwrap_or((None, None)) })
         } else { (None, None) };
-        Ok(Self { runtime, connection, loaded: false, volume: volume.map(|v| f64::from(v.min(100)) / 100.0), muted })
+        Ok(Self { runtime, connection, loaded: false, volume: volume.map(|v| f64::from(v.min(100)) / 100.0), muted, traced: None, failing: false })
     }
     fn run<T>(&mut self, call: impl FnOnce(&mut DlnaConnection) -> std::pin::Pin<Box<dyn Future<Output = std::result::Result<T, DlnaError>> + '_>>) -> Result<T> {
         let Self { runtime, connection, .. } = self;
@@ -97,6 +102,7 @@ impl RemoteTransport for Dlna {
             duration_secs: (m.duration.is_finite() && m.duration > 0.0).then_some(m.duration as u64),
         };
         let (url, mime) = (url.to_string(), mime.to_string());
+        self.traced = None;
         let result = self.run(|c| Box::pin(async move { c.load_media(&url, &metadata, &mime).await?; c.play().await }));
         match result {
             Ok(()) => { self.loaded = true; Ok(()) }
@@ -131,8 +137,19 @@ impl RemoteTransport for Dlna {
     /// GetPositionInfo and GetTransportInfo, as the reference player polls
     /// them; a failed position read is a failed poll.
     fn status(&mut self) -> Result<Status> {
-        let info = self.run(|c| Box::pin(async move { c.get_position_info().await }))?;
+        let info = match self.run(|c| Box::pin(async move { c.get_position_info().await })) {
+            Ok(info) => info,
+            Err(error) => {
+                if !std::mem::replace(&mut self.failing, true) { event("cast.dlna", "position_unanswered", format_args!("error={error:?}")); }
+                return Err(error);
+            }
+        };
+        if std::mem::replace(&mut self.failing, false) { event("cast.dlna", "position_answered", format_args!("")); }
         let transport = info.transport_state.trim().to_ascii_uppercase();
+        if self.traced.as_deref() != Some(transport.as_str()) {
+            event("cast.dlna", "transport", format_args!("state={transport} position={}s duration={}s", info.position_secs, info.duration_secs));
+            self.traced = Some(transport.clone());
+        }
         let state = match transport.as_str() {
             "PLAYING" => State::Playing,
             "TRANSITIONING" => State::Buffering,

@@ -1130,3 +1130,5 @@ udn
 scpd
 pn
 teardown
+# HTTP range terms of RFC 9110 (416 Range Not Satisfiable).
+unsatisfiable
