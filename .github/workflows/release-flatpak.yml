@@ -79,7 +79,7 @@ jobs:
           RELEASE_EVENT: ${{ github.event_name }}
         run: python3 scripts/release_version.py --github-env "$GITHUB_ENV"
       - name: Check the packaging scripts
-        run: python3 -m unittest scripts/tests/test_flatpak_descriptors.py scripts/tests/test_release_version.py scripts/tests/test_flatpak_repo_archive.py scripts/tests/test_flatpak_publish_site.py
+        run: python3 -m unittest scripts/tests/test_flatpak_descriptors.py scripts/tests/test_release_version.py scripts/tests/test_flatpak_repo_archive.py scripts/tests/test_flatpak_publish_site.py scripts/tests/test_flatpak_lint_exceptions.py
       - name: Make room for the SDK and the build tree
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
@@ -128,10 +128,14 @@ jobs:
           # The same builder, so the same session bus.
           lint=(dbus-run-session -- flatpak run --command=flatpak-builder-lint org.flatpak.Builder --gha-format)
           "${lint[@]}" manifest packaging/flatpak/app.chilpa.Chilpa.yml
-          # Only the screenshot rules are waived: mirroring is Flathub's step.
-          "${lint[@]}" --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json \
+          # Only screenshot rules are waived: mirroring is Flathub's step, and
+          # a dispatch builds before the tag its screenshot URLs name.
+          exceptions="$RUNNER_TEMP/lint-exceptions.json"
+          python3 scripts/flatpak_lint_exceptions.py --version "$RELEASE_VERSION" \
+            --event "$GITHUB_EVENT_NAME" --output "$exceptions"
+          "${lint[@]}" --exceptions --user-exceptions "$exceptions" \
             builddir "$RUNNER_TEMP/flatpak-state/build"
-          "${lint[@]}" --exceptions --user-exceptions packaging/flatpak/lint-exceptions.json \
+          "${lint[@]}" --exceptions --user-exceptions "$exceptions" \
             repo "$RUNNER_TEMP/flatpak/repo"
       # The runtime it needs is already installed for the build.
       - name: Install the bundle and start it
