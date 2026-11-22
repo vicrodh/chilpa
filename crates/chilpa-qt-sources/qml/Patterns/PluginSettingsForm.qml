@@ -1,4 +1,6 @@
+import "qrc:/qt/qml/app/chilpa/wizard/qml/Components"
 import QtQuick
+import QtQuick.Window
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -21,10 +23,25 @@ Column {
     property bool captures: false
     signal linked(string url)
     signal captured(var link)
+    signal refreshed()
+    property bool wasWaiting: false
+    property double refreshDeadline: 0
+    Timer {
+        interval: Math.max(1000, Math.min(5000, Number((form.document.wizard || {}).refresh_ms) || 2000))
+        running: form.visible && (!form.Window.window || (form.Window.window.visible && form.Window.window.visibility !== Window.Minimized))
+            && form.enabled && !form.hostBusy && (form.document.wizard || {}).waiting === true
+            && Number((form.document.wizard || {}).refresh_ms) > 0 && Date.now() < form.refreshDeadline
+        repeat: true
+        onTriggered: form.refreshed()
+    }
     spacing: Metrics.gap12
     onDocumentChanged: {
         values = visible ? Object.assign({}, document.values || {}) : ({})
         updateFields()
+        const waiting = (document.wizard || {}).waiting === true
+        if (wasWaiting && !waiting && visible && Window.window) Window.window.requestActivate()
+        if (waiting && !wasWaiting) refreshDeadline = Date.now() + 600000 // bounded: ten-minute sign-in window
+        wasWaiting = waiting
     }
     onVisibleChanged: {
         if (visible) { values = Object.assign({}, (document || {}).values || {}); updateFields() }
@@ -91,52 +108,11 @@ Column {
 
     Repeater {
         model: form.shownFields
-        Column {
-            id: field
-            enabled: ((form.document.form || {}).fields || []).length > 0
-            required property var modelData
+        FormField {
             width: form.width
-            spacing: Metrics.gap6
-            Text {
-                text: field.modelData.label
-                textFormat: Text.PlainText
-                color: Theme.color.textPrimary
-                font.pointSize: Type.body
-                width: parent.width
-                wrapMode: Text.WordWrap
-            }
-            Loader {
-                width: field.modelData.control.type === "toggle" ? Metrics.toggleWidth : parent.width
-                sourceComponent: field.modelData.control.type === "toggle" ? toggle : field.modelData.control.type === "select" ? select : input
-            }
-            Component {
-                id: input
-                TextField {
-                    objectName: "pluginField_" + field.modelData.key
-                    secret: field.modelData.control.type === "secret"
-                    text: String(form.values[field.modelData.key] ?? "")
-                    onTextEdited: form.values[field.modelData.key] = field.modelData.control.type === "number" ? Number(text) : text
-                }
-            }
-            Component {
-                id: toggle
-                Toggle {
-                    objectName: "pluginToggle"
-                    checked: form.values[field.modelData.key] === true
-                    onToggled: (on) => { checked = on; form.values[field.modelData.key] = on }
-                }
-            }
-            Component {
-                id: select
-                SelectField {
-                    objectName: "pluginSelect"
-                    width: parent ? parent.width : implicitWidth
-                    options: field.modelData.control.choices.map(choice => choice.label)
-                    values: field.modelData.control.choices.map(choice => String(choice.value))
-                    value: String(form.values[field.modelData.key] ?? "")
-                    onPicked: (selected) => { value = selected; form.values[field.modelData.key] = selected }
-                }
-            }
+            enabled: ((form.document.form || {}).fields || []).length > 0
+            value: form.values[modelData.key]
+            onEdited: (value) => { form.values[modelData.key] = value }
         }
     }
     Repeater {

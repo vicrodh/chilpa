@@ -1761,6 +1761,9 @@ msgstr ""
 msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr "サーバーのアルバム、プレイリスト、トラックのメニューで「オフラインで再生できるようにする」を選んでください。"
 
+msgid "Choose…"
+msgstr ""
+
 msgid "Chorale"
 msgstr "コラール"
 
@@ -10282,6 +10285,9 @@ msgstr "ライブラリを読み取る（変更はできません）"
 
 msgid "results"
 msgstr "件の結果"
+
+msgid "run a desktop helper outside the plugin sandbox, with access to your files, browser and network"
+msgstr ""
 
 msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
 msgstr ""

@@ -20,6 +20,10 @@ pub enum Control {
     Text { max_length: usize },
     Secret { max_length: usize },
     Toggle,
+    /// A native chooser returns a local file URL, never an editable command.
+    Path { #[serde(default)] directory: bool },
+    /// A read-only value with a copy button, such as a permission command.
+    Copy,
     Number { integer: bool, min: Option<f64>, max: Option<f64> },
     Select { choices: Vec<Choice> },
 }
@@ -103,7 +107,7 @@ impl Form {
                                 && !choices[..index].iter().any(|other| other.value == choice.value)
                         })
                 }
-                Control::Toggle => true,
+                Control::Toggle | Control::Path { .. } | Control::Copy => true,
             };
             if !valid {
                 return Err(FormError::InvalidDefinition(field.key.clone()));
@@ -173,6 +177,8 @@ impl Field {
                 })
             }
             Control::Toggle => value.is_boolean(),
+            Control::Path { .. } => value.as_str().is_some_and(|s| s.len() <= 8192 && s.starts_with("file://") && !s.chars().any(char::is_control)),
+            Control::Copy => false,
             Control::Number { integer, min, max } => value.as_f64().is_some_and(|n| {
                 n.is_finite() && (!integer || value.is_i64() || value.is_u64())
                     && min.is_none_or(|bound| n >= bound)

@@ -73,6 +73,8 @@ pub enum Capability {
     /// Load trusted QML in the host process, outside the process sandbox.
     /// This grants full application access, including the player and files.
     TrustedUi { entry: String },
+    /// Run a packaged desktop helper outside the plugin sandbox.
+    DesktopCompanion { entry: String },
     /// Register a command the user can trigger.
     RegisterCommand,
     /// Supply processing parameters for local PCM playback.
@@ -133,6 +135,7 @@ impl Capability {
                 chilpa_i18n::t("bring catalogue: search for and fetch music")
             }
             Capability::RegisterPanel => chilpa_i18n::t("put a panel of its own in the window"),
+            Capability::DesktopCompanion { .. } => chilpa_i18n::t("run a desktop helper outside the plugin sandbox, with access to your files, browser and network"),
             Capability::TrustedUi { .. } => chilpa_i18n::t("run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"),
             Capability::RegisterCommand => chilpa_i18n::t("add a command you trigger"),
             Capability::ProcessAudio => chilpa_i18n::t("process PCM audio with equalization and stereo controls"),
@@ -339,6 +342,12 @@ impl Manifest {
             return Err(ManifestError::BadAuth("guest credentials require an isolated bridge and private storage".into()));
         }
         for c in &self.capabilities {
+            if let Capability::DesktopCompanion { entry } = c {
+                if self.runtime != Runtime::Process || !valid_package_entry(entry)
+                    || self.capabilities.iter().filter(|c| matches!(c, Capability::DesktopCompanion { .. })).count() != 1 {
+                    return Err(ManifestError::BadDisplay);
+                }
+            }
             if let Capability::TrustedUi { entry } = c {
                 if self.runtime != Runtime::Process || !self.has(&Capability::RegisterPanel)
                     || !valid_display_entry(entry)
@@ -433,7 +442,11 @@ impl Manifest {
 }
 
 fn valid_display_entry(entry: &str) -> bool {
-    entry.len() <= 256 && entry.ends_with(".qml")
+    entry.ends_with(".qml") && valid_package_entry(entry)
+}
+
+fn valid_package_entry(entry: &str) -> bool {
+    !entry.is_empty() && entry.len() <= 256
         && entry.split('/').all(|part| !part.is_empty() && part != "." && part != ".."
             && part.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.')))
 }
@@ -698,5 +711,30 @@ mod tests {
         assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty(chilpa_i18n::mark("the name"))));
         let json = base().replace(r#""version": "0.1.0""#, r#""version": """#);
         assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty(chilpa_i18n::mark("the version"))));
+    }
+}
+
+#[cfg(test)]
+mod desktop_tests {
+    use super::*;
+    use serde_json::json;
+    fn manifest(entry: &str, runtime: &str) -> String {
+        json!({"id":"app.example.browser","name":"Browser source","version":"1","api_version":1,
+            "kind":"source","runtime":runtime,"capabilities":[{"type":"desktop_companion","entry":entry}]}).to_string()
+    }
+    #[test]
+    fn desktop_execution_requires_a_process_and_a_relative_package_entry() {
+        assert!(Manifest::parse_for_runtime(&manifest("browser/helper", "process"), Runtime::Process).is_ok());
+        for entry in ["", "/bin/sh", "../helper", "browser/../../helper", "a\\b", "./helper"] {
+            assert!(Manifest::parse_for_runtime(&manifest(entry, "process"), Runtime::Process).is_err());
+        }
+        assert!(Manifest::parse_for_runtime(&manifest("helper", "wasm"), Runtime::Wasm).is_err());
+    }
+    #[test]
+    fn adding_desktop_execution_invalidates_an_old_approval() {
+        let mut new = Manifest::parse_for_runtime(&manifest("browser/helper", "process"), Runtime::Process).unwrap();
+        let approved = new.asks_for();
+        new.capabilities.clear();
+        assert_ne!(approved, new.asks_for());
     }
 }

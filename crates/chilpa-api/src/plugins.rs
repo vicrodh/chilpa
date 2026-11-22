@@ -655,7 +655,8 @@ impl Plugins {
         self.natives.stop(id);
         self.natives.forget_reports(id);
         self.forget_credential(id);
-        for path in [dir, self.root.join(format!(".previous-{id}")), chilpa_dirs::data().join("plugin-data").join(id), chilpa_dirs::cache().join("plugins").join(id), self.root.join(".worker-private").join(id)] {
+        for path in [dir, self.root.join(format!(".previous-{id}")), chilpa_dirs::data().join("plugin-data").join(id), chilpa_dirs::cache().join("plugins").join(id), chilpa_dirs::data().join("plugin-desktop").join(id),
+            chilpa_dirs::cache().join("plugin-desktop").join(id), self.root.join(".worker-private").join(id)] {
             if path.exists() && std::fs::remove_dir_all(path).is_err() { return false; }
         }
         for path in [self.root.join(".integration").join(format!("{id}.json")), self.root.join(".icons").join(format!("{id}.png")),

@@ -1,4 +1,4 @@
-# 0.1.3 - Genres & Filters
+# 0.1.3 - Hello QBZ my old friend!
 
 The biggest update since the first release: 480 changes since 0.1.2. Chilpa now browses a collection the way it is organized, by genre, by composer and by work, and it talks to your media servers in both directions.
 

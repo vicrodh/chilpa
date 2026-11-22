@@ -357,5 +357,7 @@ jobs:
         run: |
           flags=()
           if [[ "$RELEASE_PRERELEASE" == true ]]; then flags+=(--prerelease); fi
+          title="$(head -n 1 dist/RELEASE-NOTES.md)"
+          title="${title#\# }"
           gh release create "$RELEASE_TAG" dist/* --draft --verify-tag "${flags[@]}" \
-            --title "Chilpa $RELEASE_TAG" --notes-file dist/RELEASE-NOTES.md
+            --title "$title" --notes-file dist/RELEASE-NOTES.md

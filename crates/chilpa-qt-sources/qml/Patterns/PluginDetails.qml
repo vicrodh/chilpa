@@ -163,6 +163,7 @@ P.Modal {
                     document: details.manager.settingsDocument
                     enabled: !details.manager.view.busy && !details.settingsLoading
                     onSubmitted: (action, values, scope) => details.manager.command("submit", {id: scope.plugin, submission: {revision: scope.revision, action: action, values: values}})
+                    onRefreshed: details.manager.command("settings", {id: details.plugin.id, refresh: true})
                     captures: details.manager.view.web_sign_in === true
                     onLinked: (url) => /^https?:\/\//i.test(url) ? Qt.openUrlExternally(url) : details.manager.command("settings", {id: details.plugin.id, page: url.replace(/^\//, "")})
                     onCaptured: (link) => details.manager.command("web_sign_in", {id: details.plugin.id, url: link.url, capture: link.capture,

@@ -1763,6 +1763,9 @@ msgstr "Elige dónde abrir esta música"
 msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr "Elige “Guardar para escuchar sin conexión” en el menú de un álbum, una playlist o unas pistas de un servidor."
 
+msgid "Choose…"
+msgstr "Elegir…"
+
 msgid "Chorale"
 msgstr "Coral"
 
@@ -10295,6 +10298,9 @@ msgstr "leer tu biblioteca, sin poder cambiarla"
 
 msgid "results"
 msgstr "resultados"
+
+msgid "run a desktop helper outside the plugin sandbox, with access to your files, browser and network"
+msgstr "ejecutar un auxiliar de escritorio fuera del sandbox del plugin, con acceso a tus archivos, navegador y red"
 
 msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
 msgstr "ejecutar una interfaz de confianza dentro de Chilpa, fuera del aislamiento del plugin, con acceso completo a la aplicación, el reproductor, los archivos y la red"

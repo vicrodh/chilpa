@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/wizard/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import QtQuick
 import QtQuick.Controls.Basic as Controls
@@ -24,6 +25,9 @@ TitledFlow {
         Shadow { anchors.fill: ownedPanel; radius: ownedPanel.radius; blur: Metrics.shadowSubtleBlur; color: Theme.color.shadowSegment }
         Rectangle { id: ownedPanel; anchors.fill: parent; radius: Metrics.radiusCard; color: Theme.color.surfaceRaised }
     }
+    PathField { width: Metrics.selectWidth; value: "file:///example/application" }
+    CopyField { width: Metrics.selectWidth; value: "example permission command" }
+    FormField { width: Metrics.selectWidth; modelData: ({key:"example",label:"Example field",control:{type:"text"}}); value: "Example" }
     title: "Primitives"
     ExplicitBadge {}
     AdvisoryTitle { width: Metrics.cardMinWidth; text: "A record with an advisory"; explicitContent: true; font.pointSize: Type.body }

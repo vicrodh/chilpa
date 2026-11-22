@@ -15,6 +15,17 @@ Column {
     ]
 
     Text {
+        objectName: "aboutCodename"
+        width: parent.width
+        text: body.doc.codename || ""
+        visible: text.length > 0
+        textFormat: Text.PlainText
+        wrapMode: Text.WordWrap
+        font.pointSize: Type.titleSmall
+        color: Theme.color.textPrimary
+    }
+    Item { width: 1; height: body.doc.codename ? Metrics.gap12 : 0 }
+    Text {
         width: parent.width
         text: I18n.tr("Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources.", I18n.rev)
         wrapMode: Text.WordWrap

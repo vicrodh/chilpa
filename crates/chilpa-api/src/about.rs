@@ -34,6 +34,7 @@ impl crate::Chilpa {
         json!({
             "name": "Chilpa",
             "version": env!("CARGO_PKG_VERSION"),
+            "codename": include_str!("../../../RELEASE_NAME").trim(),
             "platform": platform_label(),
             "build": build.trim(),
             "author": profile("vicrodh"),

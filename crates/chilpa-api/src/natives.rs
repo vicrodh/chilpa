@@ -28,6 +28,8 @@ const RESTART_WAITS: [u64; 4] = [1, 2, 5, 30];
 #[derive(Default)]
 pub(crate) struct Natives {
     lifecycle: Mutex<()>,
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    companions: Mutex<HashMap<String, chilpa_bwrap::desktop::Companion>>,
     pub(crate) broker: crate::plugin_broker::Broker,
     personal_changed: Mutex<std::collections::HashSet<String>>,
     reports: std::sync::OnceLock<Arc<crate::native_reporting::Reports>>,
@@ -83,6 +85,8 @@ impl Natives {
         let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
         let clients: Vec<_> = self.live.write().unwrap_or_else(|e| e.into_inner()).drain().map(|(_, client)| client).collect();
         for client in clients { client.stop(); }
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        self.companions.lock().unwrap_or_else(|e| e.into_inner()).clear();
         let plugins: Vec<_> = {
             let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
             // A restart scheduled before this one is for a process that is gone.
@@ -306,6 +310,8 @@ impl Natives {
     pub(crate) fn stop(&self, id: &str) {
         let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
         self.broker.revoke(id);
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        self.companions.lock().unwrap_or_else(|e| e.into_inner()).remove(id);
         self.known.lock().unwrap_or_else(|e| e.into_inner()).remove(id);
         if let Some(client) = self.live.write().unwrap_or_else(|e| e.into_inner()).remove(id) { client.stop(); }
     }
@@ -319,6 +325,8 @@ impl Natives {
         self.start_locked(manifest, folder)
     }
     fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        self.companions.lock().unwrap_or_else(|e| e.into_inner()).remove(&manifest.id);
         // Said before any folder is made or any process spawned: first for
         // every process plugin, then for this one's program.
         self.availability().map_err(PluginError::RuntimeUnavailable)?;
@@ -326,11 +334,34 @@ impl Natives {
         let network = process_network(chilpa_core::network::current().offline, manifest);
         let launched = launch(self, manifest, folder, network)?;
         let client = launched.client.clone();
-        let greeting = client.call("initialize", greeting(&launched, network), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
+        let mut params = greeting(&launched, network);
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        let mut desktop = None;
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        {
+            if let Some(chilpa_plugin::Capability::DesktopCompanion { entry }) = manifest.capabilities.iter()
+                .find(|capability| matches!(capability, chilpa_plugin::Capability::DesktopCompanion { .. })) {
+                params["features"]["desktop_companion"] = json!(1);
+                params["desktop_companion"] = if network {
+                    match chilpa_bwrap::desktop::start(folder, entry,
+                        &chilpa_dirs::data().join("plugin-desktop").join(&manifest.id),
+                        &chilpa_dirs::cache().join("plugin-desktop").join(&manifest.id)) {
+                        Ok((owned, reply)) => {
+                            desktop = Some(owned);
+                            reply
+                        }
+                        Err(problem) => problem,
+                    }
+                } else { json!({"error":"network_disabled"}) };
+            }
+        }
+        let greeting = client.call("initialize", params, GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
         if greeting.get("protocol").and_then(Value::as_u64) != Some(PROTOCOL as u64) {
             client.stop();
             return Err(PluginError::Crashed(format!("it speaks another protocol than {PROTOCOL}")));
         }
+        #[cfg(any(target_os = "linux", target_os = "macos"))]
+        if let Some(owned) = desktop { self.companions.lock().unwrap_or_else(|e| e.into_inner()).insert(manifest.id.clone(), owned); }
         let id = manifest.id.clone();
         // The channel is live before its generation is published: until then
         // the start before it is what a restart is scheduled for, and the
@@ -456,7 +487,7 @@ fn greeting(launched: &Launched, network: bool) -> Value {
         "protocol": PROTOCOL,
         "playback_events": 1,
         "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
-        "features": {"source_navigation": 1, "collection_pages": 1, "article_pages": 1, "page_subtabs": 1},
+        "features": {"source_navigation": 1, "collection_pages": 1, "article_pages": 1, "page_subtabs": 1, "settings_path_picker": 1, "settings_refresh": 1},
         "data_dir": launched.data,
         "cache_dir": launched.cache,
         "locale": chilpa_i18n::current_language(),

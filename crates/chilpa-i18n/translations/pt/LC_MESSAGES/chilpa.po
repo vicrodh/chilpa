@@ -1763,6 +1763,9 @@ msgstr ""
 msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr "Escolha “Disponibilizar offline” no menu de um álbum, playlist ou faixas de um servidor."
 
+msgid "Choose…"
+msgstr ""
+
 msgid "Chorale"
 msgstr "Coral"
 
@@ -10295,6 +10298,9 @@ msgstr "ler sua biblioteca, sem poder alterá-la"
 
 msgid "results"
 msgstr "resultados"
+
+msgid "run a desktop helper outside the plugin sandbox, with access to your files, browser and network"
+msgstr ""
 
 msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
 msgstr ""

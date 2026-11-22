@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/app/chilpa/wizard/qml/Components"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 import QtQuick
 import app.chilpa

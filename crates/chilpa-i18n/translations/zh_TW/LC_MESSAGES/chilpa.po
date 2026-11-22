@@ -1769,6 +1769,9 @@ msgstr "選擇要在何處開啟此音樂"
 msgid "Choose “Make available offline” in the menu of a server's album, playlist or tracks."
 msgstr ""
 
+msgid "Choose…"
+msgstr ""
+
 msgid "Chorale"
 msgstr "聖詠"
 
@@ -10290,6 +10293,9 @@ msgstr "讀取你的音樂庫（無修改權限）"
 
 msgid "results"
 msgstr "結果"
+
+msgid "run a desktop helper outside the plugin sandbox, with access to your files, browser and network"
+msgstr ""
 
 msgid "run a trusted interface inside Chilpa, outside the plugin sandbox, with full access to the application, player, files and network"
 msgstr "在 Chilpa 內部、外掛沙盒外部執行可信介面，擁有對應用程式、播放器、檔案與網路的完全存取權"

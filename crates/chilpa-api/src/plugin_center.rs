@@ -91,11 +91,12 @@ impl PluginCenter {
                     if state["settings_loading_id"] == input["id"] {
                         state["settings_loading_id"] = Value::Null;
                         if let Some(form) = input.get("form") {
+                            let refresh_catalog = settings_completed(&state["form"], form, &input["action"]);
                             state["form"] = form.clone();
                             state["pages"] = json!([]);
                             state["error"] = Value::Null;
                             state["maintenance_failed"] = false.into();
-                            if input["action"] == "submit" {
+                            if refresh_catalog {
                                 if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); }
                             }
                         } else {
@@ -159,7 +160,7 @@ impl PluginCenter {
                         let params = if action == "submit" { input["submission"].clone() } else { json!({}) };
                         state["settings_loading_id"] = id.into();
                         state["settings_id"] = id.into();
-                        state["form"] = Value::Null;
+                        if input["refresh"] != true { state["form"] = Value::Null; }
                         state["error"] = Value::Null;
                         shared.publish(&state);
                         let id = id.to_string();
@@ -1197,9 +1198,24 @@ pub(crate) fn permission_review(root: &std::path::Path, id: &str) -> Result<Valu
         "revision":format!("{:x}", sha2::Sha256::digest(&bytes))}))
 }
 
+fn settings_completed(previous: &Value, current: &Value, action: &Value) -> bool {
+    action == "submit" || (previous["status"]["phase"] != "ready" && current["status"]["phase"] == "ready")
+}
+
 #[cfg(test)]
 mod grouping_tests {
     use super::*;
+
+    #[test]
+    fn automatic_account_completion_refreshes_catalog_once() {
+        let pending = json!({"status":{"phase":"running"}});
+        let ready = json!({"status":{"phase":"ready"}});
+        assert!(settings_completed(&pending, &ready, &json!("settings")));
+        assert!(!settings_completed(&ready, &ready, &json!("settings")));
+        assert!(!settings_completed(&pending, &pending, &json!("settings")));
+        assert!(settings_completed(&ready, &ready, &json!("submit")));
+    }
+
 
     fn row(id: &str, version: &str, repository: &str) -> Value {
         json!({"id": id, "version": version, "repository_id": repository})

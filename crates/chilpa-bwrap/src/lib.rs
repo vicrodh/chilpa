@@ -92,3 +92,7 @@ mod conformance;
 mod macos;
 #[cfg(target_os = "macos")]
 pub use macos::Seatbelt;
+
+/// Explicitly approved desktop helpers; separate from sandboxed plugins.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+pub mod desktop;
