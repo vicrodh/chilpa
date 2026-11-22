@@ -11,7 +11,10 @@
 //! as https://github.com/vicrodh/chilpa-api#forks asks.
 //!
 //! A signature is HMAC-SHA256 over the method, the host, the path without
-//! its query, and the time. The services answer their own time in
+//! its query, and the time, sent as `Authorization: Chilpa-Signature
+//! t=<time>, v1=<hex>`. In that header it does not follow a redirect, which
+//! drops it, and a request that already carries its own authorization goes
+//! out with that one instead. The services answer their own time in
 //! `X-Chilpa-Time`, and the next signature follows that clock, so a machine
 //! whose clock is off loses at most its first request.
 
@@ -26,6 +29,10 @@ const HOSTS: [&str; 2] = ["api.chilpa.app", "lyrics.chilpa.app"];
 
 /// The services' clock, in seconds since 1970, on every reply.
 const TIME: &str = "x-chilpa-time";
+
+/// The times a service's clock is believed in: 2017 to 2100. Anything else
+/// is a broken header, and the clock already followed stays.
+const PLAUSIBLE: std::ops::RangeInclusive<i64> = 1_500_000_000..=4_102_444_800;
 
 /// XORed into the key when this crate is compiled, so the key's text is not
 /// in the binary for `strings` to find.
@@ -99,16 +106,17 @@ impl chilpa_core::network::Signer for Services {
         if !HOSTS.contains(&host) {
             return Vec::new();
         }
-        let time = now() + self.offset.load(Ordering::Relaxed);
-        vec![("x-chilpa-time", time.to_string()), ("x-chilpa-signature", format!("v1={}", signature(&self.key, method, host, path, time)))]
+        let time = now().saturating_add(self.offset.load(Ordering::Relaxed));
+        vec![("authorization", format!("Chilpa-Signature t={time}, v1={}", signature(&self.key, method, host, path, time)))]
     }
 
     fn answered(&self, host: &str, headers: &ureq::http::HeaderMap) {
         if !HOSTS.contains(&host) {
             return;
         }
-        if let Some(theirs) = headers.get(TIME).and_then(|value| value.to_str().ok()).and_then(|value| value.trim().parse::<i64>().ok()) {
-            self.offset.store(theirs - now(), Ordering::Relaxed);
+        let theirs = headers.get(TIME).and_then(|value| value.to_str().ok()).and_then(|value| value.trim().parse::<i64>().ok());
+        if let Some(theirs) = theirs.filter(|theirs| PLAUSIBLE.contains(theirs)) {
+            self.offset.store(theirs.saturating_sub(now()), Ordering::Relaxed);
         }
     }
 }
@@ -170,13 +178,22 @@ mod tests {
             "1463868fb51b036297d83a04bcceb054bb5ed579294c3ec8cd4ccd3b120d57a1");
     }
 
+    /// The time and the signature out of `Chilpa-Signature t=<time>, v1=<hex>`.
+    fn parts(headers: &[(&'static str, String)]) -> (i64, String) {
+        assert_eq!(headers.len(), 1, "{headers:?}");
+        assert_eq!(headers[0].0, "authorization");
+        let rest = headers[0].1.strip_prefix("Chilpa-Signature t=").expect("the scheme comes first");
+        let (time, signature) = rest.split_once(", v1=").expect("then the signature");
+        (time.parse().unwrap(), signature.to_string())
+    }
+
     #[test]
     fn only_the_two_services_are_signed() {
         let services = Services::new(counting());
         for host in ["api.chilpa.app", "lyrics.chilpa.app"] {
-            let headers = services.sign("GET", host, "/x");
-            assert_eq!(headers.iter().map(|(name, _)| *name).collect::<Vec<_>>(), ["x-chilpa-time", "x-chilpa-signature"], "{host}");
-            assert!(headers[1].1.starts_with("v1=") && headers[1].1.len() == 67, "{headers:?}");
+            let (time, signature) = parts(&services.sign("GET", host, "/x"));
+            assert_eq!(signature, super::signature(&counting(), "GET", host, "/x", time), "{host}");
+            assert_eq!(signature.len(), 64);
         }
         for host in ["api.chilpa.app.example", "chilpa.app", "ws.audioscrobbler.com", "127.0.0.1"] {
             assert!(services.sign("GET", host, "/x").is_empty(), "{host}");
@@ -192,9 +209,23 @@ mod tests {
         services.answered("ws.audioscrobbler.com", &reply);
         assert_eq!(services.offset.load(Ordering::Relaxed), 0, "another host's clock is not followed");
         services.answered("lyrics.chilpa.app", &reply);
-        let headers = services.sign("POST", "lyrics.chilpa.app", "/v1/lyrics/resolve");
-        let time: i64 = headers[0].1.parse().unwrap();
+        let (time, signature) = parts(&services.sign("POST", "lyrics.chilpa.app", "/v1/lyrics/resolve"));
         assert!((time - ahead).abs() <= 2, "signed at {time}, the service said {ahead}");
-        assert_eq!(headers[1].1, format!("v1={}", signature(&counting(), "POST", "lyrics.chilpa.app", "/v1/lyrics/resolve", time)));
+        assert_eq!(signature, super::signature(&counting(), "POST", "lyrics.chilpa.app", "/v1/lyrics/resolve", time));
+    }
+
+    #[test]
+    fn a_broken_clock_header_leaves_the_clock_as_it_was() {
+        let services = Services::new(counting());
+        let mut reply = ureq::http::HeaderMap::new();
+        reply.insert(TIME, (now() + 600).to_string().parse().unwrap());
+        services.answered("api.chilpa.app", &reply);
+        let followed = services.offset.load(Ordering::Relaxed);
+        for broken in [i64::MIN.to_string(), i64::MAX.to_string(), "-1".into(), "0".into(), "99999999999".into(), "soon".into(), "".into()] {
+            reply.insert(TIME, broken.parse().unwrap());
+            services.answered("api.chilpa.app", &reply);
+            assert_eq!(services.offset.load(Ordering::Relaxed), followed, "{broken:?}");
+        }
+        parts(&services.sign("GET", "api.chilpa.app", "/lastfm"));
     }
 }
