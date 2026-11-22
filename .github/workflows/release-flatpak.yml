@@ -4,7 +4,8 @@ name: Flatpak release
 # packaging/flatpak/app.chilpa.Chilpa.yml.
 #
 # A tag pushed from main: the build job makes the OSTree repository and a
-# bundle without a key, and no secret reaches it. The sign job, under the
+# bundle without a GPG key. The one secret it gets is CHILPA_SERVICE_KEY,
+# which goes into the binary (scripts/flatpak-sources.sh). The sign job, under the
 # flatpak-release environment, verifies the tag again, signs every commit
 # and the summary with FLATPAK_GPG_PRIVATE_KEY, writes the signed bundle and
 # the .flatpakrepo and .flatpakref descriptors, and removes the key. The

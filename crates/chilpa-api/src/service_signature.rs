@@ -85,8 +85,10 @@ pub(crate) fn install() {
     if let Some(key) = KEY {
         chilpa_core::network::sign_with(Box::new(Services::new(unmask(key))));
     }
+    // Said on purpose in a build without a key too: it is where a fork's
+    // developer looking into a 403 from the services finds the reason.
     SAID.call_once(|| eprintln!("services: {}", if KEY.is_some() { "this build signs its requests" }
-        else { "this build carries no key; its requests go unsigned" }));
+        else { "this build carries no key, so its requests go unsigned; see https://github.com/vicrodh/chilpa-api#forks" }));
 }
 
 struct Services {
