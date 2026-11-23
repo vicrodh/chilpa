@@ -120,7 +120,7 @@ Installs or updates Chilpa for your user, on Linux and macOS. If macOS refuses t
 | AUR, Gentoo overlay | Linux x86_64, ARM64 | Package manager |
 | Flatpak | Linux x86_64 | `flatpak update` |
 
-The Flatpak comes from Chilpa's own repository, `flatpak.chilpa.app`. Flathub has tightened its rules for AI-generated content, so Chilpa will not be on Flathub until it has been around for a few months and has an active community.
+The Flatpak comes from Chilpa's own repository, `flatpak.chilpa.app`. Chilpa will be submitted to Flathub in a few months, once it is more mature and stable.
 
 <details>
 <summary>Install from a package manager</summary>
@@ -255,3 +255,5 @@ This software stands on other people's work. Thank you to:
 ### Anti-Acknowledgements
 
 To Konami, for releasing <a href="https://steamcommunity.com/id/blitzfc/achievements/4231820">Castlevania: Belmont's Curse</a>. As Castlevania fan, this took all my attention and delayed the release for two weeks. Sorry, not sorry.
+
+Don't worry, I'm not playing GTA VI, so I won't be abandoning Chilpa anytime soon.
