@@ -21,7 +21,8 @@ jobs:
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26, macos-26-intel]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    # The Intel Mac builds a cold cache in more than 45 minutes; a job that times out saves no cache, so it never warms up.
+    timeout-minutes: ${{ matrix.os == 'macos-26-intel' && 90 || 45 }}
     env:
       CARGO_BUILD_JOBS: '2'
       CARGO_PROFILE_DEV_DEBUG: '0'
