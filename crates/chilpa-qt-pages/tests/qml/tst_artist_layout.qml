@@ -174,7 +174,8 @@ TestCase {
         ready(page)
         const latest = page.blockOf(artistKey + "|latest")
         const albums = page.blockOf(artistKey + "|album")
-        tryVerify(() => page.blockOf(artistKey + "|tracks")?.ready === true)
+        // Ready is not laid out: Popular Tracks can hold an estimated height for a while and settle after the check below.
+        settledPopular(page)
         if (data.jump) page.jump(artistKey + "|album")
         let settledAt = -1
         tryVerify(() => { const y = albums.mapToItem(page, 0, 0).y; const still = y === settledAt; settledAt = y; return still })
