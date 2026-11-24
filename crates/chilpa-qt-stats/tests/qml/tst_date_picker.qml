@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "../../qml/Components"
 
 // The date picker: a month of days that can be seen and picked, none after
 // the latest, months to page through, and Today.

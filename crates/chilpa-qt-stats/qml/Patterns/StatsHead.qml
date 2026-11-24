@@ -4,6 +4,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Theme"
+import "../Components"
 
 // The stats screen's head: its title and what the period is compared
 // with, the history, the recap and the export; under them the kind of period, and the

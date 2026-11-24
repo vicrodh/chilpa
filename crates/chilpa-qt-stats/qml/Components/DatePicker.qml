@@ -2,8 +2,8 @@ import QtQuick
 import QtQuick.Controls.Basic as Controls
 import QtQuick.Effects
 import app.chilpa.kit
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // A month of days to pick one from: its name with arrows to the months
 // around it, the days of the week as the language starts them, and a
