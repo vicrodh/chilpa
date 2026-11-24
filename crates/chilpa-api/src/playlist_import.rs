@@ -84,7 +84,7 @@ impl Chilpa {
             .map(|f| json!({"id":f.id,"name":f.name}))
             .collect();
         json!({"installed":!importers.is_empty(),"plugin":self.playlist_import.selected,"options":self.playlist_import.options,
-            "sources":crate::plugin_broker::sources(&self.natives),"folders":folders,"state":self.playlist_import.snapshot,
+            "sources":with_icons(crate::plugin_broker::sources(&self.natives), &Self::plugins_dir()),"folders":folders,"state":self.playlist_import.snapshot,
             "choices":self.playlist_import.choices,"error":self.playlist_import.error,"pending":self.playlist_import.busy()}).to_string()
     }
     /// Whether a running plugin imports playlists. It only reads the running
@@ -183,6 +183,14 @@ impl Chilpa {
         });
     }
 }
+/// The sources an import can reach, each with its image for the screen.
+fn with_icons(mut sources: Vec<Value>, root: &std::path::Path) -> Vec<Value> {
+    for source in &mut sources {
+        let id = source["id"].as_str().unwrap_or_default().to_owned();
+        source["icon"] = json!(crate::plugin_icons::image_url(root, &id));
+    }
+    sources
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,6 +198,16 @@ mod tests {
         let (tx, rx) = mpsc::channel();
         tx.send((method.into(), Ok(value))).unwrap();
         rx
+    }
+    #[test]
+    fn each_source_carries_its_icon_or_none() {
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(root.path().join("com.test.drawn")).unwrap();
+        std::fs::write(root.path().join("com.test.drawn").join(crate::plugin_icons::INCLUDED_ICON), b"png").unwrap();
+        let sources = with_icons(vec![json!({"id":"com.test.drawn","name":"Drawn"}), json!({"id":"com.test.bare","name":"Bare"})], root.path());
+        assert!(sources[0]["icon"].as_str().unwrap().starts_with("file://"), "{}", sources[0]);
+        assert_eq!(sources[1]["icon"], "", "a source without an image gets none");
+        assert_eq!(sources[0]["name"], "Drawn", "the rest is kept");
     }
     #[test]
     fn the_screens_own_poll_never_holds_it_busy() {
