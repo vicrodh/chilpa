@@ -5006,6 +5006,9 @@ msgstr "未選擇下載資料夾"
 msgid "No downloaded files were found in this selection."
 msgstr ""
 
+msgid "No file chosen"
+msgstr ""
+
 msgid "No files need to change."
 msgstr "沒有檔案需要變更。"
 
@@ -7663,6 +7666,9 @@ msgstr "掃描完成時開始"
 
 msgid "Static"
 msgstr "靜態"
+
+msgid "Station"
+msgstr ""
 
 msgid "Stations"
 msgstr "電台"

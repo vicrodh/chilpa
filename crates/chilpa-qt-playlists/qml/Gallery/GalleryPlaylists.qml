@@ -6,7 +6,8 @@ import "../Components"
 import "../Patterns"
 
 // The playlists' pieces: the manager's cards, the picker's list, its "Already
-// in" column and its question about repeats, and the picker itself.
+// in" column and its question about repeats, the picker itself, and the
+// importer's steps.
 Item {
     id: gallery
     implicitWidth: pieces.implicitWidth + Metrics.contentX * 2 // derived: the samples and their margins
@@ -65,5 +66,10 @@ Item {
         PlaylistHeader { width: Metrics.settingsMaxWidth; name: "Evening music"; sourceName: "Local"; meta: "12 tracks · 48 min"; description: "What plays after dinner."; markKey: "1"; canSelect: true }
         PlaylistTargetRow { width: Metrics.playlistModalWidth; target: gallery.ours }
         PlaylistRepeats { width: Metrics.playlistModalWidth; height: Metrics.playlistModalHeight / 3; repeated: 2; trackCount: 3 } // derived: a third of a modal
+        ImportOriginStep {
+            width: Metrics.confirmWidth; reading: true
+            inputs: [{id: "url", name: "Playlist link", hint: "A public playlist link", kind: "text"}, {id: "file", name: "Playlist file", kind: "file"},
+                {id: "station", name: "Stations", kind: "station", choices: [{id: 0, name: "Library"}, {id: 1, name: "Mix"}]}]
+        }
     }
 }

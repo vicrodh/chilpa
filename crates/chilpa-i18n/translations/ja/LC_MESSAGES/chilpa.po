@@ -4998,6 +4998,9 @@ msgstr "ダウンロードフォルダーが選択されていません"
 msgid "No downloaded files were found in this selection."
 msgstr "選択範囲にダウンロード済みファイルがありません。"
 
+msgid "No file chosen"
+msgstr ""
+
 msgid "No files need to change."
 msgstr ""
 
@@ -7655,6 +7658,9 @@ msgstr "スキャンが終わったら開始します"
 
 msgid "Static"
 msgstr "静止"
+
+msgid "Station"
+msgstr ""
 
 msgid "Stations"
 msgstr "ステーション"

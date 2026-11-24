@@ -5003,6 +5003,9 @@ msgstr "No se ha elegido una carpeta de descargas"
 msgid "No downloaded files were found in this selection."
 msgstr "No se encontraron archivos descargados en esta selección."
 
+msgid "No file chosen"
+msgstr ""
+
 msgid "No files need to change."
 msgstr "No hace falta cambiar ningún archivo."
 
@@ -7663,6 +7666,9 @@ msgstr "Empieza cuando termine el escaneo"
 
 msgid "Static"
 msgstr "Estática"
+
+msgid "Station"
+msgstr ""
 
 msgid "Stations"
 msgstr "Estaciones"

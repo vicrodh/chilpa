@@ -5003,6 +5003,9 @@ msgstr "No download folder selected"
 msgid "No downloaded files were found in this selection."
 msgstr "No downloaded files were found in this selection."
 
+msgid "No file chosen"
+msgstr ""
+
 msgid "No files need to change."
 msgstr "No files need to change."
 
@@ -7662,6 +7665,9 @@ msgid "Starts when the scan is done"
 msgstr ""
 
 msgid "Static"
+msgstr ""
+
+msgid "Station"
 msgstr ""
 
 msgid "Stations"

@@ -5008,6 +5008,9 @@ msgstr "Папка для загрузки не выбрана"
 msgid "No downloaded files were found in this selection."
 msgstr "В выбранных элементах нет загруженных файлов."
 
+msgid "No file chosen"
+msgstr ""
+
 msgid "No files need to change."
 msgstr ""
 
@@ -7671,6 +7674,9 @@ msgstr "Начнётся после завершения сканировани�
 
 msgid "Static"
 msgstr "Статичный"
+
+msgid "Station"
+msgstr ""
 
 msgid "Stations"
 msgstr "Станции"

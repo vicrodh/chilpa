@@ -5003,6 +5003,9 @@ msgstr "Aucun dossier de téléchargement sélectionné"
 msgid "No downloaded files were found in this selection."
 msgstr "Aucun fichier téléchargé dans cette sélection."
 
+msgid "No file chosen"
+msgstr ""
+
 msgid "No files need to change."
 msgstr ""
 
@@ -7663,6 +7666,9 @@ msgstr "Démarre quand l'analyse de la bibliothèque est terminée"
 
 msgid "Static"
 msgstr "Statique"
+
+msgid "Station"
+msgstr ""
 
 msgid "Stations"
 msgstr "Stations"

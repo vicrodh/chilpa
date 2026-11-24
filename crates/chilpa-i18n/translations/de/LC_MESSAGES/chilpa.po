@@ -5003,6 +5003,9 @@ msgstr "Kein Download-Ordner ausgewählt"
 msgid "No downloaded files were found in this selection."
 msgstr "In dieser Auswahl wurden keine heruntergeladenen Dateien gefunden."
 
+msgid "No file chosen"
+msgstr ""
+
 msgid "No files need to change."
 msgstr ""
 
@@ -7663,6 +7666,9 @@ msgstr "Startet, wenn der Scan abgeschlossen ist"
 
 msgid "Static"
 msgstr "Statisch"
+
+msgid "Station"
+msgstr ""
 
 msgid "Stations"
 msgstr "Sender"
