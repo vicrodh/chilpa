@@ -17,6 +17,8 @@ Item {
         visible: footer.wizard.page > (footer.wizard.editing ? 1 : 0) && !footer.wizard.done
         anchors.left: parent.left
         text: I18n.tr("Back", I18n.rev)
+        glyph: Lucide.circleArrowLeft
+        iconFamily: Lucide.font
         enabled: !footer.wizard.busy || footer.setup.searching === true || footer.wizard.step === "code"
         onClicked: footer.wizard.back()
     }
@@ -28,6 +30,9 @@ Item {
             objectName: "serverContinue"
             kind: "primary"
             text: footer.wizard.primaryText || ""
+            glyph: footer.wizard.primaryAdvances === true ? Lucide.circleArrowRight : ""
+            iconFamily: Lucide.font
+            glyphAfter: true
             enabled: !!footer.wizard.primaryEnabled
             onClicked: footer.wizard.primary()
         }

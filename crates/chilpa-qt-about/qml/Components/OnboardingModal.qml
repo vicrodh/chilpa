@@ -206,16 +206,18 @@ Modal {
                         objectName: "deckBack"
                         visible: modal.cardIndex > 0
                         height: OnboardingFrame.footer
-                        text: I18n.tr("Back", I18n.rev)
+                        text: I18n.tr("Back", I18n.rev); glyph: Lucide.circleArrowLeft; iconFamily: Lucide.font
                         onClicked: modal.goBack()
                     }
                     PillButton {
                         objectName: "deckNext"
                         kind: "primary"
                         height: OnboardingFrame.footer
-                        text: modal.showingNotes ? I18n.tr("Close", I18n.rev)
-                            : !modal.lastCard ? (modal.welcome || modal.cardIndex < modal.deck.length - 1 ? I18n.tr("Next", I18n.rev) : I18n.tr("Release notes", I18n.rev))
-                            : I18n.tr("Get started", I18n.rev)
+                        // Next steps on to another card and carries its arrow; the rest close or open the notes.
+                        readonly property bool stepOn: !modal.showingNotes && !modal.lastCard && (modal.welcome || modal.cardIndex < modal.deck.length - 1)
+                        text: modal.showingNotes ? I18n.tr("Close", I18n.rev) : stepOn ? I18n.tr("Next", I18n.rev)
+                            : !modal.lastCard ? I18n.tr("Release notes", I18n.rev) : I18n.tr("Get started", I18n.rev)
+                        glyph: stepOn ? Lucide.circleArrowRight : ""; iconFamily: Lucide.font; glyphAfter: true
                         onClicked: modal.goNext()
                     }
                 }

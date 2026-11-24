@@ -57,6 +57,8 @@ TitledFlow {
         spacing: Metrics.gap8
         PillButton { kind: "primary"; glyph: Icons.playerPlayFilled; filled: true; text: "Play" }
         PillButton { glyph: Icons.arrowsShuffle; text: "Shuffle" }
+        PillButton { glyph: Lucide.circleArrowLeft; iconFamily: Lucide.font; text: "Back" }
+        PillButton { kind: "primary"; glyph: Lucide.circleArrowRight; iconFamily: Lucide.font; glyphAfter: true; text: "Next" }
         PillButton { text: "Open popup"; onClicked: samplePopup.open() }
         PillButton { text: "Open modal"; onClicked: sampleModal.open() }
     }

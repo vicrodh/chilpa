@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 
@@ -96,11 +97,15 @@ TestCase {
         verify(dialog.width<=test.width && dialog.height<=test.height)
         verify(field("serverFormViewport").height>0)
         verify(!field("serverContinue").enabled, "a kind first")
+        compare(field("serverContinue").glyph, Lucide.circleArrowRight, "Next carries its arrow")
+        verify(field("serverContinue").glyphAfter)
         for (const kind of ["jellyfin", "subsonic", "plex", "dlna"]) verify(field("serverKind_" + kind) !== null, kind)
         compare(findChild(field("serverKind_dlna"), "serverKindIcon").sourceInfo.icon, "dlna", "the source icon of its kind")
         mouseClick(dialog.contentItem,dialog.contentItem.width-5,5)
         compare(backgroundPresses,0)
         choose("jellyfin")
+        compare(field("serverContinue").glyph, "", "testing the connection is no step on")
+        compare(field("serverBack").glyph, Lucide.circleArrowLeft)
         press("serverBack")
         compare(dialog.page, 0)
         compare(last(), ["cancel"], "back to the kinds starts over")
@@ -146,6 +151,7 @@ TestCase {
         Servers.show({step:"done",kind:"jellyfin",product:"Living room"})
         tryCompare(dialog, "done", true)
         compare(field("serverContinue").text, "Close")
+        compare(field("serverContinue").glyph, "")
         verify(field("serverAdded").visible)
         verify(!field("serverNote").visible, "once added it says so instead")
     }

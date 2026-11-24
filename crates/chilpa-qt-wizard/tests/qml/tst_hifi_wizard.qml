@@ -3,6 +3,7 @@ import QtTest
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.wizard
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Components"
 
 // The wizard opens with its document and starts over on every open; each
@@ -44,10 +45,14 @@ TestCase {
         show({})
         compare(modal.step, 0)
         verify(!child("wizardPrimary").enabled, "the terms first")
+        compare(child("wizardPrimary").glyph, "", "Start is no Next")
         press("wizardAccept")
         verify(child("wizardPrimary").enabled)
         press("wizardPrimary")
         compare(modal.step, 1)
+        compare(child("wizardPrimary").glyph, Lucide.circleArrowRight)
+        verify(child("wizardPrimary").glyphAfter)
+        compare(child("wizardBack").glyph, Lucide.circleArrowLeft)
         press("wizardPrimary")
         compare(modal.step, 2)
         compare(HifiWizard.asked, ["runDetect:"])

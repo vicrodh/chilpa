@@ -18,6 +18,8 @@ QtObject {
     readonly property string check: "\ue06c"
     readonly property string chevronDown: "\ue06d"
     readonly property string chevronRight: "\ue06f"
+    readonly property string circleArrowLeft: "\ue079"
+    readonly property string circleArrowRight: "\ue07a"
     readonly property string circleCheckBig: "\ue07c"
     readonly property string circlePause: "\ue07f"
     readonly property string circlePlay: "\ue080"

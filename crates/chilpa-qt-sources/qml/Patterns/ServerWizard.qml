@@ -122,7 +122,9 @@ Modal {
         : page === 2 ? failed || connected
         : page === 3 ? chosen.length > 0 && !busy
         : !busy)
-    readonly property string primaryText: page === 0 || page === 3 || (page === 2 && !failed) ? I18n.tr("Next", I18n.rev)
+    // Next: the primary only moves on to the following page.
+    readonly property bool primaryAdvances: page === 0 || page === 3 || (page === 2 && !failed)
+    readonly property string primaryText: primaryAdvances ? I18n.tr("Next", I18n.rev)
         : page === 1 ? (kind === "plex" && !editing ? I18n.tr("Sign in with Plex", I18n.rev) : I18n.tr("Test the connection", I18n.rev))
         : page === 2 ? I18n.tr("Try again", I18n.rev)
         : done ? I18n.tr("Close", I18n.rev) : editing ? I18n.tr("Save changes", I18n.rev) : I18n.tr("Add server", I18n.rev)

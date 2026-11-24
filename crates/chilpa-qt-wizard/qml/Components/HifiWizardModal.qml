@@ -168,6 +168,8 @@ Modal {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 text: I18n.tr("Back", I18n.rev)
+                glyph: Lucide.circleArrowLeft
+                iconFamily: Lucide.font
                 onClicked: modal.step -= 1
             }
             Row {
@@ -180,6 +182,9 @@ Modal {
                     kind: "primary"
                     enabled: modal.primaryEnabled
                     text: modal.step === 0 ? I18n.tr("Start", I18n.rev) : modal.step === 5 ? I18n.tr("Finish", I18n.rev) : I18n.tr("Next", I18n.rev)
+                    glyph: modal.step > 0 && modal.step < 5 ? Lucide.circleArrowRight : ""
+                    iconFamily: Lucide.font
+                    glyphAfter: true
                     onClicked: {
                         if (modal.step === 5)
                             return modal.close()

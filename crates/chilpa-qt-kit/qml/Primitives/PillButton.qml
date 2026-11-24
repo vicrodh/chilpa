@@ -15,6 +15,8 @@ Rectangle {
     property string iconFamily
     // A glyph from the filled font: play, pause, a filled heart.
     property bool filled: false
+    // The glyph after the words, as a step on in a wizard (Next with its arrow).
+    property bool glyphAfter: false
     // "primary", "secondary", "ghost" or "backdrop".
     property string kind: "secondary"
     property bool wrapText: false
@@ -47,6 +49,7 @@ Rectangle {
         id: row
         anchors.centerIn: parent
         spacing: Metrics.gap6
+        layoutDirection: root.glyphAfter ? Qt.RightToLeft : Qt.LeftToRight
 
         Icon {
             id: icon

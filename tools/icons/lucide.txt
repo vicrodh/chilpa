@@ -56,3 +56,5 @@ user-star
 disc
 award
 dices
+circle-arrow-left
+circle-arrow-right
