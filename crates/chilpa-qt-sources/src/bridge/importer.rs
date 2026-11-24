@@ -13,6 +13,9 @@ pub mod qobject {
         fn refresh(self: Pin<&mut PlaylistImport>);
         #[qinvokable]
         fn command(self: Pin<&mut PlaylistImport>, action: &QString, payload: &QString);
+        /// Whether a running plugin imports playlists, for the ways into its screen.
+        #[qinvokable]
+        fn available(self: &PlaylistImport) -> bool;
     }
 }
 use cxx_qt_lib::QString;
@@ -21,6 +24,7 @@ use std::pin::Pin;
 pub struct PlaylistImportRust { snapshot: QString }
 impl qobject::PlaylistImport {
     pub fn refresh(self: Pin<&mut Self>) { let snapshot=crate::app::with(|api| api.playlist_import_json()); self.set_snapshot(QString::from(snapshot)); }
+    pub fn available(&self) -> bool { crate::app::with(|api| api.playlist_importer_available()) }
     pub fn command(mut self: Pin<&mut Self>, action: &QString, payload: &QString) {
         crate::app::with(|api| api.playlist_import_command(&action.to_string(), &payload.to_string()));
         self.as_mut().refresh();

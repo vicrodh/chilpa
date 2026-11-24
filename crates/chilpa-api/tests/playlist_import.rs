@@ -54,12 +54,16 @@ fn a_plugin_can_read_peer_metadata_only_after_permission_and_cannot_write_withou
     );
     let mut api = chilpa_api::Chilpa::new();
     api.load_plugins();
+    // Installed but never approved, an importer does not run, and the
+    // window offers no way into it.
+    assert!(!api.playlist_importer_available());
     for (index, id) in ["com.test.peer", "com.test.import", "com.test.denied"]
         .into_iter()
         .enumerate()
     {
         assert_eq!(api.approve_plugin(id), index + 1, "{id}");
     }
+    assert!(api.playlist_importer_available());
     let call = |id, method, params| {
         api.native_call(
             id,

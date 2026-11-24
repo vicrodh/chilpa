@@ -43,12 +43,7 @@ impl Chilpa {
                 self.playlist_import_command(&action, &text);
             }
         }
-        let mut ids = self.natives.ids();
-        ids.sort();
-        let importers: Vec<_> = ids
-            .into_iter()
-            .filter(|id| self.natives.imports_playlists(id))
-            .collect();
+        let importers = self.playlist_importers();
         if !importers.contains(&self.playlist_import.selected) {
             self.natives.broker.revoke(&self.playlist_import.selected);
             self.playlist_import = State::default();
@@ -74,6 +69,17 @@ impl Chilpa {
         json!({"installed":!importers.is_empty(),"plugin":self.playlist_import.selected,"options":self.playlist_import.options,
             "sources":crate::plugin_broker::sources(&self.natives),"folders":folders,"state":self.playlist_import.snapshot,
             "choices":self.playlist_import.choices,"error":self.playlist_import.error,"pending":self.playlist_import.pending.is_some()}).to_string()
+    }
+    /// Whether a running plugin imports playlists. It only reads the running
+    /// set and asks the plugin nothing, so a menu can ask it as it opens.
+    pub fn playlist_importer_available(&self) -> bool {
+        !self.playlist_importers().is_empty()
+    }
+    fn playlist_importers(&self) -> Vec<String> {
+        let mut ids = self.natives.ids();
+        ids.sort();
+        ids.retain(|id| self.natives.imports_playlists(id));
+        ids
     }
     pub fn playlist_import_command(&mut self, action: &str, text: &str) {
         if action == "cancel" {

@@ -24,10 +24,11 @@ Item {
         return {text: text, action: "sort", value: value, glyph: down ? Icons.chevronDown : Icons.chevronUp, accent: true}
     }
     function head(left, top) {
+        // The importer is a plugin: with none running, its screen could do nothing.
+        const importing = PlaylistImport.available() ? [{text: I18n.tr("Import playlist", I18n.rev), action: "import", glyph: Lucide.importGlyph, family: Lucide.font}] : []
         menu.entries = [
             {text: I18n.tr("New playlist", I18n.rev), action: "create", glyph: Icons.plus},
-            {text: I18n.tr("New folder", I18n.rev), action: "folder", glyph: Icons.folderPlus},
-            {text: I18n.tr("Import playlist", I18n.rev), action: "import", glyph: Lucide.importGlyph, family: Lucide.font},
+            {text: I18n.tr("New folder", I18n.rev), action: "folder", glyph: Icons.folderPlus}].concat(importing, [
             {separator: true},
             {text: I18n.tr("Group playlists by source", I18n.rev), action: "group", checked: actions.sidebar.grouped},
             {separator: true},
@@ -37,7 +38,7 @@ Item {
             order("custom", I18n.tr("Custom", I18n.rev), null),
             {separator: true},
             {text: I18n.tr("Refresh", I18n.rev), action: "refresh", glyph: Icons.refresh},
-            {text: I18n.tr("Manage playlists", I18n.rev), action: "manage", glyph: Lucide.libraryBig, family: Lucide.font}]
+            {text: I18n.tr("Manage playlists", I18n.rev), action: "manage", glyph: Lucide.libraryBig, family: Lucide.font}])
         menu.x = left; menu.y = top; menu.open() }
     function row(value, left, top) {
         selected = value

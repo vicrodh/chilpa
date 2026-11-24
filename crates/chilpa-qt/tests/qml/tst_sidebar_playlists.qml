@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Components"
 
@@ -172,6 +173,26 @@ TestCase {
         tryCompare(flyout, "opened", true)
         findChild(flyout.contentItem, "playlistsFlyoutManage").chosen()
         compare(Navigation.page, "playlistManager")
+        tryCompare(flyout, "opened", false)
+    }
+
+    // The importer is a plugin: with none running, neither the head's menu
+    // nor the flyout offers a way into its screen, which could do nothing.
+    function test_import_is_offered_only_while_an_importer_runs() {
+        const offered = () => { actions.head(0, 0); const menu = findChild(actions, "playlistsMenu"); const all = menu.entries.map(e => e.action); menu.close(); return all }
+        PlaylistImport.importer = false
+        verify(offered().indexOf("import") < 0, "no importer runs")
+        flyout.open()
+        tryCompare(flyout, "opened", true)
+        verify(!findChild(flyout.contentItem, "playlistsFlyoutImport").visible)
+        flyout.close()
+        tryCompare(flyout, "opened", false)
+        PlaylistImport.importer = true
+        verify(offered().indexOf("import") >= 0, "an importer runs")
+        flyout.open()
+        tryCompare(flyout, "opened", true)
+        verify(findChild(flyout.contentItem, "playlistsFlyoutImport").visible)
+        flyout.close()
         tryCompare(flyout, "opened", false)
     }
 }

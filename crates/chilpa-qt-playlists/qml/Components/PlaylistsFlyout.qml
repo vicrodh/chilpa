@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -40,6 +41,10 @@ Popup {
     padding: Metrics.gap8
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnReleaseOutside
     onClosed: lists.clearFilter()
+    // Asked as it opens: the importer is a plugin, and with none running
+    // there is no way into its screen.
+    property bool importing: false
+    onAboutToShow: importing = PlaylistImport.available()
 
     background: Rectangle {
         radius: Metrics.radiusMenu
@@ -61,6 +66,7 @@ Popup {
         Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
         Way {
             objectName: "playlistsFlyoutImport"
+            visible: flyout.importing
             text: I18n.tr("Import playlist", I18n.rev)
             glyph: Lucide.importGlyph
             onChosen: { flyout.close(); Navigation.go("playlistImport", 0) }
