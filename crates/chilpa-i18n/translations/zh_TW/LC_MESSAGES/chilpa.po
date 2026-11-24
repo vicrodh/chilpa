@@ -6374,6 +6374,9 @@ msgstr "正在讀取播放清單…"
 msgid "Reading selected tracks…"
 msgstr "正在讀取選取的曲目…"
 
+msgid "Reading song list, please wait."
+msgstr "正在讀取歌曲清單，請稍候。"
+
 msgid "Reading the files…"
 msgstr "正在讀取檔案…"
 

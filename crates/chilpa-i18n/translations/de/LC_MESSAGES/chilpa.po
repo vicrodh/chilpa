@@ -6371,6 +6371,9 @@ msgstr "Playlist wird eingelesen…"
 msgid "Reading selected tracks…"
 msgstr "Ausgewählte Titel werden gelesen…"
 
+msgid "Reading song list, please wait."
+msgstr "Titelliste wird eingelesen, bitte warten."
+
 msgid "Reading the files…"
 msgstr "Dateien werden gelesen…"
 

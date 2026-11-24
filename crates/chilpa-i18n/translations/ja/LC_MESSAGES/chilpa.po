@@ -6366,6 +6366,9 @@ msgstr "プレイリストを読み取っています…"
 msgid "Reading selected tracks…"
 msgstr "選択したトラックを読み取っています…"
 
+msgid "Reading song list, please wait."
+msgstr "曲リストを読み取っています。しばらくお待ちください。"
+
 msgid "Reading the files…"
 msgstr "ファイルを読み取っています…"
 

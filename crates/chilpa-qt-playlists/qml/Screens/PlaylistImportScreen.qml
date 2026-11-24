@@ -21,6 +21,9 @@ Item {
     property int offset: 0
     property int step: 0
     readonly property bool busy: !!state.busy || !!document.pending
+    // The last command this page sent, so a wait says what it waits for.
+    property string sent: ""
+    readonly property bool reading: step === 0 && busy && (sent === "preview" || state.phase === "fetching")
     property bool restored: false
     property string previousPhase: ""
     function openPlaylist(id) {
@@ -54,7 +57,7 @@ Item {
         return labels[phase] || ""
     }
     function statusName(status) { return status === "unmatched" ? I18n.tr("Unmatched", I18n.rev) : status === "matched" ? I18n.tr("Matched", I18n.rev) : status === "error" ? I18n.tr("Catalog error", I18n.rev) : I18n.tr("Pending", I18n.rev) }
-    function send(action, payload) { PlaylistImport.command(action, JSON.stringify(payload || {})) }
+    function send(action, payload) { sent = action; PlaylistImport.command(action, JSON.stringify(payload || {})) }
     function toggle(id) { selected = selected.indexOf(id) < 0 ? selected.concat([id]) : selected.filter(v => v !== id) }
     Component.onCompleted: PlaylistImport.refresh()
     Timer { interval: 500; running: page.visible; repeat: true; onTriggered: PlaylistImport.refresh() }
@@ -96,6 +99,16 @@ Item {
             PillButton { visible: !!page.input.private_token; text: token.secret ? I18n.tr("Show token", I18n.rev) : I18n.tr("Hide token", I18n.rev); onClicked: token.secret = !token.secret }
             PillButton { visible: page.input.kind === "choices"; text: I18n.tr("Find playlists", I18n.rev); enabled: !page.state.busy; onClicked: page.send("choices", {text: origin.text, token: token.text}) }
             SelectField { id: choice; visible: page.input.kind === "choices" && ((page.document.choices || {}).choices || []).length > 0; width: parent.width; options: ((page.document.choices || {}).choices || []).map(v => v.name); values: ((page.document.choices || {}).choices || []).map(v => v.id); onPicked: selectedValue => value = selectedValue }
+            Row {
+                objectName: "importReading"
+                width: parent.width; visible: page.reading; spacing: Metrics.gap8
+                BusyMark { clock: Pulse; active: page.reading; anchors.verticalCenter: parent.verticalCenter; size: Metrics.iconMd; color: Theme.color.accent }
+                Text {
+                    width: parent.width - Metrics.iconMd - Metrics.gap8 // derived: remaining space after the status icon
+                    text: I18n.tr("Reading song list, please wait.", I18n.rev); wrapMode: Text.WordWrap
+                    font.pointSize: Type.small; color: Theme.color.textSecondary; Accessible.role: Accessible.StaticText
+                }
+            }
             }
             Column { width: parent.width; spacing: Metrics.gap12; visible: page.step === 1
             Text { text: I18n.tr("Destinations", I18n.rev); color: Theme.color.textPrimary; font.weight: Type.semibold }

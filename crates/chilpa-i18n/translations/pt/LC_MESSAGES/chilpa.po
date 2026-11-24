@@ -6371,6 +6371,9 @@ msgstr "Lendo a playlist…"
 msgid "Reading selected tracks…"
 msgstr "Lendo as faixas selecionadas…"
 
+msgid "Reading song list, please wait."
+msgstr "Lendo a lista de músicas, aguarde."
+
 msgid "Reading the files…"
 msgstr "Lendo os arquivos…"
 

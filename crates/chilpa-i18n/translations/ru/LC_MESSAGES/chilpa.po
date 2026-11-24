@@ -6376,6 +6376,9 @@ msgstr "Чтение плейлиста…"
 msgid "Reading selected tracks…"
 msgstr "Чтение выбранных треков…"
 
+msgid "Reading song list, please wait."
+msgstr "Чтение списка песен, подождите."
+
 msgid "Reading the files…"
 msgstr "Чтение файлов…"
 
