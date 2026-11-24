@@ -18,26 +18,43 @@ pub(crate) struct State {
     targets: Vec<String>,
     status_input: Value,
     queued: Option<(String, String)>,
+    /// The request in flight is the screen's own status poll.
+    polling: bool,
+    /// A command of the listener ended and the status after it is not read yet.
+    settling: bool,
+}
+type Reply = mpsc::Receiver<(String, Result<Value, String>)>;
+impl State {
+    fn sent(&mut self, reply: Reply, poll: bool) {
+        self.pending = Some(reply);
+        self.polling = poll;
+        self.last_poll = Some(Instant::now());
+    }
+    /// Takes the reply in flight, if it is in.
+    fn receive(&mut self) {
+        let Some((method, result)) = self.pending.as_ref().and_then(|rx| rx.try_recv().ok()) else { return };
+        self.pending = None;
+        self.settling = !matches!(method.as_str(), "import.status" | "import.options");
+        match result {
+            Ok(value) => match method.as_str() {
+                "import.options" => self.options = value,
+                "import.status" => self.snapshot = value,
+                "import.choices" => self.choices = value,
+                _ => self.last_poll = None,
+            },
+            Err(error) => self.error = error,
+        }
+    }
+    /// The screen waits on the listener's command: queued, in flight, or
+    /// answered without the status after it read. Its own poll, which runs
+    /// twice a second while it shows, is no wait.
+    fn busy(&self) -> bool {
+        self.queued.is_some() || self.settling || (self.pending.is_some() && !self.polling)
+    }
 }
 impl Chilpa {
     pub fn playlist_import_json(&mut self) -> String {
-        if let Some((method, result)) = self
-            .playlist_import
-            .pending
-            .as_ref()
-            .and_then(|rx| rx.try_recv().ok())
-        {
-            self.playlist_import.pending = None;
-            match result {
-                Ok(value) => match method.as_str() {
-                    "import.options" => self.playlist_import.options = value,
-                    "import.status" => self.playlist_import.snapshot = value,
-                    "import.choices" => self.playlist_import.choices = value,
-                    _ => self.playlist_import.last_poll = None,
-                },
-                Err(error) => self.playlist_import.error = error,
-            }
-        }
+        self.playlist_import.receive();
         if self.playlist_import.pending.is_none() {
             if let Some((action, text)) = self.playlist_import.queued.take() {
                 self.playlist_import_command(&action, &text);
@@ -49,7 +66,7 @@ impl Chilpa {
             self.playlist_import = State::default();
             if let Some(id) = importers.first() {
                 self.playlist_import.selected = id.clone();
-                self.import_request("import.options", json!({}));
+                self.import_request("import.options", json!({}), false);
             }
         }
         if !self.playlist_import.selected.is_empty()
@@ -59,7 +76,7 @@ impl Chilpa {
                 .last_poll
                 .is_none_or(|t| t.elapsed() > Duration::from_millis(350))
         {
-            self.import_request("import.status", self.playlist_import.status_input.clone());
+            self.import_request("import.status", self.playlist_import.status_input.clone(), true);
         }
         let folders: Vec<_> = self
             .playlist_folders()
@@ -68,7 +85,7 @@ impl Chilpa {
             .collect();
         json!({"installed":!importers.is_empty(),"plugin":self.playlist_import.selected,"options":self.playlist_import.options,
             "sources":crate::plugin_broker::sources(&self.natives),"folders":folders,"state":self.playlist_import.snapshot,
-            "choices":self.playlist_import.choices,"error":self.playlist_import.error,"pending":self.playlist_import.pending.is_some()}).to_string()
+            "choices":self.playlist_import.choices,"error":self.playlist_import.error,"pending":self.playlist_import.busy()}).to_string()
     }
     /// Whether a running plugin imports playlists. It only reads the running
     /// set and asks the plugin nothing, so a menu can ask it as it opens.
@@ -130,15 +147,14 @@ impl Chilpa {
             }
             _ => return,
         };
-        self.import_request(method, input);
+        self.import_request(method, input, false);
     }
-    fn import_request(&mut self, method: &str, mut input: Value) {
+    fn import_request(&mut self, method: &str, mut input: Value, poll: bool) {
         let natives = self.natives.clone();
         let owner = self.playlist_import.selected.clone();
         let method = method.to_string();
         let (tx, rx) = mpsc::channel();
-        self.playlist_import.pending = Some(rx);
-        self.playlist_import.last_poll = Some(Instant::now());
+        self.playlist_import.sent(rx, poll);
         std::thread::spawn(move || {
             let result = (|| {
                 if let Some(path) = input["file"].as_str() {
@@ -165,5 +181,40 @@ impl Chilpa {
             })();
             let _ = tx.send((method, result));
         });
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn reply(method: &str, value: Value) -> Reply {
+        let (tx, rx) = mpsc::channel();
+        tx.send((method.into(), Ok(value))).unwrap();
+        rx
+    }
+    #[test]
+    fn the_screens_own_poll_never_holds_it_busy() {
+        let mut state = State::default();
+        for _ in 0..3 {
+            state.sent(reply("import.status", json!({"phase":"input"})), true);
+            assert!(!state.busy(), "a poll in flight");
+            state.receive();
+            assert!(!state.busy(), "a poll answered");
+        }
+    }
+    #[test]
+    fn a_command_holds_the_screen_busy_until_the_status_after_it_is_read() {
+        let mut state = State::default();
+        state.queued = Some(("preview".into(), "{}".into()));
+        assert!(state.busy(), "queued behind a poll");
+        state.queued = None;
+        state.sent(reply("import.preview", json!({})), false);
+        assert!(state.busy(), "in flight");
+        state.receive();
+        assert!(state.busy(), "answered, the status after it not read yet");
+        state.sent(reply("import.status", json!({"phase":"fetching","busy":true})), true);
+        assert!(state.busy(), "the poll after it in flight");
+        state.receive();
+        assert!(!state.busy(), "the status after it read");
+        assert_eq!(state.snapshot["phase"], "fetching");
     }
 }
