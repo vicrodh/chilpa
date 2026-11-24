@@ -5220,6 +5220,9 @@ msgstr "興味なし"
 msgid "Not found"
 msgstr ""
 
+msgid "Not found ({})"
+msgstr ""
+
 msgid "Not found on disk"
 msgstr "ディスク上に見つかりません"
 
@@ -11254,6 +11257,10 @@ msgstr "{}が応答しません。戻り次第、アルバムが開きます。"
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{}が応答しません。復帰してからプレイリストを変更してください。"
 
+msgid "{} duplicate"
+msgid_plural "{} duplicates"
+msgstr[0] ""
+
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
 msgstr[0] "{}件のお気に入りが送信待ちです: {}"
@@ -11376,6 +11383,10 @@ msgstr "{}はアカウントを受け付けなくなりました。もう一度�
 msgid "{} no longer has this playlist; it left your playlists here too."
 msgstr "{}にはこのプレイリストがもうありません。こちらのプレイリストからも削除されました。"
 
+msgid "{} not found"
+msgid_plural "{} not found"
+msgstr[0] ""
+
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "このうち{}トラックが、{}個のプレイリストから削除されます。"
 
@@ -11475,6 +11486,10 @@ msgstr "{}件を表示"
 msgid "{} song"
 msgid_plural "{} songs"
 msgstr[0] "{}トラック"
+
+msgid "{} song added"
+msgid_plural "{} songs added"
+msgstr[0] ""
 
 msgid "{} star"
 msgid_plural "{} stars"

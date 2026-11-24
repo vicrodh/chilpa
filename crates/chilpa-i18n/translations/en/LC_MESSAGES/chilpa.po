@@ -5225,6 +5225,9 @@ msgstr ""
 msgid "Not found"
 msgstr ""
 
+msgid "Not found ({})"
+msgstr ""
+
 msgid "Not found on disk"
 msgstr "Not found on disk"
 
@@ -11278,6 +11281,11 @@ msgstr ""
 msgid "{} does not answer; change its playlist when it is back."
 msgstr ""
 
+msgid "{} duplicate"
+msgid_plural "{} duplicates"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
 msgstr[0] ""
@@ -11417,6 +11425,11 @@ msgstr ""
 msgid "{} no longer has this playlist; it left your playlists here too."
 msgstr ""
 
+msgid "{} not found"
+msgid_plural "{} not found"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} of its tracks leave {} of your playlists."
 msgstr ""
 
@@ -11524,6 +11537,11 @@ msgstr "{} shown"
 
 msgid "{} song"
 msgid_plural "{} songs"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} song added"
+msgid_plural "{} songs added"
 msgstr[0] ""
 msgstr[1] ""
 

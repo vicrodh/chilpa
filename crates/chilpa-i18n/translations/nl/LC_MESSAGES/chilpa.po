@@ -5225,6 +5225,9 @@ msgstr "Niet voor mij"
 msgid "Not found"
 msgstr ""
 
+msgid "Not found ({})"
+msgstr ""
+
 msgid "Not found on disk"
 msgstr "Niet gevonden op schijf"
 
@@ -11278,6 +11281,11 @@ msgstr "{} reageert niet. Het item wordt geopend zodra het weer beschikbaar is."
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{} reageert niet; wijzig de afspeellijst als de server terug is."
 
+msgid "{} duplicate"
+msgid_plural "{} duplicates"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
 msgstr[0] "{} favoriet wacht op verzending: {}"
@@ -11417,6 +11425,11 @@ msgstr "{} accepteert het account niet meer; verbind opnieuw"
 msgid "{} no longer has this playlist; it left your playlists here too."
 msgstr "{} heeft deze afspeellijst niet meer; hij is hier ook uit je afspeellijsten verdwenen."
 
+msgid "{} not found"
+msgid_plural "{} not found"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "{} van de nummers verdwijnen uit {} van je afspeellijsten."
 
@@ -11526,6 +11539,11 @@ msgid "{} song"
 msgid_plural "{} songs"
 msgstr[0] "{} nummer"
 msgstr[1] "{} nummers"
+
+msgid "{} song added"
+msgid_plural "{} songs added"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} star"
 msgid_plural "{} stars"

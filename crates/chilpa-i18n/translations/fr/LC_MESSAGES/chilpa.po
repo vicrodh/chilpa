@@ -5225,6 +5225,9 @@ msgstr "Pas pour moi"
 msgid "Not found"
 msgstr ""
 
+msgid "Not found ({})"
+msgstr ""
+
 msgid "Not found on disk"
 msgstr "Introuvable sur le disque"
 
@@ -11278,6 +11281,11 @@ msgstr "{} ne répond pas. Le disque s'ouvrira à son retour."
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{} ne répond pas ; modifiez sa playlist quand il sera de retour."
 
+msgid "{} duplicate"
+msgid_plural "{} duplicates"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
 msgstr[0] "{} favori en attente d'envoi : {}"
@@ -11417,6 +11425,11 @@ msgstr "{} n'accepte plus le compte ; reconnectez-vous"
 msgid "{} no longer has this playlist; it left your playlists here too."
 msgstr "{} n'a plus cette playlist ; elle a aussi été retirée de vos playlists ici."
 
+msgid "{} not found"
+msgid_plural "{} not found"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "{} de ses pistes seront retirées de {} de vos playlists."
 
@@ -11526,6 +11539,11 @@ msgid "{} song"
 msgid_plural "{} songs"
 msgstr[0] "{} piste"
 msgstr[1] "{} pistes"
+
+msgid "{} song added"
+msgid_plural "{} songs added"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} star"
 msgid_plural "{} stars"

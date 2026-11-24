@@ -5230,6 +5230,9 @@ msgstr "Не для меня"
 msgid "Not found"
 msgstr ""
 
+msgid "Not found ({})"
+msgstr ""
+
 msgid "Not found on disk"
 msgstr "Не найден на диске"
 
@@ -11302,6 +11305,12 @@ msgstr "{} не отвечает. Запись откроется, когда о
 msgid "{} does not answer; change its playlist when it is back."
 msgstr "{} не отвечает; измените плейлист, когда сервер снова будет доступен."
 
+msgid "{} duplicate"
+msgid_plural "{} duplicates"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
 msgstr[0] "{} элемент избранного ожидает отправки: {}"
@@ -11458,6 +11467,12 @@ msgstr "{} больше не принимает учётную запись; п�
 msgid "{} no longer has this playlist; it left your playlists here too."
 msgstr "На {} больше нет этого плейлиста; здесь он тоже удалён из ваших плейлистов."
 
+msgid "{} not found"
+msgid_plural "{} not found"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "Из ваших плейлистов уйдут его треки: {1} (плейлистов: {2})."
 
@@ -11577,6 +11592,12 @@ msgid_plural "{} songs"
 msgstr[0] "{} песня"
 msgstr[1] "{} песни"
 msgstr[2] "{} песен"
+
+msgid "{} song added"
+msgid_plural "{} songs added"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
 
 msgid "{} star"
 msgid_plural "{} stars"

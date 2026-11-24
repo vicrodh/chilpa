@@ -90,5 +90,13 @@ Item {
             status: ({phase: "matching", targets: ["mixed"], completed: 1, total_work: 2, current: "Band — Lost", row_count: 1,
                 rows: [{index: 1, original: {title: "Song", artist: "Band"}, errors: {}, matches: {mixed: {source: "demo", title: "Song", quality: {codec: "flac", bits: 16, rate: 44100}, confidence: 0.95}}}]})
         }
+        ImportResultCard { width: Metrics.confirmWidth; name: "Chilpa playlist"; sourceInfo: ({chilpa: true}); output: ({written: 40, unmatched: 2, duplicates: 0, error: "", parts: [{ref: "1", title: "Evening music"}]}) }
+        ImportResultCard { width: Metrics.confirmWidth; name: "Example source"; output: ({written: 10, unmatched: 0, duplicates: 1, error: "The account refused the playlist.", parts: []}) }
+        ImportSummaryStep {
+            width: Metrics.confirmWidth; height: Metrics.playlistModalHeight; missingShown: true
+            places: ({mixed: {name: "Chilpa playlist", info: {chilpa: true}}})
+            status: ({phase: "done", row_count: 1, rows: [{index: 2, original: {title: "Lost", artist: "Band"}, matches: {}, errors: {}}],
+                outputs: [{target: "mixed", written: 1, unmatched: 1, duplicates: 0, error: "", parts: [{ref: "1", title: "Evening music"}]}]})
+        }
     }
 }
