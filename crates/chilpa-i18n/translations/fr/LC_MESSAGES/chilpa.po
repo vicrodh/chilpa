@@ -3185,6 +3185,9 @@ msgstr "Flottante au-dessus du contenu, ou sur toute la largeur de la fenêtre, 
 msgid "Focus on playing"
 msgstr "Afficher la piste en lecture"
 
+msgid "Folder"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr "Couleurs des dossiers dans la barre latérale"
 

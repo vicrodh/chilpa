@@ -3183,6 +3183,9 @@ msgstr "コンテンツの上に浮かせるか、ウィンドウの上端また
 msgid "Focus on playing"
 msgstr "再生中のトラックへ移動"
 
+msgid "Folder"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr "サイドバーのフォルダーの色"
 

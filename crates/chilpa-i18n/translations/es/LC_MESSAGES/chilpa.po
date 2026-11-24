@@ -3185,6 +3185,9 @@ msgstr "Flotante sobre el contenido o a todo lo ancho de la ventana, arriba o ab
 msgid "Focus on playing"
 msgstr "Enfocar la pista en reproducción"
 
+msgid "Folder"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr "Colores de folders en el sidebar"
 

@@ -3185,6 +3185,9 @@ msgstr "Schwebend über dem Inhalt oder über die volle Fensterbreite oben oder 
 msgid "Focus on playing"
 msgstr "Dem laufenden Titel folgen"
 
+msgid "Folder"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr "Ordnerfarben in der Seitenleiste"
 

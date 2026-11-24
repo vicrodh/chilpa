@@ -3187,6 +3187,9 @@ msgstr "Плавает над содержимым либо занимает в�
 msgid "Focus on playing"
 msgstr "Следовать за воспроизведением"
 
+msgid "Folder"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr "Цвета папок на боковой панели"
 

@@ -71,5 +71,15 @@ Item {
             inputs: [{id: "url", name: "Playlist link", hint: "A public playlist link", kind: "text"}, {id: "file", name: "Playlist file", kind: "file"},
                 {id: "station", name: "Stations", kind: "station", choices: [{id: 0, name: "Library"}, {id: 1, name: "Mix"}]}]
         }
+        ImportDestinationRow { width: Metrics.confirmWidth; title: "Chilpa playlist"; detail: "Best quality from any connected source, kept in Chilpa"; sourceInfo: ({chilpa: true}); checked: true }
+        ImportDestinationRow { width: Metrics.confirmWidth; title: "Your library"; detail: "Only songs already in your library"; sourceInfo: ({local: true}) }
+        ImportDestinationsStep {
+            width: Metrics.confirmWidth; height: Metrics.playlistModalHeight; selected: ["mixed", "demo"]
+            status: ({phase: "preview", preview: {name: "Evening music", description: "Shared by a friend", total: 42}, settings: {}})
+            sources: [{id: "demo", name: "Example source", writable: true}]
+            places: ({mixed: {name: "Chilpa playlist", detail: "Best quality from any connected source, kept in Chilpa", info: {chilpa: true}},
+                local: {name: "Your library", detail: "Only songs already in your library", info: {local: true}},
+                demo: {name: "Example source", detail: "Playlist in your Example source account", info: {icon: ""}, writable: true}})
+        }
     }
 }

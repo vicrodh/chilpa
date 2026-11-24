@@ -3191,6 +3191,9 @@ msgstr "浮動於內容上方，或延伸至視窗頂部/底部。"
 msgid "Focus on playing"
 msgstr "專注播放"
 
+msgid "Folder"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr "側邊欄資料夾顏色"
 

@@ -3185,6 +3185,9 @@ msgstr "Flutuando sobre o conteúdo, ou ocupando a largura da janela no topo ou 
 msgid "Focus on playing"
 msgstr "Focar na faixa em reprodução"
 
+msgid "Folder"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr "Cores das pastas na barra lateral"
 
