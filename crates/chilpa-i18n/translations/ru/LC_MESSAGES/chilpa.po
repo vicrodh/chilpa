@@ -3253,6 +3253,9 @@ msgstr "Вперёд"
 msgid "Forward 10 seconds"
 msgstr "Вперёд на 10 секунд"
 
+msgid "Found"
+msgstr ""
+
 msgid "Found on this network"
 msgstr "Найдено в этой сети"
 
@@ -5223,6 +5226,9 @@ msgstr "За этот период прослушано слишком мало 
 
 msgid "Not for me"
 msgstr "Не для меня"
+
+msgid "Not found"
+msgstr ""
 
 msgid "Not found on disk"
 msgstr "Не найден на диске"
@@ -7441,6 +7447,9 @@ msgstr ""
 msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "Показано {} из {} треков. Выберите исполнителя или сервер, чтобы увидеть остальные."
 
+msgid "Showing {}–{} of {}"
+msgstr ""
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Показывается при наведении на обложку, записывается так же, как название."
 
@@ -9610,6 +9619,9 @@ msgstr "Windows не сообщает ни одного устройства в�
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows не сообщает, что принимает «{}» ({})"
 
+msgid "With options"
+msgstr ""
+
 msgid "Withdraw approval"
 msgstr "Отозвать одобрение"
 
@@ -11265,6 +11277,9 @@ msgstr[2] "{} дней"
 
 msgid "{} did not accept the account"
 msgstr "источник «{}» не принял учётную запись"
+
+msgid "{} did not answer"
+msgstr ""
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."

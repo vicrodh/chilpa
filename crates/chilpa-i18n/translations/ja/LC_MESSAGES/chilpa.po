@@ -3249,6 +3249,9 @@ msgstr "進む"
 msgid "Forward 10 seconds"
 msgstr "10秒進む"
 
+msgid "Found"
+msgstr ""
+
 msgid "Found on this network"
 msgstr "このネットワークで見つかったもの"
 
@@ -5213,6 +5216,9 @@ msgstr "この期間は再生が少なく、まとめを作成できません。
 
 msgid "Not for me"
 msgstr "興味なし"
+
+msgid "Not found"
+msgstr ""
 
 msgid "Not found on disk"
 msgstr "ディスク上に見つかりません"
@@ -7427,6 +7433,9 @@ msgstr ""
 msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "{}/{}トラックを表示しています。残りを見るにはアーティストかサーバーを選んでください。"
 
+msgid "Showing {}–{} of {}"
+msgstr ""
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "カバーにポインターを合わせると表示されます。タイトルと同じ書き方です。"
 
@@ -9586,6 +9595,9 @@ msgstr "Windowsが再生デバイスを報告していません"
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windowsが「{}」の対応内容を返しませんでした（{}）"
 
+msgid "With options"
+msgstr ""
+
 msgid "Withdraw approval"
 msgstr "承認を取り消す"
 
@@ -11221,6 +11233,9 @@ msgstr[0] "{}日"
 
 msgid "{} did not accept the account"
 msgstr "{}がアカウントを受け付けませんでした"
+
+msgid "{} did not answer"
+msgstr ""
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."

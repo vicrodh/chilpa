@@ -3257,6 +3257,9 @@ msgstr "前進"
 msgid "Forward 10 seconds"
 msgstr "快進 10 秒"
 
+msgid "Found"
+msgstr ""
+
 msgid "Found on this network"
 msgstr "在此網路上找到"
 
@@ -5221,6 +5224,9 @@ msgstr "這段期間的播放量不足以產生回顧。"
 
 msgid "Not for me"
 msgstr "不感興趣"
+
+msgid "Not found"
+msgstr ""
 
 msgid "Not found on disk"
 msgstr ""
@@ -7435,6 +7441,9 @@ msgstr ""
 msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr ""
 
+msgid "Showing {}–{} of {}"
+msgstr ""
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr ""
 
@@ -9594,6 +9603,9 @@ msgstr "Windows 回報沒有播放裝置"
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows 未說明「{}」接受的格式 ({})"
 
+msgid "With options"
+msgstr ""
+
 msgid "Withdraw approval"
 msgstr "撤銷核准"
 
@@ -11229,6 +11241,9 @@ msgstr[0] "{} 天"
 
 msgid "{} did not accept the account"
 msgstr "{} 未接受該帳號"
+
+msgid "{} did not answer"
+msgstr ""
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."

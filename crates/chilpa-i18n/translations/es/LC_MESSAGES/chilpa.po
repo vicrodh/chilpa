@@ -3251,6 +3251,9 @@ msgstr "Adelante"
 msgid "Forward 10 seconds"
 msgstr "Adelante 10 segundos"
 
+msgid "Found"
+msgstr ""
+
 msgid "Found on this network"
 msgstr "Encontrados en esta red"
 
@@ -5218,6 +5221,9 @@ msgstr "No se reprodujo lo suficiente en este periodo para un resumen."
 
 msgid "Not for me"
 msgstr "No es para mí"
+
+msgid "Not found"
+msgstr ""
 
 msgid "Not found on disk"
 msgstr "No se encuentra en el disco"
@@ -7434,6 +7440,9 @@ msgstr "Mostrando {}"
 msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "Se muestran {} de {} pistas. Elige un artista o un servidor para ver el resto."
 
+msgid "Showing {}–{} of {}"
+msgstr ""
+
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Aparece al pasar el puntero sobre la portada, escrito igual que el título."
 
@@ -9598,6 +9607,9 @@ msgstr "Windows no reporta ningún aparato de reproducción"
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows no dijo qué acepta \"{}\" ({})"
 
+msgid "With options"
+msgstr ""
+
 msgid "Withdraw approval"
 msgstr "Retirar la aprobación"
 
@@ -11243,6 +11255,9 @@ msgstr[1] "{} días"
 
 msgid "{} did not accept the account"
 msgstr "{} no aceptó la cuenta"
+
+msgid "{} did not answer"
+msgstr ""
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."

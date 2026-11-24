@@ -81,5 +81,14 @@ Item {
                 local: {name: "Your library", detail: "Only songs already in your library", info: {local: true}},
                 demo: {name: "Example source", detail: "Playlist in your Example source account", info: {icon: ""}, writable: true}})
         }
+        ImportReviewRow { width: Metrics.confirmWidth; number: 1; original: ({title: "Song", artist: "Band"}); match: ({title: "Song", confidence: 0.98}); sourceInfo: ({chilpa: true}); quality: "FLAC · 24 bit · 96 kHz" }
+        ImportReviewRow { width: Metrics.confirmWidth; rowIndex: 1; number: 2; original: ({title: "Lost", artist: "Band"}) }
+        ImportReviewRow { width: Metrics.confirmWidth; number: 3; original: ({title: "Late", artist: "Band"}); problem: "Example source did not answer"; problemDetail: "the plugin is not running" }
+        ImportReviewStep {
+            width: Metrics.confirmWidth; height: Metrics.playlistModalHeight
+            places: ({mixed: {name: "Chilpa playlist", info: {chilpa: true}}, demo: {name: "Example source", info: {icon: ""}}})
+            status: ({phase: "matching", targets: ["mixed"], completed: 1, total_work: 2, current: "Band — Lost", row_count: 1,
+                rows: [{index: 1, original: {title: "Song", artist: "Band"}, errors: {}, matches: {mixed: {source: "demo", title: "Song", quality: {codec: "flac", bits: 16, rate: 44100}, confidence: 0.95}}}]})
+        }
     }
 }

@@ -1,0 +1,2 @@
+module app.chilpa.playlists.Theme
+singleton ImportFrame 1.0 ImportFrame.qml
