@@ -32,15 +32,6 @@ TestCase {
         target: test.Window.window
         function onAfterAnimating() { if (!test.Window.window.contentItem.enabled) test.disabledFrames++ }
     }
-    QtObject {
-        id: feed
-        property var bars: []
-        property var waveform: []
-        property var energy: []
-        property int releases: 0
-        function setCompact(active, mode) { if (!active) releases++ }
-    }
-    CompactVisualizer { id: band; y: 360; width: 200; height: 24; active: true; feed: feed }
     Component { id: temporaryModal; Modal { width: 100; height: 100 } }
     Modal { id: nested; width: 100; height: 80 }
 
@@ -167,10 +158,9 @@ TestCase {
         mouseRelease(test, 10, 10)
         untouched()
     }
-    function test_nested_menu_preserves_owner_focus_window_and_visualizer() {
+    function test_nested_menu_preserves_owner_focus_and_window() {
         backgroundField.forceActiveFocus()
         const active = test.Window.window.active
-        const releases = feed.releases
         open()
         verify(dialog.activeFocus)
         mouseClick(menuButton, 10, 10)
@@ -182,12 +172,9 @@ TestCase {
         compare(menuChoices, 1)
         verify(dialog.opened && dialog.enabled && dialog.activeFocus)
         compare(test.Window.window.active, active)
-        compare(feed.releases, releases)
-        verify(band.capturing)
         dialog.close()
         tryCompare(dialog, "visible", false)
         verify(backgroundField.activeFocus)
-        compare(feed.releases, releases)
         untouched()
     }
     function test_opening_restores_the_window_enabled_binding() {

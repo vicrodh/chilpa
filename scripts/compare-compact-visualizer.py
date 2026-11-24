@@ -145,11 +145,11 @@ QtObject {
         for path in sorted((kit / folder).rglob('*')):
             if path.is_file():
                 ET.SubElement(collection, 'file', alias=path.relative_to(kit).as_posix()).text = str(path)
-    immersive = ROOT / 'crates/chilpa-qt-immersive'
-    collection = ET.SubElement(resources, 'qresource', prefix='/qt/qml/app/chilpa/immersive')
-    for path in sorted((immersive / 'qml').rglob('*')):
-        if path.is_file():
-            ET.SubElement(collection, 'file', alias=path.relative_to(immersive).as_posix()).text = str(path)
+    for crate, prefix in [('chilpa-qt-immersive', 'immersive'), ('chilpa-qt-controls', 'controls')]:
+        collection = ET.SubElement(resources, 'qresource', prefix=f'/qt/qml/app/chilpa/{prefix}')
+        for path in sorted((ROOT / 'crates' / crate / 'qml').rglob('*')):
+            if path.is_file():
+                ET.SubElement(collection, 'file', alias=path.relative_to(ROOT / 'crates' / crate).as_posix()).text = str(path)
     ET.ElementTree(resources).write(base / 'resources.qrc')
     subprocess.run([str(LIBEXEC / 'rcc'), '--binary', str(base / 'resources.qrc'), '-o', str(base / 'resources.rcc')], check=True)
     flags = shlex.split(subprocess.check_output(['pkg-config', '--cflags', '--libs', 'Qt6Quick', 'Qt6Qml'], text=True))
@@ -177,7 +177,7 @@ def fixture(base, name, mode, args):
 }''' if name == 'candidate' else '''SpectrumBand {
  id: renderer; width: BAND_WIDTH; height: BAND_HEIGHT; shown: root.drawing; capturing: shown
 }'''
-    imports = 'import app.chilpa.graphics\nimport "qrc:/qt/qml/app/chilpa/kit/qml/Components"\nimport "qrc:/qt/qml/app/chilpa/immersive/qml/Components"' if name == 'candidate' else 'import "reference/shell"'
+    imports = 'import app.chilpa.graphics\nimport "qrc:/qt/qml/app/chilpa/kit/qml/Components"\nimport "qrc:/qt/qml/app/chilpa/controls/qml/Components"\nimport "qrc:/qt/qml/app/chilpa/immersive/qml/Components"' if name == 'candidate' else 'import "reference/shell"'
     if args.surface == 'immersive':
         imports = ('import \"qrc:/qt/qml/app/chilpa/immersive/qml/Components\"' if name == 'candidate' else 'import \"reference/controls\"')
         component = '''ScopePanel {
@@ -387,7 +387,7 @@ def main():
             os.environ[key] = str(base / folder)
         imports = prepare(base, args.reference.resolve(), args.producer_library.resolve() if args.producer_library else None)
         hashes = {
-            'candidate': digest(ROOT / 'crates/chilpa-qt-kit/qml/Components/CompactVisualizer.qml'),
+            'candidate': digest(ROOT / 'crates/chilpa-qt-controls/qml/Components/CompactVisualizer.qml'),
             'candidate_shader': digest(ROOT / 'crates/chilpa-qt-kit/assets/shaders/compact-visualizer.frag.qsb'),
             'candidate_scopes': digest(ROOT / 'crates/chilpa-qt-immersive/qml/Components/CompactScope.qml'),
             'reference': digest(args.reference / 'crates/qbz-qt/qml/shell/SpectrumBand.qml'),

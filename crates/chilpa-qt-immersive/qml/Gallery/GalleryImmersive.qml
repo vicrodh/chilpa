@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.graphics
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components"
 import "../Components"
 import "../Patterns"
 import "../Primitives"

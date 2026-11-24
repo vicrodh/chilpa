@@ -1,7 +1,9 @@
 import QtQuick
 import QtTest
 import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "../../qml/Components"
 
 TestCase {
     id: test
@@ -9,7 +11,7 @@ TestCase {
     when: windowShown
     visible: true
     width: 340
-    height: 120
+    height: 300
     QtObject {
         id: feed
         property var bars: []
@@ -27,6 +29,30 @@ TestCase {
         CompactVisualizer { id: band; anchors.fill: parent; feed: feed }
     }
     SignalSpy { id: cycle; target: band; signalName: "cycleRequested" }
+    Modal {
+        id: dialog
+        width: 200; height: 80
+        Menu { id: context; entries: [{text: "Action"}] }
+        PillButton { id: menuButton; text: "Menu"; onClicked: context.open() }
+    }
+    // A modal and a menu inside it leave the band drawing.
+    function test_a_modal_and_its_menu_keep_the_band_capturing() {
+        band.active = true
+        tryVerify(() => band.capturing)
+        dialog.open()
+        tryVerify(() => dialog.opened)
+        mouseClick(menuButton, 10, 10)
+        tryCompare(context, "opened", true)
+        const options = findChild(context, "menuOptions")
+        tryVerify(() => options.itemAtIndex(0) !== null)
+        mouseClick(options.itemAtIndex(0), 10, 10)
+        tryCompare(context, "visible", false)
+        verify(band.capturing)
+        verify(feed.presented)
+        dialog.close()
+        tryCompare(dialog, "visible", false)
+        verify(band.capturing)
+    }
 
     function init() {
         Pulse.automatic = false

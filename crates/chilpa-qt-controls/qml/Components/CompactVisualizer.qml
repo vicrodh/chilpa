@@ -2,7 +2,8 @@
 import QtQuick
 import QtQuick.Window
 import app.chilpa.kit
-import "../Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // I share the producer and pulse with other surfaces. Hidden instances keep
 // no renderer or pulse subscription; only the selected stream crosses QML.
