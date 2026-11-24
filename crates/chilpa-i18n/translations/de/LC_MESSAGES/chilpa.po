@@ -1036,7 +1036,7 @@ msgid "Being removed…"
 msgstr "Wird entfernt…"
 
 msgid "Best quality from any connected source, kept in Chilpa"
-msgstr ""
+msgstr "Beste Qualität aus jeder verbundenen Quelle, in Chilpa gespeichert"
 
 msgid "Between tracks"
 msgstr "Zwischen Titeln"
@@ -1467,7 +1467,7 @@ msgid "Chilpa output"
 msgstr "Ausgabe von Chilpa"
 
 msgid "Chilpa playlist"
-msgstr ""
+msgstr "Chilpa-Playlist"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa spielt Dateien von deinen lokalen Laufwerken und deinen Servern ab, und mit Plugins lassen sich zahlreiche weitere Quellen hinzufügen. Es zeigt dir klar an, ob das an deinen DAC gesendete Audiosignal bitgenau ankommt."
@@ -3165,7 +3165,7 @@ msgid "Focus on playing"
 msgstr "Dem laufenden Titel folgen"
 
 msgid "Folder"
-msgstr ""
+msgstr "Ordner"
 
 msgid "Folder colors in the sidebar"
 msgstr "Ordnerfarben in der Seitenleiste"
@@ -3231,7 +3231,7 @@ msgid "Forward 10 seconds"
 msgstr "10 Sekunden vor"
 
 msgid "Found"
-msgstr ""
+msgstr "Mit Treffer"
 
 msgid "Found on this network"
 msgstr "In diesem Netzwerk gefunden"
@@ -3707,7 +3707,7 @@ msgid "Import / export"
 msgstr "Import / Export"
 
 msgid "Import another"
-msgstr ""
+msgstr "Weitere importieren"
 
 msgid "Import at most 64 presets at once."
 msgstr ""
@@ -4508,6 +4508,9 @@ msgstr ""
 msgid "Match {} exactly"
 msgstr "{} genau suchen"
 
+msgid "Matches"
+msgstr "Treffer"
+
 msgid "Maximize"
 msgstr "Maximieren"
 
@@ -4980,7 +4983,7 @@ msgid "No downloaded files were found in this selection."
 msgstr "In dieser Auswahl wurden keine heruntergeladenen Dateien gefunden."
 
 msgid "No file chosen"
-msgstr ""
+msgstr "Keine Datei gewählt"
 
 msgid "No files need to change."
 msgstr ""
@@ -5193,10 +5196,10 @@ msgid "Not for me"
 msgstr "Nichts für mich"
 
 msgid "Not found"
-msgstr ""
+msgstr "Ohne Treffer"
 
 msgid "Not found ({})"
-msgstr ""
+msgstr "Ohne Treffer ({})"
 
 msgid "Not found on disk"
 msgstr "Auf dem Datenträger nicht gefunden"
@@ -5397,7 +5400,7 @@ msgid "Only personal presets can be deleted."
 msgstr "Nur eigene Presets können gelöscht werden."
 
 msgid "Only songs already in your library"
-msgstr ""
+msgstr "Nur Titel, die schon in deiner Bibliothek sind"
 
 msgid "Only the first {} outputs are listed."
 msgstr "Es werden nur die ersten {} Ausgaben aufgeführt."
@@ -5583,7 +5586,7 @@ msgid "Oratorio"
 msgstr "Oratorium"
 
 msgid "Origin"
-msgstr ""
+msgstr "Herkunft"
 
 msgid "Original audio"
 msgstr "Originalaudio"
@@ -5916,7 +5919,7 @@ msgid "Playlist icon"
 msgstr "Playlist-Symbol"
 
 msgid "Playlist in your {} account"
-msgstr ""
+msgstr "Playlist in deinem {}-Konto"
 
 msgid "Playlist manager"
 msgstr "Playlist-Manager"
@@ -6797,7 +6800,7 @@ msgid "Review the device changes before syncing."
 msgstr ""
 
 msgid "Review the matches"
-msgstr ""
+msgstr "Treffer prüfen"
 
 msgid "Review the requested permissions before installing."
 msgstr "Prüfe die angeforderten Berechtigungen vor der Installation."
@@ -7405,7 +7408,7 @@ msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "{} von {} Titeln werden angezeigt. Wähle einen Künstler oder einen Server, um den Rest zu sehen."
 
 msgid "Showing {}–{} of {}"
-msgstr ""
+msgstr "{}–{} von {}"
 
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Erscheint beim Zeigen auf das Cover, geschrieben wie der Titel."
@@ -7644,7 +7647,7 @@ msgid "Static"
 msgstr "Statisch"
 
 msgid "Station"
-msgstr ""
+msgstr "Station"
 
 msgid "Stations"
 msgstr "Sender"
@@ -9524,13 +9527,13 @@ msgid "Where is it, and who signs in?"
 msgstr "Wo ist er, und wer meldet sich an?"
 
 msgid "Where is the playlist?"
-msgstr ""
+msgstr "Woher kommt die Playlist?"
 
 msgid "Where is your music?"
 msgstr "Wo ist deine Musik?"
 
 msgid "Where should it go?"
-msgstr ""
+msgstr "Wohin soll sie?"
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Wohin die Samples gehen: direkt zum Gerät oder über einen Soundserver."
@@ -9572,7 +9575,7 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows wollte nicht sagen, was „{}“ akzeptiert ({})"
 
 msgid "With options"
-msgstr ""
+msgstr "Mit Alternativen"
 
 msgid "Withdraw approval"
 msgstr "Genehmigung widerrufen"
@@ -9686,7 +9689,7 @@ msgid "Your genre tags"
 msgstr ""
 
 msgid "Your library"
-msgstr ""
+msgstr "Deine Bibliothek"
 
 msgid "Your music"
 msgstr "Deine Musik"
@@ -11224,7 +11227,7 @@ msgid "{} did not accept the account"
 msgstr "{} hat das Konto nicht akzeptiert"
 
 msgid "{} did not answer"
-msgstr ""
+msgstr "{} hat nicht geantwortet"
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
@@ -11247,8 +11250,8 @@ msgstr "{} antwortet nicht; ändere die Playlist, wenn der Server wieder da ist.
 
 msgid "{} duplicate"
 msgid_plural "{} duplicates"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} Duplikat"
+msgstr[1] "{} Duplikate"
 
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
@@ -11391,8 +11394,8 @@ msgstr "{} hat diese Playlist nicht mehr; sie wurde auch hier aus deinen Playlis
 
 msgid "{} not found"
 msgid_plural "{} not found"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} ohne Treffer"
+msgstr[1] "{} ohne Treffer"
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "{} seiner Titel verschwinden aus {} deiner Playlists."
@@ -11506,8 +11509,8 @@ msgstr[1] "{} Titel"
 
 msgid "{} song added"
 msgid_plural "{} songs added"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} Titel hinzugefügt"
+msgstr[1] "{} Titel hinzugefügt"
 
 msgid "{} star"
 msgid_plural "{} stars"

@@ -35,7 +35,7 @@ Item {
     }
     readonly property var titles: [I18n.tr("Where is the playlist?", I18n.rev), I18n.tr("Where should it go?", I18n.rev),
         I18n.tr("Review the matches", I18n.rev), I18n.tr("Import complete", I18n.rev)]
-    readonly property var labels: [I18n.tr("Origin", I18n.rev), I18n.tr("Destinations", I18n.rev), I18n.tr("Review", I18n.rev), I18n.tr("Done", I18n.rev)]
+    readonly property var labels: [I18n.tr("Origin", I18n.rev), I18n.tr("Destinations", I18n.rev), I18n.tr("Matches", I18n.rev), I18n.tr("Done", I18n.rev)]
     function send(action, payload) { sent = action; PlaylistImport.command(action, JSON.stringify(payload || {})) }
     function ask(filter, offset) { page.filter = filter; page.offset = offset; send("status", {filter: filter, offset: offset}) }
     function openPlaylist(id) {

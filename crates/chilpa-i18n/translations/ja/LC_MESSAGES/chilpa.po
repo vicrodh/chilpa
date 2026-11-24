@@ -1035,7 +1035,7 @@ msgid "Being removed…"
 msgstr "削除中…"
 
 msgid "Best quality from any connected source, kept in Chilpa"
-msgstr ""
+msgstr "接続済みのソースから最高の音質を選び、Chilpa に保存"
 
 msgid "Between tracks"
 msgstr "トラック間"
@@ -1465,7 +1465,7 @@ msgid "Chilpa output"
 msgstr "Chilpaの出力"
 
 msgid "Chilpa playlist"
-msgstr ""
+msgstr "Chilpa のプレイリスト"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpaはディスク上のファイルと自分で運用するサーバーを再生し、プラグインでソースを追加できます。DACに届く音がビットパーフェクトかどうかをはっきり伝えます。"
@@ -3163,7 +3163,7 @@ msgid "Focus on playing"
 msgstr "再生中のトラックへ移動"
 
 msgid "Folder"
-msgstr ""
+msgstr "フォルダー"
 
 msgid "Folder colors in the sidebar"
 msgstr "サイドバーのフォルダーの色"
@@ -3229,7 +3229,7 @@ msgid "Forward 10 seconds"
 msgstr "10秒進む"
 
 msgid "Found"
-msgstr ""
+msgstr "一致あり"
 
 msgid "Found on this network"
 msgstr "このネットワークで見つかったもの"
@@ -3704,7 +3704,7 @@ msgid "Import / export"
 msgstr "インポート / エクスポート"
 
 msgid "Import another"
-msgstr ""
+msgstr "別のプレイリストをインポート"
 
 msgid "Import at most 64 presets at once."
 msgstr ""
@@ -4503,6 +4503,9 @@ msgstr ""
 msgid "Match {} exactly"
 msgstr "{} に完全一致"
 
+msgid "Matches"
+msgstr "一致"
+
 msgid "Maximize"
 msgstr "最大化"
 
@@ -4975,7 +4978,7 @@ msgid "No downloaded files were found in this selection."
 msgstr "選択範囲にダウンロード済みファイルがありません。"
 
 msgid "No file chosen"
-msgstr ""
+msgstr "ファイルが選択されていません"
 
 msgid "No files need to change."
 msgstr ""
@@ -5188,10 +5191,10 @@ msgid "Not for me"
 msgstr "興味なし"
 
 msgid "Not found"
-msgstr ""
+msgstr "一致なし"
 
 msgid "Not found ({})"
-msgstr ""
+msgstr "一致なし（{}）"
 
 msgid "Not found on disk"
 msgstr "ディスク上に見つかりません"
@@ -5392,7 +5395,7 @@ msgid "Only personal presets can be deleted."
 msgstr "削除できるのは個人用プリセットのみです。"
 
 msgid "Only songs already in your library"
-msgstr ""
+msgstr "ライブラリにすでにある曲だけ"
 
 msgid "Only the first {} outputs are listed."
 msgstr "最初の {} 件の出力のみ表示されます。"
@@ -5578,7 +5581,7 @@ msgid "Oratorio"
 msgstr "オラトリオ"
 
 msgid "Origin"
-msgstr ""
+msgstr "取り込み元"
 
 msgid "Original audio"
 msgstr "元のオーディオ"
@@ -5911,7 +5914,7 @@ msgid "Playlist icon"
 msgstr "プレイリストアイコン"
 
 msgid "Playlist in your {} account"
-msgstr ""
+msgstr "{} アカウントのプレイリスト"
 
 msgid "Playlist manager"
 msgstr "プレイリストマネージャー"
@@ -6791,7 +6794,7 @@ msgid "Review the device changes before syncing."
 msgstr ""
 
 msgid "Review the matches"
-msgstr ""
+msgstr "一致を確認"
 
 msgid "Review the requested permissions before installing."
 msgstr "インストールする前に、要求された権限を確認してください。"
@@ -7398,7 +7401,7 @@ msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "{}/{}トラックを表示しています。残りを見るにはアーティストかサーバーを選んでください。"
 
 msgid "Showing {}–{} of {}"
-msgstr ""
+msgstr "{}–{} 件目（全 {} 件）"
 
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "カバーにポインターを合わせると表示されます。タイトルと同じ書き方です。"
@@ -7636,7 +7639,7 @@ msgid "Static"
 msgstr "静止"
 
 msgid "Station"
-msgstr ""
+msgstr "ステーション"
 
 msgid "Stations"
 msgstr "ステーション"
@@ -9512,13 +9515,13 @@ msgid "Where is it, and who signs in?"
 msgstr "サーバーの場所とサインインするユーザー"
 
 msgid "Where is the playlist?"
-msgstr ""
+msgstr "プレイリストはどこにありますか？"
 
 msgid "Where is your music?"
 msgstr "音楽はどこにありますか？"
 
 msgid "Where should it go?"
-msgstr ""
+msgstr "どこに保存しますか？"
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "サンプルの送り先です。デバイスに直接送るか、サウンドサーバーを経由します。"
@@ -9560,7 +9563,7 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windowsが「{}」の対応内容を返しませんでした（{}）"
 
 msgid "With options"
-msgstr ""
+msgstr "候補あり"
 
 msgid "Withdraw approval"
 msgstr "承認を取り消す"
@@ -9674,7 +9677,7 @@ msgid "Your genre tags"
 msgstr ""
 
 msgid "Your library"
-msgstr ""
+msgstr "ライブラリ"
 
 msgid "Your music"
 msgstr "あなたの音楽"
@@ -11202,7 +11205,7 @@ msgid "{} did not accept the account"
 msgstr "{}がアカウントを受け付けませんでした"
 
 msgid "{} did not answer"
-msgstr ""
+msgstr "{} から応答がありません"
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
@@ -11223,7 +11226,7 @@ msgstr "{}が応答しません。復帰してからプレイリストを変更�
 
 msgid "{} duplicate"
 msgid_plural "{} duplicates"
-msgstr[0] ""
+msgstr[0] "重複 {} 曲"
 
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
@@ -11349,7 +11352,7 @@ msgstr "{}にはこのプレイリストがもうありません。こちらの�
 
 msgid "{} not found"
 msgid_plural "{} not found"
-msgstr[0] ""
+msgstr[0] "一致なし {} 曲"
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "このうち{}トラックが、{}個のプレイリストから削除されます。"
@@ -11453,7 +11456,7 @@ msgstr[0] "{}トラック"
 
 msgid "{} song added"
 msgid_plural "{} songs added"
-msgstr[0] ""
+msgstr[0] "{} 曲を追加"
 
 msgid "{} star"
 msgid_plural "{} stars"

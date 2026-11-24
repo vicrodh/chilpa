@@ -1036,7 +1036,7 @@ msgid "Being removed…"
 msgstr "Se está quitando…"
 
 msgid "Best quality from any connected source, kept in Chilpa"
-msgstr ""
+msgstr "La mejor calidad de cualquier fuente conectada, guardada en Chilpa"
 
 msgid "Between tracks"
 msgstr "Entre pistas"
@@ -1467,7 +1467,7 @@ msgid "Chilpa output"
 msgstr "Salida de Chilpa"
 
 msgid "Chilpa playlist"
-msgstr ""
+msgstr "Playlist de Chilpa"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa reproduce los archivos de tus discos y los servidores que administras, y los plugins agregan más fuentes. Te dice con claridad si lo que llega a tu DAC es bit-perfect."
@@ -3165,7 +3165,7 @@ msgid "Focus on playing"
 msgstr "Enfocar la pista en reproducción"
 
 msgid "Folder"
-msgstr ""
+msgstr "Carpeta"
 
 msgid "Folder colors in the sidebar"
 msgstr "Colores de folders en el sidebar"
@@ -3231,7 +3231,7 @@ msgid "Forward 10 seconds"
 msgstr "Adelante 10 segundos"
 
 msgid "Found"
-msgstr ""
+msgstr "Con coincidencia"
 
 msgid "Found on this network"
 msgstr "Encontrados en esta red"
@@ -3707,7 +3707,7 @@ msgid "Import / export"
 msgstr "Importar / exportar"
 
 msgid "Import another"
-msgstr ""
+msgstr "Importar otra"
 
 msgid "Import at most 64 presets at once."
 msgstr "Importa hasta 64 presets a la vez."
@@ -4508,6 +4508,9 @@ msgstr "Coincidencia: {}"
 msgid "Match {} exactly"
 msgstr "Buscar {} exactamente"
 
+msgid "Matches"
+msgstr "Coincidencias"
+
 msgid "Maximize"
 msgstr "Maximizar"
 
@@ -4980,7 +4983,7 @@ msgid "No downloaded files were found in this selection."
 msgstr "No se encontraron archivos descargados en esta selección."
 
 msgid "No file chosen"
-msgstr ""
+msgstr "Ningún archivo elegido"
 
 msgid "No files need to change."
 msgstr "No hace falta cambiar ningún archivo."
@@ -5193,10 +5196,10 @@ msgid "Not for me"
 msgstr "No es para mí"
 
 msgid "Not found"
-msgstr ""
+msgstr "Sin coincidencia"
 
 msgid "Not found ({})"
-msgstr ""
+msgstr "Sin coincidencia ({})"
 
 msgid "Not found on disk"
 msgstr "No se encuentra en el disco"
@@ -5397,7 +5400,7 @@ msgid "Only personal presets can be deleted."
 msgstr "Solo se pueden eliminar presets personales."
 
 msgid "Only songs already in your library"
-msgstr ""
+msgstr "Solo canciones que ya están en tu biblioteca"
 
 msgid "Only the first {} outputs are listed."
 msgstr "Solo se listan las primeras {} salidas."
@@ -5583,7 +5586,7 @@ msgid "Oratorio"
 msgstr "Oratorio"
 
 msgid "Origin"
-msgstr ""
+msgstr "Origen"
 
 msgid "Original audio"
 msgstr "Audio original"
@@ -5916,7 +5919,7 @@ msgid "Playlist icon"
 msgstr "Icono de playlist"
 
 msgid "Playlist in your {} account"
-msgstr ""
+msgstr "Playlist en tu cuenta de {}"
 
 msgid "Playlist manager"
 msgstr "Administrador de playlists"
@@ -6797,7 +6800,7 @@ msgid "Review the device changes before syncing."
 msgstr "Revisa los cambios del dispositivo antes de sincronizar."
 
 msgid "Review the matches"
-msgstr ""
+msgstr "Revisa las coincidencias"
 
 msgid "Review the requested permissions before installing."
 msgstr "Revisa los permisos solicitados antes de instalar."
@@ -7405,7 +7408,7 @@ msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "Se muestran {} de {} pistas. Elige un artista o un servidor para ver el resto."
 
 msgid "Showing {}–{} of {}"
-msgstr ""
+msgstr "Mostrando {}–{} de {}"
 
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Aparece al pasar el puntero sobre la portada, escrito igual que el título."
@@ -7644,7 +7647,7 @@ msgid "Static"
 msgstr "Estática"
 
 msgid "Station"
-msgstr ""
+msgstr "Estación"
 
 msgid "Stations"
 msgstr "Estaciones"
@@ -9524,13 +9527,13 @@ msgid "Where is it, and who signs in?"
 msgstr "¿Dónde está y quién inicia sesión?"
 
 msgid "Where is the playlist?"
-msgstr ""
+msgstr "¿De dónde viene la playlist?"
 
 msgid "Where is your music?"
 msgstr "¿Dónde está tu música?"
 
 msgid "Where should it go?"
-msgstr ""
+msgstr "¿A dónde va?"
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Por dónde van las muestras: directo al dispositivo o a través de un servidor de sonido."
@@ -9572,7 +9575,7 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows no dijo qué acepta \"{}\" ({})"
 
 msgid "With options"
-msgstr ""
+msgstr "Con opciones"
 
 msgid "Withdraw approval"
 msgstr "Retirar la aprobación"
@@ -9686,7 +9689,7 @@ msgid "Your genre tags"
 msgstr "Tus etiquetas de género"
 
 msgid "Your library"
-msgstr ""
+msgstr "Tu biblioteca"
 
 msgid "Your music"
 msgstr "Tu música"
@@ -11224,7 +11227,7 @@ msgid "{} did not accept the account"
 msgstr "{} no aceptó la cuenta"
 
 msgid "{} did not answer"
-msgstr ""
+msgstr "{} no respondió"
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
@@ -11247,8 +11250,8 @@ msgstr "{} no responde; cambia su playlist cuando vuelva."
 
 msgid "{} duplicate"
 msgid_plural "{} duplicates"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} repetida"
+msgstr[1] "{} repetidas"
 
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
@@ -11391,8 +11394,8 @@ msgstr "{} ya no tiene esta playlist; también se quitó de tus playlists aquí.
 
 msgid "{} not found"
 msgid_plural "{} not found"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} sin coincidencia"
+msgstr[1] "{} sin coincidencia"
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "{} de sus pistas salen de {} de tus playlists."
@@ -11506,8 +11509,8 @@ msgstr[1] "{} canciones"
 
 msgid "{} song added"
 msgid_plural "{} songs added"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} canción agregada"
+msgstr[1] "{} canciones agregadas"
 
 msgid "{} star"
 msgid_plural "{} stars"

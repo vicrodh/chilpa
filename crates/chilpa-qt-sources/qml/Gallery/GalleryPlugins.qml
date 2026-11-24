@@ -41,8 +41,6 @@ TitledFlow {
         preview: ({removing: {id: 7, name: "Music server", state: "removing"}}) }
     PillButton { text: "Removing a music server"; onClicked: removePreview.open() }
     EpisodeMaterial { width: Metrics.confirmWidth; entry: ({description:"Episode notes"}) }
-    ImportCheck { text: "Mixed playlist"; checked: true; width: Metrics.confirmWidth }
-    ImportMatch { width: Metrics.confirmWidth; match: ({title:"Track",artist:"Artist",confidence:0.95}); sourceName: "Source"; destination: "Mixed"; qualityLabel: "FLAC" }
     MediaArtwork { width: Metrics.pageHero; height: width; station: true; title: "Station" }
     MediaCard { width: Metrics.pageHero; station: true; entry: ({title:"Station",subtitle:"Jazz · AAC 128",playable:true}) }
     MediaRow { width: Metrics.confirmWidth; entry: ({title:"Episode",description:"Notes",finite:true,playable:true,progress:0.3}) }

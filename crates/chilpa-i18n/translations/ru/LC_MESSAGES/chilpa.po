@@ -1037,7 +1037,7 @@ msgid "Being removed…"
 msgstr "Удаляется…"
 
 msgid "Best quality from any connected source, kept in Chilpa"
-msgstr ""
+msgstr "Лучшее качество из любого подключённого источника, хранится в Chilpa"
 
 msgid "Between tracks"
 msgstr "Между треками"
@@ -1469,7 +1469,7 @@ msgid "Chilpa output"
 msgstr "Выход Chilpa"
 
 msgid "Chilpa playlist"
-msgstr ""
+msgstr "Плейлист Chilpa"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa воспроизводит файлы с ваших дисков и ваших собственных серверов, а плагины добавляют новые источники. Он прямо говорит, доходит ли звук до вашего DAC в режиме bit-perfect."
@@ -3167,7 +3167,7 @@ msgid "Focus on playing"
 msgstr "Следовать за воспроизведением"
 
 msgid "Folder"
-msgstr ""
+msgstr "Папка"
 
 msgid "Folder colors in the sidebar"
 msgstr "Цвета папок на боковой панели"
@@ -3233,7 +3233,7 @@ msgid "Forward 10 seconds"
 msgstr "Вперёд на 10 секунд"
 
 msgid "Found"
-msgstr ""
+msgstr "Есть совпадение"
 
 msgid "Found on this network"
 msgstr "Найдено в этой сети"
@@ -3710,7 +3710,7 @@ msgid "Import / export"
 msgstr "Импорт / экспорт"
 
 msgid "Import another"
-msgstr ""
+msgstr "Импортировать ещё"
 
 msgid "Import at most 64 presets at once."
 msgstr ""
@@ -4513,6 +4513,9 @@ msgstr ""
 msgid "Match {} exactly"
 msgstr "Искать {} точно"
 
+msgid "Matches"
+msgstr "Совпадения"
+
 msgid "Maximize"
 msgstr "Развернуть окно"
 
@@ -4985,7 +4988,7 @@ msgid "No downloaded files were found in this selection."
 msgstr "В выбранных элементах нет загруженных файлов."
 
 msgid "No file chosen"
-msgstr ""
+msgstr "Файл не выбран"
 
 msgid "No files need to change."
 msgstr ""
@@ -5198,10 +5201,10 @@ msgid "Not for me"
 msgstr "Не для меня"
 
 msgid "Not found"
-msgstr ""
+msgstr "Нет совпадения"
 
 msgid "Not found ({})"
-msgstr ""
+msgstr "Нет совпадения ({})"
 
 msgid "Not found on disk"
 msgstr "Не найден на диске"
@@ -5402,7 +5405,7 @@ msgid "Only personal presets can be deleted."
 msgstr "Удалять можно только личные пресеты."
 
 msgid "Only songs already in your library"
-msgstr ""
+msgstr "Только песни, которые уже есть в вашей библиотеке"
 
 msgid "Only the first {} outputs are listed."
 msgstr "Показаны только первые {} выводов."
@@ -5588,7 +5591,7 @@ msgid "Oratorio"
 msgstr "Оратория"
 
 msgid "Origin"
-msgstr ""
+msgstr "Источник"
 
 msgid "Original audio"
 msgstr "Исходное аудио"
@@ -5921,7 +5924,7 @@ msgid "Playlist icon"
 msgstr "Значок плейлиста"
 
 msgid "Playlist in your {} account"
-msgstr ""
+msgstr "Плейлист в вашей учётной записи {}"
 
 msgid "Playlist manager"
 msgstr "Управление плейлистами"
@@ -6803,7 +6806,7 @@ msgid "Review the device changes before syncing."
 msgstr ""
 
 msgid "Review the matches"
-msgstr ""
+msgstr "Проверьте совпадения"
 
 msgid "Review the requested permissions before installing."
 msgstr "Проверьте запрошенные разрешения перед установкой."
@@ -7412,7 +7415,7 @@ msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr "Показано {} из {} треков. Выберите исполнителя или сервер, чтобы увидеть остальные."
 
 msgid "Showing {}–{} of {}"
-msgstr ""
+msgstr "{}–{} из {}"
 
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Показывается при наведении на обложку, записывается так же, как название."
@@ -7652,7 +7655,7 @@ msgid "Static"
 msgstr "Статичный"
 
 msgid "Station"
-msgstr ""
+msgstr "Станция"
 
 msgid "Stations"
 msgstr "Станции"
@@ -9536,13 +9539,13 @@ msgid "Where is it, and who signs in?"
 msgstr "Где он и кто входит?"
 
 msgid "Where is the playlist?"
-msgstr ""
+msgstr "Откуда плейлист?"
 
 msgid "Where is your music?"
 msgstr "Где ваша музыка?"
 
 msgid "Where should it go?"
-msgstr ""
+msgstr "Куда сохранить плейлист?"
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Куда идут сэмплы: прямо на устройство или через звуковой сервер."
@@ -9584,7 +9587,7 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows не сообщает, что принимает «{}» ({})"
 
 msgid "With options"
-msgstr ""
+msgstr "Есть варианты"
 
 msgid "Withdraw approval"
 msgstr "Отозвать одобрение"
@@ -9698,7 +9701,7 @@ msgid "Your genre tags"
 msgstr ""
 
 msgid "Your library"
-msgstr ""
+msgstr "Ваша библиотека"
 
 msgid "Your music"
 msgstr "Ваша музыка"
@@ -11246,7 +11249,7 @@ msgid "{} did not accept the account"
 msgstr "источник «{}» не принял учётную запись"
 
 msgid "{} did not answer"
-msgstr ""
+msgstr "{} не ответил"
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
@@ -11271,9 +11274,9 @@ msgstr "{} не отвечает; измените плейлист, когда 
 
 msgid "{} duplicate"
 msgid_plural "{} duplicates"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{} дубликат"
+msgstr[1] "{} дубликата"
+msgstr[2] "{} дубликатов"
 
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
@@ -11433,9 +11436,9 @@ msgstr "На {} больше нет этого плейлиста; здесь о
 
 msgid "{} not found"
 msgid_plural "{} not found"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{} без совпадения"
+msgstr[1] "{} без совпадения"
+msgstr[2] "{} без совпадения"
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "Из ваших плейлистов уйдут его треки: {1} (плейлистов: {2})."
@@ -11559,9 +11562,9 @@ msgstr[2] "{} песен"
 
 msgid "{} song added"
 msgid_plural "{} songs added"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "{} песня добавлена"
+msgstr[1] "{} песни добавлены"
+msgstr[2] "{} песен добавлено"
 
 msgid "{} star"
 msgid_plural "{} stars"

@@ -1043,7 +1043,7 @@ msgid "Being removed…"
 msgstr "正在移除…"
 
 msgid "Best quality from any connected source, kept in Chilpa"
-msgstr ""
+msgstr "從任何已連線的來源取得最佳音質，保存在 Chilpa"
 
 msgid "Between tracks"
 msgstr "曲目之間"
@@ -1473,7 +1473,7 @@ msgid "Chilpa output"
 msgstr "Chilpa 輸出"
 
 msgid "Chilpa playlist"
-msgstr ""
+msgstr "Chilpa 播放清單"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa 播放你磁碟上的檔案與自架伺服器的音樂，外掛可新增更多來源。它會清楚告知送到 DAC 的內容是否為位元完美。"
@@ -3171,7 +3171,7 @@ msgid "Focus on playing"
 msgstr "專注播放"
 
 msgid "Folder"
-msgstr ""
+msgstr "資料夾"
 
 msgid "Folder colors in the sidebar"
 msgstr "側邊欄資料夾顏色"
@@ -3237,7 +3237,7 @@ msgid "Forward 10 seconds"
 msgstr "快進 10 秒"
 
 msgid "Found"
-msgstr ""
+msgstr "有符合項目"
 
 msgid "Found on this network"
 msgstr "在此網路上找到"
@@ -3712,7 +3712,7 @@ msgid "Import / export"
 msgstr "匯入 / 匯出"
 
 msgid "Import another"
-msgstr ""
+msgstr "匯入另一個"
 
 msgid "Import at most 64 presets at once."
 msgstr ""
@@ -4511,6 +4511,9 @@ msgstr ""
 msgid "Match {} exactly"
 msgstr "精確符合 {}"
 
+msgid "Matches"
+msgstr "符合項目"
+
 msgid "Maximize"
 msgstr "最大化"
 
@@ -4983,7 +4986,7 @@ msgid "No downloaded files were found in this selection."
 msgstr ""
 
 msgid "No file chosen"
-msgstr ""
+msgstr "未選擇檔案"
 
 msgid "No files need to change."
 msgstr "沒有檔案需要變更。"
@@ -5196,10 +5199,10 @@ msgid "Not for me"
 msgstr "不感興趣"
 
 msgid "Not found"
-msgstr ""
+msgstr "無符合項目"
 
 msgid "Not found ({})"
-msgstr ""
+msgstr "無符合項目（{}）"
 
 msgid "Not found on disk"
 msgstr ""
@@ -5400,7 +5403,7 @@ msgid "Only personal presets can be deleted."
 msgstr "僅能刪除個人預設值。"
 
 msgid "Only songs already in your library"
-msgstr ""
+msgstr "只包含音樂庫中已有的歌曲"
 
 msgid "Only the first {} outputs are listed."
 msgstr "僅列出前 {} 個輸出。"
@@ -5586,7 +5589,7 @@ msgid "Oratorio"
 msgstr "神劇"
 
 msgid "Origin"
-msgstr ""
+msgstr "來源"
 
 msgid "Original audio"
 msgstr "原始音訊"
@@ -5919,7 +5922,7 @@ msgid "Playlist icon"
 msgstr "播放清單圖示"
 
 msgid "Playlist in your {} account"
-msgstr ""
+msgstr "你的 {} 帳號中的播放清單"
 
 msgid "Playlist manager"
 msgstr "播放清單管理員"
@@ -6799,7 +6802,7 @@ msgid "Review the device changes before syncing."
 msgstr "同步前請先檢視裝置變更。"
 
 msgid "Review the matches"
-msgstr ""
+msgstr "檢查符合項目"
 
 msgid "Review the requested permissions before installing."
 msgstr "安裝前請先檢視請求的權限。"
@@ -7406,7 +7409,7 @@ msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr ""
 
 msgid "Showing {}–{} of {}"
-msgstr ""
+msgstr "第 {}–{} 項，共 {} 項"
 
 msgid "Shown when pointing at the cover, written like the title."
 msgstr ""
@@ -7644,7 +7647,7 @@ msgid "Static"
 msgstr "靜態"
 
 msgid "Station"
-msgstr ""
+msgstr "電台"
 
 msgid "Stations"
 msgstr "電台"
@@ -9520,13 +9523,13 @@ msgid "Where is it, and who signs in?"
 msgstr "它在哪裡？誰來登入？"
 
 msgid "Where is the playlist?"
-msgstr ""
+msgstr "播放清單來自哪裡？"
 
 msgid "Where is your music?"
 msgstr "你的音樂在哪裡？"
 
 msgid "Where should it go?"
-msgstr ""
+msgstr "要存到哪裡？"
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "取樣的去向：直接傳送至裝置，或透過音訊伺服器。"
@@ -9568,7 +9571,7 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows 未說明「{}」接受的格式 ({})"
 
 msgid "With options"
-msgstr ""
+msgstr "有其他選項"
 
 msgid "Withdraw approval"
 msgstr "撤銷核准"
@@ -9682,7 +9685,7 @@ msgid "Your genre tags"
 msgstr ""
 
 msgid "Your library"
-msgstr ""
+msgstr "你的音樂庫"
 
 msgid "Your music"
 msgstr "你的音樂"
@@ -11210,7 +11213,7 @@ msgid "{} did not accept the account"
 msgstr "{} 未接受該帳號"
 
 msgid "{} did not answer"
-msgstr ""
+msgstr "{} 沒有回應"
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
@@ -11231,7 +11234,7 @@ msgstr "{} 目前無回應；請待其恢復後再變更播放清單。"
 
 msgid "{} duplicate"
 msgid_plural "{} duplicates"
-msgstr[0] ""
+msgstr[0] "{} 首重複"
 
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
@@ -11357,7 +11360,7 @@ msgstr "{} 已不再擁有此播放清單；該清單也已從你在此處的播
 
 msgid "{} not found"
 msgid_plural "{} not found"
-msgstr[0] ""
+msgstr[0] "{} 首無符合項目"
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr "其 {} 首曲目將從你的 {} 個播放清單中移除。"
@@ -11461,7 +11464,7 @@ msgstr[0] "{} 首歌曲"
 
 msgid "{} song added"
 msgid_plural "{} songs added"
-msgstr[0] ""
+msgstr[0] "已新增 {} 首歌曲"
 
 msgid "{} star"
 msgid_plural "{} stars"

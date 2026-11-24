@@ -48,7 +48,7 @@ TestCase {
     }
     function test_the_rail_names_the_steps_and_marks_the_ones_behind() {
         const rail = findChild(page, "importSteps")
-        compare(rail.document.steps.map(s => s.label), ["Origin", "Destinations", "Review", "Done"])
+        compare(rail.document.steps.map(s => s.label), ["Origin", "Destinations", "Matches", "Done"])
         compare(rail.document.step, 1)
         PlaylistImport.show(document({phase: "preview", preview: {name: "List", total: 3}}, false))
         compare(rail.document.step, 2)

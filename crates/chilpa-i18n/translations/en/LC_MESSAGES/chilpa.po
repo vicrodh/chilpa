@@ -1036,7 +1036,7 @@ msgid "Being removed…"
 msgstr ""
 
 msgid "Best quality from any connected source, kept in Chilpa"
-msgstr ""
+msgstr "Best quality from any connected source, kept in Chilpa"
 
 msgid "Between tracks"
 msgstr ""
@@ -1467,7 +1467,7 @@ msgid "Chilpa output"
 msgstr ""
 
 msgid "Chilpa playlist"
-msgstr ""
+msgstr "Chilpa playlist"
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa plays files from your local disks and your servers, and with plugins you can add even more sources. It clearly states whether the audio reaching your DAC is bit-perfect."
@@ -3165,7 +3165,7 @@ msgid "Focus on playing"
 msgstr ""
 
 msgid "Folder"
-msgstr ""
+msgstr "Folder"
 
 msgid "Folder colors in the sidebar"
 msgstr ""
@@ -3231,7 +3231,7 @@ msgid "Forward 10 seconds"
 msgstr ""
 
 msgid "Found"
-msgstr ""
+msgstr "Found"
 
 msgid "Found on this network"
 msgstr ""
@@ -3707,7 +3707,7 @@ msgid "Import / export"
 msgstr ""
 
 msgid "Import another"
-msgstr ""
+msgstr "Import another"
 
 msgid "Import at most 64 presets at once."
 msgstr ""
@@ -4508,6 +4508,9 @@ msgstr ""
 msgid "Match {} exactly"
 msgstr ""
 
+msgid "Matches"
+msgstr "Matches"
+
 msgid "Maximize"
 msgstr ""
 
@@ -4980,7 +4983,7 @@ msgid "No downloaded files were found in this selection."
 msgstr "No downloaded files were found in this selection."
 
 msgid "No file chosen"
-msgstr ""
+msgstr "No file chosen"
 
 msgid "No files need to change."
 msgstr "No files need to change."
@@ -5193,10 +5196,10 @@ msgid "Not for me"
 msgstr ""
 
 msgid "Not found"
-msgstr ""
+msgstr "Not found"
 
 msgid "Not found ({})"
-msgstr ""
+msgstr "Not found ({})"
 
 msgid "Not found on disk"
 msgstr "Not found on disk"
@@ -5397,7 +5400,7 @@ msgid "Only personal presets can be deleted."
 msgstr ""
 
 msgid "Only songs already in your library"
-msgstr ""
+msgstr "Only songs already in your library"
 
 msgid "Only the first {} outputs are listed."
 msgstr ""
@@ -5583,7 +5586,7 @@ msgid "Oratorio"
 msgstr ""
 
 msgid "Origin"
-msgstr ""
+msgstr "Origin"
 
 msgid "Original audio"
 msgstr "Original audio"
@@ -5916,7 +5919,7 @@ msgid "Playlist icon"
 msgstr ""
 
 msgid "Playlist in your {} account"
-msgstr ""
+msgstr "Playlist in your {} account"
 
 msgid "Playlist manager"
 msgstr ""
@@ -6797,7 +6800,7 @@ msgid "Review the device changes before syncing."
 msgstr "Review the device changes before syncing."
 
 msgid "Review the matches"
-msgstr ""
+msgstr "Review the matches"
 
 msgid "Review the requested permissions before installing."
 msgstr "Review the requested permissions before installing."
@@ -7405,7 +7408,7 @@ msgid "Showing {} of {} tracks. Choose an artist or a server to see the rest."
 msgstr ""
 
 msgid "Showing {}–{} of {}"
-msgstr ""
+msgstr "Showing {}–{} of {}"
 
 msgid "Shown when pointing at the cover, written like the title."
 msgstr "Shown when pointing at the cover, written like the title."
@@ -7644,7 +7647,7 @@ msgid "Static"
 msgstr ""
 
 msgid "Station"
-msgstr ""
+msgstr "Station"
 
 msgid "Stations"
 msgstr ""
@@ -9524,13 +9527,13 @@ msgid "Where is it, and who signs in?"
 msgstr ""
 
 msgid "Where is the playlist?"
-msgstr ""
+msgstr "Where is the playlist?"
 
 msgid "Where is your music?"
 msgstr ""
 
 msgid "Where should it go?"
-msgstr ""
+msgstr "Where should it go?"
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr ""
@@ -9572,7 +9575,7 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr ""
 
 msgid "With options"
-msgstr ""
+msgstr "With options"
 
 msgid "Withdraw approval"
 msgstr ""
@@ -9686,7 +9689,7 @@ msgid "Your genre tags"
 msgstr ""
 
 msgid "Your library"
-msgstr ""
+msgstr "Your library"
 
 msgid "Your music"
 msgstr "Your music"
@@ -11224,7 +11227,7 @@ msgid "{} did not accept the account"
 msgstr ""
 
 msgid "{} did not answer"
-msgstr ""
+msgstr "{} did not answer"
 
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
@@ -11247,8 +11250,8 @@ msgstr ""
 
 msgid "{} duplicate"
 msgid_plural "{} duplicates"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} duplicate"
+msgstr[1] "{} duplicates"
 
 msgid "{} favorite waits to reach it: {}"
 msgid_plural "{} favorites wait to reach it: {}"
@@ -11391,8 +11394,8 @@ msgstr ""
 
 msgid "{} not found"
 msgid_plural "{} not found"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} not found"
+msgstr[1] "{} not found"
 
 msgid "{} of its tracks leave {} of your playlists."
 msgstr ""
@@ -11506,8 +11509,8 @@ msgstr[1] ""
 
 msgid "{} song added"
 msgid_plural "{} songs added"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "{} song added"
+msgstr[1] "{} songs added"
 
 msgid "{} star"
 msgid_plural "{} stars"
