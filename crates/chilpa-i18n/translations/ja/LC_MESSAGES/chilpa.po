@@ -70,9 +70,6 @@ msgstr "1. 現在のPipeWire/WirePlumber設定をバックアップします"
 msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
 msgstr "1. 「Audio > Sinks」でDACを見つけて番号をメモします"
 
-msgid "1. Origin"
-msgstr "1. 取り込み元"
-
 msgid "12 hours"
 msgstr "12時間"
 
@@ -81,9 +78,6 @@ msgstr "16 bit"
 
 msgid "2 hr"
 msgstr "2時間"
-
-msgid "2. Destinations"
-msgstr "2. 取り込み先"
 
 msgid "2. Run with that number to read the node.name"
 msgstr "2. その番号で実行してnode.nameを読み取ります"
@@ -103,9 +97,6 @@ msgstr "3時間"
 msgid "3. Restart the audio services to load the config"
 msgstr "3. オーディオサービスを再起動して設定を読み込みます"
 
-msgid "3. Review"
-msgstr "3. 確認"
-
 msgid "30 min"
 msgstr "30分"
 
@@ -114,9 +105,6 @@ msgstr "32 bit"
 
 msgid "32 bit float"
 msgstr "32 bit float"
-
-msgid "4. Summary"
-msgstr "4. まとめ"
 
 msgid "5 hr"
 msgstr "5時間"
@@ -427,9 +415,6 @@ msgstr ""
 msgid "Adding to queue…"
 msgstr "キューに追加中…"
 
-msgid "Adding tracks…"
-msgstr "トラックを追加中…"
-
 msgid "Adding {} track"
 msgid_plural "Adding {} tracks"
 msgstr[0] "{}トラックを追加中"
@@ -724,9 +709,6 @@ msgstr "すべての音質"
 
 msgid "Any rating"
 msgstr "評価を問わない"
-
-msgid "Any source — best quality (local mixed playlist)"
-msgstr "すべてのソース — 最高音質（ローカルのミックスプレイリスト）"
 
 msgid "Any time"
 msgstr "期間を問わない"
@@ -1052,6 +1034,9 @@ msgstr ""
 msgid "Being removed…"
 msgstr "削除中…"
 
+msgid "Best quality from any connected source, kept in Chilpa"
+msgstr ""
+
 msgid "Between tracks"
 msgstr "トラック間"
 
@@ -1256,9 +1241,6 @@ msgstr "キャスト状態"
 
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "キャストには、サイズとバイト範囲がわかる元のファイルが必要です。"
-
-msgid "Catalog error"
-msgstr "カタログエラー"
 
 msgid "Catalog number"
 msgstr "カタログ番号"
@@ -1481,6 +1463,9 @@ msgstr "Chilpaは、前回閉じたときのタブで開きます。"
 
 msgid "Chilpa output"
 msgstr "Chilpaの出力"
+
+msgid "Chilpa playlist"
+msgstr ""
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpaはディスク上のファイルと自分で運用するサーバーを再生し、プラグインでソースを追加できます。DACに届く音がビットパーフェクトかどうかをはっきり伝えます。"
@@ -2208,9 +2193,6 @@ msgstr "プレイリストを作成"
 msgid "Create playlists"
 msgstr "プレイリストを作成"
 
-msgid "Creating playlists…"
-msgstr "プレイリストを作成中…"
-
 msgid "Credits"
 msgstr "クレジット"
 
@@ -2792,9 +2774,6 @@ msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "各ファイルをコピーし、そのコピーに書き込んで読み戻したうえで、元のファイルを置き換えます。アルバムと同じ大きさの空き容量が必要です。書き込んだ内容は元に戻せません。"
-
-msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
-msgstr "選択した取り込み先ごとに、それぞれプレイリストが作成されます。ミックスプレイリストはChilpa内に残り、接続したすべてのソースのトラックを含められます。"
 
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
@@ -3724,14 +3703,14 @@ msgstr "没入表示"
 msgid "Import / export"
 msgstr "インポート / エクスポート"
 
+msgid "Import another"
+msgstr ""
+
 msgid "Import at most 64 presets at once."
 msgstr ""
 
 msgid "Import between 1 and 64 presets."
 msgstr ""
-
-msgid "Import cancelled"
-msgstr "インポートをキャンセルしました"
 
 msgid "Import complete"
 msgstr "インポート完了"
@@ -4359,9 +4338,6 @@ msgstr "ローカルフォルダーでこのサイドバーを整理します。
 msgid "Local library"
 msgstr "ローカルライブラリ"
 
-msgid "Local only"
-msgstr "ローカルのみ"
-
 msgid "Local tracks"
 msgstr "ローカルトラック"
 
@@ -4526,9 +4502,6 @@ msgstr ""
 
 msgid "Match {} exactly"
 msgstr "{} に完全一致"
-
-msgid "Matched"
-msgstr "一致"
 
 msgid "Maximize"
 msgstr "最大化"
@@ -4883,9 +4856,6 @@ msgstr "新しい条件はこのグループに入ります"
 
 msgid "New folder"
 msgstr "新規フォルダー"
-
-msgid "New import"
-msgstr "新規インポート"
 
 msgid "New in {}"
 msgstr "{} の新機能"
@@ -5421,6 +5391,9 @@ msgstr ""
 msgid "Only personal presets can be deleted."
 msgstr "削除できるのは個人用プリセットのみです。"
 
+msgid "Only songs already in your library"
+msgstr ""
+
 msgid "Only the first {} outputs are listed."
 msgstr "最初の {} 件の出力のみ表示されます。"
 
@@ -5603,6 +5576,9 @@ msgstr "非公開プレイリスト用の任意のアクセストークン"
 
 msgid "Oratorio"
 msgstr "オラトリオ"
+
+msgid "Origin"
+msgstr ""
 
 msgid "Original audio"
 msgstr "元のオーディオ"
@@ -5934,6 +5910,9 @@ msgstr "サイドバーのプレイリストアートワーク"
 msgid "Playlist icon"
 msgstr "プレイリストアイコン"
 
+msgid "Playlist in your {} account"
+msgstr ""
+
 msgid "Playlist manager"
 msgstr "プレイリストマネージャー"
 
@@ -5942,12 +5921,6 @@ msgstr "プレイリスト名"
 
 msgid "Playlist options"
 msgstr "プレイリストのオプション"
-
-msgid "Playlist origin"
-msgstr "プレイリストの取り込み元"
-
-msgid "Playlist preview"
-msgstr "プレイリストのプレビュー"
 
 msgid "Playlists"
 msgstr "プレイリスト"
@@ -6165,9 +6138,6 @@ msgstr "プロバイダー識別子"
 msgid "Public playlist"
 msgstr "公開プレイリスト"
 
-msgid "Public remote playlists"
-msgstr "公開リモートプレイリスト"
-
 msgid "Purchase date"
 msgstr "購入日"
 
@@ -6194,9 +6164,6 @@ msgstr "Qtのバージョン"
 
 msgid "Quality"
 msgstr "音質"
-
-msgid "Quality unknown"
-msgstr "音質不明"
 
 msgid "Quality, format and source filters"
 msgstr "音質、フォーマット、ソースのフィルター"
@@ -6333,9 +6300,6 @@ msgstr "再有効化"
 msgid "Reactive Rings"
 msgstr "Reactive Rings"
 
-msgid "Read a playlist, choose destinations, review matches, then create your playlists."
-msgstr "プレイリストを読み取り、取り込み先を選び、一致を確認してから、プレイリストを作成します。"
-
 msgid "Read as"
 msgstr "解釈"
 
@@ -6375,9 +6339,6 @@ msgstr ""
 msgid "Reading it from {}…"
 msgstr "{}から読み取っています…"
 
-msgid "Reading playlist…"
-msgstr "プレイリストを読み取っています…"
-
 msgid "Reading selected tracks…"
 msgstr "選択したトラックを読み取っています…"
 
@@ -6410,9 +6371,6 @@ msgstr "ローカルPCM再生の準備ができました"
 
 msgid "Ready to add it"
 msgstr "追加の準備ができました"
-
-msgid "Ready to review"
-msgstr "確認の準備完了"
 
 msgid "Ready to sync"
 msgstr ""
@@ -6830,6 +6788,9 @@ msgid "Review the current proposal before applying it."
 msgstr ""
 
 msgid "Review the device changes before syncing."
+msgstr ""
+
+msgid "Review the matches"
 msgstr ""
 
 msgid "Review the requested permissions before installing."
@@ -9024,9 +8985,6 @@ msgstr "トラックメニュー"
 msgid "Track positions are missing or duplicated. Choose sequential numbering or explicit positions."
 msgstr ""
 
-msgid "Track review"
-msgstr "トラックの確認"
-
 msgid "Track sample rate"
 msgstr "曲のサンプルレート"
 
@@ -9209,9 +9167,6 @@ msgstr ""
 
 msgid "Unlock the filter before editing it."
 msgstr ""
-
-msgid "Unmatched"
-msgstr "未一致"
 
 msgid "Unmatched file"
 msgstr ""
@@ -9556,8 +9511,14 @@ msgstr "v{} の新機能"
 msgid "Where is it, and who signs in?"
 msgstr "サーバーの場所とサインインするユーザー"
 
+msgid "Where is the playlist?"
+msgstr ""
+
 msgid "Where is your music?"
 msgstr "音楽はどこにありますか？"
+
+msgid "Where should it go?"
+msgstr ""
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "サンプルの送り先です。デバイスに直接送るか、サウンドサーバーを経由します。"
@@ -9710,6 +9671,9 @@ msgid "Your distribution"
 msgstr "お使いのディストリビューション"
 
 msgid "Your genre tags"
+msgstr ""
+
+msgid "Your library"
 msgstr ""
 
 msgid "Your music"
@@ -11548,9 +11512,6 @@ msgstr "{}は書き込まれましたが、「{}」の内容が正しくあり�
 msgid "{} week"
 msgid_plural "{} weeks"
 msgstr[0] "{}週間"
-
-msgid "{} written · {} unmatched · {} duplicates"
-msgstr "{}件を書き込み · {}件が未一致 · {}件が重複"
 
 msgid "{} year"
 msgid_plural "{} years"

@@ -70,9 +70,6 @@ msgstr ""
 msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
 msgstr ""
 
-msgid "1. Origin"
-msgstr ""
-
 msgid "12 hours"
 msgstr "12 hours"
 
@@ -80,9 +77,6 @@ msgid "16 bit"
 msgstr ""
 
 msgid "2 hr"
-msgstr ""
-
-msgid "2. Destinations"
 msgstr ""
 
 msgid "2. Run with that number to read the node.name"
@@ -103,9 +97,6 @@ msgstr ""
 msgid "3. Restart the audio services to load the config"
 msgstr ""
 
-msgid "3. Review"
-msgstr ""
-
 msgid "30 min"
 msgstr ""
 
@@ -113,9 +104,6 @@ msgid "32 bit"
 msgstr ""
 
 msgid "32 bit float"
-msgstr ""
-
-msgid "4. Summary"
 msgstr ""
 
 msgid "5 hr"
@@ -427,9 +415,6 @@ msgstr "Adding storage…"
 msgid "Adding to queue…"
 msgstr ""
 
-msgid "Adding tracks…"
-msgstr "Adding tracks…"
-
 msgid "Adding {} track"
 msgid_plural "Adding {} tracks"
 msgstr[0] ""
@@ -725,9 +710,6 @@ msgstr "Any quality"
 
 msgid "Any rating"
 msgstr ""
-
-msgid "Any source — best quality (local mixed playlist)"
-msgstr "Any source — best quality (local mixed playlist)"
 
 msgid "Any time"
 msgstr ""
@@ -1053,6 +1035,9 @@ msgstr ""
 msgid "Being removed…"
 msgstr ""
 
+msgid "Best quality from any connected source, kept in Chilpa"
+msgstr ""
+
 msgid "Between tracks"
 msgstr ""
 
@@ -1258,9 +1243,6 @@ msgstr "Cast state"
 
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr ""
-
-msgid "Catalog error"
-msgstr "Catalog error"
 
 msgid "Catalog number"
 msgstr ""
@@ -1482,6 +1464,9 @@ msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa remembers the open tabs and restores them on app start."
 
 msgid "Chilpa output"
+msgstr ""
+
+msgid "Chilpa playlist"
 msgstr ""
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
@@ -2210,9 +2195,6 @@ msgstr ""
 msgid "Create playlists"
 msgstr "Create playlists"
 
-msgid "Creating playlists…"
-msgstr "Creating playlists…"
-
 msgid "Credits"
 msgstr "Credits"
 
@@ -2794,9 +2776,6 @@ msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr ""
-
-msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
-msgstr "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
 
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
@@ -3727,14 +3706,14 @@ msgstr ""
 msgid "Import / export"
 msgstr ""
 
+msgid "Import another"
+msgstr ""
+
 msgid "Import at most 64 presets at once."
 msgstr ""
 
 msgid "Import between 1 and 64 presets."
 msgstr ""
-
-msgid "Import cancelled"
-msgstr "Import cancelled"
 
 msgid "Import complete"
 msgstr "Import complete"
@@ -4364,9 +4343,6 @@ msgstr ""
 msgid "Local library"
 msgstr ""
 
-msgid "Local only"
-msgstr "Local only"
-
 msgid "Local tracks"
 msgstr ""
 
@@ -4531,9 +4507,6 @@ msgstr ""
 
 msgid "Match {} exactly"
 msgstr ""
-
-msgid "Matched"
-msgstr "Matched"
 
 msgid "Maximize"
 msgstr ""
@@ -4888,9 +4861,6 @@ msgstr ""
 
 msgid "New folder"
 msgstr ""
-
-msgid "New import"
-msgstr "New import"
 
 msgid "New in {}"
 msgstr "New in {}"
@@ -5426,6 +5396,9 @@ msgstr ""
 msgid "Only personal presets can be deleted."
 msgstr ""
 
+msgid "Only songs already in your library"
+msgstr ""
+
 msgid "Only the first {} outputs are listed."
 msgstr ""
 
@@ -5607,6 +5580,9 @@ msgid "Optional access token for private playlists"
 msgstr "Optional access token for private playlists"
 
 msgid "Oratorio"
+msgstr ""
+
+msgid "Origin"
 msgstr ""
 
 msgid "Original audio"
@@ -5939,6 +5915,9 @@ msgstr ""
 msgid "Playlist icon"
 msgstr ""
 
+msgid "Playlist in your {} account"
+msgstr ""
+
 msgid "Playlist manager"
 msgstr ""
 
@@ -5947,12 +5926,6 @@ msgstr ""
 
 msgid "Playlist options"
 msgstr "Playlist options"
-
-msgid "Playlist origin"
-msgstr "Playlist origin"
-
-msgid "Playlist preview"
-msgstr "Playlist preview"
 
 msgid "Playlists"
 msgstr ""
@@ -6170,9 +6143,6 @@ msgstr ""
 msgid "Public playlist"
 msgstr "Public playlist"
 
-msgid "Public remote playlists"
-msgstr "Public remote playlists"
-
 msgid "Purchase date"
 msgstr "Purchase date"
 
@@ -6199,9 +6169,6 @@ msgstr "Qt version"
 
 msgid "Quality"
 msgstr ""
-
-msgid "Quality unknown"
-msgstr "Quality unknown"
 
 msgid "Quality, format and source filters"
 msgstr ""
@@ -6338,9 +6305,6 @@ msgstr ""
 msgid "Reactive Rings"
 msgstr ""
 
-msgid "Read a playlist, choose destinations, review matches, then create your playlists."
-msgstr "Read a playlist, choose destinations, review matches, then create your playlists."
-
 msgid "Read as"
 msgstr ""
 
@@ -6380,9 +6344,6 @@ msgstr ""
 msgid "Reading it from {}…"
 msgstr ""
 
-msgid "Reading playlist…"
-msgstr "Reading playlist…"
-
 msgid "Reading selected tracks…"
 msgstr "Reading selected tracks…"
 
@@ -6415,9 +6376,6 @@ msgstr ""
 
 msgid "Ready to add it"
 msgstr ""
-
-msgid "Ready to review"
-msgstr "Ready to review"
 
 msgid "Ready to sync"
 msgstr "Ready to sync"
@@ -6837,6 +6795,9 @@ msgstr ""
 
 msgid "Review the device changes before syncing."
 msgstr "Review the device changes before syncing."
+
+msgid "Review the matches"
+msgstr ""
 
 msgid "Review the requested permissions before installing."
 msgstr "Review the requested permissions before installing."
@@ -9035,9 +8996,6 @@ msgstr ""
 msgid "Track positions are missing or duplicated. Choose sequential numbering or explicit positions."
 msgstr ""
 
-msgid "Track review"
-msgstr "Track review"
-
 msgid "Track sample rate"
 msgstr "Track sample rate"
 
@@ -9220,9 +9178,6 @@ msgstr ""
 
 msgid "Unlock the filter before editing it."
 msgstr ""
-
-msgid "Unmatched"
-msgstr "Unmatched"
 
 msgid "Unmatched file"
 msgstr ""
@@ -9568,7 +9523,13 @@ msgstr "What's new in v{}"
 msgid "Where is it, and who signs in?"
 msgstr ""
 
+msgid "Where is the playlist?"
+msgstr ""
+
 msgid "Where is your music?"
+msgstr ""
+
+msgid "Where should it go?"
 msgstr ""
 
 msgid "Where the samples go: straight to the device, or through a sound server."
@@ -9722,6 +9683,9 @@ msgid "Your distribution"
 msgstr ""
 
 msgid "Your genre tags"
+msgstr ""
+
+msgid "Your library"
 msgstr ""
 
 msgid "Your music"
@@ -11609,9 +11573,6 @@ msgid "{} week"
 msgid_plural "{} weeks"
 msgstr[0] ""
 msgstr[1] ""
-
-msgid "{} written · {} unmatched · {} duplicates"
-msgstr "{} written · {} unmatched · {} duplicates"
 
 msgid "{} year"
 msgid_plural "{} years"

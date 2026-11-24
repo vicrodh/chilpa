@@ -78,9 +78,6 @@ msgstr "1. 備份你目前的 PipeWire/WirePlumber 設定"
 msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
 msgstr "1. 在「音訊 > 接收端」中找到你的 DAC，並記下其編號"
 
-msgid "1. Origin"
-msgstr "1. 來源"
-
 msgid "12 hours"
 msgstr ""
 
@@ -89,9 +86,6 @@ msgstr "16 位元"
 
 msgid "2 hr"
 msgstr "2 小時"
-
-msgid "2. Destinations"
-msgstr "2. 目標"
 
 msgid "2. Run with that number to read the node.name"
 msgstr "2. 使用該編號執行以讀取 node.name"
@@ -111,9 +105,6 @@ msgstr "3 小時"
 msgid "3. Restart the audio services to load the config"
 msgstr "3. 重新啟動音訊系統服務以載入設定"
 
-msgid "3. Review"
-msgstr "3. 檢視"
-
 msgid "30 min"
 msgstr "30 分鐘"
 
@@ -122,9 +113,6 @@ msgstr "32 位元"
 
 msgid "32 bit float"
 msgstr "32 位元浮點數"
-
-msgid "4. Summary"
-msgstr "4. 摘要"
 
 msgid "5 hr"
 msgstr "5 小時"
@@ -435,9 +423,6 @@ msgstr "正在新增儲存空間…"
 msgid "Adding to queue…"
 msgstr "正在加入佇列…"
 
-msgid "Adding tracks…"
-msgstr "正在加入曲目…"
-
 msgid "Adding {} track"
 msgid_plural "Adding {} tracks"
 msgstr[0] "正在加入 {} 首曲目"
@@ -732,9 +717,6 @@ msgstr "任何音質"
 
 msgid "Any rating"
 msgstr "任何評分"
-
-msgid "Any source — best quality (local mixed playlist)"
-msgstr "任何來源 — 最佳音質（本機混合播放清單）"
 
 msgid "Any time"
 msgstr "任何時間"
@@ -1060,6 +1042,9 @@ msgstr ""
 msgid "Being removed…"
 msgstr "正在移除…"
 
+msgid "Best quality from any connected source, kept in Chilpa"
+msgstr ""
+
 msgid "Between tracks"
 msgstr "曲目之間"
 
@@ -1264,9 +1249,6 @@ msgstr "投射狀態"
 
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "投射需要已知大小與位元組範圍的原始檔案。"
-
-msgid "Catalog error"
-msgstr "目錄錯誤"
 
 msgid "Catalog number"
 msgstr "目錄編號"
@@ -1489,6 +1471,9 @@ msgstr "Chilpa 會以關閉前的分頁狀態重新開啟。"
 
 msgid "Chilpa output"
 msgstr "Chilpa 輸出"
+
+msgid "Chilpa playlist"
+msgstr ""
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa 播放你磁碟上的檔案與自架伺服器的音樂，外掛可新增更多來源。它會清楚告知送到 DAC 的內容是否為位元完美。"
@@ -2216,9 +2201,6 @@ msgstr "建立播放清單"
 msgid "Create playlists"
 msgstr "建立播放清單"
 
-msgid "Creating playlists…"
-msgstr "正在建立播放清單…"
-
 msgid "Credits"
 msgstr "製作人員"
 
@@ -2800,9 +2782,6 @@ msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "每個檔案都會先複製、寫入並驗證讀回，確認無誤後才會替換原始檔案。所需剩餘空間需與紀錄容量相同。寫入後將無法復原。"
-
-msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
-msgstr "每個選取的目的地都會建立自己的播放清單。混合播放清單會保留在 Chilpa 中，可包含來自所有已連線來源的曲目。"
 
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
@@ -3732,14 +3711,14 @@ msgstr "沉浸式檢視"
 msgid "Import / export"
 msgstr "匯入 / 匯出"
 
+msgid "Import another"
+msgstr ""
+
 msgid "Import at most 64 presets at once."
 msgstr ""
 
 msgid "Import between 1 and 64 presets."
 msgstr ""
-
-msgid "Import cancelled"
-msgstr "匯入已取消"
 
 msgid "Import complete"
 msgstr "匯入完成"
@@ -4367,9 +4346,6 @@ msgstr "本機資料夾用於整理此側邊欄。原生資料夾會儲存在你
 msgid "Local library"
 msgstr "本機音樂庫"
 
-msgid "Local only"
-msgstr "僅限本機"
-
 msgid "Local tracks"
 msgstr "本機曲目"
 
@@ -4534,9 +4510,6 @@ msgstr ""
 
 msgid "Match {} exactly"
 msgstr "精確符合 {}"
-
-msgid "Matched"
-msgstr "已符合"
 
 msgid "Maximize"
 msgstr "最大化"
@@ -4891,9 +4864,6 @@ msgstr "新條件將放入此群組"
 
 msgid "New folder"
 msgstr "新資料夾"
-
-msgid "New import"
-msgstr "新匯入"
 
 msgid "New in {}"
 msgstr "{} 中的新功能"
@@ -5429,6 +5399,9 @@ msgstr ""
 msgid "Only personal presets can be deleted."
 msgstr "僅能刪除個人預設值。"
 
+msgid "Only songs already in your library"
+msgstr ""
+
 msgid "Only the first {} outputs are listed."
 msgstr "僅列出前 {} 個輸出。"
 
@@ -5611,6 +5584,9 @@ msgstr "私人播放清單的選用存取權杖"
 
 msgid "Oratorio"
 msgstr "神劇"
+
+msgid "Origin"
+msgstr ""
 
 msgid "Original audio"
 msgstr "原始音訊"
@@ -5942,6 +5918,9 @@ msgstr "側邊欄中的播放清單封面"
 msgid "Playlist icon"
 msgstr "播放清單圖示"
 
+msgid "Playlist in your {} account"
+msgstr ""
+
 msgid "Playlist manager"
 msgstr "播放清單管理員"
 
@@ -5950,12 +5929,6 @@ msgstr "播放清單名稱"
 
 msgid "Playlist options"
 msgstr "播放清單選項"
-
-msgid "Playlist origin"
-msgstr "播放清單來源"
-
-msgid "Playlist preview"
-msgstr "播放清單預覽"
 
 msgid "Playlists"
 msgstr "播放清單"
@@ -6173,9 +6146,6 @@ msgstr "提供者識別碼"
 msgid "Public playlist"
 msgstr "公開播放清單"
 
-msgid "Public remote playlists"
-msgstr "公開遠端播放清單"
-
 msgid "Purchase date"
 msgstr "購買日期"
 
@@ -6202,9 +6172,6 @@ msgstr "Qt 版本"
 
 msgid "Quality"
 msgstr "音質"
-
-msgid "Quality unknown"
-msgstr "音質未知"
 
 msgid "Quality, format and source filters"
 msgstr "音質、格式與來源篩選器"
@@ -6341,9 +6308,6 @@ msgstr "重新啟用"
 msgid "Reactive Rings"
 msgstr "反應環（Reactive Rings）"
 
-msgid "Read a playlist, choose destinations, review matches, then create your playlists."
-msgstr "讀取播放清單、選擇目的地、檢視符合項目，然後建立你的播放清單。"
-
 msgid "Read as"
 msgstr "讀取為"
 
@@ -6383,9 +6347,6 @@ msgstr ""
 msgid "Reading it from {}…"
 msgstr "正在從 {} 讀取…"
 
-msgid "Reading playlist…"
-msgstr "正在讀取播放清單…"
-
 msgid "Reading selected tracks…"
 msgstr "正在讀取選取的曲目…"
 
@@ -6418,9 +6379,6 @@ msgstr "已就緒可進行本機 PCM 播放"
 
 msgid "Ready to add it"
 msgstr "準備新增"
-
-msgid "Ready to review"
-msgstr "準備進行檢視"
 
 msgid "Ready to sync"
 msgstr "準備進行同步"
@@ -6839,6 +6797,9 @@ msgstr ""
 
 msgid "Review the device changes before syncing."
 msgstr "同步前請先檢視裝置變更。"
+
+msgid "Review the matches"
+msgstr ""
 
 msgid "Review the requested permissions before installing."
 msgstr "安裝前請先檢視請求的權限。"
@@ -9032,9 +8993,6 @@ msgstr "曲目選單"
 msgid "Track positions are missing or duplicated. Choose sequential numbering or explicit positions."
 msgstr ""
 
-msgid "Track review"
-msgstr "曲目檢視"
-
 msgid "Track sample rate"
 msgstr "曲目取樣率"
 
@@ -9217,9 +9175,6 @@ msgstr ""
 
 msgid "Unlock the filter before editing it."
 msgstr ""
-
-msgid "Unmatched"
-msgstr "未符合"
 
 msgid "Unmatched file"
 msgstr ""
@@ -9564,8 +9519,14 @@ msgstr "v{} 中的最新功能"
 msgid "Where is it, and who signs in?"
 msgstr "它在哪裡？誰來登入？"
 
+msgid "Where is the playlist?"
+msgstr ""
+
 msgid "Where is your music?"
 msgstr "你的音樂在哪裡？"
+
+msgid "Where should it go?"
+msgstr ""
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "取樣的去向：直接傳送至裝置，或透過音訊伺服器。"
@@ -9718,6 +9679,9 @@ msgid "Your distribution"
 msgstr "你的發行版"
 
 msgid "Your genre tags"
+msgstr ""
+
+msgid "Your library"
 msgstr ""
 
 msgid "Your music"
@@ -11556,9 +11520,6 @@ msgstr "{} 已寫入但「{}」中的內容不符合預期；未替換任何內�
 msgid "{} week"
 msgid_plural "{} weeks"
 msgstr[0] "{}週"
-
-msgid "{} written · {} unmatched · {} duplicates"
-msgstr "已寫入 {} · 不符合 {} · 重複 {}"
 
 msgid "{} year"
 msgid_plural "{} years"

@@ -70,9 +70,6 @@ msgstr "1. Maak een back-up van je huidige PipeWire/WirePlumber-configuratie"
 msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
 msgstr "1. Zoek je DAC onder ‘Audio > Sinks' en noteer het nummer"
 
-msgid "1. Origin"
-msgstr "1. Herkomst"
-
 msgid "12 hours"
 msgstr "12 uur"
 
@@ -81,9 +78,6 @@ msgstr "16 bit"
 
 msgid "2 hr"
 msgstr "2 uur"
-
-msgid "2. Destinations"
-msgstr "2. Bestemmingen"
 
 msgid "2. Run with that number to read the node.name"
 msgstr "2. Voer uit met dat nummer om de node.name te lezen"
@@ -103,9 +97,6 @@ msgstr "3 uur"
 msgid "3. Restart the audio services to load the config"
 msgstr "3. Herstart de audioservices om de configuratie te laden"
 
-msgid "3. Review"
-msgstr "3. Controle"
-
 msgid "30 min"
 msgstr "30 min"
 
@@ -114,9 +105,6 @@ msgstr "32 bit"
 
 msgid "32 bit float"
 msgstr "32 bit float"
-
-msgid "4. Summary"
-msgstr "4. Samenvatting"
 
 msgid "5 hr"
 msgstr "5 uur"
@@ -427,9 +415,6 @@ msgstr ""
 msgid "Adding to queue…"
 msgstr "Aan wachtrij toevoegen…"
 
-msgid "Adding tracks…"
-msgstr "Nummers toevoegen…"
-
 msgid "Adding {} track"
 msgid_plural "Adding {} tracks"
 msgstr[0] "{} nummer toevoegen"
@@ -725,9 +710,6 @@ msgstr "Elke kwaliteit"
 
 msgid "Any rating"
 msgstr "Elke beoordeling"
-
-msgid "Any source — best quality (local mixed playlist)"
-msgstr "Elke bron — beste kwaliteit (lokale gemengde afspeellijst)"
 
 msgid "Any time"
 msgstr "Altijd"
@@ -1053,6 +1035,9 @@ msgstr ""
 msgid "Being removed…"
 msgstr "Wordt verwijderd…"
 
+msgid "Best quality from any connected source, kept in Chilpa"
+msgstr ""
+
 msgid "Between tracks"
 msgstr "Tussen nummers"
 
@@ -1258,9 +1243,6 @@ msgstr "Caststatus"
 
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "Casten vereist een origineel bestand met een bekende grootte en byte-bereiken."
-
-msgid "Catalog error"
-msgstr "Catalogusfout"
 
 msgid "Catalog number"
 msgstr "Catalogusnummer"
@@ -1483,6 +1465,9 @@ msgstr "Chilpa opent met de tabbladen die het had toen het sloot."
 
 msgid "Chilpa output"
 msgstr "Uitvoer van Chilpa"
+
+msgid "Chilpa playlist"
+msgstr ""
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa speelt de bestanden op je schijven en de servers die je zelf draait, en plug-ins voegen meer bronnen toe. Het vertelt je duidelijk of wat je DAC bereikt bit-perfect is."
@@ -2210,9 +2195,6 @@ msgstr "Afspeellijst maken"
 msgid "Create playlists"
 msgstr "Afspeellijsten maken"
 
-msgid "Creating playlists…"
-msgstr "Afspeellijsten maken…"
-
 msgid "Credits"
 msgstr "Credits"
 
@@ -2794,9 +2776,6 @@ msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "Elk bestand wordt gekopieerd, de kopie wordt geschreven en teruggelezen, en pas daarna vervangt ze het origineel. Er is evenveel vrije ruimte nodig als het item beslaat. Wat is geschreven, kan niet ongedaan worden gemaakt."
-
-msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
-msgstr "Elke geselecteerde bestemming maakt een eigen afspeellijst. Gemengde afspeellijsten blijven in Chilpa en kunnen nummers van elke verbonden bron bevatten."
 
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
@@ -3727,14 +3706,14 @@ msgstr "Immersieve weergave"
 msgid "Import / export"
 msgstr "Importeren / exporteren"
 
+msgid "Import another"
+msgstr ""
+
 msgid "Import at most 64 presets at once."
 msgstr ""
 
 msgid "Import between 1 and 64 presets."
 msgstr ""
-
-msgid "Import cancelled"
-msgstr "Import geannuleerd"
 
 msgid "Import complete"
 msgstr "Import voltooid"
@@ -4364,9 +4343,6 @@ msgstr "Lokale mappen organiseren deze zijbalk. Native mappen worden opgeslagen 
 msgid "Local library"
 msgstr "Lokale bibliotheek"
 
-msgid "Local only"
-msgstr "Alleen lokaal"
-
 msgid "Local tracks"
 msgstr "Lokale nummers"
 
@@ -4531,9 +4507,6 @@ msgstr ""
 
 msgid "Match {} exactly"
 msgstr "{} precies zoeken"
-
-msgid "Matched"
-msgstr "Gevonden"
 
 msgid "Maximize"
 msgstr "Maximaliseren"
@@ -4888,9 +4861,6 @@ msgstr "Nieuwe voorwaarden komen in deze groep"
 
 msgid "New folder"
 msgstr "Nieuwe map"
-
-msgid "New import"
-msgstr "Nieuwe import"
 
 msgid "New in {}"
 msgstr "Nieuw in {}"
@@ -5426,6 +5396,9 @@ msgstr ""
 msgid "Only personal presets can be deleted."
 msgstr "Alleen persoonlijke presets kunnen worden verwijderd."
 
+msgid "Only songs already in your library"
+msgstr ""
+
 msgid "Only the first {} outputs are listed."
 msgstr "Alleen de eerste {} uitvoeren worden vermeld."
 
@@ -5608,6 +5581,9 @@ msgstr "Optioneel toegangstoken voor privéafspeellijsten"
 
 msgid "Oratorio"
 msgstr "Oratorium"
+
+msgid "Origin"
+msgstr ""
 
 msgid "Original audio"
 msgstr "Originele audio"
@@ -5939,6 +5915,9 @@ msgstr "Afspeellijsthoes in de zijbalk"
 msgid "Playlist icon"
 msgstr "Afspeellijstpictogram"
 
+msgid "Playlist in your {} account"
+msgstr ""
+
 msgid "Playlist manager"
 msgstr "Afspeellijstbeheer"
 
@@ -5947,12 +5926,6 @@ msgstr "Naam van afspeellijst"
 
 msgid "Playlist options"
 msgstr "Afspeellijstopties"
-
-msgid "Playlist origin"
-msgstr "Herkomst van afspeellijst"
-
-msgid "Playlist preview"
-msgstr "Voorbeeld van afspeellijst"
 
 msgid "Playlists"
 msgstr "Afspeellijsten"
@@ -6170,9 +6143,6 @@ msgstr "Aanbiederscodes"
 msgid "Public playlist"
 msgstr "Openbare afspeellijst"
 
-msgid "Public remote playlists"
-msgstr "Openbare afspeellijsten op afstand"
-
 msgid "Purchase date"
 msgstr "Aankoopdatum"
 
@@ -6199,9 +6169,6 @@ msgstr "Qt-versie"
 
 msgid "Quality"
 msgstr "Kwaliteit"
-
-msgid "Quality unknown"
-msgstr "Kwaliteit onbekend"
 
 msgid "Quality, format and source filters"
 msgstr "Filters voor kwaliteit, formaat en bron"
@@ -6338,9 +6305,6 @@ msgstr "Opnieuw activeren"
 msgid "Reactive Rings"
 msgstr "Reactieve ringen"
 
-msgid "Read a playlist, choose destinations, review matches, then create your playlists."
-msgstr "Lees een afspeellijst, kies bestemmingen, controleer de overeenkomsten en maak dan je afspeellijsten aan."
-
 msgid "Read as"
 msgstr "Gelezen als"
 
@@ -6380,9 +6344,6 @@ msgstr ""
 msgid "Reading it from {}…"
 msgstr "Wordt gelezen van {}…"
 
-msgid "Reading playlist…"
-msgstr "Afspeellijst lezen…"
-
 msgid "Reading selected tracks…"
 msgstr "Geselecteerde nummers lezen…"
 
@@ -6415,9 +6376,6 @@ msgstr "Klaar voor lokale PCM-weergave"
 
 msgid "Ready to add it"
 msgstr "Klaar om toe te voegen"
-
-msgid "Ready to review"
-msgstr "Klaar om te controleren"
 
 msgid "Ready to sync"
 msgstr ""
@@ -6836,6 +6794,9 @@ msgid "Review the current proposal before applying it."
 msgstr ""
 
 msgid "Review the device changes before syncing."
+msgstr ""
+
+msgid "Review the matches"
 msgstr ""
 
 msgid "Review the requested permissions before installing."
@@ -9035,9 +8996,6 @@ msgstr "Nummermenu"
 msgid "Track positions are missing or duplicated. Choose sequential numbering or explicit positions."
 msgstr ""
 
-msgid "Track review"
-msgstr "Controle van nummers"
-
 msgid "Track sample rate"
 msgstr "Samplefrequentie van nummer"
 
@@ -9220,9 +9178,6 @@ msgstr ""
 
 msgid "Unlock the filter before editing it."
 msgstr ""
-
-msgid "Unmatched"
-msgstr "Niet gevonden"
 
 msgid "Unmatched file"
 msgstr ""
@@ -9568,8 +9523,14 @@ msgstr "Nieuw in v{}"
 msgid "Where is it, and who signs in?"
 msgstr "Waar staat hij, en wie meldt zich aan?"
 
+msgid "Where is the playlist?"
+msgstr ""
+
 msgid "Where is your music?"
 msgstr "Waar staat je muziek?"
+
+msgid "Where should it go?"
+msgstr ""
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Waar de samples naartoe gaan: rechtstreeks naar het apparaat of via een geluidsserver."
@@ -9722,6 +9683,9 @@ msgid "Your distribution"
 msgstr "Je distributie"
 
 msgid "Your genre tags"
+msgstr ""
+
+msgid "Your library"
 msgstr ""
 
 msgid "Your music"
@@ -11609,9 +11573,6 @@ msgid "{} week"
 msgid_plural "{} weeks"
 msgstr[0] "{} week"
 msgstr[1] "{} weken"
-
-msgid "{} written · {} unmatched · {} duplicates"
-msgstr "{} geschreven · {} niet gevonden · {} duplicaten"
 
 msgid "{} year"
 msgid_plural "{} years"

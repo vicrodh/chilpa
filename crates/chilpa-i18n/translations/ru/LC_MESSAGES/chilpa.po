@@ -70,9 +70,6 @@ msgstr "1. Сделайте резервную копию текущей кон�
 msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
 msgstr "1. Найдите свой DAC в разделе «Audio > Sinks» и запишите его номер"
 
-msgid "1. Origin"
-msgstr "1. Источник импорта"
-
 msgid "12 hours"
 msgstr "12 часов"
 
@@ -81,9 +78,6 @@ msgstr "16 бит"
 
 msgid "2 hr"
 msgstr "2 ч"
-
-msgid "2. Destinations"
-msgstr "2. Места назначения"
 
 msgid "2. Run with that number to read the node.name"
 msgstr "2. Запустите с этим номером, чтобы прочитать node.name"
@@ -103,9 +97,6 @@ msgstr "3 ч"
 msgid "3. Restart the audio services to load the config"
 msgstr "3. Перезапустите аудиослужбы, чтобы загрузить конфигурацию"
 
-msgid "3. Review"
-msgstr "3. Проверка"
-
 msgid "30 min"
 msgstr "30 мин"
 
@@ -114,9 +105,6 @@ msgstr "32 бита"
 
 msgid "32 bit float"
 msgstr "32 бита float"
-
-msgid "4. Summary"
-msgstr "4. Итог"
 
 msgid "5 hr"
 msgstr "5 ч"
@@ -427,9 +415,6 @@ msgstr ""
 msgid "Adding to queue…"
 msgstr "Добавление в очередь…"
 
-msgid "Adding tracks…"
-msgstr "Добавление треков…"
-
 msgid "Adding {} track"
 msgid_plural "Adding {} tracks"
 msgstr[0] "Добавляется {} трек"
@@ -726,9 +711,6 @@ msgstr "Любое качество"
 
 msgid "Any rating"
 msgstr "Любая оценка"
-
-msgid "Any source — best quality (local mixed playlist)"
-msgstr "Любой источник — лучшее качество (локальный смешанный плейлист)"
 
 msgid "Any time"
 msgstr "За всё время"
@@ -1054,6 +1036,9 @@ msgstr ""
 msgid "Being removed…"
 msgstr "Удаляется…"
 
+msgid "Best quality from any connected source, kept in Chilpa"
+msgstr ""
+
 msgid "Between tracks"
 msgstr "Между треками"
 
@@ -1260,9 +1245,6 @@ msgstr "Состояние трансляции"
 
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "Для трансляции нужен исходный файл с известным размером и поддержкой диапазонов байтов."
-
-msgid "Catalog error"
-msgstr "Ошибка каталога"
 
 msgid "Catalog number"
 msgstr "Каталожный номер"
@@ -1485,6 +1467,9 @@ msgstr "Chilpa открывается с теми вкладками, котор
 
 msgid "Chilpa output"
 msgstr "Выход Chilpa"
+
+msgid "Chilpa playlist"
+msgstr ""
 
 msgid "Chilpa plays the files on your disks and the servers you run, and plugins add more sources. It tells you plainly whether what reaches your DAC is bit-perfect."
 msgstr "Chilpa воспроизводит файлы с ваших дисков и ваших собственных серверов, а плагины добавляют новые источники. Он прямо говорит, доходит ли звук до вашего DAC в режиме bit-perfect."
@@ -2212,9 +2197,6 @@ msgstr "Создать плейлист"
 msgid "Create playlists"
 msgstr "Создать плейлисты"
 
-msgid "Creating playlists…"
-msgstr "Создание плейлистов…"
-
 msgid "Credits"
 msgstr "Авторы"
 
@@ -2796,9 +2778,6 @@ msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "Каждый файл копируется, копия записывается и считывается обратно, и только после этого заменяет оригинал. Нужно столько свободного места, сколько занимает запись. Записанное нельзя отменить."
-
-msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
-msgstr "Каждое выбранное место назначения создаёт свой плейлист. Смешанные плейлисты остаются в Chilpa и могут содержать треки из всех подключённых источников."
 
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
@@ -3730,14 +3709,14 @@ msgstr "Иммерсивный режим"
 msgid "Import / export"
 msgstr "Импорт / экспорт"
 
+msgid "Import another"
+msgstr ""
+
 msgid "Import at most 64 presets at once."
 msgstr ""
 
 msgid "Import between 1 and 64 presets."
 msgstr ""
-
-msgid "Import cancelled"
-msgstr "Импорт отменён"
 
 msgid "Import complete"
 msgstr "Импорт завершён"
@@ -4369,9 +4348,6 @@ msgstr "Локальные папки упорядочивают эту боко
 msgid "Local library"
 msgstr "Локальная библиотека"
 
-msgid "Local only"
-msgstr "Только локальные"
-
 msgid "Local tracks"
 msgstr "Локальные треки"
 
@@ -4536,9 +4512,6 @@ msgstr ""
 
 msgid "Match {} exactly"
 msgstr "Искать {} точно"
-
-msgid "Matched"
-msgstr "Совпало"
 
 msgid "Maximize"
 msgstr "Развернуть окно"
@@ -4893,9 +4866,6 @@ msgstr "Новые условия попадают в эту группу"
 
 msgid "New folder"
 msgstr "Новая папка"
-
-msgid "New import"
-msgstr "Новый импорт"
 
 msgid "New in {}"
 msgstr "Новое в {}"
@@ -5431,6 +5401,9 @@ msgstr ""
 msgid "Only personal presets can be deleted."
 msgstr "Удалять можно только личные пресеты."
 
+msgid "Only songs already in your library"
+msgstr ""
+
 msgid "Only the first {} outputs are listed."
 msgstr "Показаны только первые {} выводов."
 
@@ -5613,6 +5586,9 @@ msgstr "Необязательный токен доступа для закры
 
 msgid "Oratorio"
 msgstr "Оратория"
+
+msgid "Origin"
+msgstr ""
 
 msgid "Original audio"
 msgstr "Исходное аудио"
@@ -5944,6 +5920,9 @@ msgstr "Обложки плейлистов на боковой панели"
 msgid "Playlist icon"
 msgstr "Значок плейлиста"
 
+msgid "Playlist in your {} account"
+msgstr ""
+
 msgid "Playlist manager"
 msgstr "Управление плейлистами"
 
@@ -5952,12 +5931,6 @@ msgstr "Название плейлиста"
 
 msgid "Playlist options"
 msgstr "Параметры плейлиста"
-
-msgid "Playlist origin"
-msgstr "Источник плейлиста"
-
-msgid "Playlist preview"
-msgstr "Предпросмотр плейлиста"
 
 msgid "Playlists"
 msgstr "Плейлисты"
@@ -6175,9 +6148,6 @@ msgstr "Идентификаторы поставщиков"
 msgid "Public playlist"
 msgstr "Публичный плейлист"
 
-msgid "Public remote playlists"
-msgstr "Публичные удалённые плейлисты"
-
 msgid "Purchase date"
 msgstr "Дата покупки"
 
@@ -6204,9 +6174,6 @@ msgstr "Версия Qt"
 
 msgid "Quality"
 msgstr "Качество"
-
-msgid "Quality unknown"
-msgstr "Качество неизвестно"
 
 msgid "Quality, format and source filters"
 msgstr "Фильтры по качеству, формату и источнику"
@@ -6343,9 +6310,6 @@ msgstr "Активировать снова"
 msgid "Reactive Rings"
 msgstr "Reactive Rings"
 
-msgid "Read a playlist, choose destinations, review matches, then create your playlists."
-msgstr "Прочитайте плейлист, выберите места назначения, проверьте совпадения, затем создайте плейлисты."
-
 msgid "Read as"
 msgstr "Прочитано как"
 
@@ -6385,9 +6349,6 @@ msgstr ""
 msgid "Reading it from {}…"
 msgstr "Чтение из источника «{}»…"
 
-msgid "Reading playlist…"
-msgstr "Чтение плейлиста…"
-
 msgid "Reading selected tracks…"
 msgstr "Чтение выбранных треков…"
 
@@ -6420,9 +6381,6 @@ msgstr "Готово к локальному воспроизведению PCM"
 
 msgid "Ready to add it"
 msgstr "Готово к добавлению"
-
-msgid "Ready to review"
-msgstr "Готово к проверке"
 
 msgid "Ready to sync"
 msgstr ""
@@ -6842,6 +6800,9 @@ msgid "Review the current proposal before applying it."
 msgstr ""
 
 msgid "Review the device changes before syncing."
+msgstr ""
+
+msgid "Review the matches"
 msgstr ""
 
 msgid "Review the requested permissions before installing."
@@ -9046,9 +9007,6 @@ msgstr "Меню трека"
 msgid "Track positions are missing or duplicated. Choose sequential numbering or explicit positions."
 msgstr ""
 
-msgid "Track review"
-msgstr "Проверка треков"
-
 msgid "Track sample rate"
 msgstr "Частота дискретизации трека"
 
@@ -9231,9 +9189,6 @@ msgstr ""
 
 msgid "Unlock the filter before editing it."
 msgstr ""
-
-msgid "Unmatched"
-msgstr "Без совпадений"
 
 msgid "Unmatched file"
 msgstr ""
@@ -9580,8 +9535,14 @@ msgstr "Что нового в v{}"
 msgid "Where is it, and who signs in?"
 msgstr "Где он и кто входит?"
 
+msgid "Where is the playlist?"
+msgstr ""
+
 msgid "Where is your music?"
 msgstr "Где ваша музыка?"
+
+msgid "Where should it go?"
+msgstr ""
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Куда идут сэмплы: прямо на устройство или через звуковой сервер."
@@ -9734,6 +9695,9 @@ msgid "Your distribution"
 msgstr "Ваш дистрибутив"
 
 msgid "Your genre tags"
+msgstr ""
+
+msgid "Your library"
 msgstr ""
 
 msgid "Your music"
@@ -11670,9 +11634,6 @@ msgid_plural "{} weeks"
 msgstr[0] "{} неделю"
 msgstr[1] "{} недели"
 msgstr[2] "{} недель"
-
-msgid "{} written · {} unmatched · {} duplicates"
-msgstr "Записано: {} · без совпадений: {} · дубликатов: {}"
 
 msgid "{} year"
 msgid_plural "{} years"
