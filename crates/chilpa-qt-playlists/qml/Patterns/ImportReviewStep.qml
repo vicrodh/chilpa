@@ -25,6 +25,10 @@ Item {
         .concat(counts ? [{id: "found", text: I18n.tr("Found", I18n.rev)}, {id: "options", text: I18n.tr("With options", I18n.rev)}] : [])
         .concat([{id: "unmatched", text: I18n.tr("Not found", I18n.rev)}, {id: "error", text: I18n.tr("Errors", I18n.rev)}])
     signal asked(string filter, int offset)
+    signal chose(int index, string target, string source, string reference)
+    // Sources that failed on every song: said once above the list.
+    readonly property var down: !counts || !counts.all ? [] : Object.keys(status.source_errors || {}).filter(id => status.source_errors[id] >= counts.all)
+    property var asking: ({})
     function count(id) { return !counts ? -1 : id === "unmatched" ? counts.not_found ?? -1 : counts[id] ?? -1 }
     function quality(value) {
         const q = value || {}, fields = []
@@ -34,7 +38,26 @@ Item {
         if (q.rate) fields.push((q.rate / 1000) + " kHz")
         return fields.join(" · ")
     }
-    function trouble(errors) { return Object.keys(errors || {}).map(id => I18n.trArgs("{} did not answer", [(places[id] || {}).name || id], I18n.rev)).join(" · ") }
+    function trouble(errors) { return Object.keys(errors || {}).filter(id => down.indexOf(id) < 0).map(id => I18n.trArgs("{} did not answer", [(places[id] || {}).name || id], I18n.rev)).join(" · ") }
+    // One menu for every row: the song's choice first, then its options.
+    function ask(entry, target, anchor) {
+        const current = (entry.matches || {})[target], options = (entry.alternatives || {})[target] || []
+        const line = c => [(places[c.source] || {}).name || c.source, c.version || ""].filter(Boolean).join(" · ")
+        const meta = c => [quality(c.quality), Math.round((c.confidence || 0) * 100) + "%"].filter(Boolean).join(" · ")
+        asking = {index: entry.index, target: target, options: options, offset: current ? 1 : 0}
+        picker.entries = (current ? [{text: line(current), detail: meta(current), checked: true}] : []).concat(options.map(c => ({text: line(c), detail: meta(c)})))
+        const at = anchor.mapToItem(step, 0, anchor.height)
+        picker.x = at.x; picker.y = at.y
+        picker.open()
+    }
+    Menu {
+        id: picker
+        objectName: "importOptionsMenu"
+        onChosen: index => {
+            const option = step.asking.options[index - step.asking.offset]
+            if (option) step.chose(step.asking.index, step.asking.target, option.source, option.ref)
+        }
+    }
     Column {
         id: head
         width: parent.width; spacing: Metrics.gap12
@@ -56,6 +79,12 @@ Item {
                     onClicked: step.asked(modelData.id, 0)
                 }
             }
+        }
+        Text {
+            objectName: "importSourceDown"
+            width: head.width; visible: step.down.length > 0; wrapMode: Text.Wrap; textFormat: Text.PlainText
+            font.pointSize: Type.small; color: Theme.color.statusWarning
+            text: step.down.map(id => I18n.trArgs("{} did not answer; the other sources were searched.", [(step.places[id] || {}).name || id], I18n.rev)).join(" ")
         }
         Repeater {
             model: step.status.warnings || []
@@ -90,6 +119,8 @@ Item {
                     quality: found ? step.quality(found.quality) : ""
                     problem: index === 0 ? step.trouble(entry.modelData.errors) : ""
                     problemDetail: index === 0 ? Object.values(entry.modelData.errors || {}).join("\n") : ""
+                    optionCount: ((entry.modelData.alternatives || {})[modelData] || []).length
+                    onOptionsAsked: anchor => step.ask(entry.modelData, modelData, anchor)
                 }
             }
         }

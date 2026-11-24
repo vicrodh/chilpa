@@ -9853,6 +9853,9 @@ msgstr "манифест HLS, который Chilpa пока не умеет ч�
 msgid "an analysis is already running"
 msgstr "анализ уже выполняется"
 
+msgid "and {} more"
+msgstr "и ещё {}"
+
 msgid "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it"
 msgstr "другая программа единолично использует «{}»; закройте её или выключите эксклюзивный режим, чтобы использовать устройство совместно"
 
@@ -11251,6 +11254,9 @@ msgstr "источник «{}» не принял учётную запись"
 msgid "{} did not answer"
 msgstr "{} не ответил"
 
+msgid "{} did not answer; the other sources were searched."
+msgstr "{} не ответил; поиск выполнен в остальных источниках."
+
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
 msgstr[0] "{} не стал доступен в течение 30 минут. Прочитанный {} трек сохранён, ничего не удалено; синхронизируйте снова, когда он вернётся."
@@ -11418,6 +11424,9 @@ msgid_plural "{} months"
 msgstr[0] "{} месяц"
 msgstr[1] "{} месяца"
 msgstr[2] "{} месяцев"
+
+msgid "{} more"
+msgstr "Ещё {}"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."

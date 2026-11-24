@@ -96,9 +96,11 @@ Item {
             status: page.state; places: page.places; sources: page.sources; folders: page.document.folders || []; busy: page.busy
         }
         ImportReviewStep {
+            objectName: "importReview"
             anchors.fill: parent; visible: page.step === 2
             status: page.state; places: page.places; filter: page.filter; offset: page.offset
             onAsked: (filter, offset) => page.ask(filter, offset)
+            onChose: (index, target, source, reference) => page.send("choose", {index: index, target: target, source: source, ref: reference})
         }
         ImportSummaryStep {
             anchors.fill: parent; visible: page.step === 3

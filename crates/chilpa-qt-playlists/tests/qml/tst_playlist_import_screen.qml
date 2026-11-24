@@ -79,4 +79,11 @@ TestCase {
         compare(page.places["com.test.cloud"].name, "Cloud")
         verify(page.places["com.test.cloud"].writable)
     }
+    function test_a_pick_among_options_goes_to_the_importer() {
+        PlaylistImport.show(document({phase: "ready", targets: ["mixed"], rows: [], row_count: 0}, false))
+        findChild(page, "importReview").chose(3, "mixed", "com.test.cloud", "c:2")
+        const last = PlaylistImport.asked[PlaylistImport.asked.length - 1]
+        compare(last.action, "choose")
+        compare(last.payload, {index: 3, target: "mixed", source: "com.test.cloud", ref: "c:2"})
+    }
 }

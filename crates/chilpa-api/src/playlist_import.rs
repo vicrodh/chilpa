@@ -111,6 +111,8 @@ impl Chilpa {
         let method = match action {
             "preview" => "import.preview",
             "choices" => "import.choices",
+            // The listener's pick among a song's options.
+            "choose" => "import.choose",
             "match" => {
                 self.playlist_import.targets = input["targets"]
                     .as_array()

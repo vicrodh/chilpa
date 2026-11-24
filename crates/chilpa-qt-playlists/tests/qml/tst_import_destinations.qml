@@ -60,4 +60,11 @@ TestCase {
         verify(step.matchesTargets(["local"]))
         verify(!step.matchesTargets(["mixed"]))
     }
+    function test_the_first_songs_show_before_choosing_where_they_go() {
+        step.status = ({phase: "preview", settings: {}, preview: {name: "List", total: 12,
+            head: [{title: "One", artist: "Band"}, {title: "Two", artist: "", uploader: "a fan"}]}})
+        const head = findChild(step, "importPreviewHead")
+        verify(head.visible)
+        verify(findChild(step, "importPreviewMore").text.indexOf("10") >= 0)
+    }
 }

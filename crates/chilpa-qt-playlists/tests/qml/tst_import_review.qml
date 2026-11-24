@@ -64,4 +64,43 @@ TestCase {
         step.status = ({phase: "ready", targets: ["mixed"], rows: test.rows, row_count: 450})
         verify(findChild(step, "importPager").visible)
     }
+    readonly property var picked: ({phase: "ready", targets: ["mixed"], row_count: 1, counts: {all: 1, found: 1, options: 1, not_found: 0, error: 0},
+        rows: [{index: 4, original: {title: "Song", artist: "Band"}, status: "matched", errors: {},
+            matches: {mixed: {source: "com.test.cloud", ref: "c:1", title: "Song", confidence: 0.98}},
+            alternatives: {mixed: [{source: "local", ref: "l:1", title: "Song", confidence: 0.95},
+                {source: "com.test.cloud", ref: "c:2", title: "Song (Live)", version: "Live", confidence: 0.9}]}}]})
+    // Other options show their count; one picked goes back as the song's choice.
+    function test_a_row_offers_its_options_and_a_pick_is_sent() {
+        step.status = test.picked
+        const more = findChild(row(0), "importOptions")
+        verify(more.visible)
+        verify(more.text.indexOf("2") >= 0, more.text)
+        more.clicked()
+        const menu = findChild(step, "importOptionsMenu")
+        tryCompare(menu, "opened", true)
+        compare(menu.entries.length, 3, "the choice and its two options")
+        verify(menu.entries[0].checked)
+        verify(menu.entries[2].text.indexOf("Live") >= 0, menu.entries[2].text)
+        let picked = null
+        const take = (index, target, source, reference) => picked = [index, target, source, reference]
+        step.chose.connect(take)
+        menu.chosen(2)
+        step.chose.disconnect(take)
+        compare(picked, [4, "mixed", "com.test.cloud", "c:2"])
+        menu.close()
+    }
+    // A source that failed on every song is said once, not on each row.
+    function test_a_source_down_everywhere_is_said_once() {
+        step.status = ({phase: "ready", targets: ["mixed"], rows: test.rows, row_count: 3, counts: {all: 3, found: 1, options: 0, not_found: 2, error: 3},
+            source_errors: {"com.test.cloud": 3}})
+        const down = findChild(step, "importSourceDown")
+        verify(down.visible)
+        verify(down.text.indexOf("Cloud") >= 0, down.text)
+        compare(findChild(row(2), "importTrouble").text, "", "the row does not repeat it")
+    }
+    function test_an_upload_without_a_known_artist_shows_its_channel() {
+        step.status = ({phase: "ready", targets: ["mixed"], row_count: 1,
+            rows: [{index: 1, original: {title: "Theme", artist: "", uploader: "a fan"}, status: "unmatched", errors: {}, matches: {}}]})
+        verify(findChild(row(0), "importSong").text.indexOf("a fan") >= 0)
+    }
 }

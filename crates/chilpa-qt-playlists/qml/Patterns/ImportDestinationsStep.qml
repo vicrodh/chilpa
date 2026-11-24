@@ -52,6 +52,25 @@ Flickable {
             }
         }
         Column {
+            objectName: "importPreviewHead"
+            width: parent.width; spacing: Metrics.gap2; visible: (step.preview.head || []).length > 0
+            Repeater {
+                model: step.preview.head || []
+                Text {
+                    required property var modelData
+                    required property int index
+                    width: parent.width; textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.small; color: Theme.color.textSecondary
+                    text: (index + 1) + "  " + [modelData.title || "", modelData.artist || modelData.uploader || ""].filter(Boolean).join(" — ")
+                }
+            }
+            Text {
+                objectName: "importPreviewMore"
+                visible: (step.preview.total || 0) > (step.preview.head || []).length
+                textFormat: Text.PlainText; font.pointSize: Type.small; color: Theme.color.textTertiary
+                text: I18n.trArgs("and {} more", [String((step.preview.total || 0) - (step.preview.head || []).length)], I18n.rev)
+            }
+        }
+        Column {
             width: parent.width; spacing: Metrics.gap6
             Text { text: I18n.tr("Save to", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
             Repeater {
