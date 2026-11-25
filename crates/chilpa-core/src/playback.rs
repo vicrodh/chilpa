@@ -277,8 +277,11 @@ where
     if dsp.as_ref().is_some_and(|control| control.requested()) {
         delivery.transforms.push(chilpa_audio::negotiate::Transform::DspApplied);
     }
+    // Opened before it is told, as a queue's track is: what is told names
+    // the output, and that is only known once one opened.
+    let opened = open_sink(delivery.opened).map_err(PlayError::Sink)?;
     on_delivery(&delivery, signal_bits(&decoded, &delivery));
-    let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(PlayError::Sink)?, report.clone());
+    let mut sink = crate::playback_events::Measured::reporting(opened, report.clone());
     sink.begin_attempt(1, None);
     let mut frames = Frames::new(&mut decoded, &delivery);
     let outcome =

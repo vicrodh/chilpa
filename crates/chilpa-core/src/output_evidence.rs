@@ -25,7 +25,8 @@ pub fn inspect(device: &str) -> Inspection {
     context.write(SESSION.get_or_init(||format!("{}:{:?}",std::process::id(),std::time::SystemTime::now())).as_bytes());
     context.write(doc.identity.generation.as_bytes());
     doc.identity.generation = format!("v1:{:016x}",context.finish());
-    if !backend.outputs().iter().any(|o| o.id == bare) { doc.state = State::Disconnected; }
+    // A server road the system default fell back to is in no stack's list.
+    if !backend.outputs().iter().any(|o| o.id == bare) && !crate::backends::is_server_route(device) { doc.state = State::Disconnected; }
     doc.bound();
     doc
 }

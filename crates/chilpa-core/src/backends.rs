@@ -121,23 +121,31 @@ pub fn standing_output() -> Option<String> {
     }
 }
 
-/// The most cards a play tries through ALSA's plug when everything before
+/// The most outputs a play tries through ALSA's plug when everything before
 /// them failed.
-pub(crate) const MOST_CARDS: usize = 4;
+pub(crate) const MOST_PLUG_ROUTES: usize = 8;
 
-/// Where a play on the standing output goes when that output will not open,
+/// The sound server's own default sink, over the PulseAudio protocol: no
+/// name is the server's default, whatever it is called.
+const SERVER_DEFAULT: &str = "pulse:";
+
+/// PipeWire through ALSA's own plugin, for a server without that protocol.
+const ALSA_PIPEWIRE: &str = "alsapcm:pipewire";
+
+/// Where a play on the system default goes when that output will not open,
 /// in the order tried, each with what to call it.
 ///
-/// Only the output Chilpa starts on by itself has any. A fresh install must
-/// play wherever the system plays, and `default` fails for reasons that are
-/// the machine's and not the listener's: ALSA's PipeWire plugin refusing to
-/// load beside another `libpipewire`, a `default` aimed at a card the server
-/// holds. An output somebody chose keeps the answer it gave: they chose it,
-/// and playing somewhere else would hide that it is gone.
+/// Only the system default has any, chosen or started on by itself: it names
+/// wherever the system plays, and these are other roads there. A fresh
+/// install must play, and `default` fails for reasons that are the
+/// machine's and not the listener's: ALSA's PipeWire plugin refusing to load
+/// beside another `libpipewire`, a `default` aimed at a card the server
+/// holds. A card or a server's sink somebody chose keeps the answer it gave:
+/// playing somewhere else would hide that it is gone.
 ///
 /// The server first, over its own protocol and without ALSA's configuration
 /// in the way; PipeWire through ALSA for a server without that protocol;
-/// then each card through ALSA's plug, which converts anything and is what
+/// then the cards through ALSA's plug, which converts anything and is what
 /// plays when no server runs. None of them can be bit-perfect, and the play
 /// says where it went.
 pub fn standing_fallbacks(device: &str) -> Vec<(String, String)> {
@@ -147,10 +155,11 @@ pub fn standing_fallbacks(device: &str) -> Vec<(String, String)> {
             return Vec::new();
         }
         let mut routes = vec![
-            (BackendOutput::full_id(BackendKind::Pulse, ""), chilpa_i18n::t("the sound server")),
-            (BackendOutput::full_id(BackendKind::AlsaPcm, "pipewire"), "PipeWire".to_string()),
+            (SERVER_DEFAULT.to_string(), chilpa_i18n::t("the sound server")),
+            (ALSA_PIPEWIRE.to_string(), "PipeWire".to_string()),
         ];
-        routes.extend(outputs_of(BackendKind::AlsaPlug).into_iter().take(MOST_CARDS).map(|o| (o.id, o.label)));
+        let cards = outputs_of(BackendKind::AlsaPlug).into_iter().map(|o| (o.id, o.label)).collect();
+        routes.extend(plug_routes(cards));
         routes
     }
     // Elsewhere nothing is started on by itself: the first output comes from
@@ -160,6 +169,24 @@ pub fn standing_fallbacks(device: &str) -> Vec<(String, String)> {
         let _ = device;
         Vec::new()
     }
+}
+
+/// The plug outputs worth trying, at most [`MOST_PLUG_ROUTES`]: every card's
+/// first device before any card's second, so one card with many HDMI ports
+/// cannot use up the attempts before the card that plays.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
+fn plug_routes(outputs: Vec<(String, String)>) -> Vec<(String, String)> {
+    let card = |id: &str| id.rsplit_once(':').and_then(|(_, at)| at.split_once(',')).map(|(card, _)| card.to_string());
+    let mut seen = std::collections::HashSet::new();
+    let (first, rest): (Vec<_>, Vec<_>) = outputs.into_iter().partition(|(id, _)| seen.insert(card(id)));
+    first.into_iter().chain(rest).take(MOST_PLUG_ROUTES).collect()
+}
+
+/// Whether an identifier is one of the server roads the system default
+/// falls back to: no stack lists them as an output, and they are no less
+/// there for it.
+pub fn is_server_route(device: &str) -> bool {
+    matches!(device, SERVER_DEFAULT | ALSA_PIPEWIRE)
 }
 
 /// The stack an identifier names, and what that stack calls the output.
@@ -209,6 +236,28 @@ pub fn first_choice() -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_card_is_tried_before_any_card_s_second_device() {
+        let outputs = |ids: &[&str]| ids.iter().map(|id| (id.to_string(), String::new())).collect::<Vec<_>>();
+        let tried: Vec<String> = plug_routes(outputs(&[
+            "alsaplug:plughw:0,3", "alsaplug:plughw:0,7", "alsaplug:plughw:0,8", "alsaplug:plughw:0,9",
+            "alsaplug:plughw:0,10", "alsaplug:plughw:1,0",
+        ])).into_iter().map(|(id, _)| id).collect();
+        assert_eq!(tried[..2], ["alsaplug:plughw:0,3".to_string(), "alsaplug:plughw:1,0".to_string()]);
+        let many: Vec<String> = (0..20).map(|n| format!("alsaplug:plughw:0,{n}")).collect();
+        let many: Vec<&str> = many.iter().map(String::as_str).collect();
+        assert_eq!(plug_routes(outputs(&many)).len(), MOST_PLUG_ROUTES);
+    }
+
+    #[test]
+    fn the_server_roads_are_known_and_nothing_else_is() {
+        assert!(is_server_route("pulse:"));
+        assert!(is_server_route("alsapcm:pipewire"));
+        assert!(!is_server_route("pulse:alsa_output.usb"));
+        assert!(!is_server_route("system:default"));
+        assert!(!is_server_route("alsapcm:sysdefault:CARD=1"));
+    }
 
     /// A stack that fails the test if it is asked anything but which one it
     /// is.

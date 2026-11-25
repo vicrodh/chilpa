@@ -812,10 +812,12 @@ fn opening_only(opens: &'static [&'static str], asked: Arc<std::sync::Mutex<Vec<
         }),
         Box::new(move |id, stream, _| {
             asked.lock().unwrap().push(id.to_string());
-            if opens.contains(&id) {
+            // Only at 44.1 kHz, so a play that reopens at another rate finds
+            // every route refusing.
+            if opens.contains(&id) && stream.sample_rate_hz == 44_100 {
                 Ok(Box::new(NullSink { stream, written: Arc::new(AtomicU64::new(0)) }) as Box<dyn AudioSink + Send>)
             } else {
-                Err(SinkError::Backend("ALSA function 'snd_pcm_open' failed with error 'No such device or address (6)'".into()))
+                Err(SinkError::Backend(format!("snd_pcm_open failed on {id}: No such device or address (6)")))
             }
         }),
     )
@@ -849,8 +851,7 @@ fn the_standing_output_that_will_not_open_still_plays() {
 fn a_play_that_fell_back_says_where_once_and_stays_there() {
     let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
     let p = opening_only(&["alsapcm:pipewire"], Arc::clone(&asked));
-    // The second track is at another rate, so the output is opened again.
-    let (a, b) = (wav("fell-back-a", 1_000), wav_at("fell-back-b", 1_000, 48_000));
+    let (a, b) = (wav("fell-back-a", 1_000), wav("fell-back-b", 1_000));
     p.play_all(&[a.clone(), b.clone()], "system:default");
     let events = ended(&p);
     let said: Vec<&str> = events.iter().filter_map(|e| match e {
@@ -861,8 +862,7 @@ fn a_play_that_fell_back_says_where_once_and_stays_there() {
     assert!(said[0].contains("PipeWire"), "{}", said[0]);
     let asked = asked.lock().unwrap();
     assert_eq!(asked[..3], ["system:default".to_string(), "pulse:".to_string(), "alsapcm:pipewire".to_string()]);
-    assert!(asked.len() > 3, "the second track opened the output again: {asked:?}");
-    assert!(asked[3..].iter().all(|id| id == "alsapcm:pipewire"), "the next opening goes where the play went: {asked:?}");
+    assert!(asked[3..].iter().all(|id| id == "alsapcm:pipewire"), "a next opening goes where the play went: {asked:?}");
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
 }
@@ -890,7 +890,7 @@ fn when_no_route_opens_each_is_tried_once_and_the_default_s_answer_is_said() {
     p.play(&file, "system:default");
     let events = ended(&p);
     match events.last() {
-        Some(PlayerEvent::Failed { message }) => assert!(message.contains("snd_pcm_open"), "{message}"),
+        Some(PlayerEvent::Failed { message }) => assert!(message.contains("on system:default"), "{message}"),
         other => panic!("it ends failed: {other:?}"),
     }
     let asked = asked.lock().unwrap();
@@ -899,6 +899,56 @@ fn when_no_route_opens_each_is_tried_once_and_the_default_s_answer_is_said() {
     once.sort();
     once.dedup();
     assert_eq!(once.len(), asked.len(), "no route asked twice: {asked:?}");
-    assert!(asked.len() <= 3 + crate::backends::MOST_CARDS, "{asked:?}");
+    assert!(asked.len() <= 3 + crate::backends::MOST_PLUG_ROUTES, "{asked:?}");
     let _ = std::fs::remove_file(file);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_reopening_that_finds_no_route_ends_with_the_default_s_answer() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&["pulse:"], Arc::clone(&asked));
+    // The second track is at another rate: the output is opened again, and
+    // nothing opens at that rate.
+    let (a, b) = (wav("reopen-a", 1_000), wav_at("reopen-b", 1_000, 48_000));
+    p.play_all(&[a.clone(), b.clone()], "system:default");
+    let events = ended(&p);
+    let asked = asked.lock().unwrap();
+    assert!(asked.iter().filter(|id| *id == "pulse:").count() >= 2, "the reopening started where the play went: {asked:?}");
+    match events.last() {
+        Some(PlayerEvent::Failed { message }) => assert!(message.contains("on system:default"), "{message}"),
+        other => panic!("it ends failed: {other:?}"),
+    }
+    let _ = std::fs::remove_file(a);
+    let _ = std::fs::remove_file(b);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_stream_that_fell_back_announces_the_route_it_opened() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&["pulse:"], Arc::clone(&asked));
+    let stream = StreamFixture::wave("stream-falls-back", 4_410);
+    p.play(&stream.path, "system:default");
+    let events = ended(&p);
+    let routes: Vec<String> = events.iter().filter_map(|e| match e {
+        PlayerEvent::Started { route, .. } => Some(route.device.clone()),
+        _ => None,
+    }).collect();
+    assert_eq!(routes, ["pulse:".to_string()], "{events:?}");
+    let fell = events.iter().position(|e| matches!(e, PlayerEvent::FellBack { .. }));
+    let started = events.iter().position(|e| matches!(e, PlayerEvent::Started { .. }));
+    assert!(fell.is_some() && fell < started, "said where before it started: {events:?}");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_stream_whose_output_will_not_open_announces_nothing() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&[], Arc::clone(&asked));
+    let stream = StreamFixture::wave("stream-opens-nothing", 4_410);
+    p.play(&stream.path, "system:default");
+    let events = ended(&p);
+    assert!(!events.iter().any(|e| matches!(e, PlayerEvent::Started { .. })), "{events:?}");
+    assert!(matches!(events.last(), Some(PlayerEvent::Failed { .. })), "{events:?}");
 }

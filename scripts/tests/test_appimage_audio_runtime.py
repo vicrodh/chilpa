@@ -71,18 +71,21 @@ class HostAudioTests(unittest.TestCase):
             left = sorted(path.name for path in (usr / "lib").iterdir())
         self.assertEqual(left, ["libQt6Core.so.6", "libdbus-1.so.3", "libsystemd.so.0"])
 
-    def launch(self, directory, ldconfig):
-        """Builds the image's tree, wraps its launcher and starts it with `ldconfig -p` saying `ldconfig`."""
+    def launch(self, directory, ldconfig, library_path=None):
+        """Builds the image's tree, wraps its launcher and starts it with `ldconfig -p` saying `ldconfig`,
+        searching no system folder, so the machine running the test does not answer for the one tested."""
         appdir = Path(directory) / "AppDir"
         tree(appdir)
         (appdir / "AppRun").write_text('#!/bin/sh\necho "${LD_LIBRARY_PATH:-none}"\n')
         (appdir / "AppRun").chmod(0o755)
-        runtime.defer_host_audio(appdir, "x86_64", needed)
+        runtime.defer_host_audio(appdir, "x86_64", needed, dirs=())
         tools = Path(directory) / "tools"
         tools.mkdir()
         (tools / "ldconfig").write_text("#!/bin/sh\nprintf '%s' \"$KNOWN\"\n")
         (tools / "ldconfig").chmod(0o755)
         environment = {"PATH": f"{tools}:/usr/bin:/bin", "KNOWN": ldconfig}
+        if library_path is not None:
+            environment["LD_LIBRARY_PATH"] = library_path
         said = subprocess.run([str(appdir / "AppRun")], env=environment, capture_output=True, text=True, check=True)
         return appdir, said.stdout.strip()
 
@@ -109,7 +112,16 @@ class HostAudioTests(unittest.TestCase):
             appdir, path = self.launch(directory, known)
             self.assertTrue(path.endswith("host-fallback/pipewire"), path)
 
-    def test_a_system_without_ldconfig_answers_gets_both(self):
+    def test_libraries_the_loader_would_find_count_when_ldconfig_says_nothing(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            system = Path(directory) / "system-lib"
+            system.mkdir()
+            for name in ("libpipewire-0.3.so.0", "libpulse.so.0"):
+                (system / name).write_bytes(b"\x7fELF")
+            appdir, path = self.launch(directory, "", library_path=str(system))
+            self.assertEqual(path, str(system), "nothing of ours goes before what the system has")
+
+    def test_a_system_where_nothing_finds_the_libraries_gets_both(self):
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
             appdir, path = self.launch(directory, "")
             self.assertEqual(path.split(":"), [str((appdir / "usr/lib/host-fallback" / group).resolve()) for group in ("pulse", "pipewire")])

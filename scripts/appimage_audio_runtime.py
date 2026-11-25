@@ -99,7 +99,14 @@ def strip_host_audio(usr, needed=elf_needed):
     return sorted(removed)
 
 
-def apprun(abi):
+# The folders the loader searches when its cache says nothing, per architecture.
+SYSTEM_DIRS = {
+    "x86_64": ("/usr/lib/x86_64-linux-gnu", "/lib/x86_64-linux-gnu", "/usr/lib64", "/lib64", "/usr/lib", "/lib"),
+    "aarch64": ("/usr/lib/aarch64-linux-gnu", "/lib/aarch64-linux-gnu", "/usr/lib64", "/lib64", "/usr/lib", "/lib"),
+}
+
+
+def apprun(abi, dirs):
     lines = [
         "#!/bin/sh",
         "# The PipeWire and PulseAudio client libraries come from the system when it",
@@ -107,14 +114,20 @@ def apprun(abi):
         "# Chilpa's copies are added only where the system has none.",
         'here="$(dirname "$(readlink -f "$0")")"',
         'known="$( (ldconfig -p || /sbin/ldconfig -p || /usr/sbin/ldconfig -p) 2>/dev/null)"',
+        "# Whether the system has a library: what the loader's cache says, and the",
+        "# folders the loader searches. Not being able to ask is not absence: our",
+        "# copy beside a newer system plugin is what this exists to avoid.",
+        "found() {",
+        f'    case "$known" in *"$1 ({abi}"*) return 0 ;; esac',
+        f'    for dir in $(printf "%s" "${{LD_LIBRARY_PATH:-}}" | tr ":" " ") {" ".join(dirs)}; do',
+        '        [ -e "$dir/$1" ] && return 0',
+        "    done",
+        "    return 1",
+        "}",
     ]
     for group, (_, soname) in GROUPS.items():
-        lines += [
-            f'case "$known" in',
-            f'    *"{soname} ({abi}"*) ;;',
-            f'    *) [ -d "$here/{FALLBACK}/{group}" ] && LD_LIBRARY_PATH="$here/{FALLBACK}/{group}${{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}}" ;;',
-            "esac",
-        ]
+        lines.append(f'found {soname} || {{ [ -d "$here/{FALLBACK}/{group}" ] && '
+                     f'LD_LIBRARY_PATH="$here/{FALLBACK}/{group}${{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}}"; }}')
     lines += [
         '[ -n "${LD_LIBRARY_PATH:-}" ] && export LD_LIBRARY_PATH',
         f'exec "$here/{WRAPPED}" "$@"',
@@ -122,7 +135,7 @@ def apprun(abi):
     return "\n".join(lines) + "\n"
 
 
-def defer_host_audio(appdir, arch, needed=elf_needed):
+def defer_host_audio(appdir, arch, needed=elf_needed, dirs=None):
     """Moves the AppImage's audio client libraries apart and starts it through a wrapper that adds them only when needed."""
     appdir = Path(appdir)
     lib = appdir / "usr/lib"
@@ -136,7 +149,7 @@ def defer_host_audio(appdir, arch, needed=elf_needed):
         (lib / name).unlink()
     launcher = appdir / "AppRun"
     launcher.rename(appdir / WRAPPED)
-    launcher.write_text(apprun(LDCONFIG_ABI[arch]))
+    launcher.write_text(apprun(LDCONFIG_ABI[arch], SYSTEM_DIRS[arch] if dirs is None else dirs))
     launcher.chmod(0o755)
     return groups
 
