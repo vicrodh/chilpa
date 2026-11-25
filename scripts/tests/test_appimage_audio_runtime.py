@@ -177,22 +177,40 @@ class HostAudioTests(unittest.TestCase):
 
 
 class HostAudioShapeTests(unittest.TestCase):
-    def test_a_client_named_by_a_link_moves_with_its_file(self):
+    def moved_through_a_link(self, absolute):
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
             appdir = Path(directory) / "AppDir"
             usr = tree(appdir)
-            (usr / "lib/libpulse.so.0").rename(usr / "lib/libpulse.so.0.24.3")
-            (usr / "lib/libpulse.so.0").symlink_to("libpulse.so.0.24.3")
+            lib = usr / "lib"
+            (lib / "libpulse.so.0").rename(lib / "libpulse.so.0.24.3")
+            # A chain: the soname links to a link that links to the file.
+            (lib / "libpulse.so.0.24").symlink_to(lib / "libpulse.so.0.24.3" if absolute else "libpulse.so.0.24.3")
+            (lib / "libpulse.so.0").symlink_to(lib / "libpulse.so.0.24" if absolute else "libpulse.so.0.24")
             (appdir / "AppRun").write_text("#!/bin/sh\n")
             alias = {"libpulse.so.0.24.3": NEEDS["libpulse.so.0"]}
-            groups = runtime.defer_host_audio(appdir, "x86_64", lambda path: alias.get(Path(path).name) or NEEDS[Path(path).name], dirs=())
-            self.assertIn("libpulse.so.0.24.3", groups["pulse"])
-            moved = appdir / "usr/lib/host-fallback/pulse"
-            self.assertTrue((moved / "libpulse.so.0").is_symlink())
-            self.assertTrue((moved / "libpulse.so.0").resolve().is_file())
-            self.assertFalse(os.path.lexists(appdir / "usr/lib/libpulse.so.0"))
-            (appdir / "usr/lib/host-fallback/pipewire/libpipewire-0.3.so.0").write_bytes(b"\x7fELF")
+            runtime.defer_host_audio(appdir, "x86_64", lambda path: alias.get(Path(path).name) or NEEDS[Path(path).name], dirs=())
+            moved = appdir / "usr/lib/host-fallback/pulse/libpulse.so.0"
+            self.assertTrue(moved.is_file() and not moved.is_symlink(), "the soname is a file the loader can open")
+            self.assertEqual(moved.read_bytes(), b"\x7fELF libpulse.so.0")
+            self.assertFalse([p.name for p in lib.iterdir() if p.is_symlink() and not p.exists()], "no link is left dangling")
+            self.assertFalse(os.path.lexists(lib / "libpulse.so.0"))
             runtime.check_appdir_audio(appdir)
+
+    def test_a_client_named_by_a_relative_link_chain_moves_as_its_file(self):
+        self.moved_through_a_link(absolute=False)
+
+    def test_a_client_named_by_an_absolute_link_chain_moves_as_its_file(self):
+        self.moved_through_a_link(absolute=True)
+
+    def test_an_image_missing_a_fallback_client_is_refused(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            appdir = Path(directory) / "AppDir"
+            tree(appdir)
+            (appdir / "AppRun").write_text("#!/bin/sh\n")
+            runtime.defer_host_audio(appdir, "x86_64", needed, dirs=())
+            (appdir / "usr/lib/host-fallback/pulse/libpulse-simple.so.0").unlink()
+            with self.assertRaises(SystemExit):
+                runtime.check_appdir_audio(appdir)
 
     def test_an_image_that_keeps_a_pulse_client_ahead_is_refused(self):
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:

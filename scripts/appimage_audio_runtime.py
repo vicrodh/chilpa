@@ -166,14 +166,15 @@ def defer_host_audio(appdir, arch, needed=elf_needed, dirs=None):
     for group, names in groups.items():
         target = appdir / FALLBACK / group
         target.mkdir(parents=True, exist_ok=True)
+        # Copied as files, links followed: a link moved as a link may point
+        # at where its file no longer is.
         for name in names:
-            source = lib / name
-            if source.is_symlink():
-                (target / name).symlink_to(os.readlink(source))
-            else:
-                shutil.copy2(source, target / name)
+            shutil.copy2(lib / name, target / name)
     for name in set().union(*groups.values()):
         (lib / name).unlink()
+    for link in lib.iterdir():
+        if link.is_symlink() and not link.exists():
+            link.unlink()
     launcher = appdir / "AppRun"
     launcher.rename(appdir / WRAPPED)
     launcher.write_text(apprun(LDCONFIG_ABI[arch], ELF_MACHINE[arch], SYSTEM_DIRS[arch] if dirs is None else dirs))
@@ -183,11 +184,11 @@ def defer_host_audio(appdir, arch, needed=elf_needed, dirs=None):
 
 def check_appdir_audio(appdir):
     appdir = Path(appdir).resolve()
-    library = appdir / FALLBACK / "pipewire" / SONAME
-    if not library.is_file() or not library.resolve().is_relative_to(appdir):
-        raise SystemExit("The AppImage is missing its fallback PipeWire client library.")
-    if not is_elf(library):
-        raise SystemExit("The fallback PipeWire client library is not an ELF library.")
+    for group, roots in GROUPS.items():
+        for name in roots:
+            library = appdir / FALLBACK / group / name
+            if not library.is_file() or not library.resolve().is_relative_to(appdir) or not is_elf(library):
+                raise SystemExit(f"The AppImage is missing its fallback {name} for a system without one.")
     ahead = [name for roots in GROUPS.values() for name in roots if os.path.lexists(appdir / "usr/lib" / name)]
     if ahead:
         raise SystemExit("The AppImage loads its own audio client libraries before the system's: " + ", ".join(ahead))
