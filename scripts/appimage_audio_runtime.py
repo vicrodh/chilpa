@@ -29,6 +29,9 @@ FALLBACK = Path("usr/lib/host-fallback")
 LDCONFIG_ABI = {"x86_64": "libc6,x86-64", "aarch64": "libc6,AArch64"}
 # An ELF header's machine field for this architecture, as `od -tx1` prints its two bytes.
 ELF_MACHINE = {"x86_64": "3e00", "aarch64": "b700"}
+# The dynamic loader the executable names, per architecture.
+LOADER = {"x86_64": "/lib64/ld-linux-x86-64.so.2", "aarch64": "/lib/ld-linux-aarch64.so.1"}
+EXECUTABLE = "usr/bin/chilpa-qt"
 WRAPPED = "AppRun.linuxdeploy"
 
 
@@ -119,13 +122,18 @@ SYSTEM_DIRS = {
 }
 
 
-def apprun(abi, machine, dirs):
+def apprun(abi, machine, dirs, loader):
     lines = [
         "#!/bin/sh",
         "# The PipeWire and PulseAudio client libraries come from the system when it",
         "# has them: its audio plugins load into Chilpa and must find their own.",
         "# Chilpa's copies are added only where the system has none.",
         'here="$(dirname "$(readlink -f "$0")")"',
+        "# The loader itself says what it would load, with every rule it has:",
+        "# LD_LIBRARY_PATH as it reads it, its cache, its folders. It lists and runs",
+        "# nothing.",
+        f'listing=""',
+        f'[ -x "{loader}" ] && listing="$("{loader}" --list "$here/{EXECUTABLE}" 2>/dev/null)"',
         'known="$( (ldconfig -p || /sbin/ldconfig -p || /usr/sbin/ldconfig -p) 2>/dev/null)"',
         "# Whether a library is a 64-bit ELF for this machine: a 32-bit copy in a",
         "# shared folder is not one the loader would give Chilpa.",
@@ -133,16 +141,22 @@ def apprun(abi, machine, dirs):
         '    set -- $(od -An -tx1 -N20 "$1" 2>/dev/null)',
         f'    [ "$#" -eq 20 ] && [ "$1$2$3$4" = "7f454c46" ] && [ "$5" = "02" ] && [ "${{19}}${{20}}" = "{machine}" ]',
         "}",
-        "# Whether the system has a library: what the loader's cache says, and the",
-        "# folders the loader searches. Not being able to ask is not absence: our",
-        "# copy beside a newer system plugin is what this exists to avoid.",
+        "# Whether the system has a library. The loader's answer decides; without",
+        "# it, its cache and the folders it searches. Not being able to tell is not",
+        "# absence: our copy ahead of a newer system plugin is what this avoids.",
         "found() {",
+        '    case "$listing" in',
+        '        *"$1 => /"*) return 0 ;;',
+        '        *"$1 => not found"*) return 1 ;;',
+        "    esac",
         f'    case "$known" in *"$1 ({abi}"*) return 0 ;; esac',
-        f'    rest="${{LD_LIBRARY_PATH:-}}:{":".join(dirs)}"',
+        f'    rest="$(printf "%s" "${{LD_LIBRARY_PATH:-}}" | tr ";" ":"):{":".join(dirs)}"',
         '    while [ -n "$rest" ]; do',
         '        dir="${rest%%:*}"',
         '        case "$rest" in *:*) rest="${rest#*:}" ;; *) rest="" ;; esac',
-        '        [ -n "$dir" ] && [ -e "$dir/$1" ] && ours "$dir/$1" && return 0',
+        '        [ -n "$dir" ] || dir=.',
+        "        case \"$dir\" in *'$'*) return 0 ;; esac",
+        '        [ -e "$dir/$1" ] && ours "$dir/$1" && return 0',
         "    done",
         "    return 1",
         "}",
@@ -158,7 +172,7 @@ def apprun(abi, machine, dirs):
     return "\n".join(lines) + "\n"
 
 
-def defer_host_audio(appdir, arch, needed=elf_needed, dirs=None):
+def defer_host_audio(appdir, arch, needed=elf_needed, dirs=None, loader=None):
     """Moves the AppImage's audio client libraries apart and starts it through a wrapper that adds them only when needed."""
     appdir = Path(appdir)
     lib = appdir / "usr/lib"
@@ -177,7 +191,8 @@ def defer_host_audio(appdir, arch, needed=elf_needed, dirs=None):
             link.unlink()
     launcher = appdir / "AppRun"
     launcher.rename(appdir / WRAPPED)
-    launcher.write_text(apprun(LDCONFIG_ABI[arch], ELF_MACHINE[arch], SYSTEM_DIRS[arch] if dirs is None else dirs))
+    launcher.write_text(apprun(LDCONFIG_ABI[arch], ELF_MACHINE[arch], SYSTEM_DIRS[arch] if dirs is None else dirs,
+                               LOADER[arch] if loader is None else loader))
     launcher.chmod(0o755)
     return groups
 

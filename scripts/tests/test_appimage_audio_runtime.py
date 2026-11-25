@@ -83,14 +83,14 @@ class HostAudioTests(unittest.TestCase):
             left = sorted(path.name for path in (usr / "lib").iterdir())
         self.assertEqual(left, ["libQt6Core.so.6", "libdbus-1.so.3", "libsystemd.so.0"])
 
-    def launch(self, directory, ldconfig, library_path=None):
+    def launch(self, directory, ldconfig, library_path=None, loader="/nonexistent/ld.so", cwd=None):
         """Builds the image's tree, wraps its launcher and starts it with `ldconfig -p` saying `ldconfig`,
         searching no system folder, so the machine running the test does not answer for the one tested."""
         appdir = Path(directory) / "AppDir"
         tree(appdir)
         (appdir / "AppRun").write_text('#!/bin/sh\necho "${LD_LIBRARY_PATH:-none}"\n')
         (appdir / "AppRun").chmod(0o755)
-        runtime.defer_host_audio(appdir, "x86_64", needed, dirs=())
+        runtime.defer_host_audio(appdir, "x86_64", needed, dirs=(), loader=loader)
         tools = Path(directory) / "tools"
         tools.mkdir()
         (tools / "ldconfig").write_text("#!/bin/sh\nprintf '%s' \"$KNOWN\"\n")
@@ -98,7 +98,7 @@ class HostAudioTests(unittest.TestCase):
         environment = {"PATH": f"{tools}:/usr/bin:/bin", "KNOWN": ldconfig}
         if library_path is not None:
             environment["LD_LIBRARY_PATH"] = library_path
-        said = subprocess.run([str(appdir / "AppRun")], env=environment, capture_output=True, text=True, check=True)
+        said = subprocess.run([str(appdir / "AppRun")], env=environment, capture_output=True, text=True, check=True, cwd=cwd)
         return appdir, said.stdout.strip()
 
     def test_a_system_with_both_clients_gets_none_of_ours(self):
@@ -133,6 +133,32 @@ class HostAudioTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
             appdir, path = self.launch(directory, known)
             self.assertEqual(path, str((appdir / "usr/lib/host-fallback/pulse").resolve()))
+
+    def test_the_loader_s_answer_decides_over_the_cache(self):
+        known = ("\tlibpipewire-0.3.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpipewire-0.3.so.0\n"
+                 "\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n"
+                 "\tlibpulse-simple.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse-simple.so.0\n")
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            loader = Path(directory) / "ld.so"
+            loader.write_text("#!/bin/sh\nprintf '\\tlibpipewire-0.3.so.0 => /usr/lib/libpipewire-0.3.so.0 (0x1)\\n"
+                              "\\tlibpulse.so.0 => not found\\n\\tlibpulse-simple.so.0 => not found\\n'\n")
+            loader.chmod(0o755)
+            appdir, path = self.launch(directory, known, loader=str(loader))
+            self.assertEqual(path, str((appdir / "usr/lib/host-fallback/pulse").resolve()))
+
+    def test_entries_the_loader_reads_differently_never_put_ours_first(self):
+        for library_path in ("$ORIGIN/../audio", "/nowhere;$LIB/audio"):
+            with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+                appdir, path = self.launch(directory, "", library_path=library_path)
+                self.assertEqual(path, library_path, "a folder it cannot read is not taken for an absent library")
+
+    def test_an_empty_entry_is_the_current_folder(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            here = Path(directory)
+            for name in ("libpipewire-0.3.so.0", "libpulse.so.0", "libpulse-simple.so.0"):
+                (here / name).write_bytes(elf())
+            appdir, path = self.launch(directory, "", library_path=":/nowhere", cwd=here)
+            self.assertEqual(path, ":/nowhere")
 
     def test_libraries_the_loader_would_find_count_when_ldconfig_says_nothing(self):
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
