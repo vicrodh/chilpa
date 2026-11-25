@@ -147,8 +147,12 @@ impl OutputBackend for Pulse {
             )));
         }
         // The sink travels with the connection, so nothing outside this
-        // stream is touched.
-        let simple = Simple::new(None, "Chilpa", Direction::Playback, Some(id), "music", &spec, None, None)
+        // stream is touched. No name is the server's own default sink,
+        // whatever it is called: what a play falls back to when the system
+        // output will not open, without asking `pactl`, which a machine can
+        // lack while its server runs.
+        let sink = (!id.is_empty()).then_some(id);
+        let simple = Simple::new(None, "Chilpa", Direction::Playback, sink, "music", &spec, None, None)
             .map_err(|e| SinkError::Backend(e.to_string().unwrap_or_default()))?;
         Ok(Box::new(PulseSink { simple, stream: format }))
     }

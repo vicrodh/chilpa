@@ -121,6 +121,47 @@ pub fn standing_output() -> Option<String> {
     }
 }
 
+/// The most cards a play tries through ALSA's plug when everything before
+/// them failed.
+pub(crate) const MOST_CARDS: usize = 4;
+
+/// Where a play on the standing output goes when that output will not open,
+/// in the order tried, each with what to call it.
+///
+/// Only the output Chilpa starts on by itself has any. A fresh install must
+/// play wherever the system plays, and `default` fails for reasons that are
+/// the machine's and not the listener's: ALSA's PipeWire plugin refusing to
+/// load beside another `libpipewire`, a `default` aimed at a card the server
+/// holds. An output somebody chose keeps the answer it gave: they chose it,
+/// and playing somewhere else would hide that it is gone.
+///
+/// The server first, over its own protocol and without ALSA's configuration
+/// in the way; PipeWire through ALSA for a server without that protocol;
+/// then each card through ALSA's plug, which converts anything and is what
+/// plays when no server runs. None of them can be bit-perfect, and the play
+/// says where it went.
+pub fn standing_fallbacks(device: &str) -> Vec<(String, String)> {
+    #[cfg(target_os = "linux")]
+    {
+        if standing_output().as_deref() != Some(device) {
+            return Vec::new();
+        }
+        let mut routes = vec![
+            (BackendOutput::full_id(BackendKind::Pulse, ""), chilpa_i18n::t("the sound server")),
+            (BackendOutput::full_id(BackendKind::AlsaPcm, "pipewire"), "PipeWire".to_string()),
+        ];
+        routes.extend(outputs_of(BackendKind::AlsaPlug).into_iter().take(MOST_CARDS).map(|o| (o.id, o.label)));
+        routes
+    }
+    // Elsewhere nothing is started on by itself: the first output comes from
+    // the listing (`standing_output`), so there is nothing to fall back from.
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = device;
+        Vec::new()
+    }
+}
+
 /// The stack an identifier names, and what that stack calls the output.
 ///
 /// `None` when the identifier names no stack this build has, which is what a

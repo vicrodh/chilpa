@@ -8474,6 +8474,9 @@ msgid "The sync has not moved in {} minute. Sync now starts it again."
 msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
 msgstr[0] "同步進度已停滯 {} 分鐘。立即同步將重新啟動該程序。"
 
+msgid "The system default output would not open; playing through {}."
+msgstr "無法開啟系統預設輸出；改用 {} 播放。"
+
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "系統桌布。亦可選擇你自己的圖片。"
 
@@ -10900,6 +10903,9 @@ msgstr "無法寫入附屬檔案：{}"
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr ""
+
+msgid "the sound server"
+msgstr "音訊伺服器"
 
 msgid "the sound server would not let go of card {}"
 msgstr "音訊伺服器未釋放音效卡 {}"

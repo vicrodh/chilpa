@@ -81,19 +81,23 @@ pub enum PlayerEvent {
     /// turn in the play, counted from one; `message` is text the interface
     /// can show.
     Notice { attempt: u64, message: String },
+    /// The standing output would not open and the play went elsewhere:
+    /// `message` says where, as text the interface can show. It ends
+    /// nothing and marks no track; the play goes on there.
+    FellBack { message: String },
 }
 
 /// Where a play says what happens, each event under the play's generation:
 /// `Player::poll_tagged` hands it over with the event, so whoever started
 /// another play since can tell an event is not about the one in front of them.
 #[derive(Clone)]
-struct Events {
+pub(crate) struct Events {
     to: Sender<(u64, PlayerEvent)>,
     generation: u64,
 }
 
 impl Events {
-    fn send(&self, event: PlayerEvent) -> Result<(), ()> {
+    pub(crate) fn send(&self, event: PlayerEvent) -> Result<(), ()> {
         self.to.send((self.generation, event)).map_err(|_| ())
     }
 }
@@ -614,6 +618,7 @@ fn play(
 ) -> Result<Outcome, PlayError> {
     let (queue, controls) = (&launch.queue, &launch.controls);
     let exclusive = controls.exclusive.get();
+    let destination = crate::destination::Destination::new(device, events);
     // What the samples meet after Chilpa hands them over. The delivery
     // cannot see that far, and a verdict that ignores it says bit-perfect
     // over a resampler.
@@ -695,10 +700,14 @@ fn play(
         policy,
         controls,
         start,
-        |format| open(device, format, exclusive),
+        |format| destination.open(open, format, exclusive),
         &mut |attempt, index, path, delivery, about| {
             // The verdict, once: what Chilpa did to the samples, the road past
-            // it, and the device as it opened.
+            // it, and the device as it opened -- the one it opened on, which
+            // is not the one asked for when the standing output fell back.
+            let device = destination.device();
+            let device = device.as_str();
+            let exact_path = crate::path_is_exact(device, exclusive);
             let bit_perfect = delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery);
             chilpa_audio::diagnostics::trace(
                 "player",
@@ -873,7 +882,7 @@ fn play_stream(
     fallback: bool,
 ) -> Result<Outcome, PlayError> {
     dsp.begin_stream();
-    let exact_path = crate::path_is_exact(device, exclusive);
+    let destination = crate::destination::Destination::new(device, events);
     let parts = parts_of(url);
     let address = parts.first().cloned().unwrap_or_default();
     let stream = chilpa_stream::open_parts(&parts)
@@ -903,9 +912,12 @@ fn play_stream(
         fallback,
         Some(dsp.clone()),
         owed.report.clone(),
-        |format| open(device, format, exclusive),
+        |format| destination.open(open, format, exclusive),
         &mut |delivery, bits| {
             owed.announced.set(true);
+            let device = destination.device();
+            let device = device.as_str();
+            let exact_path = crate::path_is_exact(device, exclusive);
             let _ = events.send(PlayerEvent::Started {
                 path: path.clone(),
                 opened: delivery.opened,
@@ -1027,16 +1039,19 @@ fn play_cd_drive(
     // it is not opened at all. That is half the answer. The other half is
     // where it went, and it used to be missing: through `default` this said
     // bit-perfect while the samples went into a mixer.
-    let bit_perfect = crate::path_is_exact(device, exclusive) && !controls.dsp.requested();
+    let destination = crate::destination::Destination::new(device, events);
 
     crate::cd_playback::play_disc_heard(
         unit,
         &tracks,
         caps,
         controls,
-        |format| open(device, format, exclusive),
+        |format| destination.open(open, format, exclusive),
         &mut |index, delivery| {
             let track = &tracks[index];
+            let device = destination.device();
+            let device = device.as_str();
+            let bit_perfect = crate::path_is_exact(device, exclusive) && !controls.dsp.requested();
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
                 opened: delivery.opened,

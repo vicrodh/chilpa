@@ -100,6 +100,15 @@ impl Chilpa {
                     self.now.error = message;
                 }
             }
+            // The standing output would not open and the play went where the
+            // system's server or a card took it: said, like a locked output
+            // that is gone, and nothing about the track changes.
+            PlayerEvent::FellBack { message } => {
+                chilpa_core::trace_playback("facade", "output_fell_back", format_args!("play={id} shown={shown}"));
+                if shown {
+                    self.now.error = message;
+                }
+            }
             // A track that started is over: how it ended and what of it left
             // the device settle its listen.
             PlayerEvent::Closed { attempt, heard, how, .. } => {
