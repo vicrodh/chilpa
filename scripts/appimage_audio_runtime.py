@@ -10,6 +10,7 @@ native packages ship none and depend on the distribution's, and the AppImage
 keeps its copies apart and adds them only on a system that has none.
 """
 import argparse
+import os
 from pathlib import Path
 import re
 import shutil
@@ -17,14 +18,17 @@ import subprocess
 import tempfile
 
 SONAME = "libpipewire-0.3.so.0"
-# Each group's own libraries, and the one a system that has the group shows.
+# Each group's client libraries: the executable needs all of them, so a
+# system has the group only when it has every one.
 GROUPS = {
-    "pipewire": (("libpipewire-0.3.so.0",), "libpipewire-0.3.so.0"),
-    "pulse": (("libpulse.so.0", "libpulse-simple.so.0"), "libpulse.so.0"),
+    "pipewire": ("libpipewire-0.3.so.0",),
+    "pulse": ("libpulse.so.0", "libpulse-simple.so.0"),
 }
 FALLBACK = Path("usr/lib/host-fallback")
 # How `ldconfig -p` names this architecture's libraries.
 LDCONFIG_ABI = {"x86_64": "libc6,x86-64", "aarch64": "libc6,AArch64"}
+# An ELF header's machine field for this architecture, as `od -tx1` prints its two bytes.
+ELF_MACHINE = {"x86_64": "3e00", "aarch64": "b700"}
 WRAPPED = "AppRun.linuxdeploy"
 
 
@@ -57,23 +61,32 @@ def host_audio_groups(usr, needed=elf_needed):
     """The libraries under `usr/lib` that each audio client group alone needs.
 
     A library also reached from anything else in the tree stays where it is:
-    the D-Bus library the PulseAudio client uses is Qt's too.
+    the D-Bus library the PulseAudio client uses is Qt's too. A name that is
+    a link to another file in the folder brings that file with it.
     """
     usr = Path(usr)
     lib = usr / "lib"
-    present = {path.name for path in lib.iterdir() if path.is_file() and not path.is_symlink()}
-    graph = {name: [n for n in needed(lib / name) if n in present] for name in present}
+    entries = {path.name: path for path in lib.iterdir() if path.is_file()}
+
+    def real(name):
+        path = entries[name]
+        if path.is_symlink() and path.resolve().parent == lib.resolve() and path.resolve().name in entries:
+            return path.resolve().name
+        return name
+
+    graph = {name: [n for n in needed(lib / real(name)) if n in entries] for name in entries}
 
     def reached(roots, around=frozenset()):
-        seen, todo = set(), [r for r in roots if r in present and r not in around]
+        seen, todo = set(), [r for r in roots if r in entries and r not in around]
         while todo:
             name = todo.pop()
             if name not in seen:
                 seen.add(name)
+                todo.append(real(name))
                 todo.extend(n for n in graph.get(name, []) if n not in around)
         return seen
 
-    clients = frozenset(name for roots, _ in GROUPS.values() for name in roots)
+    clients = frozenset(name for roots in GROUPS.values() for name in roots)
     audio = reached(clients)
     # What the rest of the tree needs, without passing through the clients:
     # that the executable needs `libpulse` is why the system's must be found.
@@ -84,7 +97,7 @@ def host_audio_groups(usr, needed=elf_needed):
         if path.parent == lib and path.name in audio:
             continue
         others |= reached(needed(path), clients)
-    return {group: reached(roots) - others for group, (roots, _) in GROUPS.items()}
+    return {group: reached(roots) - others for group, roots in GROUPS.items()}
 
 
 def strip_host_audio(usr, needed=elf_needed):
@@ -106,7 +119,7 @@ SYSTEM_DIRS = {
 }
 
 
-def apprun(abi, dirs):
+def apprun(abi, machine, dirs):
     lines = [
         "#!/bin/sh",
         "# The PipeWire and PulseAudio client libraries come from the system when it",
@@ -114,19 +127,29 @@ def apprun(abi, dirs):
         "# Chilpa's copies are added only where the system has none.",
         'here="$(dirname "$(readlink -f "$0")")"',
         'known="$( (ldconfig -p || /sbin/ldconfig -p || /usr/sbin/ldconfig -p) 2>/dev/null)"',
+        "# Whether a library is a 64-bit ELF for this machine: a 32-bit copy in a",
+        "# shared folder is not one the loader would give Chilpa.",
+        "ours() {",
+        '    set -- $(od -An -tx1 -N20 "$1" 2>/dev/null)',
+        f'    [ "$#" -eq 20 ] && [ "$1$2$3$4" = "7f454c46" ] && [ "$5" = "02" ] && [ "${{19}}${{20}}" = "{machine}" ]',
+        "}",
         "# Whether the system has a library: what the loader's cache says, and the",
         "# folders the loader searches. Not being able to ask is not absence: our",
         "# copy beside a newer system plugin is what this exists to avoid.",
         "found() {",
         f'    case "$known" in *"$1 ({abi}"*) return 0 ;; esac',
-        f'    for dir in $(printf "%s" "${{LD_LIBRARY_PATH:-}}" | tr ":" " ") {" ".join(dirs)}; do',
-        '        [ -e "$dir/$1" ] && return 0',
+        f'    rest="${{LD_LIBRARY_PATH:-}}:{":".join(dirs)}"',
+        '    while [ -n "$rest" ]; do',
+        '        dir="${rest%%:*}"',
+        '        case "$rest" in *:*) rest="${rest#*:}" ;; *) rest="" ;; esac',
+        '        [ -n "$dir" ] && [ -e "$dir/$1" ] && ours "$dir/$1" && return 0',
         "    done",
         "    return 1",
         "}",
     ]
-    for group, (_, soname) in GROUPS.items():
-        lines.append(f'found {soname} || {{ [ -d "$here/{FALLBACK}/{group}" ] && '
+    for group, roots in GROUPS.items():
+        every = " && ".join(f"found {soname}" for soname in roots)
+        lines.append(f'{{ {every}; }} || {{ [ -d "$here/{FALLBACK}/{group}" ] && '
                      f'LD_LIBRARY_PATH="$here/{FALLBACK}/{group}${{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}}"; }}')
     lines += [
         '[ -n "${LD_LIBRARY_PATH:-}" ] && export LD_LIBRARY_PATH',
@@ -144,12 +167,16 @@ def defer_host_audio(appdir, arch, needed=elf_needed, dirs=None):
         target = appdir / FALLBACK / group
         target.mkdir(parents=True, exist_ok=True)
         for name in names:
-            shutil.copy2(lib / name, target / name)
+            source = lib / name
+            if source.is_symlink():
+                (target / name).symlink_to(os.readlink(source))
+            else:
+                shutil.copy2(source, target / name)
     for name in set().union(*groups.values()):
         (lib / name).unlink()
     launcher = appdir / "AppRun"
     launcher.rename(appdir / WRAPPED)
-    launcher.write_text(apprun(LDCONFIG_ABI[arch], SYSTEM_DIRS[arch] if dirs is None else dirs))
+    launcher.write_text(apprun(LDCONFIG_ABI[arch], ELF_MACHINE[arch], SYSTEM_DIRS[arch] if dirs is None else dirs))
     launcher.chmod(0o755)
     return groups
 
@@ -161,8 +188,9 @@ def check_appdir_audio(appdir):
         raise SystemExit("The AppImage is missing its fallback PipeWire client library.")
     if not is_elf(library):
         raise SystemExit("The fallback PipeWire client library is not an ELF library.")
-    if (appdir / "usr/lib" / SONAME).exists():
-        raise SystemExit("The AppImage loads its own PipeWire client library before the system's.")
+    ahead = [name for roots in GROUPS.values() for name in roots if os.path.lexists(appdir / "usr/lib" / name)]
+    if ahead:
+        raise SystemExit("The AppImage loads its own audio client libraries before the system's: " + ", ".join(ahead))
     launcher = appdir / "AppRun"
     if str(FALLBACK) not in launcher.read_text() or not (appdir / WRAPPED).exists():
         raise SystemExit("The AppImage does not start through its audio library wrapper.")
@@ -171,7 +199,7 @@ def check_appdir_audio(appdir):
 def check_native_audio(payload):
     """A native package's tree carries no audio client library of its own."""
     lib = Path(payload) / "opt/chilpa/lib"
-    shipped = [name for roots, _ in GROUPS.values() for name in roots if (lib / name).exists()]
+    shipped = [name for roots in GROUPS.values() for name in roots if os.path.lexists(lib / name)]
     if shipped:
         raise SystemExit("The native package ships its own audio client libraries: " + ", ".join(shipped))
 

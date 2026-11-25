@@ -1,4 +1,5 @@
 import importlib.util
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -52,6 +53,17 @@ def tree(root):
     return usr
 
 
+def elf(bits=64, machine=0x3E):
+    """The first bytes of a shared library's ELF header."""
+    header = bytearray(64)
+    header[0:4] = b"\x7fELF"
+    header[4] = 2 if bits == 64 else 1
+    header[5] = header[6] = 1
+    header[16:18] = (3).to_bytes(2, "little")
+    header[18:20] = machine.to_bytes(2, "little")
+    return bytes(header)
+
+
 def needed(path):
     return NEEDS[Path(path).name]
 
@@ -91,7 +103,8 @@ class HostAudioTests(unittest.TestCase):
 
     def test_a_system_with_both_clients_gets_none_of_ours(self):
         known = ("\tlibpipewire-0.3.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpipewire-0.3.so.0\n"
-                 "\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n")
+                 "\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n"
+                 "\tlibpulse-simple.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse-simple.so.0\n")
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
             appdir, path = self.launch(directory, known)
             runtime.check_appdir_audio(appdir)
@@ -100,26 +113,53 @@ class HostAudioTests(unittest.TestCase):
             self.assertTrue((appdir / "usr/lib/libdbus-1.so.3").exists())
 
     def test_a_system_without_pipewire_gets_ours_and_keeps_its_own_pulse(self):
-        known = "\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n"
+        known = ("\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n"
+                 "\tlibpulse-simple.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse-simple.so.0\n")
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
             appdir, path = self.launch(directory, known)
             self.assertEqual(path, str((appdir / "usr/lib/host-fallback/pipewire").resolve()))
 
     def test_another_architecture_s_library_does_not_count(self):
         known = ("\tlibpipewire-0.3.so.0 (libc6) => /lib/i386-linux-gnu/libpipewire-0.3.so.0\n"
-                 "\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n")
+                 "\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n"
+                 "\tlibpulse-simple.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse-simple.so.0\n")
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
             appdir, path = self.launch(directory, known)
             self.assertTrue(path.endswith("host-fallback/pipewire"), path)
+
+    def test_a_system_with_libpulse_but_not_its_simple_client_gets_ours(self):
+        known = ("\tlibpipewire-0.3.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpipewire-0.3.so.0\n"
+                 "\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n")
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            appdir, path = self.launch(directory, known)
+            self.assertEqual(path, str((appdir / "usr/lib/host-fallback/pulse").resolve()))
 
     def test_libraries_the_loader_would_find_count_when_ldconfig_says_nothing(self):
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
             system = Path(directory) / "system-lib"
             system.mkdir()
-            for name in ("libpipewire-0.3.so.0", "libpulse.so.0"):
-                (system / name).write_bytes(b"\x7fELF")
+            for name in ("libpipewire-0.3.so.0", "libpulse.so.0", "libpulse-simple.so.0"):
+                (system / name).write_bytes(elf())
             appdir, path = self.launch(directory, "", library_path=str(system))
             self.assertEqual(path, str(system), "nothing of ours goes before what the system has")
+
+    def test_a_folder_with_spaces_is_searched_as_one_folder(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            system = Path(directory) / "Audio Runtime" / "lib"
+            system.mkdir(parents=True)
+            for name in ("libpipewire-0.3.so.0", "libpulse.so.0", "libpulse-simple.so.0"):
+                (system / name).write_bytes(elf())
+            appdir, path = self.launch(directory, "", library_path=str(system))
+            self.assertEqual(path, str(system))
+
+    def test_another_architecture_s_library_in_a_folder_does_not_count(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            system = Path(directory) / "system-lib"
+            system.mkdir()
+            (system / "libpipewire-0.3.so.0").write_bytes(elf())
+            (system / "libpulse.so.0").write_bytes(elf(bits=32, machine=3))
+            appdir, path = self.launch(directory, "", library_path=str(system))
+            self.assertEqual(path.split(":"), [str((appdir / "usr/lib/host-fallback/pulse").resolve()), str(system)])
 
     def test_a_system_where_nothing_finds_the_libraries_gets_both(self):
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
@@ -134,3 +174,32 @@ class HostAudioTests(unittest.TestCase):
             (lib / "libpulse.so.0").write_bytes(b"\x7fELF")
             with self.assertRaises(SystemExit):
                 runtime.check_native_audio(directory)
+
+
+class HostAudioShapeTests(unittest.TestCase):
+    def test_a_client_named_by_a_link_moves_with_its_file(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            appdir = Path(directory) / "AppDir"
+            usr = tree(appdir)
+            (usr / "lib/libpulse.so.0").rename(usr / "lib/libpulse.so.0.24.3")
+            (usr / "lib/libpulse.so.0").symlink_to("libpulse.so.0.24.3")
+            (appdir / "AppRun").write_text("#!/bin/sh\n")
+            alias = {"libpulse.so.0.24.3": NEEDS["libpulse.so.0"]}
+            groups = runtime.defer_host_audio(appdir, "x86_64", lambda path: alias.get(Path(path).name) or NEEDS[Path(path).name], dirs=())
+            self.assertIn("libpulse.so.0.24.3", groups["pulse"])
+            moved = appdir / "usr/lib/host-fallback/pulse"
+            self.assertTrue((moved / "libpulse.so.0").is_symlink())
+            self.assertTrue((moved / "libpulse.so.0").resolve().is_file())
+            self.assertFalse(os.path.lexists(appdir / "usr/lib/libpulse.so.0"))
+            (appdir / "usr/lib/host-fallback/pipewire/libpipewire-0.3.so.0").write_bytes(b"\x7fELF")
+            runtime.check_appdir_audio(appdir)
+
+    def test_an_image_that_keeps_a_pulse_client_ahead_is_refused(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            appdir = Path(directory) / "AppDir"
+            tree(appdir)
+            (appdir / "AppRun").write_text("#!/bin/sh\n")
+            runtime.defer_host_audio(appdir, "x86_64", needed, dirs=())
+            (appdir / "usr/lib/libpulse-simple.so.0").write_bytes(b"\x7fELF")
+            with self.assertRaises(SystemExit):
+                runtime.check_appdir_audio(appdir)
