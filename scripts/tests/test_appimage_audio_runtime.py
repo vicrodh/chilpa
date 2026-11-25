@@ -1,5 +1,6 @@
 import importlib.util
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -134,23 +135,11 @@ class HostAudioTests(unittest.TestCase):
             appdir, path = self.launch(directory, known)
             self.assertEqual(path, str((appdir / "usr/lib/host-fallback/pulse").resolve()))
 
-    def test_the_loader_s_answer_decides_over_the_cache(self):
-        known = ("\tlibpipewire-0.3.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpipewire-0.3.so.0\n"
-                 "\tlibpulse.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse.so.0\n"
-                 "\tlibpulse-simple.so.0 (libc6,x86-64) => /lib/x86_64-linux-gnu/libpulse-simple.so.0\n")
-        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
-            loader = Path(directory) / "ld.so"
-            loader.write_text("#!/bin/sh\nprintf '\\tlibpipewire-0.3.so.0 => /usr/lib/libpipewire-0.3.so.0 (0x1)\\n"
-                              "\\tlibpulse.so.0 => not found\\n\\tlibpulse-simple.so.0 => not found\\n'\n")
-            loader.chmod(0o755)
-            appdir, path = self.launch(directory, known, loader=str(loader))
-            self.assertEqual(path, str((appdir / "usr/lib/host-fallback/pulse").resolve()))
-
-    def test_entries_the_loader_reads_differently_never_put_ours_first(self):
+    def test_without_the_loader_a_folder_it_cannot_read_is_no_proof(self):
         for library_path in ("$ORIGIN/../audio", "/nowhere;$LIB/audio"):
             with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
                 appdir, path = self.launch(directory, "", library_path=library_path)
-                self.assertEqual(path, library_path, "a folder it cannot read is not taken for an absent library")
+                self.assertTrue(path.startswith(str((appdir / "usr/lib/host-fallback/pulse").resolve())), path)
 
     def test_an_empty_entry_is_the_current_folder(self):
         with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
@@ -247,3 +236,70 @@ class HostAudioShapeTests(unittest.TestCase):
             (appdir / "usr/lib/libpulse-simple.so.0").write_bytes(b"\x7fELF")
             with self.assertRaises(SystemExit):
                 runtime.check_appdir_audio(appdir)
+
+
+ARCH = os.uname().machine
+LOADER = Path(runtime.LOADER.get(ARCH, "/nonexistent"))
+# Names no system has, so the real loader can be asked about absent clients.
+PROBES = {"pipewire": ("libchilpa-probe-pw.so.0",), "pulse": ("libchilpa-probe-pa.so.0", "libchilpa-probe-pas.so.0")}
+
+
+@unittest.skipUnless(shutil.which("gcc") and LOADER.exists() and ARCH in runtime.LDCONFIG_ABI,
+                     "needs gcc and this machine's dynamic loader")
+class RealLoaderTests(unittest.TestCase):
+    """The wrapper asks the real loader about a real executable."""
+
+    def start(self, directory, present, library_path=None):
+        """Builds an executable that needs the probe clients, keeps `present` of them where
+        `$ORIGIN/../system` reaches, and starts the wrapper the image would carry."""
+        directory = Path(directory)
+        build = directory / "build"
+        build.mkdir()
+        (build / "client.c").write_text("int client(void) { return 0; }\n")
+        (build / "main.c").write_text("int main(void) { return 0; }\n")
+        names = [name for roots in PROBES.values() for name in roots]
+        for name in names:
+            subprocess.run(["gcc", "-shared", "-fPIC", "-o", str(build / name), str(build / "client.c"),
+                            f"-Wl,-soname,{name}"], check=True)
+        appdir = directory / "AppDir"
+        (appdir / "usr/bin").mkdir(parents=True)
+        (appdir / "usr/system").mkdir()
+        subprocess.run(["gcc", "-o", str(appdir / "usr/bin/chilpa-qt"), str(build / "main.c"), f"-L{build}",
+                        "-Wl,--no-as-needed", *[f"-l:{name}" for name in names]], check=True)
+        for name in names:
+            if name in present:
+                (build / name).rename(appdir / "usr/system" / name)
+            else:
+                (build / name).unlink()
+        for group in PROBES:
+            (appdir / runtime.FALLBACK / group).mkdir(parents=True)
+        with patch.object(runtime, "GROUPS", PROBES):
+            (appdir / "AppRun").write_text(runtime.apprun(runtime.LDCONFIG_ABI[ARCH], runtime.ELF_MACHINE[ARCH], (), str(LOADER)))
+        (appdir / "AppRun").chmod(0o755)
+        (appdir / runtime.WRAPPED).write_text('#!/bin/sh\necho "${LD_LIBRARY_PATH:-none}"\n')
+        (appdir / runtime.WRAPPED).chmod(0o755)
+        environment = {"PATH": "/usr/bin:/bin"}
+        if library_path is not None:
+            environment["LD_LIBRARY_PATH"] = library_path
+        said = subprocess.run([str(appdir / "AppRun")], env=environment, capture_output=True, text=True, check=True)
+        return appdir, said.stdout.strip()
+
+    def fallback(self, appdir, group):
+        return str((appdir / runtime.FALLBACK / group).resolve())
+
+    def test_a_system_without_the_clients_gets_ours(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            appdir, path = self.start(directory, present=())
+            self.assertEqual(path.split(":"), [self.fallback(appdir, "pulse"), self.fallback(appdir, "pipewire")])
+
+    def test_clients_the_loader_finds_through_origin_keep_ours_out(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            names = [name for roots in PROBES.values() for name in roots]
+            appdir, path = self.start(directory, present=names, library_path="$ORIGIN/../system")
+            self.assertEqual(path, "$ORIGIN/../system")
+
+    def test_only_the_missing_group_is_added(self):
+        with tempfile.TemporaryDirectory(prefix="chilpa-audio-") as directory:
+            appdir, path = self.start(directory, present=["libchilpa-probe-pw.so.0", "libchilpa-probe-pa.so.0"],
+                                      library_path="$ORIGIN/../system")
+            self.assertEqual(path, self.fallback(appdir, "pulse") + ":$ORIGIN/../system")
