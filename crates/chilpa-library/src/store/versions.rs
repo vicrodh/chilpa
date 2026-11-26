@@ -138,9 +138,9 @@ impl VersionCatalog {
     }
 
     /// The best edition the library has of a record named `title` by
-    /// `artist`: the first of its group, which is the best one that can
-    /// play. A remembered choice does not count here: a link asks for the
-    /// record, and the record sounds best in this edition.
+    /// `artist`: the first of its group, which is one that can play, the
+    /// local copy before a server's, then the better one. A remembered
+    /// choice does not count here: a link asks for the record.
     pub fn best_of(&self, title: &str, artist: &str) -> Option<i64> {
         self.named.get(&album_group(title, artist))?.first().copied()
     }
@@ -343,8 +343,13 @@ impl Library {
             if apart.contains(&version.id) { version.group = format!("{APART}{}", version.id); }
             catalog.groups.entry(version.group.clone()).or_default().push(version.id);
         }
+        // What can play leads, then the copy on this computer over a server's,
+        // then the better one.
         for ids in catalog.groups.values_mut().chain(catalog.named.values_mut()) {
-            ids.sort_by_key(|id| (!catalog.versions[id].reachable, std::cmp::Reverse(catalog.versions[id].rank), *id));
+            ids.sort_by_key(|id| {
+                let v = &catalog.versions[id];
+                (!v.reachable, !v.local, std::cmp::Reverse(v.rank), *id)
+            });
         }
         let mut stmt = self.db.prepare("SELECT group_key, album_id FROM album_preferences")?;
         catalog.preferred = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?.collect::<rusqlite::Result<_>>()?;

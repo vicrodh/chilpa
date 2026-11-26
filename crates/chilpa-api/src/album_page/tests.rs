@@ -4,9 +4,10 @@ use chilpa_library::Library;
 fn seed(lib: &Library) -> (i64, i64) {
     let local = lib.source_id("local", "default").unwrap();
     let server = lib.source_id("server", "home").unwrap();
-    let first = lib.source_edition(local, "box", "Box", "Artist", Some(2000)).unwrap();
-    let second = lib.source_edition(server, "box", "Box [Remastered]", "Artist", Some(2000)).unwrap();
-    for (album, source, bits, rate) in [(first, local, 16, 44100), (second, server, 24, 96000)] {
+    // The local edition leads; the server's is the one to switch to.
+    let first = lib.source_edition(server, "box", "Box", "Artist", Some(2000)).unwrap();
+    let second = lib.source_edition(local, "box", "Box [Remastered]", "Artist", Some(2000)).unwrap();
+    for (album, source, bits, rate) in [(first, server, 16, 44100), (second, local, 24, 96000)] {
         for (number, disc) in [(1, 1), (2, 1), (1, 2)] {
             lib.connection().execute("INSERT INTO tracks(source_id, external_id, title, artist, album_id,
                 duration_ms, added_at, bit_depth, sample_rate_hz, codec, track_number, disc_number)

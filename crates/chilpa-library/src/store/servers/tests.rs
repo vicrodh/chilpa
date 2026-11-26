@@ -419,9 +419,12 @@ fn a_record_whose_tracks_cannot_play_is_listed_and_marked_and_its_edition_is_not
     synced(&lib, server, &[track("1", "One")]);
     let theirs: i64 = lib.db.query_row("SELECT album_id FROM tracks WHERE source_id = ?1", params![server], |r| r.get(0)).unwrap();
 
-    // Both can play: the better edition leads, and I can choose mine.
-    assert_eq!(lib.version_catalog().unwrap().selected(mine), theirs, "24/96 over 16/44.1");
-    assert!(lib.select_album_version(mine, mine).unwrap());
+    // Both can play: my copy leads, even at 16/44.1 against the server's
+    // 24/96, and I can choose theirs and come back.
+    assert_eq!(lib.version_catalog().unwrap().selected(theirs), mine, "the local copy over the server's");
+    assert!(lib.select_album_version(mine, theirs).unwrap());
+    assert_eq!(lib.version_catalog().unwrap().selected(mine), theirs, "my choice");
+    assert!(lib.select_album_version(theirs, mine).unwrap());
     assert_eq!(lib.version_catalog().unwrap().selected(theirs), mine, "my choice");
 
     // My folder goes away: my choice waits, and the one that plays is shown.
