@@ -101,10 +101,12 @@ impl Chilpa {
                 }
             }
             // A track that started is over: how it ended and what of it left
-            // the device settle its listen.
-            PlayerEvent::Closed { attempt, heard, how, .. } => {
+            // the device settle its listen. Samples changed after its start,
+            // by a volume moved or DSP turned on, are not what its start said.
+            PlayerEvent::Closed { attempt, heard, how, processed, .. } => {
                 if let Some(listen) = self.plays.get_mut(id).and_then(|play| play.ledger.listen_mut(attempt)) {
                     listen.played_frames = heard;
+                    listen.bit_perfect &= !processed;
                     crate::scrobble::if_heard(self.scrobbler.as_ref(), listen);
                 }
                 let written = self.plays.get_mut(id).map(|play| play.ledger.closed(attempt, heard, how, fate)).unwrap_or_default();

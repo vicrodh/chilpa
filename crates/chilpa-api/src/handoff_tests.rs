@@ -74,7 +74,7 @@ fn seconds(count: u64) -> u64 {
 }
 
 fn closed(heard: u64, how: How) -> PlayerEvent {
-    PlayerEvent::Closed { attempt: 1, index: 0, heard, how }
+    PlayerEvent::Closed { attempt: 1, index: 0, heard, how, processed: false }
 }
 
 fn logged(api: &mut Chilpa, started_at: i64) -> ListenMetrics {
@@ -206,7 +206,7 @@ fn the_close_of_another_track_or_of_another_play_leaves_the_listen_open() {
     let (a, other, at) = (81, 82, 1_000_000_081);
     let mut api = playing(a, "/music/closed-other.flac", at);
     say(&mut api, a, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
-    say(&mut api, a, PlayerEvent::Closed { attempt: 2, index: 1, heard: seconds(9), how: How::Failed });
+    say(&mut api, a, PlayerEvent::Closed { attempt: 2, index: 1, heard: seconds(9), how: How::Failed, processed: false });
     say(&mut api, other, closed(seconds(9), How::Failed));
     let listen = api.plays.get(a).and_then(|play| play.ledger.newest()).expect("still open");
     assert_eq!(listen.played_frames, seconds(3));
@@ -300,7 +300,7 @@ fn a_track_that_started_in_a_replaced_play_is_a_listen_of_that_play() {
     let before = api.listening_summary(&recent).unwrap();
     start(&mut api, a, "/music/second-of-the-old.flac");
     say(&mut api, a, PlayerEvent::Progress { frames: seconds(1), played: seconds(1) });
-    say(&mut api, a, PlayerEvent::Closed { attempt: 1, index: 1, heard: seconds(1), how: How::Stopped });
+    say(&mut api, a, PlayerEvent::Closed { attempt: 1, index: 1, heard: seconds(1), how: How::Stopped, processed: false });
     say(&mut api, a, PlayerEvent::Stopped { frames: seconds(1) });
     let after = api.listening_summary(&recent).unwrap();
     assert_eq!((after.events - before.events, after.skips - before.skips), (1, 1), "the one cut off by the new play is the old play's too, cut short: {after:?}");
@@ -664,4 +664,17 @@ fn the_library_row_names_a_held_file_over_its_tags() {
     // The row carries what a sidecar lays over the file, as the lists show it.
     let tags = chilpa_tags::Tags { title: Some("Tagged title".into()), artists: vec!["Tagged artist".into()], album: Some("Tagged album".into()), ..Default::default() };
     local_identity(816, Some(tags), None, ["Library title", "Library artist", "Library album"], ["Library title", "Library artist", "Library album"]);
+}
+
+#[test]
+fn a_track_whose_samples_changed_after_it_started_is_logged_as_processed() {
+    // Its start said untouched; its close says what reached the device.
+    for (play, at, processed, logged_perfect) in [(941, 1_000_000_941, false, 1), (942, 1_000_000_942, true, 0)] {
+        let mut api = playing(play, "/music/moved-volume.flac", at);
+        api.plays.get_mut(play).unwrap().ledger.listen_mut(1).unwrap().bit_perfect = true;
+        say(&mut api, play, PlayerEvent::Closed { attempt: 1, index: 0, heard: seconds(30), how: How::Completed, processed });
+        let logged = logged(&mut api, at);
+        assert_eq!(logged.events, 1, "{logged:?}");
+        assert_eq!(logged.bit_perfect, logged_perfect, "processed: {processed}");
+    }
 }

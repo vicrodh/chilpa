@@ -460,14 +460,14 @@ fn a_stream_that_was_announced_is_closed_once_whether_or_not_it_got_to_play() {
     // Announced and played.
     let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() };
     owed.announced.set(true);
-    owed.close(480, crate::attempts::How::Stopped);
+    owed.close(480, crate::attempts::How::Stopped, false);
     drop(owed);
     // Never announced: nothing is owed.
     drop(Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() });
     let said: Vec<PlayerEvent> = heard.try_iter().map(|(_, event)| event).collect();
     assert_eq!(said, [
-        PlayerEvent::Closed { attempt: 1, index: 3, heard: 0, how: crate::attempts::How::Failed },
-        PlayerEvent::Closed { attempt: 1, index: 3, heard: 480, how: crate::attempts::How::Stopped },
+        PlayerEvent::Closed { attempt: 1, index: 3, heard: 0, how: crate::attempts::How::Failed, processed: false },
+        PlayerEvent::Closed { attempt: 1, index: 3, heard: 480, how: crate::attempts::How::Stopped, processed: false },
     ]);
 }
 
@@ -883,4 +883,54 @@ fn a_panic_releasing_pending_audio_marks_every_release_path_as_failed() {
         results.push((operation, said[0].heard, said[0].how));
     }
     assert_eq!(results, ["close", "handoff", "flush", "suspend", "pause", "wake"].map(|operation| (operation, 59, crate::attempts::How::Failed)));
+}
+
+/// Lowers the player's volume once it has been handed its first block,
+/// as a listener does halfway through a track; with no volume to lower it
+/// only counts.
+struct LoweringSink {
+    stream: StreamFormat,
+    volume: Arc<std::sync::OnceLock<crate::queue_playback::Level>>,
+    written: bool,
+}
+
+impl AudioSink for LoweringSink {
+    fn format(&self) -> StreamFormat { self.stream }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        if !std::mem::replace(&mut self.written, true) {
+            if let Some(volume) = self.volume.get() { volume.set(0.5); }
+        }
+        Ok(frames.len() / self.stream.frame_bytes())
+    }
+    fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+}
+
+/// What the `Closed` of `path` says of its samples, the volume lowered
+/// after its first block or left alone.
+fn closed_as_processed(path: &Path, lower: bool) -> Option<bool> {
+    let volume = Arc::new(std::sync::OnceLock::new());
+    let held = volume.clone();
+    let p = Player::spawn(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(move |_, stream, _| Ok(Box::new(LoweringSink { stream, volume: held.clone(), written: false }) as Box<dyn AudioSink + Send>)),
+    );
+    if lower {
+        volume.set(p.controls.volume.clone()).unwrap();
+    }
+    p.play(path, "fake");
+    let events = finished_events(&p);
+    assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "{events:?}");
+    events.iter().find_map(|event| match event { PlayerEvent::Closed { processed, .. } => Some(*processed), _ => None })
+}
+
+#[test]
+fn a_track_whose_volume_moved_after_it_started_is_closed_as_processed() {
+    let file = wav("volume-moved", 44_100);
+    assert_eq!(closed_as_processed(&file, false), Some(false), "a file left alone");
+    assert_eq!(closed_as_processed(&file, true), Some(true), "a file lowered halfway");
+    std::fs::remove_file(file).unwrap();
+    let stream = StreamFixture::wave("volume-moved-stream", 44_100);
+    assert_eq!(closed_as_processed(&stream.path, true), Some(true), "a stream lowered halfway");
+    let stream = StreamFixture::wave("volume-left-stream", 44_100);
+    assert_eq!(closed_as_processed(&stream.path, false), Some(false), "a stream left alone");
 }

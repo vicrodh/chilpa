@@ -74,8 +74,10 @@ pub enum PlayerEvent {
     /// left the device, which is what was heard. Said once for every
     /// `Started`, before the play ends, and possibly after the next track
     /// started: the last of a track is still in the device when the queue
-    /// moves on.
-    Closed { attempt: u64, index: usize, heard: u64, how: crate::attempts::How },
+    /// moves on. `processed` says that volume, normalization or DSP changed
+    /// some of its samples, also when they changed after `Started` said it
+    /// went out untouched.
+    Closed { attempt: u64, index: usize, heard: u64, how: crate::attempts::How, processed: bool },
     /// Something went wrong that did not end the play: an unreadable sector
     /// cut a track of a disc, and the disc goes on. `attempt` is the track's
     /// turn in the play, counted from one; `message` is text the interface
@@ -818,7 +820,7 @@ fn play(
             let _ = events.send(PlayerEvent::Skipped { attempt, index, path: path.to_path_buf(), message: why.to_string() });
         },
         &mut |closed| {
-            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how });
+            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how, processed: closed.processed });
         },
     )?;
 
@@ -929,8 +931,8 @@ fn play_stream(
         },
         &mut |frames| publish_progress(&events, &mut titles, frames),
     )?;
-    let (played, heard, how) = played;
-    owed.close(heard, how);
+    let (played, heard, how, processed) = played;
+    owed.close(heard, how, processed);
     Ok(played.outcome)
 }
 
@@ -945,9 +947,9 @@ struct Owed<'a> {
 }
 
 impl Owed<'_> {
-    fn close(&self, heard: u64, how: crate::attempts::How) {
+    fn close(&self, heard: u64, how: crate::attempts::How, processed: bool) {
         if self.announced.replace(false) {
-            let _ = self.events.send(PlayerEvent::Closed { attempt: 1, index: self.index, heard, how });
+            let _ = self.events.send(PlayerEvent::Closed { attempt: 1, index: self.index, heard, how, processed });
         }
     }
 }
@@ -956,7 +958,8 @@ impl Drop for Owed<'_> {
     fn drop(&mut self) {
         let heard = self.report.take().into_iter().find(|retired| retired.attempt == 1)
             .map(|retired| retired.played).or_else(|| self.report.played(1)).unwrap_or(0);
-        self.close(heard, crate::attempts::How::Failed);
+        // Unwound before the render could say what it did to the samples.
+        self.close(heard, crate::attempts::How::Failed, false);
     }
 }
 
@@ -1077,7 +1080,7 @@ fn play_cd_drive(
             });
         },
         &mut |closed| {
-            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how });
+            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how, processed: closed.processed });
         },
     )
     .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))

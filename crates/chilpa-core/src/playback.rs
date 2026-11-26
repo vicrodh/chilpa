@@ -280,7 +280,7 @@ where
     K: AudioSink,
 {
     play_stream_told(stream, caps, policy, stop, pause, false, false, dsp, None, crate::playback_events::Report::default(), open_sink,
-        &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, _, _)| played)
+        &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, ..)| played)
 }
 
 /// The player bar's volume as a stream takes it: the factor, read on every
@@ -305,7 +305,7 @@ pub(crate) fn play_stream_told<F, K>(
     open_sink: F,
     on_delivery: &mut dyn FnMut(&Delivery, Option<u8>),
     on_progress: &mut dyn FnMut(u64),
-) -> Result<(Played, u64, crate::attempts::How), PlayError>
+) -> Result<(Played, u64, crate::attempts::How, bool), PlayError>
 where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
@@ -331,10 +331,14 @@ where
     let scaled = gain_format(&decoded, delivery.opened);
     let spread = delivery.duplicates_mono();
     let mut frames = Frames::new(&mut decoded, &delivery).scaled_in(scaled);
+    let touched = dsp.clone();
     let mut processor = dsp.map(|control| chilpa_audio::dsp::Processor::new(control, sink.format()));
     let mut level = crate::loudness::level::Leveler::volume_only(volume.as_ref().map(|volume| volume.level.clone()));
+    // Whether the volume changed any sample, at whatever point it moved.
+    let changed_any = std::cell::Cell::new(false);
     let mut gain = |bytes: &mut [u8]| {
         let changed = level.packed(bytes, scaled, spread);
+        changed_any.set(changed_any.get() || changed);
         if let Some(volume) = &volume {
             volume.active.store(changed, std::sync::atomic::Ordering::Release);
         }
@@ -365,7 +369,8 @@ where
         _ => {}
     }
     let heard = retired.map_or(0, |retired| retired.played);
-    Ok((Played { delivery, outcome, total_frames: None }, heard, how))
+    let processed = changed_any.get() || touched.is_some_and(|control| control.touched());
+    Ok((Played { delivery, outcome, total_frames: None }, heard, how, processed))
 }
 
 /// Plays a file on a device, with the given policy.

@@ -47,13 +47,16 @@ impl How {
 }
 
 /// A track that started, closed: its turn in the play, its place in the
-/// queue, how many frames of it left the device and how it ended.
+/// queue, how many frames of it left the device, how it ended, and whether
+/// volume, normalization or DSP changed any of its samples on the way out,
+/// which its start could not know when they changed later.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Closed {
     pub attempt: u64,
     pub index: usize,
     pub heard: u64,
     pub how: How,
+    pub processed: bool,
 }
 
 struct Open {
@@ -61,6 +64,7 @@ struct Open {
     index: usize,
     how: Option<How>,
     heard: u64,
+    processed: bool,
 }
 
 pub(crate) struct Attempts<'a> {
@@ -85,7 +89,14 @@ impl<'a> Attempts<'a> {
     /// A track was announced: it is owed an ending from here on, device or
     /// no device.
     pub fn open(&mut self, attempt: u64, index: usize) {
-        self.open.push_back(Open { attempt, index, how: None, heard: 0 });
+        self.open.push_back(Open { attempt, index, how: None, heard: 0, processed: false });
+    }
+
+    /// Something on the way out changed samples of `attempt`.
+    pub fn processed(&mut self, attempt: u64) {
+        if let Some(open) = self.open.iter_mut().find(|open| open.attempt == attempt) {
+            open.processed = true;
+        }
     }
 
     /// How `attempt` ended, as far as is known now. Never lowered.
@@ -127,7 +138,7 @@ impl<'a> Attempts<'a> {
 
     fn close(&mut self, open: Open) {
         // An ending nobody could say is the play breaking under it.
-        (self.tell)(Closed { attempt: open.attempt, index: open.index, heard: open.heard, how: open.how.unwrap_or(How::Failed) });
+        (self.tell)(Closed { attempt: open.attempt, index: open.index, heard: open.heard, how: open.how.unwrap_or(How::Failed), processed: open.processed });
     }
 }
 
@@ -164,6 +175,20 @@ mod tests {
         assert_eq!(said.iter().map(|closed| (closed.attempt, closed.how)).collect::<Vec<_>>(),
             [(1, How::Broken), (2, How::Failed), (3, How::Failed)],
             "a stop does not lower a break, a failure is kept, and an ending nobody said is a failure");
+    }
+
+    #[test]
+    fn a_track_is_closed_as_processed_only_when_its_own_samples_were() {
+        let mut said = Vec::new();
+        let mut tell = |closed: Closed| said.push(closed);
+        {
+            let mut attempts = Attempts::new(&mut tell, StopSignal::new());
+            attempts.open(1, 0);
+            attempts.open(2, 1);
+            attempts.processed(2);
+            attempts.processed(7);
+        }
+        assert_eq!(said.iter().map(|closed| (closed.attempt, closed.processed)).collect::<Vec<_>>(), [(1, false), (2, true)]);
     }
 
     #[test]

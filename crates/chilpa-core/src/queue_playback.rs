@@ -1139,9 +1139,13 @@ where
             _ => delivery.opened,
         };
         let mut output_level = level.take_output();
+        // Whether the gain changed any sample of this track, whenever it did:
+        // a volume moved halfway is not in the verdict its start gave.
+        let scaled = std::cell::Cell::new(false);
         let mut gain = |bytes: &mut [u8]| {
             let changed = output_level.packed(bytes, gain_format, delivery.duplicates_mono());
             controls.gain_active.store(changed, std::sync::atomic::Ordering::Release);
+            scaled.set(scaled.get() || changed);
         };
         let output_gain = (shape.is_some() && (volume.is_some() || normalize.get())).then_some(&mut gain as &mut dyn FnMut(&mut [u8]));
         let (outcome, skipped) = match &mut source {
@@ -1253,6 +1257,10 @@ where
         // How it ended is known here; how much of it was heard, only once
         // what it left in the device has played or been thrown away.
         attempts.ended(attempt, crate::attempts::How::of(&outcome, skipped));
+        // The DSP says it touched this track's samples since its stream began.
+        if scaled.get() || (shape.is_some() && controls.dsp.touched()) {
+            attempts.processed(attempt);
+        }
         sink.end(if skipped { "skipped" } else {
             match &outcome {
                 Outcome::Finished { .. } => "finished",
