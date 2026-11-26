@@ -118,9 +118,11 @@ Item {
             y: header.together ? (header.height - height) / 2 : sections.height + Metrics.gap8 // derived: centred beside the sections, or under them
             spacing: Metrics.gap8
             // Reads every repository again without opening them.
-            P.PillButton {
+            P.IconButton {
                 objectName: "checkPluginUpdates"
-                text: I18n.tr("Check for updates", I18n.rev)
+                anchors.verticalCenter: parent.verticalCenter
+                glyph: Icons.refresh
+                tip: I18n.tr("Check for updates", I18n.rev)
                 enabled: !manager.view.busy
                 onClicked: manager.command("updates_check", {})
             }

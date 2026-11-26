@@ -288,6 +288,7 @@ TestCase {
         manager.read()
         const button = findChild(manager, "checkPluginUpdates")
         verify(button !== null && button.visible && button.enabled)
+        compare(button.tip, "Check for updates", "a glyph, with its words in the tooltip")
         manager.section = "compatible"
         verify(button.visible, "both sections offer it")
         manager.section = "native"
