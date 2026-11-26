@@ -485,9 +485,13 @@ impl Chilpa {
                             by_catalog.or_else(|| (discs.len() == 1).then(|| *discs.first().unwrap_or(&0)).filter(|n| *n > 1 && *n <= release.discs))
                                 .unwrap_or(0)
                         });
-                        let matched = editor.draft.as_ref().map_or(0, |d| apply::pair_for(d, &release, editor.selected_disc).iter().flatten().count());
-                        let total = editor.draft.as_ref().map_or(0, |d| d.rows.len());
-                        editor.notice = chilpa_i18n::t_args("{} of {} tracks match this release", &[&matched.to_string(), &total.to_string()]);
+                        let (pairs, by_order) = editor.draft.as_ref().map_or((Vec::new(), false), |d| apply::pairing(d, &release, editor.selected_disc));
+                        let (matched, total) = (pairs.iter().flatten().count(), editor.draft.as_ref().map_or(0, |d| d.rows.len()));
+                        editor.notice = if by_order {
+                            chilpa_i18n::t_args("{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying.", &[&matched.to_string(), &total.to_string()])
+                        } else {
+                            chilpa_i18n::t_args("{} of {} tracks match this release", &[&matched.to_string(), &total.to_string()])
+                        };
                         editor.release = Some(release);
                         editor.rebuild_preview();
                     }

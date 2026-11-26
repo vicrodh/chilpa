@@ -128,7 +128,7 @@ impl Library {
                  JOIN sources s ON s.id = t.source_id
                  LEFT JOIN albums a ON a.id = t.album_id
                  WHERE t.album_id = ?1 AND t.present = 1
-                 ORDER BY t.disc_number, t.track_number, t.title COLLATE NOCASE",
+                 ORDER BY t.disc_number, t.track_number, t.external_id COLLATE NOCASE",
             )?;
             let rows = stmt.query_map(params![album_id], |r| {
                 let source_id: i64 = r.get(11)?;
@@ -532,6 +532,14 @@ mod tests {
         assert_eq!(tracks[0].genres, ["Rock"]);
         assert_eq!(tracks[0].container, None);
         assert_eq!(tracks[1].container.as_deref(), Some("/m/1/disc.iso"));
+    }
+
+    #[test]
+    fn tracks_without_a_number_come_in_the_order_of_their_files_not_their_titles() {
+        let lib = shelf();
+        lib.db.execute("UPDATE tracks SET track_number = NULL, title = CASE id WHEN 1 THEN 'Zebra' ELSE 'Apple' END WHERE album_id = 1", []).unwrap();
+        let tracks = lib.edit_tracks(1).unwrap();
+        assert_eq!(tracks.iter().map(|t| t.title.as_str()).collect::<Vec<_>>(), ["Zebra", "Apple"], "01.flac before 02.flac");
     }
 
     #[test]

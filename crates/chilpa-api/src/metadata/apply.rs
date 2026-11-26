@@ -42,6 +42,13 @@ pub(crate) fn pair(draft: &Draft, release: &Release) -> Vec<Option<usize>> {
 /// Zero means the whole release. A chosen medium applies to its own rows in
 /// a box, or to every row when the editor holds one locally numbered disc.
 pub(crate) fn pair_for(draft: &Draft, release: &Release, medium: u16) -> Vec<Option<usize>> {
+    pairing(draft, release, medium).0
+}
+
+/// The pairs, and whether they came from the order alone: no number of the
+/// files matched the release's, and the counts did. A row without a number
+/// counts from where its file stands among the others.
+pub(crate) fn pairing(draft: &Draft, release: &Release, medium: u16) -> (Vec<Option<usize>>, bool) {
     let (at_number, at_disc) = (fields::track("track_number").unwrap_or(0), fields::track("disc_number").unwrap_or(0));
     let local_discs: std::collections::BTreeSet<u16> = draft.rows.iter()
         .filter_map(|row| row.cells[at_disc].now.parse::<u16>().ok()).collect();
@@ -71,10 +78,11 @@ pub(crate) fn pair_for(draft: &Draft, release: &Release, medium: u16) -> Vec<Opt
     }).collect();
     let candidates: Vec<usize> = release.tracks.iter().enumerate().filter_map(|(i, track)|
         (medium == 0 || track.disc == medium).then_some(i)).collect();
-    if pairs.iter().all(Option::is_none) && candidates.len() == eligible.len() {
+    let by_order = pairs.iter().all(Option::is_none) && candidates.len() == eligible.len() && !eligible.is_empty();
+    if by_order {
         for (row, track) in eligible.into_iter().zip(candidates) { pairs[row] = Some(track); }
     }
-    pairs
+    (pairs, by_order)
 }
 
 pub(super) fn names(credits: &[Credit]) -> String {
@@ -333,6 +341,8 @@ mod tests {
         assert_eq!(pair(&draft, &found), [Some(0), Some(1)]);
         let more = release(Provider::Discogs, vec![track(3, 7, "a"), track(3, 8, "b"), track(3, 9, "c")]);
         assert_eq!(pair(&draft, &more), [None, None], "and another count pairs nothing");
+        assert_eq!(pairing(&draft, &found, 0).1, true, "and it says it paired by order");
+        assert_eq!(pairing(&plain(), &release(Provider::MusicBrainz, vec![track(1, 1, "a"), track(1, 2, "b")]), 0).1, false, "numbers that match are not order");
     }
 
     #[test]
