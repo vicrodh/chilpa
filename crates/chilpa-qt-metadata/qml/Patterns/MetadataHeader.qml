@@ -17,6 +17,7 @@ Item {
     signal saveAsked()
     signal closeAsked()
     signal dropSidecarAsked()
+    signal replaceAsked()
 
     readonly property var save: doc.save || ({})
     readonly property var layers: doc.layers || ({})
@@ -76,6 +77,13 @@ Item {
         id: buttons
         anchors.right: parent.right
         spacing: Metrics.gap8
+        PillButton {
+            objectName: "metadataReplace"
+            kind: "ghost"
+            text: I18n.tr("Replace…", I18n.rev)
+            enabled: root.doc.state === "ready"
+            onClicked: root.replaceAsked()
+        }
         PillButton {
             objectName: "metadataDropSidecar"
             kind: "ghost"

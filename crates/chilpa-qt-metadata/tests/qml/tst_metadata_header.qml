@@ -35,6 +35,15 @@ TestCase {
     }
 
     SignalSpy { id: dropAsked; target: header; signalName: "dropSidecarAsked" }
+    SignalSpy { id: replaceAsked; target: header; signalName: "replaceAsked" }
+
+    function test_replace_asks_the_screen_for_its_dialog() {
+        const button = findChild(header, "metadataReplace")
+        verify(button.visible && button.enabled)
+        replaceAsked.clear()
+        button.clicked()
+        compare(replaceAsked.count, 1)
+    }
 
     function test_a_sidecar_on_this_machine_can_be_deleted_from_the_head() {
         const button = findChild(header, "metadataDropSidecar")

@@ -61,6 +61,8 @@ pub mod qobject {
         #[qinvokable] fn save(self: Pin<&mut MetadataEditor>) -> bool;
         /// Deletes what the record's sidecars say of it.
         #[qinvokable] fn drop_sidecar(self: Pin<&mut MetadataEditor>) -> bool;
+        /// Replaces a text in one field: `key` is one of the view's `replaceable`.
+        #[qinvokable] fn substitute(self: Pin<&mut MetadataEditor>, key: &QString, find: &QString, replace: &QString, whole: bool, match_case: bool) -> i32;
         #[qinvokable] fn take_discogs_quota(self: Pin<&mut MetadataEditor>) -> bool;
     }
 
@@ -118,6 +120,10 @@ impl qobject::MetadataEditor {
     pub fn clear_artwork(self: Pin<&mut Self>) { self.then(|api| api.metadata_clear_artwork()) }
     pub fn save(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_save()) }
     pub fn drop_sidecar(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_drop_sidecar()) }
+    pub fn substitute(self: Pin<&mut Self>, key: &QString, find: &QString, replace: &QString, whole: bool, match_case: bool) -> i32 {
+        let (key, find, replace) = (key.to_string(), find.to_string(), replace.to_string());
+        self.then(|api| api.metadata_substitute(&key, &find, &replace, whole, match_case) as i32)
+    }
     pub fn take_discogs_quota(self: Pin<&mut Self>) -> bool { self.then(|api|api.take_discogs_quota()) }
 
     pub fn artwork_from_file(self: Pin<&mut Self>) {

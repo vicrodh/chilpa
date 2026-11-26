@@ -2787,6 +2787,9 @@ msgstr "各ファイルをコピーし、そのコピーに書き込んで読み
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr "各ファイルの各値でテキストを置換します。空になった値は削除されます。"
+
 msgid "Earlier"
 msgstr "前の期間"
 
@@ -3101,6 +3104,9 @@ msgstr "トラックを絞り込む"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "絞り込み、Enterで検索、またはストリームURL"
+
+msgid "Find"
+msgstr "検索"
 
 msgid "Find a preset or device"
 msgstr "プリセットまたはデバイスを検索"
@@ -4512,6 +4518,9 @@ msgstr "マスタリングエンジニア"
 msgid "Match"
 msgstr "一致条件"
 
+msgid "Match case"
+msgstr "大文字と小文字を区別"
+
 msgid "Match score: {}"
 msgstr ""
 
@@ -5414,6 +5423,9 @@ msgstr "ライブラリにすでにある曲だけ"
 
 msgid "Only the first {} outputs are listed."
 msgstr "最初の {} 件の出力のみ表示されます。"
+
+msgid "Only the whole value"
+msgstr "値全体のみ"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "このサーバーのプレイリストには、このサーバーの曲だけが入ります"
@@ -6661,6 +6673,9 @@ msgstr "修復しました。失われたものはありません。"
 msgid "Repeat"
 msgstr "リピート"
 
+msgid "Replace"
+msgstr "置換"
+
 msgid "Replace current queue"
 msgstr "現在のキューを置き換え"
 
@@ -6673,8 +6688,20 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr "キュー「{}」を置き換え"
 
+msgid "Replace text"
+msgstr "テキストを置換"
+
+msgid "Replace text in a field"
+msgstr "フィールド内のテキストを置換"
+
 msgid "Replace values"
 msgstr ""
+
+msgid "Replace with"
+msgstr "置換後"
+
+msgid "Replace…"
+msgstr "置換…"
 
 msgid "Report an issue"
 msgstr "問題を報告"
@@ -9090,6 +9117,9 @@ msgstr "種類 / バージョン"
 msgid "Type the code"
 msgstr "コードを入力"
 
+msgid "Type the text to find."
+msgstr "検索するテキストを入力してください。"
+
 msgid "Type words and press Enter"
 msgstr "語を入力して Enter"
 
@@ -10219,6 +10249,9 @@ msgstr "そのサーバーのアドレスはここからどれも応答しませ
 
 msgid "not supported: {}"
 msgstr "サポートされていません: {}"
+
+msgid "nothing matched"
+msgstr "一致するものはありません"
 
 msgid "nothing was found"
 msgstr "見つかりませんでした"
@@ -11541,6 +11574,10 @@ msgstr "{}トラックがディスク{}に一致します"
 
 msgid "{} unreadable"
 msgstr "読み取り不可: {}"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] "{} 件の値を変更しました"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{}が時間内に許可されませんでした。もう一度接続してください"

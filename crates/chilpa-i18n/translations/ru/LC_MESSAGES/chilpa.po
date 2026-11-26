@@ -2791,6 +2791,9 @@ msgstr "Каждый файл копируется, копия записыва�
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr "Текст заменяется в каждом значении каждого файла. Значение, оставшееся пустым, удаляется."
+
 msgid "Earlier"
 msgstr "Раньше"
 
@@ -3105,6 +3108,9 @@ msgstr "Фильтр треков"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "Фильтр, Enter для поиска или URL потока"
+
+msgid "Find"
+msgstr "Найти"
 
 msgid "Find a preset or device"
 msgstr "Найти пресет или устройство"
@@ -4522,6 +4528,9 @@ msgstr "Мастеринг-инженер"
 msgid "Match"
 msgstr "Совпадение"
 
+msgid "Match case"
+msgstr "Учитывать регистр"
+
 msgid "Match score: {}"
 msgstr ""
 
@@ -5424,6 +5433,9 @@ msgstr "Только песни, которые уже есть в вашей б
 
 msgid "Only the first {} outputs are listed."
 msgstr "Показаны только первые {} выводов."
+
+msgid "Only the whole value"
+msgstr "Только всё значение целиком"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "В его плейлисты попадают только треки этого сервера"
@@ -6673,6 +6685,9 @@ msgstr "Исправлено. Ничего не потеряно."
 msgid "Repeat"
 msgstr "Повтор"
 
+msgid "Replace"
+msgstr "Заменить"
+
 msgid "Replace current queue"
 msgstr "Заменить текущую очередь"
 
@@ -6685,8 +6700,20 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr "Заменить очередь: {}"
 
+msgid "Replace text"
+msgstr "Заменить текст"
+
+msgid "Replace text in a field"
+msgstr "Заменить текст в поле"
+
 msgid "Replace values"
 msgstr ""
+
+msgid "Replace with"
+msgstr "Заменить на"
+
+msgid "Replace…"
+msgstr "Заменить…"
 
 msgid "Report an issue"
 msgstr "Сообщить о проблеме"
@@ -9112,6 +9139,9 @@ msgstr "Тип / версия"
 msgid "Type the code"
 msgstr "Введите код"
 
+msgid "Type the text to find."
+msgstr "Введите текст для поиска."
+
 msgid "Type words and press Enter"
 msgstr "Введите слова и нажмите Enter"
 
@@ -10245,6 +10275,9 @@ msgstr "ни один из адресов этого сервера не отв�
 
 msgid "not supported: {}"
 msgstr "не поддерживается: {}"
+
+msgid "nothing matched"
+msgstr "совпадений нет"
 
 msgid "nothing was found"
 msgstr "ничего не найдено"
@@ -11661,6 +11694,12 @@ msgstr "Треков, совпадающих с диском {2}: {1}"
 
 msgid "{} unreadable"
 msgstr "Не удалось прочитать: {}"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] "Изменено значение: {}"
+msgstr[1] "Изменено значения: {}"
+msgstr[2] "Изменено значений: {}"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{}: разрешение не получено вовремя; подключите снова"

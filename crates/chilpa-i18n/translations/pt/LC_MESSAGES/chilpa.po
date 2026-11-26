@@ -2789,6 +2789,9 @@ msgstr "Cada arquivo é copiado, a cópia é gravada e lida de volta, e só ent�
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr "O texto é substituído em cada valor de cada arquivo. Um valor que fica vazio é removido."
+
 msgid "Earlier"
 msgstr "Antes"
 
@@ -3103,6 +3106,9 @@ msgstr "Filtrar faixas"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "Filtre, Enter para buscar, ou a URL de um stream"
+
+msgid "Find"
+msgstr "Localizar"
 
 msgid "Find a preset or device"
 msgstr "Buscar um preset ou dispositivo"
@@ -4517,6 +4523,9 @@ msgstr "Engenheiro de masterização"
 msgid "Match"
 msgstr "Corresponder a"
 
+msgid "Match case"
+msgstr "Diferenciar maiúsculas"
+
 msgid "Match score: {}"
 msgstr ""
 
@@ -5419,6 +5428,9 @@ msgstr "Só músicas que já estão na sua biblioteca"
 
 msgid "Only the first {} outputs are listed."
 msgstr "Apenas as primeiras {} saídas são listadas."
+
+msgid "Only the whole value"
+msgstr "Somente o valor inteiro"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "Nas playlists dele só entram faixas deste servidor"
@@ -6667,6 +6679,9 @@ msgstr "Reparada. Nada foi perdido."
 msgid "Repeat"
 msgstr "Repetir"
 
+msgid "Replace"
+msgstr "Substituir"
+
 msgid "Replace current queue"
 msgstr "Substituir fila atual"
 
@@ -6679,8 +6694,20 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr "Substituir a fila {}"
 
+msgid "Replace text"
+msgstr "Substituir texto"
+
+msgid "Replace text in a field"
+msgstr "Substituir texto em um campo"
+
 msgid "Replace values"
 msgstr ""
+
+msgid "Replace with"
+msgstr "Substituir por"
+
+msgid "Replace…"
+msgstr "Substituir…"
 
 msgid "Report an issue"
 msgstr "Relatar um problema"
@@ -9101,6 +9128,9 @@ msgstr "Tipo / versão"
 msgid "Type the code"
 msgstr "Digite o código"
 
+msgid "Type the text to find."
+msgstr "Digite o texto a localizar."
+
 msgid "Type words and press Enter"
 msgstr "Digite palavras e pressione Enter"
 
@@ -10232,6 +10262,9 @@ msgstr "nenhum dos endereços desse servidor responde daqui"
 
 msgid "not supported: {}"
 msgstr "não compatível: {}"
+
+msgid "nothing matched"
+msgstr "nada correspondeu"
 
 msgid "nothing was found"
 msgstr "nada foi encontrado"
@@ -11601,6 +11634,11 @@ msgstr "{} faixas correspondem ao disco {}"
 
 msgid "{} unreadable"
 msgstr "{} ilegíveis"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] "{} valor alterado"
+msgstr[1] "{} valores alterados"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{} não foi autorizado a tempo; conecte novamente"

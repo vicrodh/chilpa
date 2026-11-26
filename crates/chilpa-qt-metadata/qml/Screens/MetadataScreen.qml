@@ -81,6 +81,7 @@ Item {
         onSaveAsked: page.askSave()
         onCloseAsked: page.askClose()
         onDropSidecarAsked: { page.forceActiveFocus(); dropSidecar.open() }
+        onReplaceAsked: { page.forceActiveFocus(); replace.open() }
     }
 
     Row {
@@ -149,6 +150,11 @@ Item {
         destructive: true
         doubleConfirmation: true
         onConfirmed: MetadataEditor.save()
+    }
+    MetadataReplace {
+        id: replace
+        fields: page.doc.replaceable || []
+        onReplaceAsked: (field, find, replacement, whole, matchCase) => MetadataEditor.substitute(field, find, replacement, whole, matchCase)
     }
     ConfirmDialog {
         id: dropSidecar

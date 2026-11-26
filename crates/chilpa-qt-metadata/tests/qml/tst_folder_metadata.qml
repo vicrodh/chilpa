@@ -35,6 +35,28 @@ TestCase {
         compare(patch.value,{field:"genres",operation:"append_unique",value:["N.W.O.B.H.M"]})
         compare(model.saves,0,"preview does not write files")
     }
+    function test_text_is_replaced_in_one_step_and_only_previewed() {
+        const page=createTemporaryObject(maker,this,{routeKey:'["/music"]'})
+        const model=findChild(page,"folderMetadataModel")
+        findChild(page,"batchArtists").text="Iron Maiden"
+        waitForRendering(page)
+        mouseClick(findChild(page,"batchChooseArtists"))
+        tryVerify(()=>model.requests.some(row=>row.action==="select"))
+        findChild(page,"batchOperation").picked("replace_text")
+        verify(!findChild(page,"batchValue").visible,"a rule, not a value")
+        const propose=findChild(page,"batchPropose")
+        tryVerify(()=>!propose.enabled,1000,"nothing to find yet")
+        findChild(page,"batchFind").text="N.W.O.B.H.M"
+        findChild(page,"batchReplaceWith").text="NWOBHM"
+        findChild(page,"batchReplaceWhole").toggled(true)
+        tryVerify(()=>propose.enabled)
+        waitForRendering(page)
+        mouseClick(propose)
+        tryVerify(()=>model.requests.some(row=>row.action==="patch"))
+        const patch=model.requests.find(row=>row.action==="patch")
+        compare(patch.value,{field:"genres",operation:"replace_text",value:{find:"N.W.O.B.H.M",replace:"NWOBHM",whole:true,case:false}})
+        compare(model.saves,0,"preview does not write files")
+    }
     function test_hidden_and_settled_views_release_polling_and_large_lists_are_virtual() {
         const page=createTemporaryObject(maker,this,{routeKey:'["/music"]'})
         const model=findChild(page,"folderMetadataModel")

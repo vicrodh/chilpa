@@ -31,6 +31,8 @@ pub struct MetadataView {
     pub layers: LayersView,
     pub lookup: LookupView,
     pub artwork: ArtworkView,
+    /// The fields text can be replaced in.
+    pub replaceable: Vec<super::ReplaceField>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
@@ -261,6 +263,7 @@ impl Editor {
             // What was said stays said until something else is.
             error: self.error.clone(),
             notice: self.notice.clone(),
+            replaceable: super::substitute::offered(),
             ..MetadataView::default()
         };
 

@@ -2789,6 +2789,9 @@ msgstr ""
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr ""
+
 msgid "Earlier"
 msgstr ""
 
@@ -3102,6 +3105,9 @@ msgid "Filter tracks"
 msgstr "Filter tracks"
 
 msgid "Filter, Enter to search, or a stream URL"
+msgstr ""
+
+msgid "Find"
 msgstr ""
 
 msgid "Find a preset or device"
@@ -4517,6 +4523,9 @@ msgstr ""
 msgid "Match"
 msgstr ""
 
+msgid "Match case"
+msgstr ""
+
 msgid "Match score: {}"
 msgstr ""
 
@@ -5418,6 +5427,9 @@ msgid "Only songs already in your library"
 msgstr "Only songs already in your library"
 
 msgid "Only the first {} outputs are listed."
+msgstr ""
+
+msgid "Only the whole value"
 msgstr ""
 
 msgid "Only tracks from this server go in its playlists"
@@ -6667,6 +6679,9 @@ msgstr ""
 msgid "Repeat"
 msgstr ""
 
+msgid "Replace"
+msgstr ""
+
 msgid "Replace current queue"
 msgstr ""
 
@@ -6679,7 +6694,19 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr ""
 
+msgid "Replace text"
+msgstr ""
+
+msgid "Replace text in a field"
+msgstr ""
+
 msgid "Replace values"
+msgstr ""
+
+msgid "Replace with"
+msgstr ""
+
+msgid "Replace…"
 msgstr ""
 
 msgid "Report an issue"
@@ -9101,6 +9128,9 @@ msgstr "Type / version"
 msgid "Type the code"
 msgstr ""
 
+msgid "Type the text to find."
+msgstr ""
+
 msgid "Type words and press Enter"
 msgstr ""
 
@@ -10231,6 +10261,9 @@ msgid "none of that server's addresses answers from here"
 msgstr ""
 
 msgid "not supported: {}"
+msgstr ""
+
+msgid "nothing matched"
 msgstr ""
 
 msgid "nothing was found"
@@ -11601,6 +11634,11 @@ msgstr ""
 
 msgid "{} unreadable"
 msgstr "{} unreadable"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} was not allowed in time; connect again"
 msgstr ""

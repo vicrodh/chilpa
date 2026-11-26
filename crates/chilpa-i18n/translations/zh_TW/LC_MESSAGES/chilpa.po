@@ -2795,6 +2795,9 @@ msgstr "每個檔案都會先複製、寫入並驗證讀回，確認無誤後才
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr "每個檔案的每個值都會替換文字。變成空白的值會被移除。"
+
 msgid "Earlier"
 msgstr "更早之前"
 
@@ -3109,6 +3112,9 @@ msgstr "篩選曲目"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "輸入條件篩選、按 Enter 搜尋，或輸入串流網址"
+
+msgid "Find"
+msgstr "尋找"
 
 msgid "Find a preset or device"
 msgstr "尋找預設值或裝置"
@@ -4520,6 +4526,9 @@ msgstr "母帶工程師"
 msgid "Match"
 msgstr "符合"
 
+msgid "Match case"
+msgstr "區分大小寫"
+
 msgid "Match score: {}"
 msgstr ""
 
@@ -5422,6 +5431,9 @@ msgstr "只包含音樂庫中已有的歌曲"
 
 msgid "Only the first {} outputs are listed."
 msgstr "僅列出前 {} 個輸出。"
+
+msgid "Only the whole value"
+msgstr "僅限整個值"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "只有來自此伺服器的曲目才會進入其播放清單。"
@@ -6669,6 +6681,9 @@ msgstr "已修復。未遺失任何資料。"
 msgid "Repeat"
 msgstr "重複播放"
 
+msgid "Replace"
+msgstr "取代"
+
 msgid "Replace current queue"
 msgstr "取代目前佇列"
 
@@ -6681,8 +6696,20 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr "取代佇列 {}"
 
+msgid "Replace text"
+msgstr "取代文字"
+
+msgid "Replace text in a field"
+msgstr "取代欄位中的文字"
+
 msgid "Replace values"
 msgstr ""
+
+msgid "Replace with"
+msgstr "取代為"
+
+msgid "Replace…"
+msgstr "取代…"
 
 msgid "Report an issue"
 msgstr "回報問題"
@@ -9098,6 +9125,9 @@ msgstr "類型 / 版本"
 msgid "Type the code"
 msgstr "輸入代碼"
 
+msgid "Type the text to find."
+msgstr "請輸入要尋找的文字。"
+
 msgid "Type words and press Enter"
 msgstr "輸入關鍵字並按 Enter"
 
@@ -10227,6 +10257,9 @@ msgstr "該伺服器的位址從此處均無回應"
 
 msgid "not supported: {}"
 msgstr "不支援：{}"
+
+msgid "nothing matched"
+msgstr "沒有相符的項目"
 
 msgid "nothing was found"
 msgstr "未找到任何內容"
@@ -11549,6 +11582,10 @@ msgstr "{} 首曲目符合光碟 {}"
 
 msgid "{} unreadable"
 msgstr "無法讀取{}"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] "已變更 {} 個值"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "未不及時獲得授權 {}; 請重新連線"

@@ -18,6 +18,8 @@ pub(crate) mod fields;
 mod hosted;
 mod preview;
 mod save;
+mod substitute;
+pub use substitute::ReplaceField;
 mod server;
 pub mod view;
 pub(crate) mod worker;

@@ -2789,6 +2789,9 @@ msgstr "Cada archivo se copia, la copia se escribe y se vuelve a leer, y solo en
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr "Las rutas seleccionadas se actualizan por separado. Otras rutas que compartían el archivo conservarán su contenido anterior."
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr "Cada valor de cada archivo recibe el reemplazo. Un valor que queda vacío se quita."
+
 msgid "Earlier"
 msgstr "Antes"
 
@@ -3103,6 +3106,9 @@ msgstr "Filtrar pistas"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "Filtra, Enter para buscar, o la URL de un stream"
+
+msgid "Find"
+msgstr "Buscar"
 
 msgid "Find a preset or device"
 msgstr "Buscar preset o equipo"
@@ -4517,6 +4523,9 @@ msgstr "Ingeniero de masterización"
 msgid "Match"
 msgstr "Coincidir con"
 
+msgid "Match case"
+msgstr "Distinguir mayúsculas"
+
 msgid "Match score: {}"
 msgstr "Coincidencia: {}"
 
@@ -5419,6 +5428,9 @@ msgstr "Solo canciones que ya están en tu biblioteca"
 
 msgid "Only the first {} outputs are listed."
 msgstr "Solo se listan las primeras {} salidas."
+
+msgid "Only the whole value"
+msgstr "Solo el valor completo"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "En sus playlists solo entran pistas de este servidor"
@@ -6667,6 +6679,9 @@ msgstr "Reparada. No se perdió nada."
 msgid "Repeat"
 msgstr "Repetir"
 
+msgid "Replace"
+msgstr "Reemplazar"
+
 msgid "Replace current queue"
 msgstr "Reemplazar la cola actual"
 
@@ -6679,8 +6694,20 @@ msgstr "Reemplazar preset personal"
 msgid "Replace queue {}"
 msgstr "Reemplazar queue {}"
 
+msgid "Replace text"
+msgstr "Reemplazar texto"
+
+msgid "Replace text in a field"
+msgstr "Reemplazar texto en un campo"
+
 msgid "Replace values"
 msgstr "Reemplazar valores"
+
+msgid "Replace with"
+msgstr "Reemplazar con"
+
+msgid "Replace…"
+msgstr "Reemplazar…"
 
 msgid "Report an issue"
 msgstr "Reportar un problema"
@@ -9101,6 +9128,9 @@ msgstr "Tipo / versión"
 msgid "Type the code"
 msgstr "Escribe el código"
 
+msgid "Type the text to find."
+msgstr "Escribe el texto que se busca."
+
 msgid "Type words and press Enter"
 msgstr "Escribe palabras y presiona Enter"
 
@@ -10232,6 +10262,9 @@ msgstr "ninguna de las direcciones de ese servidor responde desde aquí"
 
 msgid "not supported: {}"
 msgstr "no soportado: {}"
+
+msgid "nothing matched"
+msgstr "nada coincidió"
 
 msgid "nothing was found"
 msgstr "no se encontró nada"
@@ -11601,6 +11634,11 @@ msgstr "{} pistas coinciden con el disco {}"
 
 msgid "{} unreadable"
 msgstr "{} ilegibles"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] "{} valor cambió"
+msgstr[1] "{} valores cambiaron"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "No se permitió a tiempo en {}; vuelve a conectar"

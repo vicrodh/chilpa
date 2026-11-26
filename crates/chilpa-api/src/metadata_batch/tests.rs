@@ -93,6 +93,24 @@ fn genre_append_preserves_original_spellings_and_uncertain_names() {
 }
 
 #[test]
+fn replace_text_changes_words_and_each_value_of_a_list_and_nothing_else() {
+    let rule = |find: &str, to: &str, whole: bool, case: bool| json!({"find":find,"replace":to,"whole":whole,"case":case});
+    let title = patch("title", "replace_text", rule("live", "Vivo", false, false));
+    assert!(title.validate().is_ok());
+    assert_eq!(title.result(&json!("Live at the Live Room")), json!("Vivo at the Vivo Room"));
+    let genres = patch("genres", "replace_text", rule("Rock", "Metal", true, true));
+    assert_eq!(genres.result(&json!(["Rock", "Hard Rock", "rock"])), json!(["Metal", "Hard Rock", "rock"]), "whole values, capitals counted");
+    assert_eq!(patch("genres", "replace_text", rule("Pop", "", true, false)).result(&json!(["Rock", "Pop"])), json!(["Rock"]), "a value replaced by nothing goes");
+    assert!(patch("title", "replace_text", rule("", "x", false, false)).validate().is_err(), "nothing to find");
+    assert!(patch("title", "replace_text", json!("live")).validate().is_err(), "a rule, not a value");
+    assert!(patch("track_number", "replace_text", rule("1", "2", false, false)).validate().is_err(), "not on numbers");
+    assert!(patch("musicbrainz_recording_id", "replace_text", rule("a", "b", false, false)).validate().is_err(), "not on identifiers");
+    let offered = |key: &str| fields::definitions().into_iter().find(|field| field["key"] == key).unwrap()["operations"]
+        .as_array().unwrap().iter().any(|operation| operation == "replace_text");
+    assert!(offered("title") && offered("genres") && !offered("track_number") && !offered("date"));
+}
+
+#[test]
 fn fields_catalog_has_unique_writable_keys_and_rejects_unimplemented_fields() {
     let definitions = fields::definitions();
     let keys: std::collections::BTreeSet<_> = definitions

@@ -2789,6 +2789,9 @@ msgstr "Jede Datei wird kopiert, die Kopie wird geschrieben und zurückgelesen, 
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr "In jedem Wert jeder Datei wird der Text ersetzt. Ein Wert, der leer bleibt, entfällt."
+
 msgid "Earlier"
 msgstr "Früher"
 
@@ -3103,6 +3106,9 @@ msgstr "Titel filtern"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "Filtern, mit Enter suchen oder eine Stream-URL eingeben"
+
+msgid "Find"
+msgstr "Suchen"
 
 msgid "Find a preset or device"
 msgstr "Preset oder Gerät suchen"
@@ -4517,6 +4523,9 @@ msgstr "Mastering-Techniker"
 msgid "Match"
 msgstr "Treffer bei"
 
+msgid "Match case"
+msgstr "Groß- und Kleinschreibung beachten"
+
 msgid "Match score: {}"
 msgstr ""
 
@@ -5419,6 +5428,9 @@ msgstr "Nur Titel, die schon in deiner Bibliothek sind"
 
 msgid "Only the first {} outputs are listed."
 msgstr "Es werden nur die ersten {} Ausgaben aufgeführt."
+
+msgid "Only the whole value"
+msgstr "Nur der ganze Wert"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "In seine Playlists kommen nur Titel dieses Servers"
@@ -6667,6 +6679,9 @@ msgstr "Repariert. Es ging nichts verloren."
 msgid "Repeat"
 msgstr "Wiederholen"
 
+msgid "Replace"
+msgstr "Ersetzen"
+
 msgid "Replace current queue"
 msgstr "Aktuelle Warteschlange ersetzen"
 
@@ -6679,8 +6694,20 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr "Warteschlange {} ersetzen"
 
+msgid "Replace text"
+msgstr "Text ersetzen"
+
+msgid "Replace text in a field"
+msgstr "Text in einem Feld ersetzen"
+
 msgid "Replace values"
 msgstr ""
+
+msgid "Replace with"
+msgstr "Ersetzen durch"
+
+msgid "Replace…"
+msgstr "Ersetzen…"
 
 msgid "Report an issue"
 msgstr "Problem melden"
@@ -9101,6 +9128,9 @@ msgstr "Typ / Version"
 msgid "Type the code"
 msgstr "Gib den Code ein"
 
+msgid "Type the text to find."
+msgstr "Gib den gesuchten Text ein."
+
 msgid "Type words and press Enter"
 msgstr "Wörter eingeben und Eingabe drücken"
 
@@ -10232,6 +10262,9 @@ msgstr "keine der Adressen dieses Servers antwortet von hier aus"
 
 msgid "not supported: {}"
 msgstr "nicht unterstützt: {}"
+
+msgid "nothing matched"
+msgstr "nichts passte"
 
 msgid "nothing was found"
 msgstr "es wurde nichts gefunden"
@@ -11601,6 +11634,11 @@ msgstr "{} Titel passen zu Disc {}"
 
 msgid "{} unreadable"
 msgstr "{} nicht lesbar"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] "{} Wert geändert"
+msgstr[1] "{} Werte geändert"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "Die Freigabe bei {} kam nicht rechtzeitig; verbinde das Konto erneut"

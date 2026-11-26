@@ -85,7 +85,11 @@ pub(super) fn definitions() -> Vec<Value> {
         let list = matches!(field.kind,Kind::List|Kind::UuidList);
         json!({"key":name,"label":label(name),
             "type":match field.kind { Kind::List|Kind::UuidList=>"list",Kind::Number=>"number",Kind::Flag|Kind::Advisory=>"boolean",_=>"text" },
-            "operations":if list { vec!["keep","set","clear","append_unique","remove_values"] } else { vec!["keep","set","clear"] }})
+            "operations":match (list, existing::replaceable(field.kind)) {
+                (true, _) => vec!["keep","set","clear","append_unique","remove_values","replace_text"],
+                (false, true) => vec!["keep","set","clear","replace_text"],
+                _ => vec!["keep","set","clear"],
+            }})
     }).collect()
 }
 
@@ -137,14 +141,28 @@ impl Patch {
         let list = matches!(field.kind, Kind::List | Kind::UuidList);
         if !matches!(
             self.operation.as_str(),
-            "keep" | "set" | "clear" | "append_unique" | "remove_values"
+            "keep" | "set" | "clear" | "append_unique" | "remove_values" | "replace_text"
         ) || !list && matches!(self.operation.as_str(), "append_unique" | "remove_values")
+            || self.operation == "replace_text" && !existing::replaceable(field.kind)
         {
             return Err(chilpa_i18n::t(
                 "This operation is not supported for that field.",
             ));
         }
         if matches!(self.operation.as_str(), "keep" | "clear") {
+            return Ok(());
+        }
+        // Find and replace: what is left is each value's own, checked as
+        // the preview shows it.
+        if self.operation == "replace_text" {
+            let shaped = self.value["find"].is_string() && self.value["replace"].is_string()
+                && self.value["whole"].is_boolean() && self.value["case"].is_boolean();
+            if !shaped {
+                return Err(chilpa_i18n::t("The metadata value has the wrong type."));
+            }
+            if self.value["find"].as_str().unwrap_or_default().is_empty() {
+                return Err(chilpa_i18n::t("Type the text to find."));
+            }
             return Ok(());
         }
         let shape = match field.kind {
@@ -194,6 +212,18 @@ impl Patch {
                     }
                 }
                 Value::Array(values)
+            }
+            "replace_text" => {
+                let swap = |text: &str| existing::substitute(text, self.value["find"].as_str().unwrap_or_default(),
+                    self.value["replace"].as_str().unwrap_or_default(), self.value["whole"] == true, self.value["case"] == true);
+                match before {
+                    Value::String(text) => Value::String(swap(text)),
+                    Value::Array(values) => Value::Array(values.iter().map(|value| match value.as_str() {
+                        Some(text) => Value::String(swap(text)),
+                        None => value.clone(),
+                    }).filter(|value| value.as_str().is_none_or(|text| !text.trim().is_empty())).collect()),
+                    other => other.clone(),
+                }
             }
             "remove_values" => Value::Array(
                 before

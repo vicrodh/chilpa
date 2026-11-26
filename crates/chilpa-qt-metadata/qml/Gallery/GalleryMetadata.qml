@@ -76,6 +76,8 @@ TitledFlow {
     PillButton { text: "Confirm dialog"; onClicked: confirm.open() }
     QuotaDialog { id: quota }
     PillButton { text: "Discogs quota dialog"; onClicked: quota.open() }
+    MetadataReplace { id: replace; fields: [{ key: "album:title", label: "Album" }, { key: "track:title", label: "Title" }, { key: "album:genres", label: "Genres" }] }
+    PillButton { text: "Replace dialog"; onClicked: replace.open() }
     DiscogsSettings { rows: ({refresh: function() {}}) }
     DiscogsQuotaHost {}
 }
