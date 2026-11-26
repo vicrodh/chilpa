@@ -13,7 +13,7 @@
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
 use chilpa_audio::pack::{pack, Samples};
-use chilpa_audio::render::{render_with_processor, FrameSource, Outcome};
+use chilpa_audio::render::{render_with_volume, FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, SinkError, SkipSignal};
 use chilpa_audio::seek::SeekSignal;
 use chilpa_cd::{CdDevice, CdError, Toc, Track, TrackReader, CDDA_FORMAT};
@@ -181,6 +181,9 @@ where
     let mut attempts = crate::attempts::Attempts::new(on_closed, controls.stop.clone());
     let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(CdPlayError::Sink)?, attempts.report());
     let mut processor = chilpa_audio::dsp::Processor::new(controls.dsp.clone(), delivery.opened);
+    // The player bar's volume scales a disc as it scales a file, in the
+    // integers it goes out in, which are at least as wide as its own.
+    let mut level = crate::loudness::level::Leveler::volume_only(Some(controls.volume.clone()));
     let mut last = Outcome::Finished { frames: 0 };
     // Whether the last track ended by itself: then what is still in the
     // device is its end, and it is heard before the device is closed.
@@ -202,6 +205,7 @@ where
             processor.reset();
         }
         controls.dsp.begin_stream();
+        controls.gain_active.store(false, Ordering::Release);
         let attempt = index as u64 + 1;
         sink.begin_attempt(attempt, None);
         on_track(index, &delivery);
@@ -209,7 +213,7 @@ where
         let base = Arc::new(AtomicI64::new(0));
         let delivered = Arc::new(AtomicU64::new(0));
         let mut reader = TrackReader::new(drive, track);
-        let (outcome, skipped) = {
+        let (outcome, skipped, scaled) = {
             let mut laid = LaidOut {
                 reader: &mut reader,
                 to: delivery.opened.sample_format,
@@ -221,16 +225,25 @@ where
                 base: Arc::clone(&base),
                 delivered: Arc::clone(&delivered),
             };
-            let outcome = render_with_processor(&mut laid, &mut sink, &controls.stop, &controls.pause, Some(&mut processor), &mut |f| {
+            let scaled = std::cell::Cell::new(false);
+            let mut gain = |bytes: &mut [u8]| {
+                let changed = level.packed(bytes, delivery.opened, delivery.duplicates_mono());
+                controls.gain_active.store(changed, Ordering::Release);
+                scaled.set(scaled.get() || changed);
+            };
+            let outcome = render_with_volume(&mut laid, &mut sink, &controls.stop, &controls.pause, Some(&mut processor), Some(&mut gain), &mut |f| {
                 delivered.store(f, Ordering::Relaxed);
                 let at = f as i64 + base.load(Ordering::Relaxed);
                 let heard = attempts.heard(attempt).unwrap_or(f);
                 attempts.settle();
                 on_progress(index, Progress { position: at.max(0) as u64, delivered: f }, heard);
             });
-            (outcome, laid.skipped)
+            (outcome, laid.skipped, scaled.get())
         };
         attempts.ended(attempt, crate::attempts::How::of(&outcome, skipped));
+        if scaled || controls.dsp.touched() {
+            attempts.processed(attempt);
+        }
         if let Some(problem) = reader.error.as_ref() {
             // Its source ran out, as far as the render knows; the track was
             // cut.
@@ -498,6 +511,36 @@ mod tests {
         )
         .expect("the disc plays");
         sink
+    }
+
+    #[test]
+    fn a_muted_player_plays_a_disc_silent() {
+        let controls = Controls::new();
+        let untouched = record(&caps(), &controls, &mut Vec::new()).bytes;
+        controls.volume.set(0.0);
+        let muted = record(&caps(), &controls, &mut Vec::new()).bytes;
+        assert_eq!(muted.len(), untouched.len());
+        assert!(untouched.iter().any(|byte| *byte != 0), "the disc carries sound");
+        assert!(muted.iter().all(|byte| *byte == 0), "the volume reaches a disc as it reaches a file");
+    }
+
+    #[test]
+    fn a_disc_track_is_closed_as_processed_only_when_the_volume_changed_it() {
+        let processed = |factor: f32| {
+            let controls = Controls::new();
+            controls.volume.set(factor);
+            let mut disc = Patterned;
+            let tracks: Vec<Track> = read_toc(&mut disc).unwrap().audio_tracks().copied().collect();
+            let mut sink = Recorder { opened: None, bytes: Vec::new() };
+            let mut closed = Vec::new();
+            play_disc_heard(&mut disc, &tracks, &caps(), &controls, |format| {
+                sink.opened = Some(format); Ok(&mut sink)
+            }, &mut |_, _| {}, &mut |_, _, _| {}, &mut |_, why| panic!("unexpected read error: {why}"),
+                &mut |track: crate::attempts::Closed| closed.push(track.processed)).unwrap();
+            closed
+        };
+        assert_eq!(processed(1.0), [false]);
+        assert_eq!(processed(0.5), [true]);
     }
 
     #[test]

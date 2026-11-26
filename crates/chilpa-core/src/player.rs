@@ -1050,7 +1050,8 @@ fn play_cd_drive(
                     route: crate::output_evidence::route(device, delivery, exclusive),
                 channels: chilpa_cd::CDDA_FORMAT.channels,
                 bits: delivery.bits_carried(),
-                bit_perfect,
+                // A volume below full scales the disc on its way out.
+                bit_perfect: bit_perfect && controls.volume.get() == 1.0,
                 // A CD is 44,100 frames per second, and its sectors are
                 // already PCM.
                 total_frames: Some(u64::from(track.sectors) * chilpa_cd::FRAMES_PER_SECTOR as u64),
