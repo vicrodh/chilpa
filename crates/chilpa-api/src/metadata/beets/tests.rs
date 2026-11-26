@@ -3,7 +3,7 @@ use super::super::draft::testing::plain;
 
 fn candidate() -> Candidate {
     let id = "3d3207f9-c4c2-425c-a364-f359b4320805";
-    Candidate { score:93, release:engine::Release { provider:engine::Source::MusicBrainz,
+    Candidate { score:93, whole:80, discs:vec![1], format:"CD".into(), release:engine::Release { provider:engine::Source::MusicBrainz,
         id:id.into(), title:"Found album".into(), credits:vec![], date:"2001".into(), genres:vec!["Jazz".into()],
         label:String::new(), catalog_number:String::new(), catalog_numbers:vec![], country:String::new(), barcode:String::new(),
         discs:1, media_titles:vec![], release_group_id:id.into(), url:String::new(), tracks:(1..=2).map(|number| engine::ReleaseTrack {
@@ -97,6 +97,25 @@ fn the_lookup_request_contains_current_metadata_and_duration_without_music_paths
     assert_eq!(request.tracks[0].title,"Curated title");
     assert_eq!(request.tracks[0].duration_ms,123456);
     assert_eq!(request.tracks[1].duration_ms,0);
+    assert_eq!(request.media,"","FLAC is no SACD");
+}
+
+#[test]
+fn dsd_files_ask_for_the_sacd_editions_and_the_record_s_year_and_label_go_along() {
+    let mut draft = plain();
+    for row in &mut draft.rows { row.track.external_id = row.track.external_id.replace(".flac", ".dsf"); }
+    draft.set_album("date","1999-04-01");
+    draft.set_album("label","Label");
+    let request = request(&draft,&HashMap::new());
+    assert_eq!((request.media.as_str(), request.year, request.label.as_str()), ("SACD", 1999, "Label"));
+    let json = serde_json::to_string(&request).unwrap();
+    assert!(!json.contains(".dsf"), "the files' names stay home");
+}
+
+#[test]
+fn a_hit_says_which_discs_its_score_speaks_of() {
+    let hit = hit(&candidate());
+    assert_eq!((hit.score, hit.format.as_str(), hit.discs.as_slice()), (93, "CD", &[1u16][..]));
 }
 
 #[test]

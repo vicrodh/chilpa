@@ -5,7 +5,7 @@
 mod protocol;
 mod process;
 pub use protocol::{Candidate, Credit, Mapping, Operation, Release, ReleaseTrack, Request, Response, Source, Track,
-    BEETS_VERSION, MAX_CANDIDATES, MAX_INPUT, MAX_OUTPUT, MAX_TRACKS, PROTOCOL};
+    BEETS_VERSION, MAX_CANDIDATES, MAX_IDS, MAX_INPUT, MAX_OUTPUT, MAX_TRACKS, PROTOCOL};
 pub use process::{lookup, TIMEOUT};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

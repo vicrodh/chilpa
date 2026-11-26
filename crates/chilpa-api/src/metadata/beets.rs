@@ -52,15 +52,32 @@ pub(crate) struct Task {
     _permit: Permit,
 }
 impl Task {
-    pub fn run(self) -> Arc<Slot> {
+    pub fn run(self, http: &dyn chilpa_meta::Http) -> Arc<Slot> {
+        let mut request = self.request;
         let result = (|| {
             if self.slot.cancelled.load(Ordering::Acquire) { return Err(Error::Cancelled); }
             let policy = chilpa_core::network::current();
-            if matches!(self.request.operation, engine::Operation::Lookup) && (policy.offline || !policy.musicbrainz) { return Err(Error::Cancelled); }
+            let lookup = matches!(request.operation, engine::Operation::Lookup);
+            if lookup && (policy.offline || !policy.musicbrainz) { return Err(Error::Cancelled); }
+            // Chilpa's own search goes first, by catalog number when there is
+            // one: beets scores what it finds as well, since its own search
+            // can miss the edition the files are.
+            // An SACD's editions are asked for first.
+            if lookup && request.release_ids.is_empty() {
+                let net = chilpa_meta::Net::musicbrainz(http);
+                let sacd = if request.media == "SACD" { chilpa_meta::musicbrainz::search_in(&net, &request.album, &request.artist, "SACD").unwrap_or_default() } else { Vec::new() };
+                let own = chilpa_meta::musicbrainz::search(&net, &request.album, &request.artist, &request.catalog_number).unwrap_or_default();
+                for id in sacd.into_iter().chain(own).map(|hit| hit.id) {
+                    if !id.is_empty() && id.len() <= 64 && !request.release_ids.contains(&id) && request.release_ids.len() < engine::MAX_IDS {
+                        request.release_ids.push(id);
+                    }
+                }
+                if self.slot.cancelled.load(Ordering::Acquire) { return Err(Error::Cancelled); }
+            }
             let root = chilpa_dirs::cache().join("beets");
             std::fs::create_dir_all(&root).map_err(|_| Error::LookupFailed)?;
             let workspace = tempfile::Builder::new().prefix("lookup-").tempdir_in(root).map_err(|_| Error::LookupFailed)?;
-            engine::lookup(&self.runtime, workspace.path(), &self.request, &self.slot.cancelled)
+            engine::lookup(&self.runtime, workspace.path(), &request, &self.slot.cancelled)
         })();
         self.slot.finish(result);
         self.slot.clone()
@@ -121,13 +138,20 @@ pub(crate) fn hit(candidate: &Candidate) -> Hit {
     Hit { provider:Provider::MusicBrainz, id:from.id.clone(), title:from.title.clone(),
         artist:chilpa_meta::display(&from.credits.iter().map(credit).collect::<Vec<_>>()), date:from.date.clone(),
         tracks:from.tracks.len() as u16, country:from.country.clone(), label:from.label.clone(), catalog_number:from.catalog_number.clone(),
-        format:String::new(), score:candidate.score, release_group_id:from.release_group_id.clone() }
+        format:candidate.format.clone(), score:candidate.score, release_group_id:from.release_group_id.clone(), discs:candidate.discs.clone() }
 }
 
 fn request(draft: &Draft, durations: &HashMap<i64,u64>) -> Request {
     let value = |row:usize, name:&str| fields::track(name).map(|at| draft.rows[row].cells[at].now.clone()).unwrap_or_default();
+    // DSD files are an SACD; only that is said of them, never where they are.
+    let dsd = draft.rows.iter().any(|row| {
+        let id = row.track.external_id.to_ascii_lowercase();
+        id.starts_with("sacd:") || id.ends_with(".dsf") || id.ends_with(".dff") || row.track.container.as_deref().is_some_and(|c| c.to_ascii_lowercase().ends_with(".iso"))
+    });
     Request { artist:draft.album_cell("album_artist").now.clone(), album:draft.album_cell("title").now.clone(),
         catalog_number:draft.album_cell("catalog_number").now.clone(), release_id:draft.album_cell("musicbrainz_release_id").now.clone(),
+        media:if dsd { "SACD".into() } else { String::new() }, year:fields::year_of(&draft.album_cell("date").now).and_then(|year| u16::try_from(year).ok()).unwrap_or(0),
+        label:draft.album_cell("label").now.trim().to_string(),
         tracks:draft.rows.iter().enumerate().map(|(at,row)| engine::Track { id:row.track.id,
             title:value(at,"title"), artist:value(at,"artist_credit"), disc:value(at,"disc_number").parse().unwrap_or(0),
             number:value(at,"track_number").parse().unwrap_or(0), duration_ms:durations.get(&row.track.id).copied().unwrap_or(0), recording_id:value(at,"musicbrainz_recording_id") }).collect(),

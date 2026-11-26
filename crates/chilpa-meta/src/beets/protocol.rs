@@ -7,6 +7,8 @@ pub const PROTOCOL: u8 = 1;
 pub const BEETS_VERSION: &str = "2.14.1";
 pub const MAX_TRACKS: usize = 1024;
 pub const MAX_CANDIDATES: usize = 5;
+/// Releases the host found on its own and asks beets to score as well.
+pub const MAX_IDS: usize = 8;
 pub const MAX_INPUT: usize = 1024 * 1024;
 pub const MAX_OUTPUT: usize = 8 * 1024 * 1024;
 
@@ -38,12 +40,18 @@ pub struct Request {
     pub album: String,
     pub catalog_number: String,
     pub release_id: String,
+    /// "SACD" when the files are DSD: its editions lead. Empty otherwise.
+    pub media: String,
+    pub year: u16,
+    pub label: String,
+    pub release_ids: Vec<String>,
     pub tracks: Vec<Track>,
 }
 impl Default for Request {
     fn default() -> Self {
         Self { protocol:PROTOCOL, operation:Operation::Lookup, source:Source::MusicBrainz,
-            artist:String::new(), album:String::new(), catalog_number:String::new(), release_id:String::new(), tracks:Vec::new() }
+            artist:String::new(), album:String::new(), catalog_number:String::new(), release_id:String::new(),
+            media:String::new(), year:0, label:String::new(), release_ids:Vec::new(), tracks:Vec::new() }
     }
 }
 impl Request {
@@ -55,7 +63,8 @@ impl Request {
             let mut ids = HashSet::new();
             if self.tracks.iter().any(|track| !ids.insert(track.id)) { return Err(Error::InvalidRequest); }
         }
-        let strings = [&self.artist, &self.album, &self.catalog_number, &self.release_id].into_iter()
+        if self.release_ids.len() > MAX_IDS || self.release_ids.iter().any(|id| id.len() > 64) { return Err(Error::InputLimit); }
+        let strings = [&self.artist, &self.album, &self.catalog_number, &self.release_id, &self.media, &self.label].into_iter()
             .chain(self.tracks.iter().flat_map(|track| [&track.title, &track.artist, &track.recording_id]));
         if strings.into_iter().any(|value| value.len() > 4096) { return Err(Error::InputLimit); }
         let bytes = serde_json::to_vec(self).map_err(|_| Error::InvalidRequest)?;
@@ -81,7 +90,18 @@ pub struct Release {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Mapping { pub track:i64, pub index:usize, pub composers:Vec<String>, pub work:String }
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-pub struct Candidate { pub release:Release, pub score:u8, pub mappings:Vec<Mapping> }
+pub struct Candidate {
+    pub release:Release,
+    /// How the files fit the discs they land on.
+    pub score:u8,
+    /// How they fit the whole release, every disc counted.
+    #[serde(default)] pub whole:u8,
+    /// The release's discs the files land on.
+    #[serde(default)] pub discs:Vec<u16>,
+    /// What those discs are, as the source names them: "Hybrid SACD (SACD layer, 2 channels)".
+    #[serde(default)] pub format:String,
+    pub mappings:Vec<Mapping>,
+}
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Response {
@@ -116,7 +136,8 @@ impl Response {
         let ids: HashSet<_> = request.tracks.iter().map(|track| track.id).collect();
         for candidate in &response.candidates {
             let release = &candidate.release;
-            if candidate.score > 100 || release.id.is_empty() || release.tracks.len() > MAX_TRACKS
+            if candidate.score > 100 || candidate.whole > 100 || candidate.discs.len() > 64 || candidate.format.len() > 4096
+                || release.id.is_empty() || release.tracks.len() > MAX_TRACKS
                 || candidate.mappings.len() > request.tracks.len()
                 || !(release.url.is_empty() || release.url.starts_with("https://") || release.url.starts_with("http://")) {
                 return Err(Error::InvalidResponse);

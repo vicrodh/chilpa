@@ -233,7 +233,7 @@ fn run(job: Job, http: &dyn Http, credential: &discogs::CredentialProvider,accou
             };
             Done::Loaded { session, turn, account_epoch, release }
         }
-        Job::Beets { session, turn, task } => Done::Beets { session, turn, slot:task.run() },
+        Job::Beets { session, turn, task } => Done::Beets { session, turn, slot:task.run(http) },
         Job::ArtworkSearch { session, turn, provider, title, artist, catalog_number } => {
             Done::Candidates { session, turn, account_epoch, candidates: artwork::find(http, session, turn, provider, &title, &artist, &catalog_number,credential) }
         }

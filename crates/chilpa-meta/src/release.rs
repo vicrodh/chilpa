@@ -54,6 +54,8 @@ pub struct Hit {
     pub score: u8,
     /// MusicBrainz only.
     pub release_group_id: String,
+    /// The release's discs a score speaks of, when it speaks of some only.
+    pub discs: Vec<u16>,
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, serde::Serialize)]

@@ -17,6 +17,10 @@ ListRowSurface {
 
     signal choose()
 
+    // A score that speaks of some discs only says which: a disc of a set,
+    // or one layer of a hybrid SACD.
+    readonly property string discs: (hit.discs || []).map(disc => I18n.trArgs("Disc {}", [String(disc)], I18n.rev)).join(", ")
+
     readonly property string detail: [hit.date, hit.country, hit.label, hit.catalog_number, hit.format,
         hit.tracks > 0 ? I18n.trCount("{} track", "{} tracks", hit.tracks, I18n.rev) : "",
         showScore ? I18n.trArgs("Match score: {}",[String(hit.score || 0)],I18n.rev) : ""]
@@ -44,7 +48,7 @@ ListRowSurface {
         anchors.right:parent.right; anchors.rightMargin:Metrics.gap8
         anchors.verticalCenter:parent.verticalCenter
         visible:root.showScore
-        text:String(root.hit.score || 0) + " / 100"
+        text:String(root.hit.score || 0) + "%" + (root.discs !== "" ? " · " + root.discs : "")
         textFormat:Text.PlainText
         font.pointSize:Type.meta; font.weight:Type.semibold
         color:Theme.color.textPrimary
