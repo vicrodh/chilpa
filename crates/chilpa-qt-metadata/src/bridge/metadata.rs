@@ -59,6 +59,8 @@ pub mod qobject {
         #[qinvokable] fn artwork_from_file(self: Pin<&mut MetadataEditor>);
         #[qinvokable] fn clear_artwork(self: Pin<&mut MetadataEditor>);
         #[qinvokable] fn save(self: Pin<&mut MetadataEditor>) -> bool;
+        /// Deletes what the record's sidecars say of it.
+        #[qinvokable] fn drop_sidecar(self: Pin<&mut MetadataEditor>) -> bool;
         #[qinvokable] fn take_discogs_quota(self: Pin<&mut MetadataEditor>) -> bool;
     }
 
@@ -115,6 +117,7 @@ impl qobject::MetadataEditor {
     pub fn choose_artwork(self: Pin<&mut Self>, candidate: i32) -> bool { self.then(|api| api.metadata_choose_artwork(candidate.max(0) as usize)) }
     pub fn clear_artwork(self: Pin<&mut Self>) { self.then(|api| api.metadata_clear_artwork()) }
     pub fn save(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_save()) }
+    pub fn drop_sidecar(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_drop_sidecar()) }
     pub fn take_discogs_quota(self: Pin<&mut Self>) -> bool { self.then(|api|api.take_discogs_quota()) }
 
     pub fn artwork_from_file(self: Pin<&mut Self>) {

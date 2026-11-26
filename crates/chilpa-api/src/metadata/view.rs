@@ -101,6 +101,9 @@ pub struct SaveView {
     /// False only when the library is protected without sidecars: then
     /// nothing can be saved.
     pub sidecar_allowed: bool,
+    /// A sidecar on this machine says something of the record, and can be
+    /// deleted.
+    pub sidecar_kept: bool,
     /// "2.4" | "2.3"
     pub id3: &'static str,
     pub secondary_layers: bool,
@@ -321,6 +324,7 @@ impl Editor {
                 xml_refused: if blocked.is_empty() { xml_refused(draft) } else { blocked.clone() },
                 protected: protection.on,
                 sidecar_allowed: protection.sidecar_refused().is_empty(),
+                sidecar_kept: draft.homes.iter().any(|state| !state.home.is_hosted() && state.sidecar.is_some()),
                 id3: if self.id3 == Id3Version::V23 { "2.3" } else { "2.4" },
                 secondary_layers: self.secondary_layers,
                 done: self.progress.0,

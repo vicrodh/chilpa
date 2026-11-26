@@ -8,7 +8,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 // The head of the metadata editor: which record, what happened last, where
 // a save writes -- a sidecar beside the music, or the files themselves; for
 // a record on a server, the server or the sidecar on this device -- and
-// revert, close and save. `doc` is the editor's view.
+// deleting the sidecar, revert, close and save. `doc` is the editor's view.
 Item {
     id: root
 
@@ -16,6 +16,7 @@ Item {
 
     signal saveAsked()
     signal closeAsked()
+    signal dropSidecarAsked()
 
     readonly property var save: doc.save || ({})
     readonly property var layers: doc.layers || ({})
@@ -75,6 +76,14 @@ Item {
         id: buttons
         anchors.right: parent.right
         spacing: Metrics.gap8
+        PillButton {
+            objectName: "metadataDropSidecar"
+            kind: "ghost"
+            visible: root.save.sidecar_kept === true
+            text: I18n.tr("Delete sidecar", I18n.rev)
+            enabled: root.doc.state === "ready"
+            onClicked: root.dropSidecarAsked()
+        }
         PillButton {
             kind: "ghost"
             text: I18n.tr("Revert", I18n.rev)

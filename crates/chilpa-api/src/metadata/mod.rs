@@ -13,6 +13,7 @@ pub(crate) use apply::said as failure_message;
 mod artwork;
 pub(crate) mod beets;
 mod draft;
+mod drop;
 pub(crate) mod fields;
 mod hosted;
 mod preview;
@@ -532,6 +533,7 @@ impl Chilpa {
             Done::Saved { written, .. } => return self.metadata_saved(written, None),
             Done::SaveFailed { reason, written, .. } => return self.metadata_saved(written, Some(reason)),
             Done::ServerSaved { outcome, .. } => return self.metadata_server_saved(outcome),
+            Done::Dropped { failed, contained, .. } => return self.metadata_dropped(failed, contained),
             // For a search, a load or a cover that is no longer the last asked for.
             other => artwork::discard(&other),
         }
