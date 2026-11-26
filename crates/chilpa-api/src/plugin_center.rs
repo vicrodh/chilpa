@@ -530,6 +530,8 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         .filter_map(|bytes| serde_json::from_slice::<Value>(&bytes).ok()).collect::<Vec<_>>();
     let mut counts = json!({"installed":0,"valid":0,"uninspected":0,"incompatible":0});
     let mut native_catalog = Vec::new();
+    // Only descriptions of exact installed packages survive this snapshot.
+    let mut installed_descriptions = std::collections::HashMap::new();
     let third_party = repositories.third_party_ids();
     let runtime = crate::plugin_runtimes::unavailable(plugins)?;
     let (compatibility_available, compatibility_unavailable, process_plugins) = {
@@ -538,14 +540,14 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     };
     for entry in repositories.cached("native")? {
         if entry.adapter != "native" { continue; }
-        native_catalog.extend(native_offer(root, &entry, "native", &third_party, &process_plugins));
+        native_catalog.extend(native_offer(root, &entry, "native", &third_party, &process_plugins, &mut installed_descriptions));
     }
     for repository in repositories.sources() {
         for entry in repositories.cached(&repository.id)? {
             // A native plugin is offered in its own section, to install or
             // to update when the repository has a newer version.
             if entry.adapter == "native" {
-                native_catalog.extend(native_offer(root, &entry, &repository.id, &third_party, &process_plugins));
+                native_catalog.extend(native_offer(root, &entry, &repository.id, &third_party, &process_plugins, &mut installed_descriptions));
                 continue;
             }
             if !compatibility_available { continue; }
@@ -583,7 +585,8 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
-        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"unavailable":process_plugins.installed(&plugin.id),"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
+        let description = installed_descriptions.remove(&plugin.id).unwrap_or(plugin.description);
+        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"unavailable":process_plugins.installed(&plugin.id),"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":description,"state":plugin.state,
             "problem":if plugin.problem.is_empty() { export::refusal(root, &plugin.id).unwrap_or_default() } else { plugin.problem.clone() },"permissions":plugin.asks,"origin":origin,"third_party":third_party.contains(&plugin.id),"third_party_by":if third_party.contains(&plugin.id) { origin["catalog_entry"]["repository"].as_str().and_then(crate::plugin_repositories::github_owner).unwrap_or_default() } else { String::new() },
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
@@ -603,8 +606,17 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
 /// installed is the same or newer. One that cannot run here stays listed,
 /// with the reason in `unavailable`.
 fn native_offer(root: &std::path::Path, entry: &chilpa_plugin::catalog::CatalogEntry, repository: &str,
-    third_party: &std::collections::HashSet<String>, process: &crate::plugin_runtimes::ProcessPlugins) -> Option<Value> {
+    third_party: &std::collections::HashSet<String>, process: &crate::plugin_runtimes::ProcessPlugins,
+    descriptions: &mut std::collections::HashMap<String, String>) -> Option<Value> {
     let installed = crate::native_install::installed_version(root, &entry.id);
+    if installed.as_deref() == Some(entry.version.as_str()) && !entry.description.trim().is_empty() && entry.problem.is_empty() {
+        let source: Value = std::fs::read(root.join(&entry.id).join("source.json")).ok()
+            .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
+        if (source["repository"] == repository || source["repository"] == "local")
+            && !entry.digest.value.is_empty() && source["sha256"] == entry.digest.value {
+            descriptions.entry(entry.id.clone()).or_insert_with(|| entry.description.clone());
+        }
+    }
     if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&entry.version, version)) { return None; }
     let mut row = json!(entry);
     row["repository_id"] = repository.into();
@@ -1110,6 +1122,52 @@ mod tests {
             Err(reason.clone()), "it is not switched on");
         run("disable", &json!({"id":id}), &root, &plugins, &mut pending, &mut state, &mut evidence, &playing).unwrap();
         assert!(!plugins.lock().unwrap().enabled(id), "switching it off still works");
+    }
+
+    #[test]
+    fn installed_descriptions_follow_the_catalog_for_the_exact_package() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let id = "app.test.description";
+        let folder = root.join(id);
+        std::fs::create_dir_all(&folder).unwrap();
+        let manifest = json!({"id":id,"name":"Example","version":"1.0.0","description":"Package description",
+            "api_version":1,"kind":"source","runtime":"process","capabilities":[]}).to_string();
+        std::fs::write(folder.join("manifest.json"), &manifest).unwrap();
+        std::fs::write(folder.join("plugin"), b"never started").unwrap();
+        let mut host = Plugins::new(root.clone()).unwrap();
+        host.load_all();
+        let host = Arc::new(Mutex::new(host));
+        let (mut pending, mut state) = (None, json!({}));
+        let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"), None);
+        let playing = AtomicBool::new(false);
+        let index = temporary.path().join("index.json");
+        let repositories = PluginRepositories::load(root.join(".repositories")).unwrap();
+        let digest = "a".repeat(64);
+        for (repository, version, hash, description, expected) in [
+            ("native", "1.0.0", digest.as_str(), "(Notice) Catalogue description", "(Notice) Catalogue description"),
+            ("local", "1.0.0", digest.as_str(), "Updated notice", "Updated notice"),
+            ("another", "1.0.0", digest.as_str(), "Unrelated catalogue", "Package description"),
+            ("native", "2.0.0", digest.as_str(), "New release", "Package description"),
+            ("native", "1.0.0", "bbbb", "Different package", "Package description"),
+            ("native", "1.0.0", digest.as_str(), " ", "Package description"),
+        ] {
+            let source = json!({"repository":repository,"sha256":hash});
+            std::fs::write(folder.join("source.json"), source.to_string()).unwrap();
+            let entry = json!({"id":id,"name":"Example","version":version,"description":description,
+                "repository":"https://example.org/source","package":"https://example.org/package.zip",
+                "sha256":digest,"api":{"min":1,"max":1}});
+            std::fs::write(&index, json!({"version":1,"plugins":[entry]}).to_string()).unwrap();
+            repositories.load_native_file(&index, "EN").unwrap();
+            run("filter", &json!({}), &root, &host, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+            let installed = state["installed"].as_array().unwrap().iter().find(|row| row["id"] == id).unwrap();
+            assert_eq!(installed["description"], expected, "{source} {version}");
+            assert_eq!(installed["enabled"], false);
+            assert_eq!(std::fs::read_to_string(folder.join("manifest.json")).unwrap(), manifest);
+            let previous = state.clone();
+            run("filter", &json!({}), &root, &host, &mut pending, &mut state, &mut evidence, &playing).unwrap();
+            assert_eq!(state, previous, "an unchanged catalogue keeps the snapshot unchanged");
+        }
     }
 
     #[test]
