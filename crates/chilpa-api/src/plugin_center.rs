@@ -258,10 +258,27 @@ impl Chilpa {
         if let Some(center) = &self.plugin_center { center.playback.store(playing, Ordering::Release); }
     }
     pub(crate) fn plugin_playback_active(&self) -> bool {
-        // A stopped window can still have a worker using a plugin.
-        let local = !self.plays.is_empty() || (self.player.is_none() && self.now.playing);
+        // A stopped window can still have a worker using a plugin. A queue
+        // that waits paused without a player, restored or released for an
+        // update, holds none.
+        let local = !self.plays.is_empty() || (self.player.is_none() && self.now.playing && !self.now.paused);
         local || self.listen.pending.is_some() || self.casting.local_start.is_some()
             || self.casting.active() && (self.now.playing || self.now.paused)
+    }
+    /// A pause is enough to update a plugin. The paused play lets go of its
+    /// player and its stream; the queue, the track and its second stay, and
+    /// play picks them up the way it does after a restart. Without a queue
+    /// to come back to, the paused track is stopped. What sounds is left
+    /// alone: the update then asks for a pause.
+    pub(crate) fn release_paused_play(&mut self) {
+        if self.casting.active() || !(self.now.playing && self.now.paused) || self.player.is_none() { return; }
+        if self.queue.is_empty() { self.stop(); return; }
+        self.keep_place(true);
+        let kept = std::mem::take(&mut self.now);
+        let seconds = kept.seconds.max(0.0);
+        self.retire_player(crate::plays::Leaving::Drained);
+        self.now = crate::NowPlaying { playing: true, paused: true, seconds, ..kept };
+        self.restored_at = Some(seconds);
     }
     /// Advances pending plugin work and returns a document only after a visible change.
     /// Keep the returned revision with the receiving view and pass `None` on its first read.
@@ -291,6 +308,7 @@ impl Chilpa {
     }
     pub fn plugin_center_command(&mut self, action: &str, input: &str) {
         let Ok(input) = serde_json::from_str::<Value>(input) else { return };
+        if matches!(action, "install" | "install_native" | "install_local" | "updates_apply") { self.release_paused_play(); }
         self.plugin_update_activity(self.plugin_playback_active());
         if matches!(action, "disable" | "uninstall" | "restart") {
             if let Some(id) = input["id"].as_str() { self.sources.native_actions.remove(id); }
@@ -335,7 +353,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         }
         "install" => {
             let prepared = pending.take().ok_or("Inspect a package before installing it.")?;
-            if root.join(&prepared.manifest().id).exists() && playing.load(Ordering::Acquire) { return Err("Stop playback before updating a plugin.".into()); }
+            if root.join(&prepared.manifest().id).exists() && playing.load(Ordering::Acquire) { return Err("Pause playback to update a plugin.".into()); }
             let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
             let installed_id = prepared.manifest().id.clone();
             crate::plugin_updates::compatible(root, &mut host, prepared, true)?;
@@ -361,7 +379,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             if installed.as_ref().is_some_and(|version| !crate::plugin_updates::newer(&manifest.version, version)) {
                 return Err("Choose a newer plugin version.".into());
             }
-            if installed.is_some() && playing.load(Ordering::Acquire) { return Err("Stop playback before updating a plugin.".into()); }
+            if installed.is_some() && playing.load(Ordering::Acquire) { return Err("Pause playback to update a plugin.".into()); }
             let needs_review = installed.is_some() && !host.covers_update(&manifest);
             use sha2::Digest;
             let revision = format!("{:x}", sha2::Sha256::digest(std::fs::read(package_root.join("manifest.json")).map_err(|_| "The manifest could not be read.")?));
@@ -841,6 +859,8 @@ mod tests {
         for (playing, paused, pending, expected) in [
             (false, false, false, false), (true, false, false, true),
             (false, true, false, false), (false, false, true, true),
+            // A restored queue waiting paused, with no player yet.
+            (true, true, false, false),
         ] {
             let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
             let (center, _received) = quiet_center(!expected);
@@ -909,6 +929,53 @@ mod tests {
         api.plugin_center.as_ref().unwrap().playback.store(true, Ordering::Release);
         api.poll();
         assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+    }
+    #[test]
+    fn a_pause_is_enough_to_update_a_plugin_and_the_queue_stays() {
+        let temporary = tempfile::tempdir().unwrap();
+        let track = silent_track(temporary.path());
+        let path = track.to_string_lossy().into_owned();
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, received) = quiet_center(false);
+        api.plugin_center = Some(center);
+        api.replace_queue(vec![path.clone(), path.clone()]);
+        api.player = Some(chilpa_core::spawn_player());
+        let spec = chilpa_core::launch::LaunchSpec { paths: vec![track], device: "file:capture".into(), paused: true, ..Default::default() };
+        api.launch(spec, 0, crate::Relaunch::Track);
+        api.now.playing = true;
+        api.now.paused = true;
+        api.now.path = path.clone();
+        api.now.seconds = 0.05;
+        api.now.title = "Silence".into();
+        assert!(api.plugin_playback_active(), "a paused play still holds its player");
+        api.plugin_center_command("install_native", r#"{"id":"app.test.native","repository":"native"}"#);
+        assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire), "the update is not held by a pause");
+        assert!(api.plays.is_empty() && api.player.is_none());
+        assert!(api.now.playing && api.now.paused, "the bar keeps the paused track");
+        assert_eq!((api.now.path.as_str(), api.now.title.as_str(), api.now.seconds), (path.as_str(), "Silence", 0.05));
+        assert_eq!(api.restored_at, Some(0.05), "play picks up at the same second");
+        assert_eq!(api.queue.len(), 2, "the queue stays");
+        assert_eq!(received.try_recv().unwrap().0, "install_native");
+        api.poll();
+        assert!(!api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
+    }
+    #[test]
+    fn something_that_sounds_still_holds_the_update() {
+        let temporary = tempfile::tempdir().unwrap();
+        let track = silent_track(temporary.path());
+        let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
+        let (center, _received) = quiet_center(false);
+        api.plugin_center = Some(center);
+        api.replace_queue(vec![track.to_string_lossy().into_owned()]);
+        api.player = Some(chilpa_core::spawn_player());
+        // Held at the start so it is still there to be asked about.
+        let spec = chilpa_core::launch::LaunchSpec { paths: vec![track], device: "file:capture".into(), paused: true, ..Default::default() };
+        api.launch(spec, 0, crate::Relaunch::Track);
+        api.now.playing = true;
+        api.now.paused = false;
+        api.plugin_center_command("install_native", r#"{"id":"app.test.native","repository":"native"}"#);
+        assert!(api.player.is_some(), "a sounding player is left alone");
+        assert!(api.plugin_center.as_ref().unwrap().playback.load(Ordering::Acquire));
     }
     #[test]
     fn natural_completion_releases_the_update_guard_in_the_same_poll() {
