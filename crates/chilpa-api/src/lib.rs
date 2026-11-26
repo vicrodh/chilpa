@@ -626,6 +626,9 @@ pub struct AnalysisStatus {
 pub struct Chilpa {
     core: chilpa_core::Core,
     pub(crate) pending_volume: Option<u8>,
+    /// Grows when the volume, its mute or its lock may have changed, from
+    /// the window or from the desktop.
+    pub(crate) volume_revision: u64,
     library: Option<chilpa_library::Library>,
     /// A library older than this Chilpa, brought up before anything reads it.
     upgrade: library_upgrade::LibraryUpgrade,
@@ -790,6 +793,7 @@ impl Chilpa {
         let mut chilpa = Self {
             core: chilpa_core::Core::new(),
             pending_volume: None,
+            volume_revision: 0,
             library: None,
             upgrade: library_upgrade::LibraryUpgrade::detect(chilpa_library::Library::default_path()),
             plays: Default::default(),
