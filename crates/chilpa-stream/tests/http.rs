@@ -154,3 +154,44 @@ fn a_part_that_does_not_open_fails_instead_of_being_skipped() {
     assert_eq!(read, b"first half", "what did arrive is not thrown away");
     assert!(problem.to_string().contains("part"), "{problem}");
 }
+
+/// Answers its first client with a redirect to itself and its second with
+/// `last`. The redirect carries a header with a space before its colon, as
+/// some stations' servers send it.
+fn redirecting(last: Vec<u8>) -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    thread::spawn(move || {
+        let redirect = format!(
+            "HTTP/1.1 302 Found\r\nAccess-Control-Allow-Origin : *\r\nLocation: http://127.0.0.1:{port}/live\r\nContent-Length: 0\r\n\r\n"
+        );
+        for answer in [redirect.into_bytes(), last] {
+            let Ok((mut socket, _)) = listener.accept() else { return };
+            let mut request = [0u8; 1024];
+            let _ = socket.read(&mut request);
+            let _ = socket.write_all(&answer);
+        }
+    });
+    format!("http://127.0.0.1:{port}/stream")
+}
+
+#[test]
+fn a_header_with_a_space_before_its_colon_does_not_refuse_the_station() {
+    // `reply` writes `name: value`, so a trailing space in the name is the
+    // space before the colon.
+    let url = server(reply(&[("icy-name ", "Spaced"), ("content-type", "audio/mpeg")], b"audio data"));
+    let mut stream = open(&url).unwrap();
+    assert_eq!(stream.info().name.as_deref(), Some("Spaced"));
+    let mut body = Vec::new();
+    stream.read_to_end(&mut body).unwrap();
+    assert_eq!(body, b"audio data");
+}
+
+#[test]
+fn a_redirect_with_a_spaced_header_is_followed_to_the_station() {
+    let url = redirecting(reply(&[("Access-Control-Allow-Origin ", "*"), ("content-type", "audio/mpeg")], b"audio data"));
+    let mut stream = open(&url).unwrap();
+    let mut body = Vec::new();
+    stream.read_to_end(&mut body).unwrap();
+    assert_eq!(body, b"audio data");
+}

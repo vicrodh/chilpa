@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-exclude = ["vendor/rupnp", "vendor/oxideav-ac3", "vendor/oxideav-core", "vendor/symphonia-format-isomp4", "vendor/symphonia-format-ogg", "vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
+exclude = ["vendor/rupnp", "vendor/ureq-proto", "vendor/oxideav-ac3", "vendor/oxideav-core", "vendor/symphonia-format-isomp4", "vendor/symphonia-format-ogg", "vendor/chilpa-plugin-api", "crates/chilpa-qt-kit/vendor/qt-build-utils"]
 members = [
     "crates/chilpa-models",
     "crates/chilpa-sync",
@@ -143,3 +143,6 @@ qt-build-utils = { path = "crates/chilpa-qt-kit/vendor/qt-build-utils" }
 # UPnP service URLs that are empty or lack the leading slash, as the
 # reference player patches them; http stays current for every consumer.
 rupnp = { path = "vendor/rupnp" }
+# Response headers with a space before the colon, as some radio servers
+# send them, are read instead of failing the whole response.
+ureq-proto = { path = "vendor/ureq-proto" }
