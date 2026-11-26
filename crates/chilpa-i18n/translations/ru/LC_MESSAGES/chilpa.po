@@ -2443,8 +2443,14 @@ msgstr ""
 msgid "Delete selected presets?"
 msgstr ""
 
+msgid "Delete sidecar"
+msgstr "Удалить вспомогательный файл"
+
 msgid "Delete the saved query “{}”?"
 msgstr "Удалить сохранённый запрос «{}»?"
+
+msgid "Delete the sidecar?"
+msgstr "Удалить вспомогательный файл?"
 
 msgid "Delete track from server?"
 msgstr "Удалить трек с сервера?"
@@ -3679,6 +3685,9 @@ msgstr "Идентификатор и происхождение данных"
 msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
 msgstr "Если это ваш первый источник музыки, советуем дождаться окончания. То, что уже появилось, можно слушать и сейчас."
 
+msgid "Ignore existing sidecars"
+msgstr "Игнорировать существующие вспомогательные файлы"
+
 msgid "Image"
 msgstr "Изображение"
 
@@ -4302,6 +4311,9 @@ msgstr "Статистика прослушивания"
 
 msgid "Listening time"
 msgstr "Время прослушивания"
+
+msgid "Lists and playback use each file's own tags. When off, Chilpa keeps reading the sidecars already written."
+msgstr "Списки и воспроизведение используют теги самих файлов. Если выключено, Chilpa продолжает читать уже записанные вспомогательные файлы."
 
 msgid "Lite fill"
 msgstr "Лёгкая заливка"
@@ -9520,6 +9532,9 @@ msgstr "Что делает одно нажатие. Второе нажатие
 msgid "What should happen to the original queues?"
 msgstr "Что сделать с исходными очередями?"
 
+msgid "What the sidecar says of this record goes, and its tracks show what their files say again. Changes not saved are lost too. This cannot be undone."
+msgstr "Всё, что вспомогательный файл говорит об этом альбоме, будет удалено, и треки снова покажут то, что записано в их файлах. Несохранённые изменения тоже пропадут. Это действие нельзя отменить."
+
 msgid "What this route reports"
 msgstr "Что сообщает этот путь"
 
@@ -10915,8 +10930,17 @@ msgstr "сервер слишком долго отвечал"
 msgid "the server's certificate is not trusted by this system"
 msgstr "сертификат сервера не пользуется доверием этой системы"
 
+msgid "the sidecar could not be deleted: {}"
+msgstr "не удалось удалить вспомогательный файл: {}"
+
 msgid "the sidecar could not be written: {}"
 msgstr "не удалось записать вспомогательный файл: {}"
+
+msgid "the sidecar was deleted"
+msgstr "вспомогательный файл удалён"
+
+msgid "the sidecar was deleted, and the library could not read the files again: {}; rescan to see them"
+msgstr "вспомогательный файл удалён, но библиотека не смогла заново прочитать файлы: {}; пересканируйте, чтобы их увидеть"
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr "звуковые карты перечислены в /proc/asound, но их устройства в /dev/snd отсюда открыть нельзя; внутри Flatpak разрешите их командой: flatpak override --user --device=all app.chilpa.Chilpa"
@@ -11049,6 +11073,9 @@ msgstr "этой части источника сейчас нет"
 
 msgid "this plugin declared no network permission"
 msgstr "этот плагин не объявил сетевого разрешения"
+
+msgid "this record has no sidecar"
+msgstr "у этого альбома нет вспомогательного файла"
 
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "этот сервер не может переместить трек, который есть в плейлисте больше одного раза"
@@ -11478,6 +11505,9 @@ msgstr "Форматов без изменений: {} из {}"
 
 msgid "{} of {} tracks match this release"
 msgstr "Треков, совпадающих с этим релизом: {} из {}"
+
+msgid "{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying."
+msgstr "Треков, сопоставленных по порядку: {} из {}; в релизе у них другая нумерация. Проверьте названия перед применением."
 
 msgid "{} part"
 msgid_plural "{} parts"

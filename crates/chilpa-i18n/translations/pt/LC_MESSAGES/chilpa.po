@@ -2441,8 +2441,14 @@ msgstr ""
 msgid "Delete selected presets?"
 msgstr ""
 
+msgid "Delete sidecar"
+msgstr "Excluir arquivo auxiliar"
+
 msgid "Delete the saved query “{}”?"
 msgstr "Excluir a consulta salva “{}”?"
+
+msgid "Delete the sidecar?"
+msgstr "Excluir o arquivo auxiliar?"
 
 msgid "Delete track from server?"
 msgstr "Excluir faixa do servidor?"
@@ -3676,6 +3682,9 @@ msgstr "Identidade e procedência"
 msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
 msgstr "Se esta é a sua primeira fonte de música, sugerimos esperar até terminar. O que já apareceu pode ser tocado enquanto isso."
 
+msgid "Ignore existing sidecars"
+msgstr "Ignorar os arquivos auxiliares existentes"
+
 msgid "Image"
 msgstr "Imagem"
 
@@ -4297,6 +4306,9 @@ msgstr "Estatísticas de reprodução"
 
 msgid "Listening time"
 msgstr "Tempo de escuta"
+
+msgid "Lists and playback use each file's own tags. When off, Chilpa keeps reading the sidecars already written."
+msgstr "As listas e a reprodução usam as tags de cada arquivo. Desligado, o Chilpa continua lendo os arquivos auxiliares já gravados."
 
 msgid "Lite fill"
 msgstr "Preenchimento leve"
@@ -9508,6 +9520,9 @@ msgstr "O que faz um toque. Um segundo toque logo depois vai para a faixa anteri
 msgid "What should happen to the original queues?"
 msgstr "O que deve acontecer com as filas originais?"
 
+msgid "What the sidecar says of this record goes, and its tracks show what their files say again. Changes not saved are lost too. This cannot be undone."
+msgstr "O que o arquivo auxiliar diz deste álbum é removido, e as faixas voltam a mostrar o que dizem seus arquivos. As alterações não salvas também se perdem. Não é possível desfazer."
+
 msgid "What this route reports"
 msgstr "O que este caminho informa"
 
@@ -10901,8 +10916,17 @@ msgstr "o servidor demorou demais para responder"
 msgid "the server's certificate is not trusted by this system"
 msgstr "o certificado do servidor não é confiável para este sistema"
 
+msgid "the sidecar could not be deleted: {}"
+msgstr "não foi possível excluir o arquivo auxiliar: {}"
+
 msgid "the sidecar could not be written: {}"
 msgstr "não foi possível gravar o arquivo auxiliar: {}"
+
+msgid "the sidecar was deleted"
+msgstr "o arquivo auxiliar foi excluído"
+
+msgid "the sidecar was deleted, and the library could not read the files again: {}; rescan to see them"
+msgstr "o arquivo auxiliar foi excluído, mas a biblioteca não conseguiu ler os arquivos de novo: {}; escaneie novamente para vê-los"
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr "as placas de som constam em /proc/asound, mas seus dispositivos em /dev/snd não podem ser abertos daqui; dentro de um Flatpak, permita-os com: flatpak override --user --device=all app.chilpa.Chilpa"
@@ -11035,6 +11059,9 @@ msgstr "esta parte da fonte não está disponível agora"
 
 msgid "this plugin declared no network permission"
 msgstr "este plugin não declarou nenhuma permissão de rede"
+
+msgid "this record has no sidecar"
+msgstr "este álbum não tem arquivo auxiliar"
 
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "este servidor não consegue mover uma faixa que está mais de uma vez na playlist"
@@ -11435,6 +11462,9 @@ msgstr "{} de {} formatos saem sem alteração"
 
 msgid "{} of {} tracks match this release"
 msgstr "{} de {} faixas correspondem a este lançamento"
+
+msgid "{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying."
+msgstr "{} de {} faixas foram pareadas pela ordem: o lançamento as numera de outro jeito. Confira os títulos antes de aplicar."
 
 msgid "{} part"
 msgid_plural "{} parts"

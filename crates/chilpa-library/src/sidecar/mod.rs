@@ -19,4 +19,4 @@ pub mod files;
 pub mod qbz;
 
 pub use document::{join, split, Album, Override, Sidecar, SidecarError, Track, ALBUM_FIELDS, FORMAT, TRACK_FIELDS, VERSION};
-pub use files::{in_force, load, stage, stage_fields, store, Home, Scope, StagedHome};
+pub use files::{ignored, in_force, load, set_ignored, stage, stage_fields, store, Home, Scope, StagedHome};

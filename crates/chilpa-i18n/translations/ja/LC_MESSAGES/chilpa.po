@@ -2439,8 +2439,14 @@ msgstr ""
 msgid "Delete selected presets?"
 msgstr ""
 
+msgid "Delete sidecar"
+msgstr "サイドカーを削除"
+
 msgid "Delete the saved query “{}”?"
 msgstr "保存したクエリ「{}」を削除しますか？"
+
+msgid "Delete the sidecar?"
+msgstr "サイドカーを削除しますか？"
 
 msgid "Delete track from server?"
 msgstr "サーバーから曲を削除しますか？"
@@ -3673,6 +3679,9 @@ msgstr "識別情報と出所"
 msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
 msgstr "初めての音楽ソースなら、完了するまで待つことをおすすめします。表示されたものはその間も再生できます。"
 
+msgid "Ignore existing sidecars"
+msgstr "既存のサイドカーを無視"
+
 msgid "Image"
 msgstr "画像"
 
@@ -4292,6 +4301,9 @@ msgstr "再生統計"
 
 msgid "Listening time"
 msgstr "再生時間"
+
+msgid "Lists and playback use each file's own tags. When off, Chilpa keeps reading the sidecars already written."
+msgstr "リストと再生には各ファイル自身のタグを使います。オフにすると、Chilpa は書き込み済みのサイドカーを引き続き読み込みます。"
 
 msgid "Lite fill"
 msgstr "簡易塗りつぶし"
@@ -9496,6 +9508,9 @@ msgstr "1回押したときの動作です。続けてもう一度押すと前�
 msgid "What should happen to the original queues?"
 msgstr "元のキューをどうしますか？"
 
+msgid "What the sidecar says of this record goes, and its tracks show what their files say again. Changes not saved are lost too. This cannot be undone."
+msgstr "このアルバムについてサイドカーが持つ情報は削除され、各トラックはファイル自身の情報に戻ります。保存していない変更も失われます。この操作は元に戻せません。"
+
 msgid "What this route reports"
 msgstr "この経路からの報告"
 
@@ -10887,8 +10902,17 @@ msgstr "サーバーの応答に時間がかかりすぎました"
 msgid "the server's certificate is not trusted by this system"
 msgstr "サーバーの証明書がこのシステムで信頼されていません"
 
+msgid "the sidecar could not be deleted: {}"
+msgstr "サイドカーを削除できませんでした: {}"
+
 msgid "the sidecar could not be written: {}"
 msgstr "サイドカーファイルを書き込めませんでした: {}"
+
+msgid "the sidecar was deleted"
+msgstr "サイドカーを削除しました"
+
+msgid "the sidecar was deleted, and the library could not read the files again: {}; rescan to see them"
+msgstr "サイドカーは削除しましたが、ライブラリがファイルを読み直せませんでした: {}。再スキャンして確認してください"
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr "サウンドカードは/proc/asoundに一覧されていますが、/dev/sndにあるそのデバイスをここから開けません。Flatpak内では次のコマンドで許可してください: flatpak override --user --device=all app.chilpa.Chilpa"
@@ -11021,6 +11045,9 @@ msgstr "ソースのこの部分は現在ありません"
 
 msgid "this plugin declared no network permission"
 msgstr "このプラグインはネットワーク権限を宣言していません"
+
+msgid "this record has no sidecar"
+msgstr "このアルバムにはサイドカーがありません"
 
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "このサーバーでは、プレイリストに複数回入っているトラックは移動できません"
@@ -11392,6 +11419,9 @@ msgstr "{} / {}個のフォーマットがそのまま出力されます"
 
 msgid "{} of {} tracks match this release"
 msgstr "{} / {}トラックがこのリリースに一致します"
+
+msgid "{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying."
+msgstr "{} / {}トラックを並び順で対応付けました。リリース側の番号が異なります。適用する前にタイトルを確認してください。"
 
 msgid "{} part"
 msgid_plural "{} parts"

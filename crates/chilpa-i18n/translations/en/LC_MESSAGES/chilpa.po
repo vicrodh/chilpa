@@ -2441,8 +2441,14 @@ msgstr ""
 msgid "Delete selected presets?"
 msgstr ""
 
+msgid "Delete sidecar"
+msgstr ""
+
 msgid "Delete the saved query “{}”?"
 msgstr "Delete the saved query “{}”?"
+
+msgid "Delete the sidecar?"
+msgstr ""
 
 msgid "Delete track from server?"
 msgstr "Delete track from server?"
@@ -3676,6 +3682,9 @@ msgstr ""
 msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
 msgstr ""
 
+msgid "Ignore existing sidecars"
+msgstr ""
+
 msgid "Image"
 msgstr ""
 
@@ -4296,6 +4305,9 @@ msgid "Listening stats"
 msgstr ""
 
 msgid "Listening time"
+msgstr ""
+
+msgid "Lists and playback use each file's own tags. When off, Chilpa keeps reading the sidecars already written."
 msgstr ""
 
 msgid "Lite fill"
@@ -9508,6 +9520,9 @@ msgstr "What one press does. A second press right after goes to the previous tra
 msgid "What should happen to the original queues?"
 msgstr ""
 
+msgid "What the sidecar says of this record goes, and its tracks show what their files say again. Changes not saved are lost too. This cannot be undone."
+msgstr ""
+
 msgid "What this route reports"
 msgstr ""
 
@@ -10901,7 +10916,16 @@ msgstr ""
 msgid "the server's certificate is not trusted by this system"
 msgstr ""
 
+msgid "the sidecar could not be deleted: {}"
+msgstr ""
+
 msgid "the sidecar could not be written: {}"
+msgstr ""
+
+msgid "the sidecar was deleted"
+msgstr ""
+
+msgid "the sidecar was deleted, and the library could not read the files again: {}; rescan to see them"
 msgstr ""
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
@@ -11034,6 +11058,9 @@ msgid "this part of the source is not there now"
 msgstr ""
 
 msgid "this plugin declared no network permission"
+msgstr ""
+
+msgid "this record has no sidecar"
 msgstr ""
 
 msgid "this server cannot move a track that is in the playlist more than once"
@@ -11434,6 +11461,9 @@ msgid "{} of {} formats come out untouched"
 msgstr ""
 
 msgid "{} of {} tracks match this release"
+msgstr ""
+
+msgid "{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying."
 msgstr ""
 
 msgid "{} part"

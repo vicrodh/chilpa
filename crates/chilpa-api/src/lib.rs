@@ -787,6 +787,7 @@ impl Chilpa {
         let on = |key| saved.window.get(key).is_some_and(|v| v == "true");
         chilpa_core::backends::set_reserving(on(outputs::RESERVE));
         chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
+        chilpa_library::sidecar::set_ignored(library_protection::Protection::kept().ignores_sidecars());
         let catalog = source_catalog::Catalog::new();
         library_query::refine::access::attach(&catalog);
         let tap = chilpa_core::tap::Tap::new();

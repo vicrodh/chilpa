@@ -8,13 +8,15 @@
 //! their sync, adding sources and folders, Chilpa's own playlists and the
 //! caches are untouched. Its child lets metadata edits go to sidecars: a
 //! `.chilpa.json` beside the music, or Chilpa's own copy for a record on a
-//! server.
+//! server. With sidecars not allowed, a third switch leaves the sidecars
+//! already written unread.
 
 use crate::settings_rows::SettingsRow;
 use crate::Chilpa;
 
 pub const ENABLED: &str = "library.protect";
 pub const SIDECARS: &str = "library.protect.sidecars";
+pub const IGNORE: &str = "library.protect.ignoreSidecars";
 
 const REFUSED: &str = chilpa_i18n::mark("Protect my library is on. Turn it off in Settings > Library to change your files or servers.");
 
@@ -23,6 +25,9 @@ pub(crate) struct Protection {
     pub(crate) on: bool,
     /// Sidecars are allowed while it is on.
     pub(crate) sidecars: bool,
+    /// The sidecars already written are left unread while they are not
+    /// allowed.
+    pub(crate) ignore: bool,
 }
 
 impl Protection {
@@ -31,7 +36,12 @@ impl Protection {
     pub(crate) fn kept() -> Self {
         let window = chilpa_core::settings::load().window;
         let on = |key: &str| window.get(key).is_some_and(|value| value == "true");
-        Protection { on: on(ENABLED), sidecars: on(SIDECARS) }
+        Protection { on: on(ENABLED), sidecars: on(SIDECARS), ignore: on(IGNORE) }
+    }
+
+    /// Whether the sidecars on disk are left unread now.
+    pub(crate) fn ignores_sidecars(self) -> bool {
+        self.on && !self.sidecars && self.ignore
     }
 
     /// Why a write to a file or a server is refused; empty when it is not.
@@ -56,10 +66,19 @@ impl Chilpa {
     }
 
     pub(crate) fn library_protection_setting(&mut self, key: &str, value: &str) -> bool {
-        if !matches!(key, ENABLED | SIDECARS) || !matches!(value, "true" | "false") {
+        if !matches!(key, ENABLED | SIDECARS | IGNORE) || !matches!(value, "true" | "false") {
             return false;
         }
-        self.remember_preference_checked(key, value).is_ok()
+        let kept = self.remember_preference_checked(key, value).is_ok();
+        // The library reads its sidecars again, or leaves them, once what
+        // the switches say together changed: the scan rereads only the
+        // folders whose sidecar it no longer sees, or sees anew.
+        let ignore = Protection::kept().ignores_sidecars();
+        if kept && ignore != chilpa_library::sidecar::ignored() {
+            chilpa_library::sidecar::set_ignored(ignore);
+            self.rescan();
+        }
+        kept
     }
 
     pub(crate) fn library_protection_row(&self, row: &mut SettingsRow) -> bool {
@@ -70,6 +89,13 @@ impl Chilpa {
                 row.value = protection.sidecars.to_string();
                 if !protection.on {
                     row.control = "fixed".into();
+                }
+            }
+            // Only while sidecars are not allowed: otherwise they are read.
+            IGNORE => {
+                row.value = protection.ignore.to_string();
+                if !protection.on || protection.sidecars {
+                    row.control = String::new();
                 }
             }
             _ => return false,
