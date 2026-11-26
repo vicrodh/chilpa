@@ -756,6 +756,54 @@ fn a_real_stream_keeps_its_last_sample_when_write_panics() { stream_failure(Stre
 #[test]
 fn a_real_stream_keeps_its_heard_count_when_the_device_is_lost() { stream_failure(StreamFailure::DeviceLost, "stream-device-lost"); }
 
+/// Keeps every byte the output was handed.
+struct RecordingSink {
+    stream: StreamFormat,
+    bytes: Arc<std::sync::Mutex<Vec<u8>>>,
+}
+
+impl AudioSink for RecordingSink {
+    fn format(&self) -> StreamFormat { self.stream }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        let n = frames.len() / self.stream.frame_bytes();
+        self.bytes.lock().unwrap().extend_from_slice(&frames[..n * self.stream.frame_bytes()]);
+        Ok(n)
+    }
+    fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+}
+
+/// The samples a real HTTP stream reached the output with, the player's
+/// volume set to `factor` before it started.
+fn stream_at_volume(name: &str, factor: f32) -> Vec<i16> {
+    let stream = StreamFixture::wave(name, 4_410);
+    let bytes = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let output = bytes.clone();
+    let p = Player::spawn(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(move |_, stream, _| Ok(Box::new(RecordingSink { stream, bytes: output.clone() }) as Box<dyn AudioSink + Send>)),
+    );
+    p.set_volume(factor);
+    p.play(&stream.path, "fake");
+    let events = finished_events(&p);
+    assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "{events:?}");
+    let samples = bytes.lock().unwrap().chunks_exact(2).map(|pair| i16::from_le_bytes([pair[0], pair[1]])).collect();
+    samples
+}
+
+#[test]
+fn a_stream_is_scaled_by_the_player_volume_like_a_file() {
+    let untouched = stream_at_volume("stream-volume-unity", 1.0);
+    assert!(untouched.iter().any(|sample| *sample != 0), "the stream carries sound");
+    let muted = stream_at_volume("stream-volume-muted", 0.0);
+    assert_eq!(muted.len(), untouched.len());
+    assert!(muted.iter().all(|sample| *sample == 0), "a muted player plays a stream silent");
+    let quarter = stream_at_volume("stream-volume-quarter", 0.25);
+    assert_eq!(quarter.len(), untouched.len());
+    assert!(quarter.iter().zip(&untouched).all(|(low, full)| i32::from(*low).abs() <= i32::from(*full).abs() / 4 + 1),
+        "a quarter of the volume is at most a quarter of each sample");
+    assert!(quarter.iter().zip(&untouched).any(|(low, full)| low != full));
+}
+
 #[test]
 fn a_panic_releasing_pending_audio_marks_every_release_path_as_failed() {
     use crate::playback_events::Measured;

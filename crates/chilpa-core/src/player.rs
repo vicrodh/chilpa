@@ -683,7 +683,8 @@ fn play(
     let start = crate::queue_playback::first_live(queue, controls, named_start);
     if let Some((index, first)) = &start {
         if is_url(first) {
-            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp, controls.stereo_downmix.get(), controls.stereo_fallback.get()).map_err(|error|error.at_entry(first,*index));
+            let volume = crate::playback::StreamVolume { level: controls.volume.clone(), active: controls.gain_active.clone() };
+            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp, volume, controls.stereo_downmix.get(), controls.stereo_fallback.get()).map_err(|error|error.at_entry(first,*index));
         }
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, controls, open, drive, events);
@@ -869,10 +870,12 @@ fn play_stream(
     index: usize,
     queue_len: usize,
     dsp: &chilpa_audio::dsp::Control,
+    volume: crate::playback::StreamVolume,
     stereo: bool,
     fallback: bool,
 ) -> Result<Outcome, PlayError> {
     dsp.begin_stream();
+    volume.active.store(false, Ordering::Release);
     let exact_path = crate::path_is_exact(device, exclusive);
     let parts = parts_of(url);
     let address = parts.first().cloned().unwrap_or_default();
@@ -902,6 +905,7 @@ fn play_stream(
         stereo,
         fallback,
         Some(dsp.clone()),
+        Some(volume),
         owed.report.clone(),
         |format| open(device, format, exclusive),
         &mut |delivery, bits| {

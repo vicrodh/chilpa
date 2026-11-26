@@ -247,8 +247,15 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_stream_told(stream, caps, policy, stop, pause, false, false, dsp, crate::playback_events::Report::default(), open_sink,
+    play_stream_told(stream, caps, policy, stop, pause, false, false, dsp, None, crate::playback_events::Report::default(), open_sink,
         &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, _, _)| played)
+}
+
+/// The player bar's volume as a stream takes it: the factor, read on every
+/// block, and the flag that says whether it changed any sample.
+pub(crate) struct StreamVolume {
+    pub level: crate::queue_playback::Level,
+    pub active: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -261,6 +268,7 @@ pub(crate) fn play_stream_told<F, K>(
     stereo: bool,
     fallback: bool,
     dsp: Option<chilpa_audio::dsp::Control>,
+    volume: Option<StreamVolume>,
     report: crate::playback_events::Report,
     open_sink: F,
     on_delivery: &mut dyn FnMut(&Delivery, Option<u8>),
@@ -277,12 +285,27 @@ where
     if dsp.as_ref().is_some_and(|control| control.requested()) {
         delivery.transforms.push(chilpa_audio::negotiate::Transform::DspApplied);
     }
+    // The volume scales a stream as it scales a file, off the bit-perfect
+    // policy only, and is said in the delivery when it changes anything.
+    let volume = volume.filter(|_| policy != Policy::BitPerfect);
+    if volume.as_ref().is_some_and(|volume| volume.level.get() != 1.0) {
+        delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
+    }
     on_delivery(&delivery, signal_bits(&decoded, &delivery));
     let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(PlayError::Sink)?, report.clone());
     sink.begin_attempt(1, None);
     let mut frames = Frames::new(&mut decoded, &delivery);
-    let outcome =
-        chilpa_audio::render::render_processed(&mut frames, &mut sink, stop, pause, dsp, on_progress);
+    let mut processor = dsp.map(|control| chilpa_audio::dsp::Processor::new(control, sink.format()));
+    let (opened, spread) = (delivery.opened, delivery.duplicates_mono());
+    let mut level = crate::loudness::level::Leveler::volume_only(volume.as_ref().map(|volume| volume.level.clone()));
+    let mut gain = |bytes: &mut [u8]| {
+        let changed = level.packed(bytes, opened, spread);
+        if let Some(volume) = &volume {
+            volume.active.store(changed, std::sync::atomic::Ordering::Release);
+        }
+    };
+    let gain = volume.is_some().then_some(&mut gain as &mut dyn FnMut(&mut [u8]));
+    let outcome = chilpa_audio::render::render_with_volume(&mut frames, &mut sink, stop, pause, processor.as_mut(), gain, on_progress);
     sink.end(match &outcome {
         Outcome::Finished { .. } => "finished",
         Outcome::Stopped { .. } => "stopped",
