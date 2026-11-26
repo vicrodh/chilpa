@@ -1445,6 +1445,9 @@ msgstr "O Chilpa não conseguiu ajustar o grafo do PipeWire para {} Hz: daqui su
 msgid "Chilpa does not send {} requests to a server"
 msgstr "O Chilpa não envia solicitações {} a um servidor"
 
+msgid "Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it."
+msgstr "O Chilpa instalou o beets {}; esta versão do Chilpa funciona com o beets {}. Atualize-o."
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "O Chilpa é empacotado como Flatpak/Snap e não pode inspecionar a pilha de áudio do seu host. Se a reprodução já funciona, está tudo certo. Escolha abaixo sua distribuição e seu sistema init para ver os comandos de configuração certos."
 
@@ -1631,8 +1634,8 @@ msgstr ""
 msgid "Choose an available writable storage."
 msgstr ""
 
-msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
-msgstr ""
+msgid "Choose an existing environment with beets. Chilpa is tested with beets 2.14.1; another version may not work. Leave this empty to use Chilpa's installed copy."
+msgstr "Escolha um ambiente existente com o beets. O Chilpa é testado com o beets 2.14.1; outra versão pode não funcionar. Deixe vazio para usar a cópia instalada pelo Chilpa."
 
 msgid "Choose an image"
 msgstr "Escolher uma imagem"
@@ -9257,6 +9260,9 @@ msgstr "Atualizar tudo"
 msgid "Update available"
 msgstr "Atualização disponível"
 
+msgid "Update beets"
+msgstr "Atualizar o beets"
+
 msgid "Update cancelled."
 msgstr "Atualização cancelada."
 
@@ -9891,6 +9897,9 @@ msgstr ""
 
 msgid "beets settings"
 msgstr ""
+
+msgid "beets {} is ready, but Chilpa was tested with beets {}; lookups may not work."
+msgstr "O beets {} está pronto, mas o Chilpa foi testado com o beets {}; as buscas podem não funcionar."
 
 msgid "beets {} is ready."
 msgstr ""

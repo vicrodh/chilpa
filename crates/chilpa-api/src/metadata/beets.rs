@@ -59,19 +59,8 @@ impl Task {
             let policy = chilpa_core::network::current();
             let lookup = matches!(request.operation, engine::Operation::Lookup);
             if lookup && (policy.offline || !policy.musicbrainz) { return Err(Error::Cancelled); }
-            // Chilpa's own search goes first, by catalog number when there is
-            // one: beets scores what it finds as well, since its own search
-            // can miss the edition the files are.
-            // An SACD's editions are asked for first.
-            if lookup && request.release_ids.is_empty() {
-                let net = chilpa_meta::Net::musicbrainz(http);
-                let sacd = if request.media == "SACD" { chilpa_meta::musicbrainz::search_in(&net, &request.album, &request.artist, "SACD").unwrap_or_default() } else { Vec::new() };
-                let own = chilpa_meta::musicbrainz::search(&net, &request.album, &request.artist, &request.catalog_number).unwrap_or_default();
-                for id in sacd.into_iter().chain(own).map(|hit| hit.id) {
-                    if !id.is_empty() && id.len() <= 64 && !request.release_ids.contains(&id) && request.release_ids.len() < engine::MAX_IDS {
-                        request.release_ids.push(id);
-                    }
-                }
+            if lookup {
+                add_own_releases(http, &mut request);
                 if self.slot.cancelled.load(Ordering::Acquire) { return Err(Error::Cancelled); }
             }
             let root = chilpa_dirs::cache().join("beets");
@@ -141,13 +130,31 @@ pub(crate) fn hit(candidate: &Candidate) -> Hit {
         format:candidate.format.clone(), score:candidate.score, release_group_id:from.release_group_id.clone(), discs:candidate.discs.clone() }
 }
 
+/// What Chilpa's own search finds goes to beets to be scored as well, by
+/// catalog number when there is one: beets' own search can miss the edition
+/// the files are. An SACD's editions are asked for first.
+pub(crate) fn add_own_releases(http: &dyn chilpa_meta::Http, request: &mut Request) {
+    if !request.release_ids.is_empty() { return; }
+    let net = chilpa_meta::Net::musicbrainz(http);
+    let sacd = if request.media == "SACD" { chilpa_meta::musicbrainz::search_in(&net, &request.album, &request.artist, "SACD").unwrap_or_default() } else { Vec::new() };
+    let own = chilpa_meta::musicbrainz::search(&net, &request.album, &request.artist, &request.catalog_number).unwrap_or_default();
+    for id in sacd.into_iter().chain(own).map(|hit| hit.id) {
+        if !id.is_empty() && id.len() <= 64 && !request.release_ids.contains(&id) && request.release_ids.len() < engine::MAX_IDS {
+            request.release_ids.push(id);
+        }
+    }
+}
+
+/// A file of an SACD: a DSD file, or a track inside an image.
+pub(crate) fn is_dsd(path: &str) -> bool {
+    let path = path.to_ascii_lowercase();
+    path.starts_with("sacd:") || path.ends_with(".dsf") || path.ends_with(".dff") || path.ends_with(".iso")
+}
+
 fn request(draft: &Draft, durations: &HashMap<i64,u64>) -> Request {
     let value = |row:usize, name:&str| fields::track(name).map(|at| draft.rows[row].cells[at].now.clone()).unwrap_or_default();
     // DSD files are an SACD; only that is said of them, never where they are.
-    let dsd = draft.rows.iter().any(|row| {
-        let id = row.track.external_id.to_ascii_lowercase();
-        id.starts_with("sacd:") || id.ends_with(".dsf") || id.ends_with(".dff") || row.track.container.as_deref().is_some_and(|c| c.to_ascii_lowercase().ends_with(".iso"))
-    });
+    let dsd = draft.rows.iter().any(|row| is_dsd(&row.track.external_id) || row.track.container.as_deref().is_some_and(is_dsd));
     Request { artist:draft.album_cell("album_artist").now.clone(), album:draft.album_cell("title").now.clone(),
         catalog_number:draft.album_cell("catalog_number").now.clone(), release_id:draft.album_cell("musicbrainz_release_id").now.clone(),
         media:if dsd { "SACD".into() } else { String::new() }, year:fields::year_of(&draft.album_cell("date").now).and_then(|year| u16::try_from(year).ok()).unwrap_or(0),
@@ -175,7 +182,8 @@ impl Editor {
         if self.state != EditorState::Ready { return false; }
         if self.beets.runtime.trim().is_empty() { return self.refuse(chilpa_i18n::t("Choose the Python environment containing beets.")); }
         let Some(draft) = self.draft.as_ref() else { return false };
-        let request = if probe { Request::probe() } else { request(draft, durations) };
+        let mut request = if probe { Request::probe() } else { request(draft, durations) };
+        request.strict = crate::beets_runtime::tested_only(&self.beets.runtime);
         let Some(task) = self.beets.task(request) else { return self.refuse(chilpa_i18n::t("The previous beets lookup is still stopping.")); };
         self.lookup_turn += 1; self.searching = true; self.loading = false;
         self.release = None; self.hits.clear(); self.changes.clear(); self.preview_matched = 0; self.error.clear(); self.notice.clear();

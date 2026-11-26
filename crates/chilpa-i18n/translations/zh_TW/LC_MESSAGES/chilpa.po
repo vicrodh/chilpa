@@ -1451,6 +1451,9 @@ msgstr ""
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpa 不能送 {} 到伺服器"
 
+msgid "Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it."
+msgstr "Chilpa 安裝的是 beets {}；此版本的 Chilpa 使用 beets {}。請更新。"
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "Chilpa 以 Flatpak/Snap 包裝，無法檢查主機音訊堆疊。若播放已正常運作，就無需額外設定。請在下方選擇發行版與 init 系統以取得正確的設定指令。"
 
@@ -1637,8 +1640,8 @@ msgstr ""
 msgid "Choose an available writable storage."
 msgstr "選擇可用的可寫入儲存空間。"
 
-msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
-msgstr ""
+msgid "Choose an existing environment with beets. Chilpa is tested with beets 2.14.1; another version may not work. Leave this empty to use Chilpa's installed copy."
+msgstr "選擇已安裝 beets 的現有環境。Chilpa 已在 beets 2.14.1 上測試；其他版本可能無法運作。留空即可使用 Chilpa 安裝的副本。"
 
 msgid "Choose an image"
 msgstr "選擇圖片"
@@ -9254,6 +9257,9 @@ msgstr "全部更新"
 msgid "Update available"
 msgstr "有可用更新"
 
+msgid "Update beets"
+msgstr "更新 beets"
+
 msgid "Update cancelled."
 msgstr "更新已取消。"
 
@@ -9887,6 +9893,9 @@ msgstr ""
 
 msgid "beets settings"
 msgstr ""
+
+msgid "beets {} is ready, but Chilpa was tested with beets {}; lookups may not work."
+msgstr "beets {} 已就緒，但 Chilpa 是以 beets {} 測試的；查詢可能無法運作。"
 
 msgid "beets {} is ready."
 msgstr ""

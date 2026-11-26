@@ -1445,6 +1445,9 @@ msgstr "Chilpa no pudo poner el grafo de PipeWire a {} Hz: desde aquí sus ajust
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpa no envía solicitudes {} a un servidor"
 
+msgid "Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it."
+msgstr "Chilpa instaló beets {}; esta versión de Chilpa funciona con beets {}. Actualízalo."
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "Chilpa está empaquetado como Flatpak/Snap y no puede revisar el stack de audio de tu sistema. Si la reproducción ya funciona, ya quedó. Elige abajo tu distribución y tu sistema init para ver los comandos correctos."
 
@@ -1631,8 +1634,8 @@ msgstr "Selecciona una política de guardado automático."
 msgid "Choose an available writable storage."
 msgstr "Elige una memoria disponible que permita escritura."
 
-msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
-msgstr "Elige un entorno existente con beets 2.14.1 o deja esto vacío para usar la copia instalada por Chilpa."
+msgid "Choose an existing environment with beets. Chilpa is tested with beets 2.14.1; another version may not work. Leave this empty to use Chilpa's installed copy."
+msgstr "Elige un entorno existente con beets. Chilpa está probado con beets 2.14.1; otra versión podría no funcionar. Déjalo vacío para usar la copia que instaló Chilpa."
 
 msgid "Choose an image"
 msgstr "Elige una imagen"
@@ -9257,6 +9260,9 @@ msgstr "Actualizar todos"
 msgid "Update available"
 msgstr "Actualización disponible"
 
+msgid "Update beets"
+msgstr "Actualizar beets"
+
 msgid "Update cancelled."
 msgstr "Actualización cancelada."
 
@@ -9891,6 +9897,9 @@ msgstr "Resultados de beets"
 
 msgid "beets settings"
 msgstr "Ajustes de beets"
+
+msgid "beets {} is ready, but Chilpa was tested with beets {}; lookups may not work."
+msgstr "beets {} está listo, pero Chilpa se probó con beets {}; las búsquedas podrían no funcionar."
 
 msgid "beets {} is ready."
 msgstr "beets {} está listo."

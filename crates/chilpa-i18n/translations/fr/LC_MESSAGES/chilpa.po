@@ -1445,6 +1445,9 @@ msgstr "Chilpa n'a pas pu régler le graphe de PipeWire sur {} Hz : ses paramèt
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpa n'envoie pas de requêtes {} à un serveur"
 
+msgid "Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it."
+msgstr "Chilpa a installé beets {} ; cette version de Chilpa fonctionne avec beets {}. Mettez-le à jour."
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "Chilpa est empaqueté en Flatpak/Snap et ne peut pas inspecter la pile audio de votre hôte. Si la lecture fonctionne déjà, tout est en ordre. Choisissez ci-dessous votre distribution et votre système d'initialisation pour obtenir les bonnes commandes de configuration."
 
@@ -1631,8 +1634,8 @@ msgstr ""
 msgid "Choose an available writable storage."
 msgstr ""
 
-msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
-msgstr ""
+msgid "Choose an existing environment with beets. Chilpa is tested with beets 2.14.1; another version may not work. Leave this empty to use Chilpa's installed copy."
+msgstr "Choisissez un environnement existant avec beets. Chilpa est testé avec beets 2.14.1 ; une autre version pourrait ne pas fonctionner. Laissez vide pour utiliser la copie installée par Chilpa."
 
 msgid "Choose an image"
 msgstr "Choisir une image"
@@ -9257,6 +9260,9 @@ msgstr "Tout mettre à jour"
 msgid "Update available"
 msgstr "Mise à jour disponible"
 
+msgid "Update beets"
+msgstr "Mettre à jour beets"
+
 msgid "Update cancelled."
 msgstr "Mise à jour annulée."
 
@@ -9891,6 +9897,9 @@ msgstr ""
 
 msgid "beets settings"
 msgstr ""
+
+msgid "beets {} is ready, but Chilpa was tested with beets {}; lookups may not work."
+msgstr "beets {} est prêt, mais Chilpa a été testé avec beets {} ; les recherches pourraient ne pas fonctionner."
 
 msgid "beets {} is ready."
 msgstr ""

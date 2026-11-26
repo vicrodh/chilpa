@@ -29,7 +29,7 @@ impl Failure {
 enum Phase { Idle, Waiting, Bootstrap, Python, Packages, Checking, Ready, Cancelling, Failed(Failure) }
 struct Status { phase: Phase, progress: f64, installing: bool }
 pub(super) struct View { pub message: String, pub progress: f64, pub installing: bool }
-struct Outcome { python: String, installed: bool }
+struct Outcome { python: String, installed: bool, version: String }
 pub(super) struct Shared {
     status: Mutex<Status>,
     cancel: AtomicBool,
@@ -56,6 +56,8 @@ pub(crate) struct Managed {
     shared: Arc<Shared>,
     worker: Option<JoinHandle<()>>,
     checked: Option<String>,
+    /// The beets the checked environment has.
+    version: String,
 }
 impl Drop for Managed {
     fn drop(&mut self) { self.shared.cancel.store(true,Ordering::Release); self.shared.kill(); }
@@ -63,7 +65,7 @@ impl Drop for Managed {
 impl Managed {
     pub(super) fn uninitialized() -> Self {
         Self { shared:Arc::new(Shared { status:Mutex::new(Status { phase:Phase::Idle,progress:0.0,installing:false }),
-            cancel:AtomicBool::new(false), child:Mutex::new(None), result:Mutex::new(None) }), worker:None, checked:None }
+            cancel:AtomicBool::new(false), child:Mutex::new(None), result:Mutex::new(None) }), worker:None, checked:None, version:String::new() }
     }
     pub(super) fn check_configured(&mut self) {
         self.start(false,move |shared| {
@@ -74,15 +76,15 @@ impl Managed {
                 .ok_or(Failure::Unavailable)?;
             shared.phase(Phase::Checking,0.0);
             let cache = workspace()?;
-            probe(&shared,Path::new(&python),cache.path())?;
-            Ok(Outcome { python,installed:false })
+            let version = probe(&shared,Path::new(&python),cache.path(),packages::is_managed(&python))?;
+            Ok(Outcome { python,installed:false,version })
         });
     }
     pub(super) fn new() -> Self {
         let installed = packages::installed().map(|item| item.python().to_string_lossy().into_owned());
         let phase = if installed.is_some() { Phase::Ready } else { Phase::Idle };
         Self { shared:Arc::new(Shared { status:Mutex::new(Status { phase,progress:0.0,installing:false }),
-            cancel:AtomicBool::new(false), child:Mutex::new(None), result:Mutex::new(None) }), worker:None, checked:installed }
+            cancel:AtomicBool::new(false), child:Mutex::new(None), result:Mutex::new(None) }), worker:None, checked:installed, version:packages::BEETS.into() }
     }
     pub(super) fn verified_runtime(&self) -> Option<String> { self.ready().then(|| self.checked.clone()).flatten() }
     pub(super) fn ready(&self) -> bool {
@@ -122,8 +124,8 @@ impl Managed {
             shared.check(false)?;
             shared.phase(Phase::Checking,0.0);
             let cache = workspace()?;
-            probe(&shared,Path::new(&python),cache.path())?;
-            Ok(Outcome { python,installed:false })
+            let version = probe(&shared,Path::new(&python),cache.path(),packages::is_managed(&python))?;
+            Ok(Outcome { python,installed:false,version })
         });
     }
     pub(super) fn poll(&mut self) -> Option<bool> {
@@ -135,7 +137,7 @@ impl Managed {
         }
         let result = self.shared.result.lock().unwrap_or_else(|error| error.into_inner()).take()?;
         match result {
-            Ok(outcome) => { self.shared.phase(Phase::Ready,1.0); self.checked = Some(outcome.python); Some(outcome.installed) }
+            Ok(outcome) => { self.shared.phase(Phase::Ready,1.0); self.checked = Some(outcome.python); self.version = outcome.version; Some(outcome.installed) }
             Err(error) => { self.shared.phase(Phase::Failed(error),0.0); self.checked = None; Some(false) }
         }
     }
@@ -148,6 +150,8 @@ impl Managed {
             Phase::Python => chilpa_i18n::t("Installing private Python…"),
             Phase::Packages => chilpa_i18n::t("Installing beets and its pinned packages…"),
             Phase::Checking => chilpa_i18n::t("Checking beets…"),
+            Phase::Ready if !self.version.is_empty() && self.version != packages::BEETS =>
+                chilpa_i18n::t_args("beets {} is ready, but Chilpa was tested with beets {}; lookups may not work.", &[&self.version, packages::BEETS]),
             Phase::Ready => chilpa_i18n::t("beets 2.14.1 is ready."),
             Phase::Cancelling => chilpa_i18n::t("Cancelling the beets task…"),
             Phase::Failed(error) => error.message(),
@@ -156,7 +160,12 @@ impl Managed {
     }
     pub(super) fn description(&self, python: &str) -> String {
         if self.busy() { return self.view().message; }
-        if python.is_empty() { return chilpa_i18n::t("Not installed"); }
+        if python.is_empty() {
+            return match packages::outdated() {
+                Some(old) => chilpa_i18n::t_args("Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it.", &[&old, packages::BEETS]),
+                None => chilpa_i18n::t("Not installed"),
+            };
+        }
         if self.checked.as_deref() == Some(python) { self.view().message }
         else { chilpa_i18n::t("Not checked") }
     }
@@ -166,15 +175,19 @@ fn workspace() -> Result<tempfile::TempDir, Failure> {
     std::fs::create_dir_all(&cache).map_err(|_| Failure::Storage)?;
     tempfile::Builder::new().prefix("setup-").tempdir_in(cache).map_err(|_| Failure::Storage)
 }
-fn probe(shared: &Shared, python: &Path, cache: &Path) -> Result<(),Failure> {
+/// The beets the environment has. Strict, it must be the one the bridge was
+/// tested with: Chilpa's own copy is.
+fn probe(shared: &Shared, python: &Path, cache: &Path, strict: bool) -> Result<String,Failure> {
     shared.check(false)?;
-    let response = beets::lookup(python,cache,&beets::Request::probe(),&shared.cancel).map_err(|error| match error {
+    let request = beets::Request { strict, ..beets::Request::probe() };
+    let response = beets::lookup(python,cache,&request,&shared.cancel).map_err(|error| match error {
         beets::Error::Cancelled => Failure::Cancelled,
         beets::Error::Timeout => Failure::Timeout,
         _ => Failure::Version,
     })?;
-    if response.beets_version != packages::BEETS { return Err(Failure::Version); }
-    shared.check(false)
+    if strict && response.beets_version != packages::BEETS { return Err(Failure::Version); }
+    shared.check(false)?;
+    Ok(response.beets_version)
 }
 fn install(shared: &Arc<Shared>, previous: &str, lease: &AtomicBool) -> Result<Outcome,Failure> {
     shared.check(true)?;
@@ -213,12 +226,12 @@ fn install(shared: &Arc<Shared>, previous: &str, lease: &AtomicBool) -> Result<O
     shared.phase(Phase::Checking,0.9);
     let check = cache.path().join("check");
     std::fs::create_dir(&check).map_err(|_| Failure::Storage)?;
-    probe(shared,&python,&check)?;
+    probe(shared,&python,&check,true)?;
     packages::check_size(directory.path())?;
     shared.check(true)?;
     let python = python.to_string_lossy().into_owned();
     packages::activate(directory,previous)?;
-    Ok(Outcome { python,installed:true })
+    Ok(Outcome { python,installed:true,version:packages::BEETS.into() })
 }
 
 #[cfg(test)]

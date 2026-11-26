@@ -72,6 +72,7 @@ impl Session {
         let mut evidence = serde_json::Map::new();
         let mut after = 0;
         let mut input_bytes = 8192;
+        let mut dsd = false;
         while let Some(entry) = self
             .manifest
             .next_in_group(after, Some(&group))
@@ -95,6 +96,7 @@ impl Session {
                 ));
             }
             let row = Row::read(&entry)?;
+            dsd |= crate::metadata::beets::is_dsd(&row.path);
             let values = row.proposed();
             let text = |name| {
                 values
@@ -194,6 +196,14 @@ impl Session {
             return Err(chilpa_i18n::t(
                 "Add an album or artist proposal before looking up files with empty tags.",
             ));
+        }
+        // As in the album editor: an SACD's editions lead, Chilpa's own
+        // search is scored as well, and a chosen environment is told apart.
+        request.media = if dsd { "SACD".into() } else { String::new() };
+        request.strict = crate::beets_runtime::tested_only(&runtime.to_string_lossy());
+        crate::metadata::beets::add_own_releases(&crate::metadata::worker::Network::new(), &mut request);
+        if cancel.load(Ordering::Acquire) {
+            return Err(chilpa_i18n::t("The metadata lookup was cancelled."));
         }
         let lookup_key = self
             .plan_key(&json!({"group":group,"evidence":evidence}))?

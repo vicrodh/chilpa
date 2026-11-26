@@ -64,3 +64,31 @@ fn requested_managed_installation_is_usable_after_its_cache_is_released() {
     assert_eq!(response.beets_version,packages::BEETS);
     assert_eq!(std::fs::read(sentinel).unwrap(),b"curated metadata stays intact");
 }
+#[test]
+fn a_copy_chilpa_installed_for_another_beets_is_offered_an_update() {
+    let _restore = Restore::new();
+    chilpa_core::network::configure(chilpa_core::network::Policy::default());
+    let root = packages::root();
+    let generation = root.join("managed-older");
+    let python = chilpa_dirs::python_environment(&generation.join("environment"));
+    std::fs::create_dir_all(python.parent().unwrap()).unwrap();
+    std::fs::write(&python, b"").unwrap();
+    std::fs::write(generation.join("owner"), b"chilpa-managed-beets-1").unwrap();
+    let record = serde_json::json!({"format":1,"beets":"2.13.0","python":"3.13.18","uv":"0","os":std::env::consts::OS,
+        "arch":std::env::consts::ARCH,"generation":"managed-older","previous":null});
+    std::fs::write(root.join("current.json"), record.to_string()).unwrap();
+    assert!(packages::installed().is_none(), "not the version this Chilpa works with");
+    assert_eq!(packages::outdated().as_deref(), Some("2.13.0"));
+    assert!(tested_only(&python.to_string_lossy()), "Chilpa's own copy only runs the tested beets");
+    assert!(!tested_only("/fixture/custom python"), "one the listener chose runs what it has");
+    let mut api = Chilpa::with_listed(vec![],vec![]);
+    let (rows,_) = api.settings_rows("library",&crate::RowNotes::default());
+    let install = rows.iter().find(|row| row.key==INSTALL).unwrap();
+    if packages::supported() {
+        assert_eq!(install.action, "Update beets");
+        assert!(install.description.contains("2.13.0"), "{}", install.description);
+    }
+    let status = rows.iter().find(|row| row.key==STATUS).unwrap();
+    assert!(status.value.contains("2.13.0"), "{}", status.value);
+    std::fs::remove_dir_all(&root).unwrap();
+}

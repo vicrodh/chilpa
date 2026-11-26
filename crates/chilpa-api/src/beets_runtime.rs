@@ -10,6 +10,12 @@ const INSTALL: &str = "metadata.beets.install";
 const CHECK: &str = "metadata.beets.check";
 const STATUS: &str = "metadata.beets.status";
 
+/// Whether a lookup with this environment accepts only the beets the bridge
+/// was tested with: Chilpa's own copy does, one the listener chose does not.
+pub(crate) fn tested_only(python: &str) -> bool {
+    packages::is_managed(python)
+}
+
 impl Chilpa {
     pub(crate) fn metadata_batch_beets_runtime(&self) -> Option<String> {
         self.beets_runtime.as_ref().and_then(Managed::verified_runtime)
@@ -123,7 +129,14 @@ impl Chilpa {
                     row.control = "buttonBusy".into();
                     if offline { row.description = chilpa_core::network::blocked(); }
                 } else {
-                    row.action = if busy { chilpa_i18n::t("Cancel") } else if packages::installed().is_some() { chilpa_i18n::t("Reinstall") } else { chilpa_i18n::t("Download and install") };
+                    row.action = if busy { chilpa_i18n::t("Cancel") }
+                        else if packages::installed().is_some() { chilpa_i18n::t("Reinstall") }
+                        // A copy Chilpa installed for another version is replaced by this one's.
+                        else if let Some(old) = packages::outdated() {
+                            row.description = chilpa_i18n::t_args("Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it.", &[&old, packages::BEETS]);
+                            chilpa_i18n::t("Update beets")
+                        }
+                        else { chilpa_i18n::t("Download and install") };
                     row.value = if busy { view.progress.to_string() } else { String::new() };
                 }
             }

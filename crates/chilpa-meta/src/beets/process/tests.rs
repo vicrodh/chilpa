@@ -36,15 +36,22 @@ sys.modules['beets'] = types.SimpleNamespace(__version__=bridge['BEETS_VERSION']
 bridge['lookup']({{'operation': 'probe'}})
 plain = config['match']['preferred']['media'].get('value')
 bridge['lookup']({{'operation': 'probe', 'media': 'SACD'}})
+sys.modules['beets'].__version__ = '2.99.0'
+chosen = bridge['lookup']({{'operation': 'probe', 'strict': False}})['beets_version']
+try:
+    bridge['lookup']({{'operation': 'probe'}})
+    refused = None
+except bridge['AdapterError'] as error:
+    refused = str(error)
 print(json.dumps([named, unnamed, config['musicbrainz']['genres'].get('value'), config['musicbrainz']['search_limit'].get('value'),
     [whole['score'], whole['whole'], whole['discs'], whole['format']], plain,
-    config['match']['preferred']['media'].get('value'), config['match']['ignored_media'].get('value')]))
+    config['match']['preferred']['media'].get('value'), config['match']['ignored_media'].get('value'), chosen, refused]))
 "#, helper = serde_json::to_string(HELPER).unwrap());
     let output = Command::new(python()).args(["-I", "-c", &script]).output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     let seen: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(seen, serde_json::json!([["rock", "metal", "folk", "jazz", "blues"], [], true, 10,
-        [75, 100, [2], "SACD"], null, ["(Hybrid )?SACD"], ["Hybrid SACD (CD layer)"]]));
+        [75, 100, [2], "SACD"], null, ["(Hybrid )?SACD"], ["Hybrid SACD (CD layer)"], "2.99.0", "incompatible_version"]));
 }
 
 #[test]

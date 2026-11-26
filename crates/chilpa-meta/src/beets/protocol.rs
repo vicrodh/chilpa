@@ -45,13 +45,17 @@ pub struct Request {
     pub year: u16,
     pub label: String,
     pub release_ids: Vec<String>,
+    /// Only the version the bridge was tested with is accepted. A copy
+    /// Chilpa installed asks for it; an environment the listener chose runs
+    /// whatever beets it has, and is told it was not tested.
+    pub strict: bool,
     pub tracks: Vec<Track>,
 }
 impl Default for Request {
     fn default() -> Self {
         Self { protocol:PROTOCOL, operation:Operation::Lookup, source:Source::MusicBrainz,
             artist:String::new(), album:String::new(), catalog_number:String::new(), release_id:String::new(),
-            media:String::new(), year:0, label:String::new(), release_ids:Vec::new(), tracks:Vec::new() }
+            media:String::new(), year:0, label:String::new(), release_ids:Vec::new(), strict:true, tracks:Vec::new() }
     }
 }
 impl Request {
@@ -131,7 +135,8 @@ impl Response {
                 _ => Error::LookupFailed,
             });
         }
-        if response.beets_version != BEETS_VERSION { return Err(Error::IncompatibleVersion); }
+        if request.strict && response.beets_version != BEETS_VERSION { return Err(Error::IncompatibleVersion); }
+        if response.beets_version.is_empty() || response.beets_version.len() > 64 { return Err(Error::InvalidResponse); }
         if response.candidates.len() > MAX_CANDIDATES { return Err(Error::InvalidResponse); }
         let ids: HashSet<_> = request.tracks.iter().map(|track| track.id).collect();
         for candidate in &response.candidates {

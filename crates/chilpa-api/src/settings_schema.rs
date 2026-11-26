@@ -275,7 +275,7 @@ pub const SECTIONS: &[Section] = &[
                     setting(crate::beets_runtime::ENGINE, Chilpa::mark("Search engine"), Chilpa::mark("Choose the engine used by the metadata editor."), Control::Segmented),
                     setting("metadata.beets.status", Chilpa::mark("beets availability"), "", Control::Status),
                     action("metadata.beets.install", Chilpa::mark("Install beets"), Chilpa::mark("Download a private Python environment with beets. A successful installation becomes the default runtime."), Control::Progress, Chilpa::mark("Download and install")),
-                    action(crate::beets_runtime::PYTHON, Chilpa::mark("Custom Python executable"), Chilpa::mark("Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."), Control::File, Chilpa::mark("Choose executable…")),
+                    action(crate::beets_runtime::PYTHON, Chilpa::mark("Custom Python executable"), Chilpa::mark("Choose an existing environment with beets. Chilpa is tested with beets 2.14.1; another version may not work. Leave this empty to use Chilpa's installed copy."), Control::File, Chilpa::mark("Choose executable…")),
                     action("metadata.beets.check", Chilpa::mark("Check beets"), Chilpa::mark("Check the selected runtime and its beets version without looking up music."), Control::Button, Chilpa::mark("Check")),
                 ],
             },

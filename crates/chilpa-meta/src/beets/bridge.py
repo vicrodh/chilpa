@@ -80,7 +80,7 @@ def validate(request):
     ids = request.get("release_ids", [])
     if not isinstance(ids, list) or len(ids) > MAX_IDS or any(not isinstance(value, str) or len(value) > 64 for value in ids):
         raise AdapterError("invalid_request")
-    if type(request.get("year", 0)) is not int:
+    if type(request.get("year", 0)) is not int or type(request.get("strict", True)) is not bool:
         raise AdapterError("invalid_request")
 
 
@@ -172,7 +172,9 @@ def candidate(match, item_ids, fitted):
 def lookup(request):
     import beets
 
-    if beets.__version__ != BEETS_VERSION:
+    # An environment the listener chose runs the beets it has: the host says
+    # it was not tested with it.
+    if request.get("strict", True) and beets.__version__ != BEETS_VERSION:
         raise AdapterError("incompatible_version")
     beets.config.read(user=False)
     beets.config["include"].set([])

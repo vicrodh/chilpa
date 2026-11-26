@@ -508,7 +508,10 @@ impl Chilpa {
                         Ok(response) => {
                             editor.beets.accept(response);
                             editor.hits = editor.beets.candidates.iter().map(beets::hit).collect();
-                            if probing { editor.notice = chilpa_i18n::t_args("beets {} is ready.", &[&editor.beets.version]); }
+                            if probing {
+                                editor.notice = if editor.beets.version == chilpa_meta::beets::BEETS_VERSION { chilpa_i18n::t_args("beets {} is ready.", &[&editor.beets.version]) }
+                                    else { chilpa_i18n::t_args("beets {} is ready, but Chilpa was tested with beets {}; lookups may not work.", &[&editor.beets.version, chilpa_meta::beets::BEETS_VERSION]) };
+                            }
                             else if editor.hits.is_empty() { editor.error = chilpa_i18n::t("nothing was found"); }
                         }
                         Err(error) => editor.error = beets::said(error),

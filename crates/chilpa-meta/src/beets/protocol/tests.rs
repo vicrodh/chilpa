@@ -71,3 +71,15 @@ fn the_request_carries_at_most_the_ids_it_may() {
     asked.release_ids.push("one more".into());
     assert_eq!(asked.encode().unwrap_err(), Error::InputLimit);
 }
+
+#[test]
+fn only_a_strict_request_refuses_another_beets() {
+    let mut value = response();
+    value["beets_version"] = json!("2.99.0");
+    let bytes = serde_json::to_vec(&value).unwrap();
+    assert_eq!(Response::decode(&bytes, &request()).unwrap_err(), Error::IncompatibleVersion, "Chilpa's own copy");
+    let chosen = Request { strict:false, ..request() };
+    assert_eq!(Response::decode(&bytes, &chosen).unwrap().beets_version, "2.99.0", "an environment the listener chose");
+    value["beets_version"] = json!("");
+    assert_eq!(Response::decode(&serde_json::to_vec(&value).unwrap(), &chosen).unwrap_err(), Error::InvalidResponse);
+}
