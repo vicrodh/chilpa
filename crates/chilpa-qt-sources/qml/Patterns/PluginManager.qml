@@ -117,6 +117,13 @@ Item {
             anchors.right: parent.right
             y: header.together ? (header.height - height) / 2 : sections.height + Metrics.gap8 // derived: centred beside the sections, or under them
             spacing: Metrics.gap8
+            // Reads every repository again without opening them.
+            P.PillButton {
+                objectName: "checkPluginUpdates"
+                text: I18n.tr("Check for updates", I18n.rev)
+                enabled: !manager.view.busy
+                onClicked: manager.command("updates_check", {})
+            }
             P.PillButton {
                 objectName: "installLocalPlugin"
                 visible: manager.section === "native"

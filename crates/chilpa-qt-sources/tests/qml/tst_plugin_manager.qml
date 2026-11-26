@@ -282,6 +282,23 @@ TestCase {
         backend.state = {busy: false}
         manager.read()
     }
+    function test_the_list_checks_for_updates_without_opening_the_repositories() {
+        backend.state = {busy: false}
+        backend.calls = []
+        manager.read()
+        const button = findChild(manager, "checkPluginUpdates")
+        verify(button !== null && button.visible && button.enabled)
+        manager.section = "compatible"
+        verify(button.visible, "both sections offer it")
+        manager.section = "native"
+        button.clicked()
+        compare(backend.calls[0], ["updates_check", {}])
+        backend.state = {busy: true}
+        manager.read()
+        verify(!button.enabled, "one check at a time")
+        backend.state = {busy: false}
+        manager.read()
+    }
     function test_every_native_plugin_shows_and_one_from_a_repository_installs() {
         const native = (id) => ({id: id, name: id, state: "fine", enabled: true})
         backend.state = {installed: [native("radio"), native("podcasts"), native("music")], busy: false,

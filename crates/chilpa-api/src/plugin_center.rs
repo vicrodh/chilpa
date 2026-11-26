@@ -63,7 +63,7 @@ impl PluginCenter {
                             updates.action(&action, &input, &root.join(".repositories"))?;
                         }
                         let checked = (action == "updates_check" || updates.due()) && !chilpa_core::network::current().offline;
-                        if checked { let _ = updates.check(&root, &plugins, &repositories); }
+                        if checked { let _ = updates.check(&root, &plugins, &repositories, action == "updates_check"); }
                         let mut activated = Vec::new();
                         let applied = updates.apply(&root, &plugins, &repositories, &playing, &mut state, &mut activated)?;
                         reload.lock().unwrap().extend(activated);
