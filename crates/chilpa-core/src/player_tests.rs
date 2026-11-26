@@ -508,6 +508,11 @@ impl StreamFixture {
         let file = wav(name, frames);
         let bytes = std::fs::read(&file).unwrap();
         std::fs::remove_file(file).unwrap();
+        Self::serving(bytes)
+    }
+
+    /// Serves `bytes` as a WAV, once.
+    fn serving(bytes: Vec<u8>) -> Self {
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let address = listener.local_addr().unwrap();
         let thread = std::thread::spawn(move || {
@@ -772,10 +777,9 @@ impl AudioSink for RecordingSink {
     fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
 }
 
-/// The samples a real HTTP stream reached the output with, the player's
-/// volume set to `factor` before it started.
-fn stream_at_volume(name: &str, factor: f32) -> Vec<i16> {
-    let stream = StreamFixture::wave(name, 4_410);
+/// The samples a real HTTP stream reached a 16-bit output with, the
+/// player's volume set to `factor` before it started.
+fn heard(stream: StreamFixture, factor: f32) -> Vec<i16> {
     let bytes = Arc::new(std::sync::Mutex::new(Vec::new()));
     let output = bytes.clone();
     let p = Player::spawn(
@@ -786,8 +790,35 @@ fn stream_at_volume(name: &str, factor: f32) -> Vec<i16> {
     p.play(&stream.path, "fake");
     let events = finished_events(&p);
     assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "{events:?}");
-    let samples = bytes.lock().unwrap().chunks_exact(2).map(|pair| i16::from_le_bytes([pair[0], pair[1]])).collect();
+    let samples = bytes.lock().unwrap().as_chunks::<2>().0.iter().map(|pair| i16::from_le_bytes(*pair)).collect();
     samples
+}
+
+fn stream_at_volume(name: &str, factor: f32) -> Vec<i16> {
+    heard(StreamFixture::wave(name, 4_410), factor)
+}
+
+/// A stereo 32-bit float WAV holding `level` and its negative on every frame.
+fn float_wave(frames: u32, level: f32) -> Vec<u8> {
+    let data = frames * 8;
+    let mut bytes = Vec::with_capacity(44 + data as usize);
+    bytes.extend_from_slice(b"RIFF");
+    bytes.extend_from_slice(&(36 + data).to_le_bytes());
+    bytes.extend_from_slice(b"WAVEfmt ");
+    bytes.extend_from_slice(&16u32.to_le_bytes());
+    bytes.extend_from_slice(&3u16.to_le_bytes());
+    bytes.extend_from_slice(&2u16.to_le_bytes());
+    bytes.extend_from_slice(&44_100u32.to_le_bytes());
+    bytes.extend_from_slice(&352_800u32.to_le_bytes());
+    bytes.extend_from_slice(&8u16.to_le_bytes());
+    bytes.extend_from_slice(&32u16.to_le_bytes());
+    bytes.extend_from_slice(b"data");
+    bytes.extend_from_slice(&data.to_le_bytes());
+    for _ in 0..frames {
+        bytes.extend_from_slice(&level.to_le_bytes());
+        bytes.extend_from_slice(&(-level).to_le_bytes());
+    }
+    bytes
 }
 
 #[test]
@@ -799,9 +830,18 @@ fn a_stream_is_scaled_by_the_player_volume_like_a_file() {
     assert!(muted.iter().all(|sample| *sample == 0), "a muted player plays a stream silent");
     let quarter = stream_at_volume("stream-volume-quarter", 0.25);
     assert_eq!(quarter.len(), untouched.len());
-    assert!(quarter.iter().zip(&untouched).all(|(low, full)| i32::from(*low).abs() <= i32::from(*full).abs() / 4 + 1),
-        "a quarter of the volume is at most a quarter of each sample");
-    assert!(quarter.iter().zip(&untouched).any(|(low, full)| low != full));
+    assert!(quarter.iter().zip(&untouched).all(|(low, full)| (f32::from(*low) - f32::from(*full) * 0.25).abs() <= 1.0),
+        "each sample is a quarter of itself, its sign kept, give or take the rounding");
+}
+
+#[test]
+fn a_stream_s_floats_are_scaled_before_the_integer_output_as_a_file_s() {
+    // Decoded lossy audio goes past full scale. A file is scaled while it is
+    // still float, so a lowered volume brings the overs back instead of
+    // clipping them first and halving the clipped samples.
+    let heard = heard(StreamFixture::serving(float_wave(1_000, 1.5)), 0.5);
+    assert_eq!(heard.len(), 2_000);
+    assert!(heard.as_chunks::<2>().0.iter().all(|pair| *pair == [24_576, -24_576]), "{:?}", &heard[..4]);
 }
 
 #[test]

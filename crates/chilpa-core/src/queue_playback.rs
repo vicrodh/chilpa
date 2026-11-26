@@ -1133,16 +1133,11 @@ where
         let render_started = std::time::Instant::now();
         // Skipping a track ends the source just like a natural end, so it has
         // to be asked: with repeat-one, skipping advances.
-        let mut gain_format = delivery.opened;
-        if matches!(&source, Source::DsdPcm(_)) || matches!(&source, Source::Pcm(decoded, ..) if decoded.stream_format().sample_format == SampleFormat::F32) {
-            gain_format.sample_format = SampleFormat::F32;
-        } else if let Source::Pcm(decoded, ..) = &source {
-            let original = decoded.stream_format().sample_format;
-            if original.is_integer() && (gain_format.sample_format == SampleFormat::F32
-                || (decoded.codec() == "vorbis" && original.valid_bits() > gain_format.sample_format.valid_bits())) {
-                gain_format.sample_format = original;
-            }
-        }
+        let gain_format = match &source {
+            Source::DsdPcm(_) => StreamFormat { sample_format: SampleFormat::F32, ..delivery.opened },
+            Source::Pcm(decoded, ..) => crate::playback::gain_format(decoded, delivery.opened),
+            _ => delivery.opened,
+        };
         let mut output_level = level.take_output();
         let mut gain = |bytes: &mut [u8]| {
             let changed = output_level.packed(bytes, gain_format, delivery.duplicates_mono());
