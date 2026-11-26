@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Dialogs
 import "../Theme"
+import "../Theme/LocalPaths.js" as LocalPaths
 
 // A file chosen from a dialog and, once one is chosen, a way back to none
 // (design/03 SettingsRow, file). The path comes out plain, never as a URL.
@@ -39,7 +40,7 @@ Row {
         nameFilters: field.filters
         onAccepted: {
             field.pickedUrl(selectedFile)
-            field.picked(decodeURIComponent(selectedFile.toString().replace(/^file:\/\//, "")))
+            field.picked(LocalPaths.fromUrl(selectedFile))
         }
     }
 }
