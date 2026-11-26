@@ -187,7 +187,14 @@ impl Chilpa {
                 *saved = sourced.to_string();
             }
         }
-        let listen = crate::scrobble::listen_of(tags, &context.title, &context.artist, &context.album, duration_ms, started_at);
+        let mut listen = crate::scrobble::listen_of(tags, &context.title, &context.artist, &context.album, duration_ms, started_at);
+        // What the library row says of who it is wins over the file, as its
+        // names do: a sidecar can correct both.
+        if let Some(listen) = &mut listen {
+            if face.track_number.is_some() { listen.track_number = face.track_number; }
+            if let Some(id) = &face.recording_mbid { listen.recording_mbid = id.clone(); }
+            if let Some(code) = &face.isrc { listen.isrc = code.clone(); }
+        }
         if let (true, Some(listen)) = (shown, &listen) {
             self.announce(listen);
         }

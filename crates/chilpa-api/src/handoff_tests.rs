@@ -635,7 +635,7 @@ fn local_identity(play: u64, tags: Option<chilpa_tags::Tags>, card: Option<crate
     api.search.playing = card.map(|card| (path.clone(), card));
     api.launched(play, 0, Relaunch::Track);
     let face = api.face_of(play, Path::new(&path), tags.as_ref(), None);
-    assert_eq!([face.title.as_str(), face.artist.as_str(), face.album.as_str()], visible, "the window keeps its existing names");
+    assert_eq!([face.title.as_str(), face.artist.as_str(), face.album.as_str()], visible, "what the window shows");
     api.listen_started(play, 1, Path::new(&path), tags.as_ref(), &face, RATE, Some(16), false, None, false);
     let at = 1_810_002_000 + play as i64;
     let listen = api.plays.get_mut(play).unwrap().ledger.listen_mut(1).unwrap();
@@ -648,8 +648,8 @@ fn local_identity(play: u64, tags: Option<chilpa_tags::Tags>, card: Option<crate
 }
 
 #[test]
-fn a_path_derived_face_title_keeps_the_library_snapshot_for_history_and_scrobble() {
-    local_identity(814, None, None, ["history-814", "", ""], ["Library title", "Library artist", "Library album"]);
+fn a_file_without_tags_is_named_by_its_library_row_everywhere() {
+    local_identity(814, None, None, ["Library title", "Library artist", "Library album"], ["Library title", "Library artist", "Library album"]);
 }
 
 #[test]
@@ -660,7 +660,8 @@ fn empty_face_fields_keep_the_library_snapshot_per_field() {
 }
 
 #[test]
-fn event_tag_fields_override_the_library_snapshot() {
+fn the_library_row_names_a_held_file_over_its_tags() {
+    // The row carries what a sidecar lays over the file, as the lists show it.
     let tags = chilpa_tags::Tags { title: Some("Tagged title".into()), artists: vec!["Tagged artist".into()], album: Some("Tagged album".into()), ..Default::default() };
-    local_identity(816, Some(tags), None, ["Tagged title", "Tagged artist", "Tagged album"], ["Tagged title", "Tagged artist", "Tagged album"]);
+    local_identity(816, Some(tags), None, ["Library title", "Library artist", "Library album"], ["Library title", "Library artist", "Library album"]);
 }

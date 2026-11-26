@@ -162,10 +162,12 @@ impl Chilpa {
 
     /// How a track of the play `id` is shown and logged: by its file and by
     /// the cards of its own play.
-    pub(crate) fn face_of(&self, id: u64, path: &std::path::Path, tags: Option<&chilpa_tags::Tags>, artwork: Option<&std::path::Path>) -> Face {
+    pub(crate) fn face_of(&mut self, id: u64, path: &std::path::Path, tags: Option<&chilpa_tags::Tags>, artwork: Option<&std::path::Path>) -> Face {
+        let address = path.display().to_string();
+        let shelved = self.library().and_then(|lib| lib.shelved(&address).ok().flatten());
         let none = Cards::default();
         let cards = self.plays.get(id).map_or(&none, |play| &play.cards);
-        face::face(path, tags, artwork, cards, &self.catalog)
+        face::face(path, tags, artwork, shelved.as_ref(), cards, &self.catalog)
     }
 
     /// Writes a listen the ledger closed. `shown` is whether its play is in
