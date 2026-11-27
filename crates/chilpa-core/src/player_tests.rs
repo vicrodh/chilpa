@@ -935,29 +935,49 @@ fn a_track_whose_volume_moved_after_it_started_is_closed_as_processed() {
     assert_eq!(closed_as_processed(&stream.path, false), Some(false), "a stream left alone");
 }
 
-/// What the `Closed` of `path` says of its samples, scaled from the start
-/// and then cut by `failure` at the output.
-fn closed_after_failure(path: &Path, failure: StreamFailure) -> Vec<bool> {
+/// What the `Closed` of `path` says of its samples, changed from the start
+/// by a lowered volume or by DSP, and then cut by `failure` at the output.
+fn closed_after_failure(path: &Path, failure: StreamFailure, by_dsp: bool) -> Vec<bool> {
     let written = Arc::new(AtomicU64::new(0));
     let output = written.clone();
     let p = Player::spawn(
         Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
         Box::new(move |_, format, _| Ok(Box::new(FailingStreamSink { format, failure, written: output.clone(), discarded: false }) as Box<dyn AudioSink + Send>)),
     );
-    p.set_volume(0.5);
+    if by_dsp {
+        p.dsp().set(Some(chilpa_audio::dsp::Preset { preamp_db: -6.0, ..Default::default() })).unwrap();
+    } else {
+        p.set_volume(0.5);
+    }
     p.play(path, "fake");
     let events = finished_events(&p);
-    assert!(written.load(Ordering::Acquire) > 0, "scaled audio reached the output first: {events:?}");
+    assert!(written.load(Ordering::Acquire) > 0, "changed audio reached the output first: {events:?}");
     events.iter().filter_map(|event| match event { PlayerEvent::Closed { processed, .. } => Some(*processed), _ => None }).collect()
 }
 
 #[test]
-fn a_track_scaled_and_then_cut_by_its_output_is_closed_as_processed() {
+fn a_scaled_stream_whose_drain_failed_is_closed_as_processed() {
     let stream = StreamFixture::wave("scaled-then-drain-failed", 4_410);
-    assert_eq!(closed_after_failure(&stream.path, StreamFailure::Drain), [true], "a stream whose drain failed");
-    let stream = StreamFixture::wave("scaled-then-write-panicked", 4_410);
-    assert_eq!(closed_after_failure(&stream.path, StreamFailure::WritePanic), [true], "a stream that unwound");
-    let file = wav("scaled-then-write-panicked", 4_410);
-    assert_eq!(closed_after_failure(&file, StreamFailure::WritePanic), [true], "a file that unwound");
+    assert_eq!(closed_after_failure(&stream.path, StreamFailure::Drain, false), [true]);
+}
+
+#[test]
+fn a_scaled_stream_that_unwound_is_closed_as_processed() {
+    let stream = StreamFixture::wave("scaled-stream-then-write-panicked", 4_410);
+    assert_eq!(closed_after_failure(&stream.path, StreamFailure::WritePanic, false), [true]);
+}
+
+#[test]
+fn a_scaled_file_that_unwound_is_closed_as_processed() {
+    let file = wav("scaled-file-then-write-panicked", 4_410);
+    assert_eq!(closed_after_failure(&file, StreamFailure::WritePanic, false), [true]);
+    std::fs::remove_file(file).unwrap();
+}
+
+#[test]
+fn a_file_the_dsp_changed_and_that_unwound_is_closed_as_processed() {
+    // The volume stays at unity: only the DSP's witness can say it.
+    let file = wav("dsp-then-write-panicked", 4_410);
+    assert_eq!(closed_after_failure(&file, StreamFailure::WritePanic, true), [true]);
     std::fs::remove_file(file).unwrap();
 }

@@ -544,6 +544,41 @@ mod tests {
     }
 
     #[test]
+    fn a_disc_track_scaled_and_then_unwound_is_closed_as_processed() {
+        struct Panicking {
+            opened: Option<StreamFormat>,
+            writes: u32,
+        }
+        impl AudioSink for &mut Panicking {
+            fn format(&self) -> StreamFormat {
+                self.opened.expect("opened")
+            }
+            fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+                self.writes += 1;
+                assert!(self.writes == 1, "the output's second write panicked");
+                Ok(frames.len() / self.opened.expect("opened").frame_bytes())
+            }
+            fn close(&mut self) -> Result<(), SinkError> {
+                Ok(())
+            }
+        }
+        let controls = Controls::new();
+        controls.volume.set(0.5);
+        let mut disc = Patterned;
+        let tracks: Vec<Track> = read_toc(&mut disc).unwrap().audio_tracks().copied().collect();
+        let mut sink = Panicking { opened: None, writes: 0 };
+        let closed = std::sync::Mutex::new(Vec::new());
+        let unwound = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _ = play_disc_heard(&mut disc, &tracks, &caps(), &controls, |format| {
+                sink.opened = Some(format); Ok(&mut sink)
+            }, &mut |_, _| {}, &mut |_, _, _| {}, &mut |_, _| {},
+                &mut |track: crate::attempts::Closed| closed.lock().unwrap().push(track.processed));
+        }));
+        assert!(unwound.is_err(), "the output's panic unwound the disc");
+        assert_eq!(*closed.lock().unwrap(), [true], "the scaled first block is in the track's ending");
+    }
+
+    #[test]
     fn contiguous_cd_tracks_keep_the_dsp_history_without_another_fade() {
         struct Tone(Disc);
         impl CdDevice for Tone {
