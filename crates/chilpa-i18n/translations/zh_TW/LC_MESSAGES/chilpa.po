@@ -4073,6 +4073,9 @@ msgstr ""
 msgid "Keep at most 64 personal presets."
 msgstr "最多保留 64 個個人預設值。"
 
+msgid "Keep classical works together when shuffling"
+msgstr "隨機播放時保持古典作品完整"
+
 msgid "Keep current values"
 msgstr ""
 
@@ -5801,6 +5804,9 @@ msgstr "實體輸出未回報"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "選擇主題，或保持「系統」以跟隨你的桌面，選擇語言，然後按 : 開啟指令列。"
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "每首下一首歌都挑選與上一首相近的：相同的類型、相近的年份、相似的速度與響度，且不會連續兩次是同一位演出者。資料庫第一次讀取完成後才會開始。播放專輯或播放清單時會保留原本的順序。"
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "固定 DAC + 取樣率 (WirePlumber)"
 
@@ -7444,6 +7450,9 @@ msgstr "隨機播放"
 msgid "Shuffle all"
 msgstr "全部隨機播放"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "隨機播放會以整部作品為單位移動：各樂章會依序一起播放。"
+
 msgid "Side by side, all must hold"
 msgstr "並列條件，必須全部符合"
 
@@ -7540,6 +7549,9 @@ msgstr "較小的封面與背景圖片；Chilpa 可以重新產生這些圖片�
 
 msgid "Smallest"
 msgstr ""
+
+msgid "Smooth shuffle"
+msgstr "平順隨機播放"
 
 msgid "Soft"
 msgstr "柔和"

@@ -4070,6 +4070,9 @@ msgstr ""
 msgid "Keep at most 64 personal presets."
 msgstr "Bewaar maximaal 64 persoonlijke presets."
 
+msgid "Keep classical works together when shuffling"
+msgstr "Klassieke werken bij shuffle bij elkaar houden"
+
 msgid "Keep current values"
 msgstr ""
 
@@ -5798,6 +5801,9 @@ msgstr "Fysieke uitvoer niet gemeld"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Kies een thema of houd Systeem aan om je bureaublad te volgen, kies je taal en druk op : om de opdrachtregel te openen."
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "Kiest elk volgend nummer dicht bij het vorige: een gedeeld genre, een nabij jaar, vergelijkbaar tempo en luidheid, en nooit twee keer achter elkaar dezelfde artiest. Het begint zodra de bibliotheek voor het eerst is ingelezen. Afspelen van een album of playlist houdt de volgorde."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "DAC + frequenties vastzetten (WirePlumber)"
 
@@ -7443,6 +7449,9 @@ msgstr "Shuffle"
 msgid "Shuffle all"
 msgstr "Alles shuffelen"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "Shuffle verplaatst hele werken: hun delen spelen samen en op volgorde."
+
 msgid "Side by side, all must hold"
 msgstr "Naast elkaar moeten ze allemaal gelden"
 
@@ -7540,6 +7549,9 @@ msgstr "Kleinere hoezen en achtergrondafbeeldingen; Chilpa kan deze opnieuw make
 
 msgid "Smallest"
 msgstr "Kleinste"
+
+msgid "Smooth shuffle"
+msgstr "Vloeiende shuffle"
 
 msgid "Soft"
 msgstr "Zacht"

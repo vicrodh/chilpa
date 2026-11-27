@@ -107,7 +107,7 @@ impl Chilpa {
         self.casting.send(Order::Action(Action::Stop));
     }
     pub(crate) fn cast_order(&mut self) {
-        self.casting.order = if self.shuffle { chilpa_core::queue_playback::shuffled(self.queue.len(), crate::now_unix() as u64) } else { (0..self.queue.len()).collect() };
+        self.casting.order = if self.shuffle { self.shuffle_order(None, crate::now_unix() as u64) } else { (0..self.queue.len()).collect() };
     }
     pub(crate) fn cast_upcoming(&self) -> Vec<usize> {
         let at = self.casting.order.iter().position(|i| *i == self.now.index).unwrap_or(0);

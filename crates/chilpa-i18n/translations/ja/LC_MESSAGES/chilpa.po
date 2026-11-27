@@ -4065,6 +4065,9 @@ msgstr ""
 msgid "Keep at most 64 personal presets."
 msgstr "個人用プリセットは最大64個まで保持できます。"
 
+msgid "Keep classical works together when shuffling"
+msgstr "シャッフル時にクラシック作品をまとめる"
+
 msgid "Keep current values"
 msgstr ""
 
@@ -5793,6 +5796,9 @@ msgstr "物理出力の情報なし"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "テーマを選ぶか、「システム」のままにしてデスクトップに合わせます。言語を選び、: を押すとコマンドラインが開きます。"
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "次の曲を直前の曲に近いものから選びます。共通のジャンル、近い年、似たテンポとラウドネスで、同じアーティストが2回続くことはありません。ライブラリを初めて読み込んだ後から有効になります。アルバムやプレイリストを再生した場合は元の順序のままです。"
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "DACとレートを固定（WirePlumber）"
 
@@ -7436,6 +7442,9 @@ msgstr "シャッフル"
 msgid "Shuffle all"
 msgstr "すべてシャッフル"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "シャッフルは作品単位で移動します。楽章は順番どおりにまとめて再生されます。"
+
 msgid "Side by side, all must hold"
 msgstr "並べた条件はすべて満たす必要があります"
 
@@ -7532,6 +7541,9 @@ msgstr "小さいカバーと背景画像。Chilpaが再作成できます。"
 
 msgid "Smallest"
 msgstr "小さい順"
+
+msgid "Smooth shuffle"
+msgstr "スムーズシャッフル"
 
 msgid "Soft"
 msgstr "弱"

@@ -8,6 +8,16 @@ use crate::store::Library;
 use rusqlite::{params, OptionalExtension};
 use crate::store::{now_unix, row_to_track, StoredTrack};
 
+/// What a smooth shuffle weighs between two tracks (`closeness_for`).
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Closeness {
+    pub year: Option<i32>,
+    /// Genre ids, in no order.
+    pub genres: Vec<i64>,
+    pub bpm: Option<f32>,
+    pub loudness_lufs: Option<f32>,
+}
+
 /// One available local track and the analyses recorded for it.
 pub struct AnalysisInventoryTrack {
     pub id: i64,
@@ -221,6 +231,43 @@ impl Library {
         Ok(output)
     }
 
+    /// What a smooth shuffle weighs between tracks, for many at once: the
+    /// year, the genres and, once `analyzer` has run on them, the tempo and
+    /// the loudness. A track that is not in the library is left out.
+    pub fn closeness_for(&self, track_ids: &[i64], analyzer: &str) -> rusqlite::Result<std::collections::HashMap<i64, Closeness>> {
+        let mut output = std::collections::HashMap::new();
+        for chunk in track_ids.chunks(500) {
+            let gaps = vec!["?"; chunk.len()].join(",");
+            // The newest analysis of each track: a track analyzed by two
+            // versions keeps one row per version.
+            let sql = format!(
+                "SELECT t.id, coalesce(t.release_year, a.year),
+                        (SELECT group_concat(genre_id) FROM track_genres WHERE track_id = t.id),
+                        (SELECT bpm FROM audio_features WHERE track_id = t.id AND analyzer = ?1 ORDER BY version DESC LIMIT 1),
+                        (SELECT loudness_lufs FROM audio_features WHERE track_id = t.id AND analyzer = ?1 ORDER BY version DESC LIMIT 1)
+                 FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
+                 WHERE t.id IN ({gaps})",
+            );
+            let mut stmt = self.db.prepare(&sql)?;
+            let mut values: Vec<rusqlite::types::Value> = vec![rusqlite::types::Value::Text(analyzer.to_string())];
+            values.extend(chunk.iter().map(|i| rusqlite::types::Value::Integer(*i)));
+            let rows = stmt.query_map(rusqlite::params_from_iter(values), |r| {
+                let genres: Option<String> = r.get(2)?;
+                Ok((r.get::<_, i64>(0)?, Closeness {
+                    year: r.get(1)?,
+                    genres: genres.unwrap_or_default().split(',').filter_map(|g| g.parse().ok()).collect(),
+                    bpm: r.get(3)?,
+                    loudness_lufs: r.get(4)?,
+                }))
+            })?;
+            for row in rows {
+                let (id, closeness) = row?;
+                output.insert(id, closeness);
+            }
+        }
+        Ok(output)
+    }
+
     /// What analysis attached to a track: tempo, key and loudness.
     #[allow(clippy::type_complexity)]
     pub fn track_features(
@@ -292,6 +339,23 @@ mod tests {
         assert_eq!(map[&1].2, Some(-8.0), "the loudness comes too");
         assert_eq!(map[&2].1, None);
         assert!(lib.features_for(&[], "chilpa").unwrap().is_empty());
+    }
+
+    #[test]
+    fn closeness_reads_year_genres_tempo_and_loudness_for_many_tracks() {
+        let lib = sample_library();
+        lib.save_features(1, "chilpa", 1, Some(100.0), None, None, Some(-12.0)).unwrap();
+        lib.save_features(1, "chilpa", 2, Some(128.0), None, None, Some(-9.0)).unwrap();
+        lib.db.execute_batch("INSERT INTO genres (id, name) VALUES (41, 'Rock'), (42, 'Folk');
+            INSERT INTO track_genres (track_id, genre_id) VALUES (1, 41), (1, 42), (2, 42);
+            UPDATE tracks SET release_year = 1971 WHERE id = 1;").unwrap();
+        let found = lib.closeness_for(&[1, 2, 99], "chilpa").unwrap();
+        assert_eq!(found.len(), 2, "99 is not in the library");
+        let mut genres = found[&1].genres.clone();
+        genres.sort();
+        assert_eq!((found[&1].year, genres, found[&1].bpm, found[&1].loudness_lufs), (Some(1971), vec![41, 42], Some(128.0), Some(-9.0)), "the newest analysis");
+        assert_eq!((found[&2].genres.clone(), found[&2].bpm), (vec![42], None), "not analyzed yet");
+        assert!(lib.closeness_for(&[], "chilpa").unwrap().is_empty());
     }
 
     #[test]

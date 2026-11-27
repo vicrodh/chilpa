@@ -149,6 +149,13 @@ pub const SECTIONS: &[Section] = &[
                     setting("playback.keepQueue", Chilpa::mark("Keep the queue between sessions"), Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."), Control::Toggle),
                 ],
             },
+            Group {
+                title: Chilpa::mark("Shuffle"),
+                settings: &[
+                    setting(crate::queue::shuffle::WORKS, Chilpa::mark("Keep classical works together when shuffling"), Chilpa::mark("Shuffle moves whole works: their movements play together, in order."), Control::Toggle),
+                    setting(crate::queue::shuffle::SMOOTH, Chilpa::mark("Smooth shuffle"), Chilpa::mark("Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."), Control::Toggle),
+                ],
+            },
         ],
     },
     Section {

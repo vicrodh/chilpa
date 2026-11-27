@@ -4075,6 +4075,9 @@ msgstr ""
 msgid "Keep at most 64 personal presets."
 msgstr "Можно хранить не более 64 личных пресетов."
 
+msgid "Keep classical works together when shuffling"
+msgstr "Не разделять классические произведения при перемешивании"
+
 msgid "Keep current values"
 msgstr ""
 
@@ -5803,6 +5806,9 @@ msgstr "Физический выход не указан"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Выберите тему или оставьте «Системный», чтобы следовать рабочему столу, выберите язык и нажмите :, чтобы открыть командную строку."
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "Выбирает каждую следующую песню близкой к предыдущей: общий жанр, близкий год, похожие темп и громкость, и никогда один и тот же исполнитель дважды подряд. Начинает работать после первого чтения библиотеки. Воспроизведение альбома или плейлиста сохраняет их порядок."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "Закрепить DAC и частоты (WirePlumber)"
 
@@ -7450,6 +7456,9 @@ msgstr "Перемешать"
 msgid "Shuffle all"
 msgstr "Перемешать все"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "Перемешивание переставляет произведения целиком: их части звучат вместе и по порядку."
+
 msgid "Side by side, all must hold"
 msgstr "Рядом стоящие условия должны выполняться все"
 
@@ -7548,6 +7557,9 @@ msgstr "Уменьшенные обложки и фоновые изображе
 
 msgid "Smallest"
 msgstr "Самые маленькие"
+
+msgid "Smooth shuffle"
+msgstr "Плавное перемешивание"
 
 msgid "Soft"
 msgstr "Слабое"

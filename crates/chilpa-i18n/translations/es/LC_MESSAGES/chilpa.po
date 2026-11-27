@@ -4070,6 +4070,9 @@ msgstr "Conserva hasta 64 asignaciones de salida DSP."
 msgid "Keep at most 64 personal presets."
 msgstr "Puedes guardar hasta 64 presets personales."
 
+msgid "Keep classical works together when shuffling"
+msgstr "Mantener juntas las obras clásicas en aleatorio"
+
 msgid "Keep current values"
 msgstr "Conservar los valores actuales"
 
@@ -5798,6 +5801,9 @@ msgstr "Salida física no informada"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Elige un tema o deja Sistema para seguir a tu escritorio, escoge tu idioma y presiona : para abrir la línea de comandos."
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "Elige cada siguiente canción cerca de la anterior: un género en común, un año cercano, tempo y volumen percibido parecidos, y nunca el mismo artista dos veces seguidas. Empieza cuando la biblioteca se haya leído por primera vez. Reproducir un álbum o una playlist conserva su orden."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "Fijar el DAC y sus frecuencias (WirePlumber)"
 
@@ -7443,6 +7449,9 @@ msgstr "Aleatorio"
 msgid "Shuffle all"
 msgstr "Mezclar todas"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "El aleatorio mueve obras completas: sus movimientos suenan juntos y en orden."
+
 msgid "Side by side, all must hold"
 msgstr "Lado a lado, todas tienen que cumplirse"
 
@@ -7540,6 +7549,9 @@ msgstr "Portadas pequeñas e imágenes de fondo que Chilpa puede volver a crear.
 
 msgid "Smallest"
 msgstr "Más pequeños"
+
+msgid "Smooth shuffle"
+msgstr "Aleatorio suave"
 
 msgid "Soft"
 msgstr "Suave"

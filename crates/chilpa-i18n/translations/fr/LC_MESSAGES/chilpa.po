@@ -4070,6 +4070,9 @@ msgstr ""
 msgid "Keep at most 64 personal presets."
 msgstr "Conservez au maximum 64 préréglages personnels."
 
+msgid "Keep classical works together when shuffling"
+msgstr "Garder les œuvres classiques ensemble en lecture aléatoire"
+
 msgid "Keep current values"
 msgstr ""
 
@@ -5798,6 +5801,9 @@ msgstr "Sortie physique non signalée"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Choisissez un thème ou gardez Système pour suivre votre bureau, choisissez votre langue et appuyez sur : pour ouvrir la ligne de commande."
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "Choisit chaque morceau suivant proche du précédent : un genre en commun, une année proche, un tempo et une sonie semblables, et jamais deux fois de suite le même artiste. Cela commence une fois la bibliothèque lue pour la première fois. Lire un album ou une playlist garde son ordre."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "Fixer le DAC + les fréquences (WirePlumber)"
 
@@ -7443,6 +7449,9 @@ msgstr "Lecture aléatoire"
 msgid "Shuffle all"
 msgstr "Tout lire en aléatoire"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "La lecture aléatoire déplace des œuvres entières : leurs mouvements jouent ensemble, dans l'ordre."
+
 msgid "Side by side, all must hold"
 msgstr "Côte à côte, toutes doivent être vraies"
 
@@ -7540,6 +7549,9 @@ msgstr "Pochettes et images de fond plus petites ; Chilpa peut les recréer."
 
 msgid "Smallest"
 msgstr "Les plus légers"
+
+msgid "Smooth shuffle"
+msgstr "Lecture aléatoire fluide"
 
 msgid "Soft"
 msgstr "Légère"
