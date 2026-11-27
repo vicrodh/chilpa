@@ -251,7 +251,8 @@ impl Library {
         self.require_server_generation(source_id, generation)?;
         {
             let mut stamp = tx.prepare(
-                "UPDATE tracks SET sync_generation = ?3, present = 1, reachable = 1
+                "UPDATE tracks SET sync_generation = ?3, reachable = 1,
+                   present = NOT EXISTS (SELECT 1 FROM removed_tracks WHERE track_id = tracks.id)
                  WHERE source_id = ?1 AND external_id = ?2",
             )?;
             for id in external_ids {
@@ -299,7 +300,8 @@ impl Library {
                    duration_ms = excluded.duration_ms, sample_rate_hz = excluded.sample_rate_hz,
                    bit_depth = excluded.bit_depth, channels = excluded.channels, codec = excluded.codec,
                    isrc = excluded.isrc, recording_mbid = excluded.recording_mbid,
-                   present = 1, reachable = 1, album_credit = excluded.album_credit,
+                   present = NOT EXISTS (SELECT 1 FROM removed_tracks WHERE track_id = tracks.id),
+                   reachable = 1, album_credit = excluded.album_credit,
                    album_title = excluded.album_title, disc_total = excluded.disc_total,
                    release_year = excluded.release_year, sync_generation = excluded.sync_generation,
                    revision = excluded.revision",

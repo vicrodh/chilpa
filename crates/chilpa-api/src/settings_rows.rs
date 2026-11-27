@@ -141,7 +141,7 @@ impl Chilpa {
         if let Some(said) = self.library_maintenance(key) {
             return Some(said);
         }
-        self.beets_maintenance(key).or_else(|| self.lyrics_maintenance(key)).or_else(|| self.updates_maintenance(key)).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(||self.discogs_maintenance(key)).or_else(|| self.scrobble_maintenance(key))
+        self.beets_maintenance(key).or_else(|| self.lyrics_maintenance(key)).or_else(|| self.updates_maintenance(key)).or_else(|| self.wizard_maintenance(key)).or_else(|| self.audio_output_maintenance(key)).or_else(|| self.removed_albums_maintenance(key)).or_else(||self.discogs_maintenance(key)).or_else(|| self.scrobble_maintenance(key))
     }
 
     /// A setting's new value, for the feature it belongs to. Like

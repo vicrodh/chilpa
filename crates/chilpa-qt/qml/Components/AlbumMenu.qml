@@ -4,6 +4,7 @@ import app.chilpa.devices
 import app.chilpa.kit
 import app.chilpa.sources
 import app.chilpa.offline
+import app.chilpa.folders
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -57,6 +58,8 @@ CascadingMenu {
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
               act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.favorite_supported !== false && nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
         ]
+        // Out of the library, its files untouched: Settings > Library brings it back.
+        if (one && id > 0) all.push({separator:true}, {text:I18n.tr("Remove from library…", I18n.rev),act:"remove"})
         if (deletable) all.push({separator:true}, {text:I18n.tr("Delete from server…", I18n.rev),act:"server_delete",glyph:Icons.trash,enabled:!Prefs.protectLibrary})
         const offline = one && id > 0 ? JSON.parse(Offline.menu("album", JSON.stringify([id]))) : []
         if (offline.length > 0) all.push({separator:true}, ...offline)
@@ -74,6 +77,7 @@ CascadingMenu {
         if (act.startsWith("buffer:")) { AlbumActions.listAction(albumId, act); ListenList.refresh(); if (act === "buffer:new") Navigation.go("listenlist", 0); return }
         switch (act) {
         case "server_delete": Sources.serverMediaRequested("album", albumId); break;
+        case "remove": RemovedAlbums.ask(albumId, title); break
         case "play": if (playAction) playAction(); else AlbumActions.play(albumId, false); break
         case "next": AlbumActions.playNext(albumId); break
         case "later": AlbumActions.playLater(albumId, title); break

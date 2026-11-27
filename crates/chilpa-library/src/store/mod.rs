@@ -83,6 +83,7 @@ pub mod server_media;
 pub mod offline;
 pub mod servers;
 pub mod overlay;
+pub mod removed;
 mod compilations;
 pub(crate) mod releases;
 pub mod versions;

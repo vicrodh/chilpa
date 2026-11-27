@@ -15,6 +15,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Patterns" as AnalysisUi
+import "qrc:/qt/qml/app/chilpa/folders/qml/Components" as FolderPieces
+import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns" as FolderParts
 
 TitledFlow {
     id: section
@@ -67,8 +69,10 @@ TitledFlow {
             PillButton { text: I18n.tr("Play on", I18n.rev); onClicked: castPreview.show(this) }
             PillButton { text: "Add server modal"; onClicked: serverSetup.open() }
             PillButton { text: "Analysis inventory"; onClicked: inventoryPreview.show() }
+            PillButton { text: "Removed albums"; onClicked: removedAlbums.open(); FolderPieces.RemovedAlbumsDialog { id: removedAlbums } }
         }
         Toast { visible: true; message: "Playback failed" }
+        FolderParts.RemovedAlbumsHost {}
         Row {
             spacing: Metrics.gap12
             PillButton {

@@ -145,6 +145,7 @@ pub use ratings::{RatingTarget, Ratings};
 mod player_events;
 mod plays;
 mod queue;
+mod removed_albums;
 mod listen;
 mod mood;
 pub mod discs;
@@ -660,6 +661,8 @@ pub struct Chilpa {
     resume_places: Option<queue::resume::Places>,
     /// Play on a list with a place, waiting for the window's answer.
     resume_offer: Option<queue::resume::Offer>,
+    /// Settings > Library asked for the list of removed albums.
+    removed_albums_requested: bool,
     /// The page shown, to tell a change of page from a redraw.
     browse_route: Option<navigation::Route>,
     listen: listen::Workspace,
@@ -819,6 +822,7 @@ impl Chilpa {
             queue_origins: Vec::new(),
             resume_places: None,
             resume_offer: None,
+            removed_albums_requested: false,
             browse_origin: None,
             browse_route: None,
             listen: listen::Workspace::default(),

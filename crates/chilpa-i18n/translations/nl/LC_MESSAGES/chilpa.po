@@ -495,6 +495,9 @@ msgstr ""
 msgid "Albums in your library"
 msgstr ""
 
+msgid "Albums taken out of the library. Their files were not touched; any of them can come back."
+msgstr "Albums die uit de bibliotheek zijn gehaald. Hun bestanden zijn niet aangeraakt; elk ervan kan terugkomen."
+
 msgid "All"
 msgstr "Alle"
 
@@ -1079,6 +1082,9 @@ msgstr "Rand"
 
 msgid "Both"
 msgstr ""
+
+msgid "Bring back"
+msgstr "Terugzetten"
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "Blader naar een muziekmap, of typ het volledige pad."
@@ -4049,6 +4055,9 @@ msgstr "Italiaans"
 msgid "Its connection"
 msgstr "Zijn verbinding"
 
+msgid "Its files stay where they are, and it can come back from Settings > Library > Removed albums."
+msgstr "De bestanden blijven waar ze zijn, en het album kan terugkomen via Instellingen > Bibliotheek > Verwijderde albums."
+
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr "De muziek van de server wordt ingelezen; ze verschijnt in de bibliotheek naarmate ze binnenkomt."
 
@@ -4987,6 +4996,9 @@ msgstr "Er zijn geen startpaginamodules beschikbaar voor deze bron."
 
 msgid "No active parametric EQ filters were found."
 msgstr "Er zijn geen actieve parametrische EQ-filters gevonden."
+
+msgid "No album has been removed."
+msgstr "Er is geen album verwijderd."
 
 msgid "No album tracks"
 msgstr ""
@@ -6635,6 +6647,9 @@ msgstr "Uit favorieten verwijderen"
 msgid "Remove from library"
 msgstr "Uit bibliotheek verwijderen"
 
+msgid "Remove from library…"
+msgstr "Uit de bibliotheek verwijderen…"
+
 msgid "Remove from playlist"
 msgstr "Uit afspeellijst verwijderen"
 
@@ -6687,6 +6702,12 @@ msgstr ""
 
 msgid "Remove {}?"
 msgstr "{} verwijderen?"
+
+msgid "Remove “{}” from the library?"
+msgstr "‘{}' uit de bibliotheek verwijderen?"
+
+msgid "Removed albums"
+msgstr "Verwijderde albums"
 
 msgid "Remove…"
 msgstr "Verwijderen…"
@@ -7523,6 +7544,9 @@ msgstr "Verschijnt bij het aanwijzen van de hoes, geschreven zoals de titel."
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Toont resultaten onder het zoekvak terwijl je typt. Uit: typen opent de resultatenpagina."
+
+msgid "Show…"
+msgstr "Tonen…"
 
 msgid "Shuffle"
 msgstr "Shuffle"
@@ -10666,6 +10690,12 @@ msgstr "het account kon niet worden verbonden: {}"
 
 msgid "the address has to be https"
 msgstr "het adres moet https zijn"
+
+msgid "the album could not be brought back: {}"
+msgstr "het album kon niet worden teruggezet: {}"
+
+msgid "the album could not be removed: {}"
+msgstr "het album kon niet worden verwijderd: {}"
 
 msgid "the analysis stopped: {}"
 msgstr "de analyse is gestopt: {}"

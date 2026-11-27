@@ -496,6 +496,9 @@ msgstr ""
 msgid "Albums in your library"
 msgstr ""
 
+msgid "Albums taken out of the library. Their files were not touched; any of them can come back."
+msgstr "Альбомы, убранные из библиотеки. Их файлы не тронуты; любой можно вернуть."
+
 msgid "All"
 msgstr "Все"
 
@@ -1080,6 +1083,9 @@ msgstr "Граница"
 
 msgid "Both"
 msgstr ""
+
+msgid "Bring back"
+msgstr "Вернуть"
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "Выберите папку с музыкой или введите её полный путь."
@@ -4054,6 +4060,9 @@ msgstr "Итальянский"
 msgid "Its connection"
 msgstr "Подключение"
 
+msgid "Its files stay where they are, and it can come back from Settings > Library > Removed albums."
+msgstr "Файлы останутся на месте, а вернуть альбом можно в Настройки > Библиотека > Убранные альбомы."
+
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr "Его музыка читается; она появляется в библиотеке по мере поступления."
 
@@ -4992,6 +5001,9 @@ msgstr "Для этого источника нет модулей главно�
 
 msgid "No active parametric EQ filters were found."
 msgstr "Активные фильтры параметрического EQ не найдены."
+
+msgid "No album has been removed."
+msgstr "Убранных альбомов нет."
 
 msgid "No album tracks"
 msgstr ""
@@ -6640,6 +6652,9 @@ msgstr "Удалить из избранного"
 msgid "Remove from library"
 msgstr "Удалить из библиотеки"
 
+msgid "Remove from library…"
+msgstr "Убрать из библиотеки…"
+
 msgid "Remove from playlist"
 msgstr "Удалить из плейлиста"
 
@@ -6693,6 +6708,12 @@ msgstr ""
 
 msgid "Remove {}?"
 msgstr "Удалить {}?"
+
+msgid "Remove “{}” from the library?"
+msgstr "Убрать «{}» из библиотеки?"
+
+msgid "Removed albums"
+msgstr "Убранные альбомы"
 
 msgid "Remove…"
 msgstr "Удалить…"
@@ -7530,6 +7551,9 @@ msgstr "Показывается при наведении на обложку, 
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Показывает результаты под строкой поиска, пока вы печатаете. Если выключено, ввод открывает страницу результатов."
+
+msgid "Show…"
+msgstr "Показать…"
 
 msgid "Shuffle"
 msgstr "Перемешать"
@@ -10680,6 +10704,12 @@ msgstr "учётная запись не подключилась: {}"
 
 msgid "the address has to be https"
 msgstr "адрес должен быть https"
+
+msgid "the album could not be brought back: {}"
+msgstr "не удалось вернуть альбом: {}"
+
+msgid "the album could not be removed: {}"
+msgstr "не удалось убрать альбом: {}"
 
 msgid "the analysis stopped: {}"
 msgstr "анализ остановлен: {}"

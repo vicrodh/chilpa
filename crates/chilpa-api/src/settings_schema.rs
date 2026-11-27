@@ -312,6 +312,7 @@ pub const SECTIONS: &[Section] = &[
                 title: Chilpa::mark("Maintenance"),
                 settings: &[
                     action("library.repair", Chilpa::mark("Repair the library"), Chilpa::mark("Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."), Control::Button, Chilpa::mark("Repair")),
+                    action(crate::removed_albums::SHOW, Chilpa::mark("Removed albums"), Chilpa::mark("Albums taken out of the library. Their files were not touched; any of them can come back."), Control::Button, Chilpa::mark("Show…")),
                     action("library.lyricsCache", Chilpa::mark("Clear lyrics cache"), Chilpa::mark("Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."), Control::Button, Chilpa::mark("Clear")),
                 ],
             },
