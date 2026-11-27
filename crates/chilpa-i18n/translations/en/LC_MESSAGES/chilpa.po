@@ -8591,6 +8591,9 @@ msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "The system default output would not open; playing through {}."
+msgstr ""
+
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr ""
 
@@ -11058,6 +11061,9 @@ msgid "the sidecar was deleted, and the library could not read the files again: 
 msgstr ""
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
+msgstr ""
+
+msgid "the sound server"
 msgstr ""
 
 msgid "the sound server would not let go of card {}"

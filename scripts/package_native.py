@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from appimage_audio_runtime import strip_host_audio
 
 
 def native_recipe(appdir, root, version, arch, glibc):
@@ -26,12 +27,14 @@ def native_recipe(appdir, root, version, arch, glibc):
                                 "libxcb-cursor0", "libxcb-icccm4", "libxcb-image0", "libxcb-keysyms1",
                                 "libxcb-render-util0", "libxcb-shape0", "libxcb-xkb1", "libx11-6", "zlib1g",
                                 "libasound2 | libasound2t64", "libssl3 | libssl3t64",
+                                "libpipewire-0.3-0t64 (>= 1.0) | libpipewire-0.3-0 (>= 1.0)", "libpulse0",
                                 "libwayland-client0", "libwayland-egl1", "libwayland-cursor0"], "recommends": ["bubblewrap"]},
             "rpm": {"depends": [f"glibc >= {glibc}", "libstdc++.so.6()(64bit)", "libGL.so.1()(64bit)",
                                 "libEGL.so.1()(64bit)", "libfontconfig.so.1()(64bit)", "libfreetype.so.6()(64bit)",
                                 "libdbus-1.so.3()(64bit)", "libxkbcommon.so.0()(64bit)", "libxcb.so.1()(64bit)",
                                 "libX11.so.6()(64bit)", "libz.so.1()(64bit)", "libasound.so.2()(64bit)",
                                 "libssl.so.3()(64bit)", "libxkbcommon-x11.so.0()(64bit)", "libxcb-cursor.so.0()(64bit)",
+                                "libpipewire-0.3.so.0()(64bit)", "libpulse.so.0()(64bit)", "libpulse-simple.so.0()(64bit)",
                                 "libwayland-client.so.0()(64bit)", "libwayland-egl.so.1()(64bit)",
                                 "libwayland-cursor.so.0()(64bit)"], "recommends": ["bubblewrap"]},
         },
@@ -44,6 +47,9 @@ def package_native(appdir, root, nfpm, output, version, arch, glibc):
     native = appdir.parent / "native-package"
     shutil.copytree(appdir / "usr", native / "usr", symlinks=True, copy_function=os.link,
                     ignore=shutil.ignore_patterns("chilpa-appimage-updater.AppImage", "chilpa-restart"))
+    # The system's audio plugins load the system's PipeWire and PulseAudio
+    # clients; a copy of our own beside them breaks them, so none ships here.
+    strip_host_audio(native / "usr")
     # I leave AppImage updates with the image; native packages use their package manager.
     (native / "usr/share/chilpa/release.json").unlink(missing_ok=True)
     config = appdir.parent / "nfpm.json"

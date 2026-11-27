@@ -99,6 +99,10 @@ impl AudioSink for ClosingGateSink {
 }
 
 fn wav(name: &str, frames: u32) -> PathBuf {
+    wav_at(name, frames, 44_100)
+}
+
+fn wav_at(name: &str, frames: u32, rate: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
     p.push(format!("chilpa-player-{name}.wav"));
     let data = frames * 4;
@@ -109,8 +113,8 @@ fn wav(name: &str, frames: u32) -> PathBuf {
     f.write_all(&16u32.to_le_bytes()).unwrap();
     f.write_all(&1u16.to_le_bytes()).unwrap();
     f.write_all(&2u16.to_le_bytes()).unwrap();
-    f.write_all(&44_100u32.to_le_bytes()).unwrap();
-    f.write_all(&176_400u32.to_le_bytes()).unwrap();
+    f.write_all(&rate.to_le_bytes()).unwrap();
+    f.write_all(&(rate * 4).to_le_bytes()).unwrap();
     f.write_all(&4u16.to_le_bytes()).unwrap();
     f.write_all(&16u16.to_le_bytes()).unwrap();
     f.write_all(b"data").unwrap();
@@ -980,4 +984,156 @@ fn a_file_the_dsp_changed_and_that_unwound_is_closed_as_processed() {
     let file = wav("dsp-then-write-panicked", 4_410);
     assert_eq!(closed_after_failure(&file, StreamFailure::WritePanic, true), [true]);
     std::fs::remove_file(file).unwrap();
+}
+
+/// A machine whose outputs open only where `opens` says: every output the
+/// play asks for is recorded, in order, and the others refuse the way ALSA
+/// refused `default` beside a foreign `libpipewire`.
+#[cfg(target_os = "linux")]
+fn opening_only(opens: &'static [&'static str], asked: Arc<std::sync::Mutex<Vec<String>>>) -> Player {
+    Player::spawn(
+        Box::new(|_| {
+            Ok(DeviceCaps { sample_rates: vec![44_100, 48_000], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })
+        }),
+        Box::new(move |id, stream, _| {
+            asked.lock().unwrap().push(id.to_string());
+            // Only at 44.1 kHz, so a play that reopens at another rate finds
+            // every route refusing.
+            if opens.contains(&id) && stream.sample_rate_hz == 44_100 {
+                Ok(Box::new(NullSink { stream, written: Arc::new(AtomicU64::new(0)) }) as Box<dyn AudioSink + Send>)
+            } else {
+                Err(SinkError::Backend(format!("snd_pcm_open failed on {id}: No such device or address (6)")))
+            }
+        }),
+    )
+}
+
+#[cfg(target_os = "linux")]
+fn ended(p: &Player) -> Vec<PlayerEvent> {
+    wait(p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. } | PlayerEvent::Failed { .. })))
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn the_standing_output_that_will_not_open_still_plays() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&["pulse:"], Arc::clone(&asked));
+    let file = wav("standing-falls-back", 1_000);
+    p.play(&file, "system:default");
+    let events = ended(&p);
+    assert!(events.iter().any(|e| matches!(e, PlayerEvent::Finished { .. })), "it played: {events:?}");
+    let started = events.iter().find_map(|e| match e {
+        PlayerEvent::Started { route, bit_perfect, .. } => Some((route.device.clone(), *bit_perfect)),
+        _ => None,
+    });
+    assert_eq!(started, Some(("pulse:".to_string(), false)), "the route is where it went, and a server is never exact");
+    assert_eq!(asked.lock().unwrap()[..2], ["system:default".to_string(), "pulse:".to_string()]);
+    let _ = std::fs::remove_file(file);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_play_that_fell_back_says_where_once_and_stays_there() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&["alsapcm:pipewire"], Arc::clone(&asked));
+    let (a, b) = (wav("fell-back-a", 1_000), wav("fell-back-b", 1_000));
+    p.play_all(&[a.clone(), b.clone()], "system:default");
+    let events = ended(&p);
+    let said: Vec<&str> = events.iter().filter_map(|e| match e {
+        PlayerEvent::FellBack { message } => Some(message.as_str()),
+        _ => None,
+    }).collect();
+    assert_eq!(said.len(), 1, "said once: {events:?}");
+    assert!(said[0].contains("PipeWire"), "{}", said[0]);
+    let asked = asked.lock().unwrap();
+    assert_eq!(asked[..3], ["system:default".to_string(), "pulse:".to_string(), "alsapcm:pipewire".to_string()]);
+    assert!(asked[3..].iter().all(|id| id == "alsapcm:pipewire"), "a next opening goes where the play went: {asked:?}");
+    let _ = std::fs::remove_file(a);
+    let _ = std::fs::remove_file(b);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn an_output_somebody_chose_is_never_played_somewhere_else() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&["pulse:", "alsapcm:pipewire"], Arc::clone(&asked));
+    let file = wav("chosen-refuses", 1_000);
+    p.play(&file, "alsa:hw:7,0");
+    let events = ended(&p);
+    assert!(matches!(events.last(), Some(PlayerEvent::Failed { .. })), "{events:?}");
+    assert!(!events.iter().any(|e| matches!(e, PlayerEvent::FellBack { .. })));
+    assert_eq!(*asked.lock().unwrap(), ["alsa:hw:7,0".to_string()]);
+    let _ = std::fs::remove_file(file);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn when_no_route_opens_each_is_tried_once_and_the_default_s_answer_is_said() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&[], Arc::clone(&asked));
+    let file = wav("nothing-opens", 1_000);
+    p.play(&file, "system:default");
+    let events = ended(&p);
+    match events.last() {
+        Some(PlayerEvent::Failed { message }) => assert!(message.contains("on system:default"), "{message}"),
+        other => panic!("it ends failed: {other:?}"),
+    }
+    let asked = asked.lock().unwrap();
+    assert_eq!(asked[..3], ["system:default".to_string(), "pulse:".to_string(), "alsapcm:pipewire".to_string()]);
+    let mut once = asked.clone();
+    once.sort();
+    once.dedup();
+    assert_eq!(once.len(), asked.len(), "no route asked twice: {asked:?}");
+    assert!(asked.len() <= 3 + crate::backends::MOST_PLUG_ROUTES, "{asked:?}");
+    let _ = std::fs::remove_file(file);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_reopening_that_finds_no_route_ends_with_the_default_s_answer() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&["pulse:"], Arc::clone(&asked));
+    // The second track is at another rate: the output is opened again, and
+    // nothing opens at that rate.
+    let (a, b) = (wav("reopen-a", 1_000), wav_at("reopen-b", 1_000, 48_000));
+    p.play_all(&[a.clone(), b.clone()], "system:default");
+    let events = ended(&p);
+    let asked = asked.lock().unwrap();
+    assert!(asked.iter().filter(|id| *id == "pulse:").count() >= 2, "the reopening started where the play went: {asked:?}");
+    match events.last() {
+        Some(PlayerEvent::Failed { message }) => assert!(message.contains("on system:default"), "{message}"),
+        other => panic!("it ends failed: {other:?}"),
+    }
+    let _ = std::fs::remove_file(a);
+    let _ = std::fs::remove_file(b);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_stream_that_fell_back_announces_the_route_it_opened() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&["pulse:"], Arc::clone(&asked));
+    let stream = StreamFixture::wave("stream-falls-back", 4_410);
+    p.play(&stream.path, "system:default");
+    let events = ended(&p);
+    let routes: Vec<String> = events.iter().filter_map(|e| match e {
+        PlayerEvent::Started { route, .. } => Some(route.device.clone()),
+        _ => None,
+    }).collect();
+    assert_eq!(routes, ["pulse:".to_string()], "{events:?}");
+    let fell = events.iter().position(|e| matches!(e, PlayerEvent::FellBack { .. }));
+    let started = events.iter().position(|e| matches!(e, PlayerEvent::Started { .. }));
+    assert!(fell.is_some() && fell < started, "said where before it started: {events:?}");
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_stream_whose_output_will_not_open_announces_nothing() {
+    let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let p = opening_only(&[], Arc::clone(&asked));
+    let stream = StreamFixture::wave("stream-opens-nothing", 4_410);
+    p.play(&stream.path, "system:default");
+    let events = ended(&p);
+    assert!(!events.iter().any(|e| matches!(e, PlayerEvent::Started { .. })), "{events:?}");
+    assert!(matches!(events.last(), Some(PlayerEvent::Failed { .. })), "{events:?}");
 }

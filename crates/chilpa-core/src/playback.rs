@@ -324,8 +324,11 @@ where
     if volume.as_ref().is_some_and(|volume| volume.level.get() != 1.0) {
         delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
     }
+    // Opened before it is told, as a queue's track is: what is told names
+    // the output, and that is only known once one opened.
+    let opened = open_sink(delivery.opened).map_err(PlayError::Sink)?;
     on_delivery(&delivery, signal_bits(&decoded, &delivery));
-    let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(PlayError::Sink)?, report.clone());
+    let mut sink = crate::playback_events::Measured::reporting(opened, report.clone());
     sink.begin_attempt(1, None);
     // Scaled where a queue's track is, before the conversion to the device,
     // so a file and a stream sound the same at the same volume.

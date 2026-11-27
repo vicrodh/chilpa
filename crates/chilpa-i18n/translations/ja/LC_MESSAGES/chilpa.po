@@ -8580,6 +8580,9 @@ msgid "The sync has not moved in {} minute. Sync now starts it again."
 msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
 msgstr[0] "同期が{}分間進んでいません。「今すぐ同期」でやり直せます。"
 
+msgid "The system default output would not open; playing through {}."
+msgstr "システムの既定の出力を開けませんでした。{}で再生します。"
+
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "システムの壁紙。代わりに自分の画像を選ぶこともできます。"
 
@@ -11045,6 +11048,9 @@ msgstr "サイドカーは削除しましたが、ライブラリがファイル
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr "サウンドカードは/proc/asoundに一覧されていますが、/dev/sndにあるそのデバイスをここから開けません。Flatpak内では次のコマンドで許可してください: flatpak override --user --device=all app.chilpa.Chilpa"
+
+msgid "the sound server"
+msgstr "サウンドサーバー"
 
 msgid "the sound server would not let go of card {}"
 msgstr "サウンドサーバーがカード{}を手放しませんでした"

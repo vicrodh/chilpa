@@ -8602,6 +8602,9 @@ msgstr[0] "Синхронизация не продвигается уже {} м
 msgstr[1] "Синхронизация не продвигается уже {} минуты. «Синхронизировать сейчас» запустит её заново."
 msgstr[2] "Синхронизация не продвигается уже {} минут. «Синхронизировать сейчас» запустит её заново."
 
+msgid "The system default output would not open; playing through {}."
+msgstr "Не удалось открыть вывод системы по умолчанию; воспроизведение через {}."
+
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "Обои системы. Можно выбрать собственное изображение."
 
@@ -11073,6 +11076,9 @@ msgstr "вспомогательный файл удалён, но библио�
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr "звуковые карты перечислены в /proc/asound, но их устройства в /dev/snd отсюда открыть нельзя; внутри Flatpak разрешите их командой: flatpak override --user --device=all app.chilpa.Chilpa"
+
+msgid "the sound server"
+msgstr "звуковой сервер"
 
 msgid "the sound server would not let go of card {}"
 msgstr "звуковой сервер не отпустил карту {}"

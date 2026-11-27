@@ -17,6 +17,7 @@ pub mod backends;
 pub mod attempts;
 pub mod launch;
 pub mod player;
+mod destination;
 pub mod output_evidence;
 pub mod settings;
 pub mod wizard;

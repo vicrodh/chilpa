@@ -14,7 +14,7 @@ import tempfile
 from release_version import release_notes, release_version, update_information
 from release_platform import architecture
 from package_native import package_native
-from appimage_audio_runtime import pipewire_runtime, check_appdir_audio
+from appimage_audio_runtime import pipewire_runtime, check_appdir_audio, defer_host_audio
 
 
 def check_glibc(path, maximum):
@@ -145,7 +145,6 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
         raise SystemExit("The Wayland XDG shell integration is missing.")
     subprocess.run([str(args.tools / locked["linuxdeploy"]["asset"]), "--appimage-extract-and-run", "--appdir", str(appdir),
                     *wayland], cwd=work, env=environment, check=True)
-    check_appdir_audio(appdir)
     updater = bin_dir / "chilpa-appimage-updater.AppImage"
     shutil.copy2(args.tools / locked["updater"]["asset"], updater)
     shutil.copy2(root / "packaging/linux/chilpa-restart", bin_dir / "chilpa-restart")
@@ -175,6 +174,11 @@ with tempfile.TemporaryDirectory(prefix="chilpa-package-", dir=args.output.paren
         for deployed in sorted(appdir.rglob("*")):
             check_glibc(deployed, args.glibc_max)
     native = package_native(appdir, root, args.tools / "nfpm", args.output, args.version, args.arch, args.glibc_max or "2.39")
+    # The image keeps its audio client libraries apart, for a system without
+    # any; native packages were made from the tree before this and use the
+    # system's (`appimage_audio_runtime.py`).
+    defer_host_audio(appdir, args.arch)
+    check_appdir_audio(appdir)
     information = update_information(args.repository, args.version, args.arch)
     image = args.output / f"Chilpa-{args.version}-{args.arch}.AppImage"
     subprocess.run([str(args.tools / locked["appimagetool"]["asset"]), "--appimage-extract-and-run", "--no-appstream",

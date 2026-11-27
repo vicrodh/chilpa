@@ -8591,6 +8591,9 @@ msgid_plural "The sync has not moved in {} minutes. Sync now starts it again."
 msgstr[0] "A sincronização não avança há {} minuto. “Sincronizar agora” a reinicia."
 msgstr[1] "A sincronização não avança há {} minutos. “Sincronizar agora” a reinicia."
 
+msgid "The system default output would not open; playing through {}."
+msgstr "A saída padrão do sistema não abriu; tocando via {}."
+
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "O papel de parede do sistema. Escolha uma imagem sua para usar no lugar dele."
 
@@ -11059,6 +11062,9 @@ msgstr "o arquivo auxiliar foi excluído, mas a biblioteca não conseguiu ler os
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr "as placas de som constam em /proc/asound, mas seus dispositivos em /dev/snd não podem ser abertos daqui; dentro de um Flatpak, permita-os com: flatpak override --user --device=all app.chilpa.Chilpa"
+
+msgid "the sound server"
+msgstr "servidor de som"
 
 msgid "the sound server would not let go of card {}"
 msgstr "o servidor de som não liberou a placa {}"

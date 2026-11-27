@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 import tarfile
 import tempfile
-from appimage_audio_runtime import check_appimage_audio
+from appimage_audio_runtime import check_appimage_audio, check_native_audio
 
 
 parser = argparse.ArgumentParser(description=__doc__)
@@ -39,6 +39,10 @@ with tarfile.open(tarball) as archive:
 check_appimage_audio(args.dist.resolve() / f"Chilpa-{args.version}-{args.arch}.AppImage")
 assert subprocess.check_output(["dpkg-deb", "--field", str(deb), "Architecture"], text=True).strip() == deb_arch
 assert subprocess.check_output(["rpm", "-qp", "--queryformat", "%{ARCH}", str(rpm)], text=True).strip() == args.arch
+depends = subprocess.check_output(["dpkg-deb", "--field", str(deb), "Depends"], text=True)
+assert "libpipewire-0.3-0" in depends and "libpulse0" in depends, depends
+requires = subprocess.check_output(["rpm", "-qp", "--requires", str(rpm)], text=True)
+assert "libpipewire-0.3.so.0()(64bit)" in requires and "libpulse.so.0()(64bit)" in requires, requires
 for kind, package in (("deb", deb), ("rpm", rpm)):
     with tempfile.TemporaryDirectory(prefix=f"chilpa-{kind}-smoke-") as directory:
         payload = Path(directory)
@@ -49,6 +53,7 @@ for kind, package in (("deb", deb), ("rpm", rpm)):
                 subprocess.run(["rpm2cpio", str(package)], stdout=archive, check=True)
                 archive.seek(0)
                 subprocess.run(["cpio", "--extract", "--make-directories", "--no-absolute-filenames"], cwd=payload, stdin=archive, check=True)
+        check_native_audio(payload)
         binary = payload / "opt/chilpa/bin/chilpa-qt"
         assert os.readlink(payload / "usr/bin/chilpa-qt") == "/opt/chilpa/bin/chilpa-qt"
         assert (binary.parent / "qt.conf").is_file()
