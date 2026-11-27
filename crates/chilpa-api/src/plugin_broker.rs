@@ -9,6 +9,7 @@ use std::sync::{
 };
 use std::time::{Duration, Instant};
 mod library;
+mod service;
 
 #[derive(Default)]
 pub(crate) struct Broker {
@@ -251,6 +252,15 @@ fn handle(
             natives.broker.changed.store(true, Ordering::Release);
             Ok(json!({"added":tracks.len()}))
         }
+        "services.get" => {
+            // The plugin declared the service among its domains, and the
+            // user approved that; the read itself is made and signed here.
+            let host = service::host();
+            if !natives.is_native(owner) || !natives.domains(owner).iter().any(|domain| *domain == host) {
+                return Err("This plugin has not been granted the required permission.".into());
+            }
+            service::get(input["path"].as_str().unwrap_or_default(), &input["query"])
+        }
         _ => Err("This host operation is not exposed to plugins.".into()),
     }
 }
@@ -298,6 +308,7 @@ mod tests {
             "catalog.search",
             "playlists.create",
             "playlists.add",
+            "services.get",
             "secrets.read",
             "auth.login",
         ] {
