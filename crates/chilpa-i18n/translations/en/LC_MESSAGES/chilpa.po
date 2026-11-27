@@ -3002,6 +3002,9 @@ msgstr "Export diagnostics"
 msgid "Export listening history"
 msgstr ""
 
+msgid "Export playlist"
+msgstr ""
+
 msgid "Export…"
 msgstr "Export…"
 
@@ -4067,6 +4070,9 @@ msgstr ""
 msgid "Its {} leave too."
 msgstr ""
 
+msgid "JSON playlist"
+msgstr ""
+
 msgid "JUMP TO"
 msgstr ""
 
@@ -4497,6 +4503,9 @@ msgid "Lyrics view"
 msgstr ""
 
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
+msgstr ""
+
+msgid "M3U8 playlist"
 msgstr ""
 
 msgid "Madrigal"
@@ -5985,6 +5994,9 @@ msgid "Playlist Name"
 msgstr ""
 
 msgid "Playlist artwork in the sidebar"
+msgstr ""
+
+msgid "Playlist exported"
 msgstr ""
 
 msgid "Playlist icon"
@@ -7655,6 +7667,9 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Some sources accept only part of these characters and may cut the name short."
+msgstr ""
+
 msgid "Sonata"
 msgstr ""
 
@@ -8368,6 +8383,9 @@ msgid "The player is not responding. Reconnect it and try again."
 msgstr "The player is not responding. Reconnect it and try again."
 
 msgid "The playlist changed on {}; it now shows what the server has. Try again."
+msgstr ""
+
+msgid "The playlist could not be exported"
 msgstr ""
 
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
@@ -9784,6 +9802,9 @@ msgstr ""
 msgid "XML can be edited only for SACD images"
 msgstr ""
 
+msgid "XSPF playlist"
+msgstr ""
+
 msgid "YOU MAY ALSO LIKE"
 msgstr ""
 
@@ -10560,6 +10581,9 @@ msgid "that is not something {} can be asked for"
 msgstr ""
 
 msgid "that list is empty"
+msgstr ""
+
+msgid "that list is gone"
 msgstr ""
 
 msgid "that music item is no longer available from this server"
@@ -11707,6 +11731,11 @@ msgid_plural "{} tracks"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} track is not a file on this computer and was left out; an XSPF or JSON file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF or JSON file keeps them by name."
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] ""
@@ -11719,6 +11748,11 @@ msgstr[1] ""
 
 msgid "{} track selected"
 msgid_plural "{} tracks selected"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} track was written."
+msgid_plural "{} tracks were written."
 msgstr[0] ""
 msgstr[1] ""
 

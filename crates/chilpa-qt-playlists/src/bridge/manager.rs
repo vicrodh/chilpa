@@ -38,6 +38,13 @@ pub mod qobject {
         /// Reads every server's playlists again.
         #[qinvokable]
         fn refresh_servers(self: &PlaylistManager);
+        /// Writes a playlist to a file, XSPF or M3U8 by its extension: what
+        /// went in, what had no place there and why it failed, as JSON.
+        #[qinvokable]
+        fn export_to(self: &PlaylistManager, id: i64, path: &QString) -> QString;
+        /// Whether a name carries a character a source may refuse.
+        #[qinvokable]
+        fn name_is_unusual(self: &PlaylistManager, name: &QString) -> bool;
     }
 }
 
@@ -70,6 +77,13 @@ impl qobject::PlaylistManager {
     }
     pub fn server_playlist(&self, id: i64, _rev: i32) -> QString {
         QString::from(&app::with(|api| api.server_playlist_json(id)))
+    }
+    pub fn export_to(&self, id: i64, path: &QString) -> QString {
+        let path = std::path::PathBuf::from(path.to_string());
+        QString::from(&app::with(|api| api.export_playlist(id, &path)).json())
+    }
+    pub fn name_is_unusual(&self, name: &QString) -> bool {
+        chilpa_api::playlist_name_is_unusual(&name.to_string())
     }
     pub fn refresh_servers(&self) {
         app::with(|api| api.refresh_server_playlists());

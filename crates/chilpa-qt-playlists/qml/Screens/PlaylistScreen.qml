@@ -182,9 +182,12 @@ Item {
         model: tracks
         laterLabel: page.playlistName
         canRemove: page.editable
+        canExport: page.playlistId > 0
         offlinePlaylistId: page.playlistId
         onRemove: { deletion.targetId = page.playlistId; deletion.open() }
+        onExportList: exporter.show(page.playlistId)
     }
+    PlaylistExport { id: exporter }
 
     PlaylistSelectionBar {
         visible: page.selectionMode && tracks.selectedCount > 0

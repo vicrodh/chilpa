@@ -48,6 +48,7 @@ Modal {
         spacing: Metrics.gap12
         Text { text: I18n.tr("Playlist", I18n.rev); color: Theme.color.textPrimary; font.pointSize: Type.title }
         TextField { id: titleField; width: parent.width; enabled: !editor.pending; placeholder: I18n.tr("Name", I18n.rev) }
+        PlaylistNameNote { width: parent.width; name: titleField.text }
         TextField { id: descriptionField; width: parent.width; enabled: !editor.pending; placeholder: I18n.tr("Description", I18n.rev) }
         CircleCheck { id: publicField; enabled: !editor.pending; text: I18n.tr("Public playlist", I18n.rev) }
         Flow {

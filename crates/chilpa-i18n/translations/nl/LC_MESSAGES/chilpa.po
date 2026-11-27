@@ -3002,6 +3002,9 @@ msgstr "Diagnostiek exporteren"
 msgid "Export listening history"
 msgstr "Luistergeschiedenis exporteren"
 
+msgid "Export playlist"
+msgstr "Afspeellijst exporteren"
+
 msgid "Export…"
 msgstr "Exporteren…"
 
@@ -4067,6 +4070,9 @@ msgstr "De nummers, albums en playlists ervan verdwijnen uit je bibliotheek. Dit
 msgid "Its {} leave too."
 msgstr "Ook de {} ervan verdwijnen."
 
+msgid "JSON playlist"
+msgstr "JSON-afspeellijst"
+
 msgid "JUMP TO"
 msgstr "SPRING NAAR"
 
@@ -4498,6 +4504,9 @@ msgstr "Songtekstweergave"
 
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "Songteksten zonder vertaling worden naar de songtekst-API van Chilpa gestuurd."
+
+msgid "M3U8 playlist"
+msgstr "M3U8-afspeellijst"
 
 msgid "Madrigal"
 msgstr "Madrigaal"
@@ -5986,6 +5995,9 @@ msgstr "Naam van afspeellijst"
 
 msgid "Playlist artwork in the sidebar"
 msgstr "Afspeellijsthoes in de zijbalk"
+
+msgid "Playlist exported"
+msgstr "Afspeellijst geëxporteerd"
 
 msgid "Playlist icon"
 msgstr "Afspeellijstpictogram"
@@ -7655,6 +7667,9 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Some sources accept only part of these characters and may cut the name short."
+msgstr "Sommige bronnen accepteren maar een deel van deze tekens en kunnen de naam inkorten."
+
 msgid "Sonata"
 msgstr "Sonate"
 
@@ -8369,6 +8384,9 @@ msgstr ""
 
 msgid "The playlist changed on {}; it now shows what the server has. Try again."
 msgstr "De afspeellijst is gewijzigd op {}; hij toont nu wat de server heeft. Probeer het opnieuw."
+
+msgid "The playlist could not be exported"
+msgstr "De afspeellijst kon niet worden geëxporteerd"
 
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "De afspeellijst is aangemaakt, maar sommige nummers konden niet worden toegevoegd. Open hem voordat je het opnieuw probeert."
@@ -9784,6 +9802,9 @@ msgstr "Onjuiste songtekst"
 msgid "XML can be edited only for SACD images"
 msgstr "XML kan alleen voor SACD-images worden bewerkt"
 
+msgid "XSPF playlist"
+msgstr "XSPF-afspeellijst"
+
 msgid "YOU MAY ALSO LIKE"
 msgstr "DIT VIND JE MISSCHIEN OOK LEUK"
 
@@ -10561,6 +10582,9 @@ msgstr "daar kan niet naar worden gevraagd bij {}"
 
 msgid "that list is empty"
 msgstr "die lijst is leeg"
+
+msgid "that list is gone"
+msgstr "die lijst bestaat niet meer"
 
 msgid "that music item is no longer available from this server"
 msgstr ""
@@ -11707,6 +11731,11 @@ msgid_plural "{} tracks"
 msgstr[0] "{} nummer"
 msgstr[1] "{} nummers"
 
+msgid "{} track is not a file on this computer and was left out; an XSPF or JSON file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF or JSON file keeps them by name."
+msgstr[0] "{} nummer is geen bestand op deze computer en is weggelaten; een XSPF- of JSON-bestand bewaart het op naam."
+msgstr[1] "{} nummers zijn geen bestanden op deze computer en zijn weggelaten; een XSPF- of JSON-bestand bewaart ze op naam."
+
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] "{} nummer uit de afspeellijsten van de server staat niet in je bibliotheek en is weggelaten."
@@ -11721,6 +11750,11 @@ msgid "{} track selected"
 msgid_plural "{} tracks selected"
 msgstr[0] "{} nummer geselecteerd"
 msgstr[1] "{} nummers geselecteerd"
+
+msgid "{} track was written."
+msgid_plural "{} tracks were written."
+msgstr[0] "{} nummer is weggeschreven."
+msgstr[1] "{} nummers zijn weggeschreven."
 
 msgid "{} tracks"
 msgstr "{} nummers"

@@ -14,11 +14,14 @@ CascadingMenu {
     property var collectionAction: null
     property string laterLabel
     property bool canRemove: false
+    // A saved playlist offers to be written to a file.
+    property bool canExport: false
     property int offlinePlaylistId: 0
     property int groupRow: -1
     property string activeLabel
 
     signal remove()
+    signal exportList()
 
     function show(left, top) {
         groupRow = -1
@@ -37,7 +40,7 @@ CascadingMenu {
         entries = JSON.parse(collectionAction ? QueueActivity.collectionMenu() : model.menuJson(-1)).map(entry => Object.assign({}, entry, {glyph: icons[entry.act] || "", family: Lucide.font})).concat(canRemove ? [
             { separator: true },
             { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
-        ] : [])
+        ] : []).concat(canExport && groupRow < 0 ? [{ separator: true }, { text: I18n.tr("Export…", I18n.rev), act: "export" }] : [])
         const offline = groupRow < 0 && offlinePlaylistId > 0 ? JSON.parse(Offline.menu("playlist", JSON.stringify([offlinePlaylistId]))) : []
         if (offline.length > 0) entries = entries.concat([{separator:true}], offline)
         x = left
@@ -71,5 +74,7 @@ CascadingMenu {
             model.playLaterAll(activeLabel)
         else if (action === "remove")
             menu.remove()
+        else if (action === "export")
+            menu.exportList()
     }
 }
