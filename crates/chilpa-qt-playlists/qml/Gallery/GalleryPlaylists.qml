@@ -81,14 +81,17 @@ Item {
                 local: {name: "Your library", detail: "Only songs already in your library", info: {local: true}},
                 demo: {name: "Example source", detail: "Playlist in your Example source account", info: {icon: ""}, writable: true}})
         }
-        ImportReviewRow { width: Metrics.confirmWidth; number: 1; original: ({title: "Song", artist: "Band"}); match: ({title: "Song", confidence: 0.98}); sourceInfo: ({chilpa: true}); quality: "FLAC · 24 bit · 96 kHz" }
+        ImportReviewRow { width: Metrics.confirmWidth; number: 1; original: ({title: "Song", artist: "Band"}); match: ({title: "Song", version: "2011 Remaster", confidence: 0.98}); sourceInfo: ({chilpa: true}); quality: "FLAC · 24 bit · 96 kHz"; optionCount: 3 }
+        ImportReviewRow { width: Metrics.confirmWidth; number: 4; original: ({title: "Theme", artist: "", uploader: "A fan"}) }
         ImportReviewRow { width: Metrics.confirmWidth; rowIndex: 1; number: 2; original: ({title: "Lost", artist: "Band"}) }
         ImportReviewRow { width: Metrics.confirmWidth; number: 3; original: ({title: "Late", artist: "Band"}); problem: "Example source did not answer"; problemDetail: "the plugin is not running" }
         ImportReviewStep {
             width: Metrics.confirmWidth; height: Metrics.playlistModalHeight
             places: ({mixed: {name: "Chilpa playlist", info: {chilpa: true}}, demo: {name: "Example source", info: {icon: ""}}})
             status: ({phase: "matching", targets: ["mixed"], completed: 1, total_work: 2, current: "Band — Lost", row_count: 1,
-                rows: [{index: 1, original: {title: "Song", artist: "Band"}, errors: {}, matches: {mixed: {source: "demo", title: "Song", quality: {codec: "flac", bits: 16, rate: 44100}, confidence: 0.95}}}]})
+                counts: {all: 1, found: 1, options: 1, not_found: 0, error: 0},
+                rows: [{index: 1, original: {title: "Song", artist: "Band"}, errors: {}, matches: {mixed: {source: "demo", title: "Song", quality: {codec: "flac", bits: 16, rate: 44100}, confidence: 0.95}},
+                    alternatives: {mixed: [{source: "demo", ref: "d:2", title: "Song (Live)", version: "Live", confidence: 0.9}]}}]})
         }
         ImportResultCard { width: Metrics.confirmWidth; name: "Chilpa playlist"; sourceInfo: ({chilpa: true}); output: ({written: 40, unmatched: 2, duplicates: 0, error: "", parts: [{ref: "1", title: "Evening music"}]}) }
         ImportResultCard { width: Metrics.confirmWidth; name: "Example source"; output: ({written: 10, unmatched: 0, duplicates: 1, error: "The account refused the playlist.", parts: []}) }

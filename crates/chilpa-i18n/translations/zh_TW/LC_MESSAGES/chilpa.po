@@ -9972,6 +9972,9 @@ msgstr "HLS 清單檔，Chilpa 目前尚無法讀取"
 msgid "an analysis is already running"
 msgstr "分析已在進行中"
 
+msgid "and {} more"
+msgstr "還有 {} 首"
+
 msgid "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it"
 msgstr "另一個程式正在獨佔「{}」；請關閉該程式，或關閉獨佔模式以進行共享"
 
@@ -11368,6 +11371,9 @@ msgstr "{} 未接受該帳號"
 msgid "{} did not answer"
 msgstr "{} 沒有回應"
 
+msgid "{} did not answer; the other sources were searched."
+msgstr "{} 沒有回應；已搜尋其他來源。"
+
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
 msgstr[0] "{} 在 30 分鐘內未恢復回應。已讀取的 {} 首曲目將予以保留且未取出任何內容；請在其恢復連線後重新同步。"
@@ -11501,6 +11507,9 @@ msgstr "{} 個已修改"
 msgid "{} month"
 msgid_plural "{} months"
 msgstr[0] "{} 個月"
+
+msgid "{} more"
+msgstr "另外 {} 個"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."

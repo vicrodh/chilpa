@@ -19,6 +19,9 @@ Item {
     property string quality
     property string problem
     property string problemDetail
+    // How many other options the song has for this destination.
+    property int optionCount: 0
+    signal optionsAsked(Item anchor)
     readonly property string matchTitle: match && original && (match.title || "").toLowerCase() !== (original.title || "").toLowerCase() ? match.title || "" : ""
     implicitHeight: Metrics.playlistRowHeight
     ListRowSurface { anchors.fill: parent; rowIndex: row.rowIndex; hovered: hover.hovered }
@@ -33,11 +36,13 @@ Item {
     }
     Text {
         id: song
+        objectName: "importSong"
         x: count.x + count.width + Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
         width: (row.width - x - arrow.width - Metrics.gap8 * 3) / 2 // derived: the song and its match share what is left
         textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.body
-        text: row.original ? (row.original.title || "") + " — " + (row.original.artist || "") : row.destination
+        // A video named only by who uploaded it shows that channel.
+        text: row.original ? [row.original.title || "", row.original.artist || row.original.uploader || ""].filter(Boolean).join(" — ") : row.destination
         color: row.original ? Theme.color.textPrimary : Theme.color.textSecondary
     }
     Icon {
@@ -57,11 +62,22 @@ Item {
         id: found
         objectName: "importFound"
         x: row.match ? mark.x + mark.width + Metrics.gap6 : mark.x
-        width: (trouble.visible ? trouble.x - Metrics.gap8 : row.width - Metrics.gap8) - x // derived: up to the problem or the edge
+        width: (more.visible ? more.x : trouble.visible ? trouble.x : row.width) - Metrics.gap8 - x // derived: up to the options, the problem or the edge
         anchors.verticalCenter: parent.verticalCenter
         textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.small
-        text: row.match ? [row.matchTitle, row.quality, Math.round((row.match.confidence || 0) * 100) + "%"].filter(Boolean).join(" · ") : I18n.tr("Not found", I18n.rev)
+        text: row.match ? [row.matchTitle, row.match.version || "", row.quality, Math.round((row.match.confidence || 0) * 100) + "%"].filter(Boolean).join(" · ") : I18n.tr("Not found", I18n.rev)
         color: row.match ? Theme.color.textSecondary : Theme.color.textTertiary
+    }
+    PillButton {
+        id: more
+        objectName: "importOptions"
+        visible: row.optionCount > 0
+        kind: "ghost"
+        anchors.right: trouble.visible ? trouble.left : parent.right; anchors.rightMargin: Metrics.gap8
+        anchors.verticalCenter: parent.verticalCenter
+        text: I18n.trArgs("{} more", [String(row.optionCount)], I18n.rev)
+        glyph: Lucide.chevronDown; iconFamily: Lucide.font; glyphAfter: true
+        onClicked: row.optionsAsked(more)
     }
     Text {
         id: trouble

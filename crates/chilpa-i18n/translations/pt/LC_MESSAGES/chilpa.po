@@ -9976,6 +9976,9 @@ msgstr "um manifesto HLS, que o Chilpa ainda não consegue ler"
 msgid "an analysis is already running"
 msgstr "uma análise já está em andamento"
 
+msgid "and {} more"
+msgstr "e mais {}"
+
 msgid "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it"
 msgstr "outro programa está usando “{}” com exclusividade; feche-o ou desative o modo exclusivo para compartilhar"
 
@@ -11382,6 +11385,9 @@ msgstr "{} não aceitou a conta"
 msgid "{} did not answer"
 msgstr "{} não respondeu"
 
+msgid "{} did not answer; the other sources were searched."
+msgstr "{} não respondeu; as outras fontes foram consultadas."
+
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
 msgstr[0] "{} não voltou em 30 minutos. {} faixa lida foi mantida e nada foi removido; sincronize novamente quando ele voltar."
@@ -11535,6 +11541,9 @@ msgid "{} month"
 msgid_plural "{} months"
 msgstr[0] "{} mês"
 msgstr[1] "{} meses"
+
+msgid "{} more"
+msgstr "{} mais"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."

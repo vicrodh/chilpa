@@ -9964,6 +9964,9 @@ msgstr "HLSマニフェスト（Chilpaはまだ読み取れません）"
 msgid "an analysis is already running"
 msgstr "解析はすでに実行中です"
 
+msgid "and {} more"
+msgstr "ほか {} 曲"
+
 msgid "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it"
 msgstr "別のプログラムが「{}」を占有しています。そのプログラムを閉じるか、排他モードをオフにして共有してください"
 
@@ -11360,6 +11363,9 @@ msgstr "{}がアカウントを受け付けませんでした"
 msgid "{} did not answer"
 msgstr "{} から応答がありません"
 
+msgid "{} did not answer; the other sources were searched."
+msgstr "{} から応答がありませんでした。ほかのソースは検索しました。"
+
 msgid "{} did not come back within 30 minutes. The {} track read is kept and nothing was taken out; sync again when it is back."
 msgid_plural "{} did not come back within 30 minutes. The {} tracks read are kept and nothing was taken out; sync again when it is back."
 msgstr[0] "{}は30分以内に復帰しませんでした。読み取った{}トラックは残してあり、何も削除されていません。復帰したらもう一度同期してください。"
@@ -11493,6 +11499,9 @@ msgstr "{}件を変更済み"
 msgid "{} month"
 msgid_plural "{} months"
 msgstr[0] "{}か月"
+
+msgid "{} more"
+msgstr "他 {} 件"
 
 msgid "{} more playlist..."
 msgid_plural "{} more playlists..."
