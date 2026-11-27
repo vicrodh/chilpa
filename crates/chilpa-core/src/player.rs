@@ -949,9 +949,10 @@ fn play_stream(
     Ok(played.outcome)
 }
 
-/// The ending a stream is owed once it was announced. Let go of without one
-/// -- the device would not open, the play unwound -- it says the stream
-/// failed, with the last count retained outside the fallible playback.
+/// The ending a stream is owed once it was announced, which is once its
+/// output opened. Let go of without one -- the play unwound -- it says the
+/// stream failed, with the last count retained outside the fallible
+/// playback.
 struct Owed<'a> {
     events: &'a Events,
     index: usize,

@@ -260,9 +260,11 @@ pub struct Played {
 /// There is no duration and no seeking: a stream plays until it is cut off
 /// or until someone stops it.
 ///
-/// `on_delivery` is called with the delivery already negotiated, before the
-/// device is opened: it is the only moment when it is known whether the
-/// stream goes bit-perfect, because a radio has no end at which to say so.
+/// `on_delivery` is called with the delivery already negotiated, once the
+/// device opened and before the first sample is written: it is the only
+/// moment when it is known whether the stream goes bit-perfect, because a
+/// radio has no end at which to say so. A device that will not open is
+/// never told.
 #[allow(clippy::too_many_arguments)]
 pub fn play_stream<F, K>(
     stream: chilpa_stream::HttpStream,

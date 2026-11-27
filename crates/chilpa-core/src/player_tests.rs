@@ -456,8 +456,7 @@ fn a_disc_launched_with_a_start_position_starts_there() {
 fn a_stream_that_was_announced_is_closed_once_whether_or_not_it_got_to_play() {
     let (to, heard) = channel();
     let events = Events { to, generation: 9 };
-    // Announced, and then let go of with nothing said: the device would not
-    // open, or the play unwound.
+    // Announced, and then let go of with nothing said: the play unwound.
     let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() };
     owed.announced.set(true);
     drop(owed);
@@ -991,15 +990,21 @@ fn a_file_the_dsp_changed_and_that_unwound_is_closed_as_processed() {
 /// refused `default` beside a foreign `libpipewire`.
 #[cfg(target_os = "linux")]
 fn opening_only(opens: &'static [&'static str], asked: Arc<std::sync::Mutex<Vec<String>>>) -> Player {
+    // Only at 44.1 kHz, so a play that reopens at another rate finds every
+    // route refusing.
+    opening_only_at(opens, &[44_100], asked)
+}
+
+/// As `opening_only`, with the rates at which those outputs open.
+#[cfg(target_os = "linux")]
+fn opening_only_at(opens: &'static [&'static str], rates: &'static [u32], asked: Arc<std::sync::Mutex<Vec<String>>>) -> Player {
     Player::spawn(
         Box::new(|_| {
             Ok(DeviceCaps { sample_rates: vec![44_100, 48_000], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })
         }),
         Box::new(move |id, stream, _| {
             asked.lock().unwrap().push(id.to_string());
-            // Only at 44.1 kHz, so a play that reopens at another rate finds
-            // every route refusing.
-            if opens.contains(&id) && stream.sample_rate_hz == 44_100 {
+            if opens.contains(&id) && rates.contains(&stream.sample_rate_hz) {
                 Ok(Box::new(NullSink { stream, written: Arc::new(AtomicU64::new(0)) }) as Box<dyn AudioSink + Send>)
             } else {
                 Err(SinkError::Backend(format!("snd_pcm_open failed on {id}: No such device or address (6)")))
@@ -1035,10 +1040,14 @@ fn the_standing_output_that_will_not_open_still_plays() {
 #[test]
 fn a_play_that_fell_back_says_where_once_and_stays_there() {
     let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
-    let p = opening_only(&["alsapcm:pipewire"], Arc::clone(&asked));
-    let (a, b) = (wav("fell-back-a", 1_000), wav("fell-back-b", 1_000));
+    let p = opening_only_at(&["alsapcm:pipewire"], &[44_100, 48_000], Arc::clone(&asked));
+    // The second track is at another rate, so the output is opened again,
+    // and the route the play went to takes it.
+    let (a, b) = (wav("fell-back-a", 1_000), wav_at("fell-back-b", 1_000, 48_000));
     p.play_all(&[a.clone(), b.clone()], "system:default");
     let events = ended(&p);
+    assert_eq!(events.iter().filter(|e| matches!(e, PlayerEvent::Started { .. })).count(), 2, "both played: {events:?}");
+    assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "{events:?}");
     let said: Vec<&str> = events.iter().filter_map(|e| match e {
         PlayerEvent::FellBack { message } => Some(message.as_str()),
         _ => None,
@@ -1047,6 +1056,7 @@ fn a_play_that_fell_back_says_where_once_and_stays_there() {
     assert!(said[0].contains("PipeWire"), "{}", said[0]);
     let asked = asked.lock().unwrap();
     assert_eq!(asked[..3], ["system:default".to_string(), "pulse:".to_string(), "alsapcm:pipewire".to_string()]);
+    assert!(!asked[3..].is_empty(), "the second track opened the output again: {asked:?}");
     assert!(asked[3..].iter().all(|id| id == "alsapcm:pipewire"), "a next opening goes where the play went: {asked:?}");
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
