@@ -430,6 +430,9 @@ msgstr "Адрес"
 msgid "Address of the media server, or of its description"
 msgstr "Адрес медиасервера или его описания"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "Увеличивает счётчик прослушиваний, когда трек прослушан достаточно. Сервер, который скробблит за вас, передаёт это дальше."
+
 msgid "Add…"
 msgstr "Добавить…"
 
@@ -2167,6 +2170,9 @@ msgstr "Не удалось сохранить плейлист. Повтори�
 msgid "Couldn't load the test tracks"
 msgstr "Не удалось загрузить тестовые треки"
 
+msgid "Count plays on the server"
+msgstr "Засчитывать прослушивания на сервере"
+
 msgid "Counting tracks…"
 msgstr "Подсчёт треков…"
 
@@ -2175,6 +2181,9 @@ msgstr "Страны"
 
 msgid "Country"
 msgstr "Страна"
+
+msgid "Counts as a play at"
+msgstr "Засчитывать прослушивание на"
 
 msgid "Cover collage"
 msgstr "Коллаж из обложек"
@@ -3594,6 +3603,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "Какую часть трека нужно прослушать, чтобы сервер засчитал его. Ваша история сохраняет своё правило."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Насколько размыты обои за окном: 0 % — чётко, 100 % — максимальное размытие."
@@ -5884,6 +5896,12 @@ msgstr "Ошибка воспроизведения"
 msgid "Playback options"
 msgstr "Параметры воспроизведения"
 
+msgid "Playback settings"
+msgstr "Настройки воспроизведения"
+
+msgid "Playback settings…"
+msgstr "Настройки воспроизведения…"
+
 msgid "Playback state"
 msgstr "Состояние воспроизведения"
 
@@ -6675,6 +6693,9 @@ msgstr ""
 
 msgid "Report an issue"
 msgstr "Сообщить о проблеме"
+
+msgid "Report playback to the server"
+msgstr "Сообщать серверу о воспроизведении"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "Сообщайте об ошибках плагинов в репозитории соответствующего плагина."
@@ -7863,6 +7884,12 @@ msgstr "Целевая громкость"
 
 msgid "Technical data"
 msgstr "Технические данные"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "Сообщает серверу, что играет и с какого места, не засчитывая прослушивание."
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "Сообщает серверу, что играет и с какого места. Этот сервер засчитывает прослушивание, как только узнаёт о его начале, и передаёт его сервисам, куда он скробблит."
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -9525,6 +9552,9 @@ msgstr "Что сообщает этот путь"
 
 msgid "What to test with"
 msgstr "На чём тестировать"
+
+msgid "What you play is not reported to it."
+msgstr "Этому серверу не сообщается, что вы слушаете."
 
 msgid "What you play most"
 msgstr "Что вы слушаете чаще всего"

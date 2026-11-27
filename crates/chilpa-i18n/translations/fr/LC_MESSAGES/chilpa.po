@@ -429,6 +429,9 @@ msgstr "Adresse"
 msgid "Address of the media server, or of its description"
 msgstr "Adresse du serveur multimédia ou de sa description"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "Augmente son compteur d'écoutes une fois qu'une part suffisante d'un morceau a été entendue. Un serveur qui scrobble pour vous la transmet."
+
 msgid "Add…"
 msgstr "Ajouter…"
 
@@ -2165,6 +2168,9 @@ msgstr "Impossible d'enregistrer la playlist. Réessayez."
 msgid "Couldn't load the test tracks"
 msgstr "Impossible de charger les pistes de test"
 
+msgid "Count plays on the server"
+msgstr "Compter les écoutes sur le serveur"
+
 msgid "Counting tracks…"
 msgstr "Comptage des pistes…"
 
@@ -2173,6 +2179,9 @@ msgstr "Pays"
 
 msgid "Country"
 msgstr "Pays"
+
+msgid "Counts as a play at"
+msgstr "Compte comme écoute à"
 
 msgid "Cover collage"
 msgstr "Collage de pochettes"
@@ -3592,6 +3601,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "La part d'un morceau à écouter avant que le serveur le compte. Votre historique garde sa propre règle."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Intensité du flou du fond d'écran derrière la fenêtre : 0 % le laisse net, 100 % est le flou maximal."
@@ -5879,6 +5891,12 @@ msgstr "Erreur de lecture"
 msgid "Playback options"
 msgstr "Options de lecture"
 
+msgid "Playback settings"
+msgstr "Réglages de lecture"
+
+msgid "Playback settings…"
+msgstr "Réglages de lecture…"
+
 msgid "Playback state"
 msgstr "État de la lecture"
 
@@ -6669,6 +6687,9 @@ msgstr ""
 
 msgid "Report an issue"
 msgstr "Signaler un problème"
+
+msgid "Report playback to the server"
+msgstr "Signaler la lecture au serveur"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "Signalez les erreurs de plugins dans le dépôt du plugin concerné."
@@ -7853,6 +7874,12 @@ msgstr "Sonie cible"
 
 msgid "Technical data"
 msgstr "Données techniques"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "Indique au serveur ce qui joue et où, sans compter l'écoute."
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "Indique au serveur ce qui joue et où. Ce serveur compte une écoute dès qu'il apprend qu'elle a commencé, et la transmet aux services vers lesquels il scrobble."
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -9513,6 +9540,9 @@ msgstr "Ce que signale ce parcours"
 
 msgid "What to test with"
 msgstr "Avec quoi tester"
+
+msgid "What you play is not reported to it."
+msgstr "Ce que vous écoutez ne lui est pas signalé."
 
 msgid "What you play most"
 msgstr "Ce que vous écoutez le plus"

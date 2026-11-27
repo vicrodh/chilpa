@@ -428,6 +428,9 @@ msgstr "アドレス"
 msgid "Address of the media server, or of its description"
 msgstr "メディアサーバーまたはその説明のアドレス"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "曲を十分に聴いたところで再生回数に加えます。あなたの代わりに Scrobble するサーバーは、それを送ります。"
+
 msgid "Add…"
 msgstr "追加…"
 
@@ -2163,6 +2166,9 @@ msgstr "プレイリストを保存できませんでした。もう一度お試
 msgid "Couldn't load the test tracks"
 msgstr "テストトラックを読み込めませんでした"
 
+msgid "Count plays on the server"
+msgstr "サーバーで再生回数を数える"
+
 msgid "Counting tracks…"
 msgstr "トラックを数えています…"
 
@@ -2171,6 +2177,9 @@ msgstr "国"
 
 msgid "Country"
 msgstr "国"
+
+msgid "Counts as a play at"
+msgstr "再生回数に数える位置"
 
 msgid "Cover collage"
 msgstr "カバーコラージュ"
@@ -3590,6 +3599,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "サーバーが再生回数に数えるまでに聴く割合です。あなた自身の履歴は独自のルールのままです。"
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "ウィンドウの背後に見える壁紙のぼかしの強さ。0%でくっきり、100%で最も強くぼかします。"
@@ -5874,6 +5886,12 @@ msgstr "再生エラー"
 msgid "Playback options"
 msgstr "再生オプション"
 
+msgid "Playback settings"
+msgstr "再生の設定"
+
+msgid "Playback settings…"
+msgstr "再生の設定…"
+
 msgid "Playback state"
 msgstr "再生状態"
 
@@ -6663,6 +6681,9 @@ msgstr ""
 
 msgid "Report an issue"
 msgstr "問題を報告"
+
+msgid "Report playback to the server"
+msgstr "再生状況をサーバーに通知"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "プラグインのエラーは、該当するプラグインのリポジトリで報告してください。"
@@ -7843,6 +7864,12 @@ msgstr "目標ラウドネス"
 
 msgid "Technical data"
 msgstr "技術データ"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "再生中の曲と再生位置をサーバーに伝えます。再生回数には数えません。"
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "再生中の曲と再生位置をサーバーに伝えます。このサーバーは再生開始を受け取った時点で再生回数に数え、Scrobble 先のサービスにも送ります。"
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -9501,6 +9528,9 @@ msgstr "この経路からの報告"
 
 msgid "What to test with"
 msgstr "テストに使うもの"
+
+msgid "What you play is not reported to it."
+msgstr "再生内容はこのサーバーに通知されません。"
 
 msgid "What you play most"
 msgstr "最もよく再生するもの"

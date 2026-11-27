@@ -429,6 +429,9 @@ msgstr "Adres"
 msgid "Address of the media server, or of its description"
 msgstr "Adres van de mediaserver of van zijn beschrijving"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "Telt mee in de afspeelteller zodra genoeg van een nummer is gehoord. Een server die voor je scrobblet, geeft het door."
+
 msgid "Add…"
 msgstr "Toevoegen…"
 
@@ -2165,6 +2168,9 @@ msgstr "Kon de afspeellijst niet opslaan. Probeer het opnieuw."
 msgid "Couldn't load the test tracks"
 msgstr "Kon de testnummers niet laden"
 
+msgid "Count plays on the server"
+msgstr "Afspeelbeurten op de server tellen"
+
 msgid "Counting tracks…"
 msgstr "Nummers tellen…"
 
@@ -2173,6 +2179,9 @@ msgstr "Landen"
 
 msgid "Country"
 msgstr "Land"
+
+msgid "Counts as a play at"
+msgstr "Telt als afspeelbeurt bij"
 
 msgid "Cover collage"
 msgstr "Hoescollage"
@@ -3592,6 +3601,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "Hoeveel van een nummer gehoord moet zijn voordat de server het telt. Je eigen geschiedenis houdt haar eigen regel."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Hoe sterk de bureaubladachtergrond achter het venster wordt vervaagd: 0% houdt hem scherp, 100% is de sterkste vervaging."
@@ -5879,6 +5891,12 @@ msgstr "Afspeelfout"
 msgid "Playback options"
 msgstr "Afspeelopties"
 
+msgid "Playback settings"
+msgstr "Afspeelinstellingen"
+
+msgid "Playback settings…"
+msgstr "Afspeelinstellingen…"
+
 msgid "Playback state"
 msgstr "Afspeelstatus"
 
@@ -6669,6 +6687,9 @@ msgstr ""
 
 msgid "Report an issue"
 msgstr "Probleem melden"
+
+msgid "Report playback to the server"
+msgstr "Afspelen aan de server melden"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "Meld fouten in plugins in de repository van de betreffende plugin."
@@ -7853,6 +7874,12 @@ msgstr "Doelluidheid"
 
 msgid "Technical data"
 msgstr "Technische gegevens"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "Vertelt de server wat er speelt en waar, zonder het als afspeelbeurt te tellen."
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "Vertelt de server wat er speelt en waar. Deze server telt een afspeelbeurt zodra hij hoort dat die begonnen is, en geeft die door aan de diensten waarnaar hij scrobblet."
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -9513,6 +9540,9 @@ msgstr "Wat dit pad meldt"
 
 msgid "What to test with"
 msgstr "Waarmee te testen"
+
+msgid "What you play is not reported to it."
+msgstr "Wat je afspeelt, wordt niet aan deze server gemeld."
 
 msgid "What you play most"
 msgstr "Wat je het meest afspeelt"

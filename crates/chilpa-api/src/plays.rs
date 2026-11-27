@@ -174,6 +174,7 @@ impl Chilpa {
         let Written { mut listen, skipped } = written;
         // The count it was closed with may be the one that makes it count.
         crate::scrobble::if_heard(self.scrobbler.as_ref(), &mut listen);
+        crate::servers::report::if_heard(self.servers.reporter.as_ref(), &mut listen);
         self.record_listen(listen, skipped, shown);
     }
 

@@ -436,6 +436,9 @@ msgstr "位址"
 msgid "Address of the media server, or of its description"
 msgstr "媒體伺服器的位址或其描述"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "曲目聽得夠多時計入它的播放次數。替你 scrobble 的伺服器會把它轉送出去。"
+
 msgid "Add…"
 msgstr "新增…"
 
@@ -2171,6 +2174,9 @@ msgstr "無法儲存播放清單，請再試一次。"
 msgid "Couldn't load the test tracks"
 msgstr "無法載入測試曲目"
 
+msgid "Count plays on the server"
+msgstr "在伺服器上計入播放次數"
+
 msgid "Counting tracks…"
 msgstr "正在計算曲目數…"
 
@@ -2179,6 +2185,9 @@ msgstr "國家/地區"
 
 msgid "Country"
 msgstr "國家/地區"
+
+msgid "Counts as a play at"
+msgstr "計為播放的位置"
 
 msgid "Cover collage"
 msgstr "封面拼貼"
@@ -3598,6 +3607,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "曲目要聽多少，伺服器才會計入。你自己的記錄維持原本的規則。"
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "視窗後方桌布的模糊程度：0% 保持清晰，100% 為最強模糊。"
@@ -5882,6 +5894,12 @@ msgstr "播放錯誤"
 msgid "Playback options"
 msgstr "播放選項"
 
+msgid "Playback settings"
+msgstr "播放設定"
+
+msgid "Playback settings…"
+msgstr "播放設定…"
+
 msgid "Playback state"
 msgstr "播放狀態"
 
@@ -6671,6 +6689,9 @@ msgstr ""
 
 msgid "Report an issue"
 msgstr "回報問題"
+
+msgid "Report playback to the server"
+msgstr "向伺服器回報播放"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "請在對應外掛的儲存庫中回報外掛錯誤。"
@@ -7851,6 +7872,12 @@ msgstr "目標響度"
 
 msgid "Technical data"
 msgstr ""
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "告訴伺服器正在播放什麼、播到哪裡，但不計入播放次數。"
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "告訴伺服器正在播放什麼、播到哪裡。這台伺服器一得知開始播放就會計入播放次數，並轉送給它 scrobble 的服務。"
 
 msgid "Temporary episode storage is unavailable."
 msgstr "暫存單集儲存空間無法使用。"
@@ -9509,6 +9536,9 @@ msgstr "此路徑回報的內容"
 
 msgid "What to test with"
 msgstr "測試內容選擇"
+
+msgid "What you play is not reported to it."
+msgstr "不會向它回報你播放的內容。"
 
 msgid "What you play most"
 msgstr "你最常播放的內容"

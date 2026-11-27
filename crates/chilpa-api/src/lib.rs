@@ -446,6 +446,11 @@ struct InProgress {
     listen: Option<scrobble::Listen>,
     /// It was already sent: a seek back past the mark does not send it twice.
     scrobbled: bool,
+    /// The percent of it at which its server counts the play; none when the
+    /// track is not on a server, or its server is not told to count.
+    server_mark: Option<u8>,
+    /// It was counted on its server already.
+    server_counted: bool,
 }
 
 /// A smart list, with whatever it yields today.
@@ -1313,6 +1318,7 @@ impl Chilpa {
         self.mark_scaled(gain);
         if self.player.as_ref().is_some_and(|p| p.dsp().touched()) { self.now.bit_perfect = false; }
         self.finish_tick(started);
+        self.server_tick();
         self.plugin_update_activity(self.plugin_playback_active());
         &self.now
     }

@@ -46,6 +46,8 @@ fn open(api: &mut Chilpa, play: u64, path: &str, started_at: i64) {
         played_frames: 0,
         listen: None,
         scrobbled: false,
+        server_mark: None,
+        server_counted: false,
     };
     let play = api.plays.get_mut(play).unwrap();
     play.started = true;

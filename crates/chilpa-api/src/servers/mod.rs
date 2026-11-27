@@ -13,6 +13,7 @@ pub(crate) mod keys;
 mod lan;
 pub(crate) mod net;
 mod opener;
+pub(crate) mod report;
 pub(crate) mod favorites;
 pub(crate) mod playlists;
 pub(crate) mod ratings;
@@ -98,6 +99,10 @@ pub(crate) struct Servers {
     shown_at: Option<std::time::Instant>,
     /// A server being added or edited: the library is written on a thread.
     adding: Option<Adding>,
+    /// Sends what plays to its server, off the window's thread.
+    pub(crate) reporter: Option<report::Reporter>,
+    /// The server track in front of the window, as its server was told.
+    pub(crate) shown: Option<report::Shown>,
     /// A server being removed, or how its removal went until the window
     /// has read it (`background`).
     removing: Option<background::Removing>,
@@ -149,6 +154,7 @@ impl Chilpa {
         self.servers.syncer = Some(sync::Syncer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
         self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys), Arc::clone(&self.servers.gate),self.servers.invalid_copies.clone()));
         self.servers.writer = Some(writing::Writer::start(Arc::clone(&keys), Arc::clone(&self.servers.gate)));
+        self.servers.reporter = Some(report::Reporter::start(Arc::clone(&keys)));
         self.servers.keys = Some(keys);
         self.servers.resumed = background::unfinished();
         // A queue restored before the opener existed could not name a
@@ -289,6 +295,9 @@ impl Chilpa {
                 else { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] };
             self.server_rating_row(server.id, &mut description, &mut values, &mut options);
             self.server_favorite_row(server.id, &mut description, &mut values, &mut options);
+            if server.enabled {
+                self.server_playback_row(server.id, &mut description, &mut values, &mut options);
+            }
             rows.push(crate::SettingsRow {
                 kind: 1,
                 key,

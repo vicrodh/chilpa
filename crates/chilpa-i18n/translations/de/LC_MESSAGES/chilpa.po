@@ -429,6 +429,9 @@ msgstr "Adresse"
 msgid "Address of the media server, or of its description"
 msgstr "Adresse des Medienservers oder seiner Beschreibung"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "Erhöht seinen Wiedergabezähler, sobald genug von einem Titel gehört wurde. Ein Server, der für dich scrobbelt, gibt das weiter."
+
 msgid "Add…"
 msgstr "Hinzufügen…"
 
@@ -2165,6 +2168,9 @@ msgstr "Die Playlist konnte nicht gespeichert werden. Versuche es erneut."
 msgid "Couldn't load the test tracks"
 msgstr "Die Testtitel konnten nicht geladen werden"
 
+msgid "Count plays on the server"
+msgstr "Wiedergaben auf dem Server zählen"
+
 msgid "Counting tracks…"
 msgstr "Titel werden gezählt…"
 
@@ -2173,6 +2179,9 @@ msgstr "Länder"
 
 msgid "Country"
 msgstr "Land"
+
+msgid "Counts as a play at"
+msgstr "Zählt als Wiedergabe bei"
 
 msgid "Cover collage"
 msgstr "Cover-Collage"
@@ -3592,6 +3601,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "Wie viel von einem Titel gehört werden muss, bevor der Server ihn zählt. Dein eigener Verlauf behält seine Regel."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Wie stark das Hintergrundbild hinter dem Fenster weichgezeichnet wird: 0 % lässt es scharf, 100 % ist die stärkste Unschärfe."
@@ -5879,6 +5891,12 @@ msgstr "Wiedergabefehler"
 msgid "Playback options"
 msgstr "Wiedergabeoptionen"
 
+msgid "Playback settings"
+msgstr "Wiedergabeeinstellungen"
+
+msgid "Playback settings…"
+msgstr "Wiedergabeeinstellungen…"
+
 msgid "Playback state"
 msgstr "Wiedergabestatus"
 
@@ -6669,6 +6687,9 @@ msgstr ""
 
 msgid "Report an issue"
 msgstr "Problem melden"
+
+msgid "Report playback to the server"
+msgstr "Wiedergabe an den Server melden"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "Pluginfehler im Repository des jeweiligen Plugins melden."
@@ -7853,6 +7874,12 @@ msgstr "Ziel-Lautheit"
 
 msgid "Technical data"
 msgstr "Technische Daten"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "Teilt dem Server mit, was läuft und an welcher Stelle, ohne es als Wiedergabe zu zählen."
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "Teilt dem Server mit, was läuft und an welcher Stelle. Dieser Server zählt eine Wiedergabe, sobald er erfährt, dass sie begonnen hat, und gibt sie an die Dienste weiter, an die er scrobbelt."
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -9513,6 +9540,9 @@ msgstr "Was dieser Signalweg meldet"
 
 msgid "What to test with"
 msgstr "Womit testen"
+
+msgid "What you play is not reported to it."
+msgstr "Was du abspielst, wird ihm nicht gemeldet."
 
 msgid "What you play most"
 msgstr "Was du am meisten spielst"

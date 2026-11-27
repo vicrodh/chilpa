@@ -17,7 +17,8 @@ TestCase {
         "../../../chilpa-qt-playlists/qml/Gallery/GalleryPlaylists.qml",
         "../../../chilpa-qt-devices/qml/Gallery/GalleryDevices.qml",
         "../../../chilpa-qt-controls/qml/Gallery/GalleryControls.qml",
-        "../../../chilpa-qt-lyrics/qml/Gallery/GalleryLyrics.qml"
+        "../../../chilpa-qt-lyrics/qml/Gallery/GalleryLyrics.qml",
+        "../../../chilpa-qt-server-playback/qml/Gallery/GalleryServerPlayback.qml"
     ]
 
     function test_every_page_loads_data() {

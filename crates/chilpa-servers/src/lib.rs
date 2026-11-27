@@ -37,6 +37,7 @@ pub mod net;
 pub mod playlist;
 pub mod plex;
 pub mod rating;
+pub mod report;
 pub mod subsonic;
 mod text;
 

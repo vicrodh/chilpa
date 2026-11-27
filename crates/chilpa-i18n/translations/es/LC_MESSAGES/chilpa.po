@@ -429,6 +429,9 @@ msgstr "Dirección"
 msgid "Address of the media server, or of its description"
 msgstr "Dirección del servidor de medios o de su descripción"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "Suma a su conteo de reproducciones cuando ya se escuchó lo suficiente de una pista. Un servidor que hace scrobbling por ti la pasa a esos servicios."
+
 msgid "Add…"
 msgstr "Agregar…"
 
@@ -2165,6 +2168,9 @@ msgstr "No se pudo guardar la playlist. Inténtalo de nuevo."
 msgid "Couldn't load the test tracks"
 msgstr "No se pudieron cargar las pistas de prueba"
 
+msgid "Count plays on the server"
+msgstr "Contar las reproducciones en el servidor"
+
 msgid "Counting tracks…"
 msgstr "Contando pistas…"
 
@@ -2173,6 +2179,9 @@ msgstr "Países"
 
 msgid "Country"
 msgstr "País"
+
+msgid "Counts as a play at"
+msgstr "Cuenta como reproducción al"
 
 msgid "Cover collage"
 msgstr "Collage de portadas"
@@ -3592,6 +3601,9 @@ msgstr "¿Cuántas pistas quieres agregar a la cola?"
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr "¿Cuántas pistas quieres elegir al azar de toda la colección?"
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "Cuánto de una pista hay que escuchar para que el servidor la cuente. Tu historial conserva su propia regla."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Cuánto se difumina el fondo de pantalla detrás de la ventana: 0% lo deja nítido, 100% es el máximo."
@@ -5879,6 +5891,12 @@ msgstr "Error de reproducción"
 msgid "Playback options"
 msgstr "Opciones de reproducción"
 
+msgid "Playback settings"
+msgstr "Ajustes de reproducción"
+
+msgid "Playback settings…"
+msgstr "Ajustes de reproducción…"
+
 msgid "Playback state"
 msgstr "Estado de reproducción"
 
@@ -6669,6 +6687,9 @@ msgstr "Reemplazar valores"
 
 msgid "Report an issue"
 msgstr "Reportar un problema"
+
+msgid "Report playback to the server"
+msgstr "Informar la reproducción al servidor"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "Reporta los errores de plugins en el repositorio del plugin correspondiente."
@@ -7853,6 +7874,12 @@ msgstr "Volumen objetivo"
 
 msgid "Technical data"
 msgstr "Datos técnicos"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "Le dice al servidor qué suena y en qué punto, sin contarlo como reproducción."
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "Le dice al servidor qué suena y en qué punto. Este servidor cuenta la reproducción en cuanto sabe que empezó y la pasa a los servicios a los que hace scrobbling."
 
 msgid "Temporary episode storage is unavailable."
 msgstr "El almacenamiento temporal para episodios no está disponible."
@@ -9513,6 +9540,9 @@ msgstr "Lo que informa esta ruta"
 
 msgid "What to test with"
 msgstr "Con qué probar"
+
+msgid "What you play is not reported to it."
+msgstr "No se le informa lo que reproduces."
 
 msgid "What you play most"
 msgstr "Lo que más escuchas"

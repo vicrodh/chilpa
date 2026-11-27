@@ -429,6 +429,9 @@ msgstr ""
 msgid "Address of the media server, or of its description"
 msgstr ""
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr ""
+
 msgid "Add…"
 msgstr ""
 
@@ -2165,6 +2168,9 @@ msgstr ""
 msgid "Couldn't load the test tracks"
 msgstr ""
 
+msgid "Count plays on the server"
+msgstr ""
+
 msgid "Counting tracks…"
 msgstr ""
 
@@ -2173,6 +2179,9 @@ msgstr ""
 
 msgid "Country"
 msgstr "Country"
+
+msgid "Counts as a play at"
+msgstr ""
 
 msgid "Cover collage"
 msgstr ""
@@ -3592,6 +3601,9 @@ msgstr "How many tracks should be added to the queue?"
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr "How many tracks should be shuffled from the whole collection?"
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr ""
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr ""
@@ -5879,6 +5891,12 @@ msgstr "Playback error"
 msgid "Playback options"
 msgstr ""
 
+msgid "Playback settings"
+msgstr ""
+
+msgid "Playback settings…"
+msgstr ""
+
 msgid "Playback state"
 msgstr "Playback state"
 
@@ -6668,6 +6686,9 @@ msgid "Replace values"
 msgstr ""
 
 msgid "Report an issue"
+msgstr ""
+
+msgid "Report playback to the server"
 msgstr ""
 
 msgid "Report plugin errors in the corresponding plugin's repository."
@@ -7853,6 +7874,12 @@ msgstr ""
 
 msgid "Technical data"
 msgstr "Technical data"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr ""
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr ""
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -9512,6 +9539,9 @@ msgid "What this route reports"
 msgstr ""
 
 msgid "What to test with"
+msgstr ""
+
+msgid "What you play is not reported to it."
 msgstr ""
 
 msgid "What you play most"
