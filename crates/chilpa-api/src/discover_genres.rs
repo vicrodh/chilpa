@@ -69,7 +69,7 @@ mod tests {
 
     #[test]
     fn a_key_that_names_genres_or_another_page_is_left_alone() {
-        for key in ["fixture native:discover:home:7", "fixture native:discover:home|recent", "fixture native:artist:42", "fixture native:discover:new"] {
+        for key in ["fixture native:discover:home:7", "fixture native:discover:home|recent", "fixture native:artist:42", "other native:discover:home"] {
             assert_eq!(remembered(key, kept), key);
         }
     }
