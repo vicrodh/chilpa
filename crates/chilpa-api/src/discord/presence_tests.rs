@@ -70,7 +70,7 @@ fn no_tags(_: &str) -> Tags {
 fn defaults() -> Options {
     Options {
         show_state: true, clear_on_pause: false, title: "%title%".into(), artist: "%artist%".into(), album: "%album%".into(), artwork: true,
-        upload: false, source: Source::SearchThenUpload, hours: 24,
+        upload: false, source: Source::SearchThenUpload, hours: 24, member_list: 2,
     }
 }
 
@@ -95,6 +95,16 @@ const MOON: &str = "name:pink floyd\u{1f}the dark side of the moon";
 const COVER: &str = "https://coverartarchive.org/release-group/f5093c06-23e3-404f-aeaa-40f72885ee3a/front-1200";
 
 #[test]
+fn the_member_list_shows_the_line_chosen_for_it() {
+    for (member_list, shown) in [(2, 2), (1, 1), (0, 0)] {
+        let mut bench = Bench::new(no_tags, true);
+        bench.tell(0, show("/music/time.flac", &Arc::new(Options { member_list, ..defaults() })));
+        bench.wait(50);
+        assert_eq!(bench.last()["status_display_type"], shown);
+    }
+}
+
+#[test]
 fn a_playing_track_gives_every_field_of_the_status() {
     let mut bench = Bench::new(no_tags, true);
     let options = Arc::new(defaults());
@@ -103,6 +113,7 @@ fn a_playing_track_gives_every_field_of_the_status() {
     bench.wait(50);
     assert_eq!(bench.calls(), [Some(json!({
         "type": 2,
+        "status_display_type": 2,
         "instance": false,
         "state": "Pink Floyd",
         "details": "Time",

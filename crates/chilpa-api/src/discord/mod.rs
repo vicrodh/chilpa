@@ -34,6 +34,7 @@ const ARTWORK: &str = "integrations.discord.artwork";
 const UPLOAD: &str = "integrations.discord.upload";
 const SOURCE: &str = "integrations.discord.artworkSource";
 const RETENTION: &str = "integrations.discord.artworkRetention";
+const MEMBER_LIST: &str = "integrations.discord.memberList";
 
 /// The switches and their defaults: Fooyin's, but the artwork, which
 /// Chilpa showed before Fooyin's behaviour came. Uploading the cover to a
@@ -54,6 +55,14 @@ const RETENTIONS: [(&str, &str); 4] = [
     ("72", chilpa_i18n::mark("72 hours")),
 ];
 const RETENTION_DEFAULT: &str = "24";
+/// What a server's member list shows under the name, and Discord's value
+/// for it: the first line (the title, by default), the second (the
+/// artist), or Chilpa. Without it Discord shows the app's name there.
+const MEMBER_LISTS: [(&str, u8, &str); 3] = [
+    ("title", 2, chilpa_i18n::mark("Title")),
+    ("artist", 1, chilpa_i18n::mark("Artist")),
+    ("chilpa", 0, chilpa_i18n::mark("Chilpa")),
+];
 /// The formats and their defaults, Fooyin's.
 const FORMATS: [(&str, &str); 3] = [(TITLE_FORMAT, "%title%"), (ARTIST_FORMAT, "%artist%"), (ALBUM_FORMAT, "%album%")];
 /// What a format may be, in characters.
@@ -122,6 +131,11 @@ impl Chilpa {
     }
 
     /// The way to a cover that goes first, as set, or the default.
+    fn discord_member_list(&self) -> &'static str {
+        let chosen = self.preference(MEMBER_LIST);
+        MEMBER_LISTS.iter().map(|(value, ..)| *value).find(|value| chosen.as_deref() == Some(*value)).unwrap_or(MEMBER_LISTS[0].0)
+    }
+
     fn discord_source(&self) -> &'static str {
         let chosen = self.preference(SOURCE);
         SOURCES.iter().map(|(value, ..)| *value).find(|value| chosen.as_deref() == Some(*value)).unwrap_or(SOURCES[0].0)
@@ -151,6 +165,7 @@ impl Chilpa {
             upload: self.discord_switch(UPLOAD),
             source: SOURCES.iter().find(|(value, ..)| *value == self.discord_source()).map_or(Source::SearchThenUpload, |(_, source, _)| *source),
             hours: self.discord_retention().parse().unwrap_or(24),
+            member_list: MEMBER_LISTS.iter().find(|(value, ..)| *value == self.discord_member_list()).map_or(2, |(_, shown, _)| *shown),
         });
         self.discord.options = Some(options.clone());
         options
@@ -170,9 +185,10 @@ impl Chilpa {
             let format: String = value.chars().take(FORMAT_LONGEST).collect();
             self.remember_preference(key, &format);
         } else if key == SOURCE && SOURCES.iter().any(|(known, ..)| *known == value)
-            || key == RETENTION && RETENTIONS.iter().any(|(known, _)| *known == value) {
+            || key == RETENTION && RETENTIONS.iter().any(|(known, _)| *known == value)
+            || key == MEMBER_LIST && MEMBER_LISTS.iter().any(|(known, ..)| *known == value) {
             self.remember_preference(key, value);
-        } else if key == SOURCE || key == RETENTION {
+        } else if key == SOURCE || key == RETENTION || key == MEMBER_LIST {
             return true;
         } else {
             return false;
@@ -191,18 +207,21 @@ impl Chilpa {
             return true;
         }
         let switch = SWITCHES.iter().any(|(known, _)| *known == key);
-        let choice = key == SOURCE || key == RETENTION;
+        let upload_choice = key == SOURCE || key == RETENTION;
+        let choice = upload_choice || key == MEMBER_LIST;
         if !switch && !choice && !FORMATS.iter().any(|(known, _)| *known == key) {
             return false;
         }
         let shown = self.discord_enabled() && !self.offline()
-            && (!(choice || key == UPLOAD) || self.discord_switch(ARTWORK))
-            && (!choice || self.discord_switch(UPLOAD));
+            && (!(upload_choice || key == UPLOAD) || self.discord_switch(ARTWORK))
+            && (!upload_choice || self.discord_switch(UPLOAD));
         if !shown {
             row.control.clear();
         } else if choice {
             let (chosen, labels): (&str, Vec<(&str, &str)>) = if key == SOURCE {
                 (self.discord_source(), SOURCES.iter().map(|(value, _, label)| (*value, *label)).collect())
+            } else if key == MEMBER_LIST {
+                (self.discord_member_list(), MEMBER_LISTS.iter().map(|(value, _, label)| (*value, *label)).collect())
             } else {
                 (self.discord_retention(), RETENTIONS.to_vec())
             };
@@ -402,6 +421,9 @@ mod tests {
         assert_eq!(api.discord_options().hours, 72);
         api.discord_setting(ARTWORK, "false");
         assert!(row(&mut api, UPLOAD, "toggle").control.is_empty(), "the upload goes with the artwork");
+        let member_list = row(&mut api, MEMBER_LIST, "select");
+        assert_eq!(member_list.values, ["title", "artist", "chilpa"], "offered whatever the artwork");
+        assert_eq!(member_list.options.len(), 3);
         api.discord_setting(ARTWORK, "true");
         api.discord_setting(UPLOAD, "false");
         api.discord_setting(RETENTION, RETENTION_DEFAULT);
@@ -423,6 +445,16 @@ mod tests {
         let after = api.discord.told.as_ref().map(|told| told.options.clone()).unwrap();
         assert!(!Arc::ptr_eq(&before, &after), "the options are read again and the status told again");
         assert!(!api.discord_setting("integrations.discord.nothing", "x"));
+        // The member list takes one of its three, the title by default.
+        let previous = api.preference(MEMBER_LIST);
+        assert_eq!(api.discord_member_list(), previous.as_deref().filter(|v| MEMBER_LISTS.iter().any(|(k, ..)| k == v)).unwrap_or("title"));
+        assert!(api.discord_setting(MEMBER_LIST, "artist"));
+        assert_eq!(api.discord_options().member_list, 1);
+        assert!(api.discord_setting(MEMBER_LIST, "nonsense"), "a value it does not know is taken and ignored");
+        assert_eq!(api.discord_member_list(), "artist");
+        assert!(api.discord_setting(MEMBER_LIST, "chilpa"));
+        assert_eq!(api.discord_options().member_list, 0);
+        api.discord_setting(MEMBER_LIST, previous.as_deref().unwrap_or("title"));
         let mut row = crate::SettingsRow { key: TITLE_FORMAT.into(), control: "text".into(), ..Default::default() };
         assert!(api.discord_row(&mut row));
         assert_eq!(row.control, if api.offline() { "" } else { "text" });
