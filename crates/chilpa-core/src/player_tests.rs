@@ -454,20 +454,20 @@ fn a_stream_that_was_announced_is_closed_once_whether_or_not_it_got_to_play() {
     let events = Events { to, generation: 9 };
     // Announced, and then let go of with nothing said: the device would not
     // open, or the play unwound.
-    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() };
+    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() };
     owed.announced.set(true);
     drop(owed);
     // Announced and played.
-    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() };
+    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() };
     owed.announced.set(true);
     owed.close(480, crate::attempts::How::Stopped);
     drop(owed);
     // Never announced: nothing is owed.
-    drop(Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() });
+    drop(Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() });
     let said: Vec<PlayerEvent> = heard.try_iter().map(|(_, event)| event).collect();
     assert_eq!(said, [
-        PlayerEvent::Closed { attempt: 1, index: 3, heard: 0, how: crate::attempts::How::Failed },
-        PlayerEvent::Closed { attempt: 1, index: 3, heard: 480, how: crate::attempts::How::Stopped },
+        PlayerEvent::Closed { attempt: 1, index: 3, heard: 0, how: crate::attempts::How::Failed, processed: false },
+        PlayerEvent::Closed { attempt: 1, index: 3, heard: 480, how: crate::attempts::How::Stopped, processed: false },
     ]);
 }
 
@@ -508,6 +508,11 @@ impl StreamFixture {
         let file = wav(name, frames);
         let bytes = std::fs::read(&file).unwrap();
         std::fs::remove_file(file).unwrap();
+        Self::serving(bytes)
+    }
+
+    /// Serves `bytes` as a WAV, once.
+    fn serving(bytes: Vec<u8>) -> Self {
         let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
         let address = listener.local_addr().unwrap();
         let thread = std::thread::spawn(move || {
@@ -756,6 +761,89 @@ fn a_real_stream_keeps_its_last_sample_when_write_panics() { stream_failure(Stre
 #[test]
 fn a_real_stream_keeps_its_heard_count_when_the_device_is_lost() { stream_failure(StreamFailure::DeviceLost, "stream-device-lost"); }
 
+/// Keeps every byte the output was handed.
+struct RecordingSink {
+    stream: StreamFormat,
+    bytes: Arc<std::sync::Mutex<Vec<u8>>>,
+}
+
+impl AudioSink for RecordingSink {
+    fn format(&self) -> StreamFormat { self.stream }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        let n = frames.len() / self.stream.frame_bytes();
+        self.bytes.lock().unwrap().extend_from_slice(&frames[..n * self.stream.frame_bytes()]);
+        Ok(n)
+    }
+    fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+}
+
+/// The samples a real HTTP stream reached a 16-bit output with, the
+/// player's volume set to `factor` before it started.
+fn heard(stream: StreamFixture, factor: f32) -> Vec<i16> {
+    let bytes = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let output = bytes.clone();
+    let p = Player::spawn(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(move |_, stream, _| Ok(Box::new(RecordingSink { stream, bytes: output.clone() }) as Box<dyn AudioSink + Send>)),
+    );
+    p.set_volume(factor);
+    p.play(&stream.path, "fake");
+    let events = finished_events(&p);
+    assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "{events:?}");
+    let samples = bytes.lock().unwrap().as_chunks::<2>().0.iter().map(|pair| i16::from_le_bytes(*pair)).collect();
+    samples
+}
+
+fn stream_at_volume(name: &str, factor: f32) -> Vec<i16> {
+    heard(StreamFixture::wave(name, 4_410), factor)
+}
+
+/// A stereo 32-bit float WAV holding `level` and its negative on every frame.
+fn float_wave(frames: u32, level: f32) -> Vec<u8> {
+    let data = frames * 8;
+    let mut bytes = Vec::with_capacity(44 + data as usize);
+    bytes.extend_from_slice(b"RIFF");
+    bytes.extend_from_slice(&(36 + data).to_le_bytes());
+    bytes.extend_from_slice(b"WAVEfmt ");
+    bytes.extend_from_slice(&16u32.to_le_bytes());
+    bytes.extend_from_slice(&3u16.to_le_bytes());
+    bytes.extend_from_slice(&2u16.to_le_bytes());
+    bytes.extend_from_slice(&44_100u32.to_le_bytes());
+    bytes.extend_from_slice(&352_800u32.to_le_bytes());
+    bytes.extend_from_slice(&8u16.to_le_bytes());
+    bytes.extend_from_slice(&32u16.to_le_bytes());
+    bytes.extend_from_slice(b"data");
+    bytes.extend_from_slice(&data.to_le_bytes());
+    for _ in 0..frames {
+        bytes.extend_from_slice(&level.to_le_bytes());
+        bytes.extend_from_slice(&(-level).to_le_bytes());
+    }
+    bytes
+}
+
+#[test]
+fn a_stream_is_scaled_by_the_player_volume_like_a_file() {
+    let untouched = stream_at_volume("stream-volume-unity", 1.0);
+    assert!(untouched.iter().any(|sample| *sample != 0), "the stream carries sound");
+    let muted = stream_at_volume("stream-volume-muted", 0.0);
+    assert_eq!(muted.len(), untouched.len());
+    assert!(muted.iter().all(|sample| *sample == 0), "a muted player plays a stream silent");
+    let quarter = stream_at_volume("stream-volume-quarter", 0.25);
+    assert_eq!(quarter.len(), untouched.len());
+    assert!(quarter.iter().zip(&untouched).all(|(low, full)| (f32::from(*low) - f32::from(*full) * 0.25).abs() <= 1.0),
+        "each sample is a quarter of itself, its sign kept, give or take the rounding");
+}
+
+#[test]
+fn a_stream_s_floats_are_scaled_before_the_integer_output_as_a_file_s() {
+    // Decoded lossy audio goes past full scale. A file is scaled while it is
+    // still float, so a lowered volume brings the overs back instead of
+    // clipping them first and halving the clipped samples.
+    let heard = heard(StreamFixture::serving(float_wave(1_000, 1.5)), 0.5);
+    assert_eq!(heard.len(), 2_000);
+    assert!(heard.as_chunks::<2>().0.iter().all(|pair| *pair == [24_576, -24_576]), "{:?}", &heard[..4]);
+}
+
 #[test]
 fn a_panic_releasing_pending_audio_marks_every_release_path_as_failed() {
     use crate::playback_events::Measured;
@@ -795,4 +883,101 @@ fn a_panic_releasing_pending_audio_marks_every_release_path_as_failed() {
         results.push((operation, said[0].heard, said[0].how));
     }
     assert_eq!(results, ["close", "handoff", "flush", "suspend", "pause", "wake"].map(|operation| (operation, 59, crate::attempts::How::Failed)));
+}
+
+/// Lowers the player's volume once it has been handed its first block,
+/// as a listener does halfway through a track; with no volume to lower it
+/// only counts.
+struct LoweringSink {
+    stream: StreamFormat,
+    volume: Arc<std::sync::OnceLock<crate::queue_playback::Level>>,
+    written: bool,
+}
+
+impl AudioSink for LoweringSink {
+    fn format(&self) -> StreamFormat { self.stream }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        if !std::mem::replace(&mut self.written, true) {
+            if let Some(volume) = self.volume.get() { volume.set(0.5); }
+        }
+        Ok(frames.len() / self.stream.frame_bytes())
+    }
+    fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+}
+
+/// What the `Closed` of `path` says of its samples, the volume lowered
+/// after its first block or left alone.
+fn closed_as_processed(path: &Path, lower: bool) -> Option<bool> {
+    let volume = Arc::new(std::sync::OnceLock::new());
+    let held = volume.clone();
+    let p = Player::spawn(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(move |_, stream, _| Ok(Box::new(LoweringSink { stream, volume: held.clone(), written: false }) as Box<dyn AudioSink + Send>)),
+    );
+    if lower {
+        volume.set(p.controls.volume.clone()).unwrap();
+    }
+    p.play(path, "fake");
+    let events = finished_events(&p);
+    assert!(matches!(events.last(), Some(PlayerEvent::Finished { .. })), "{events:?}");
+    events.iter().find_map(|event| match event { PlayerEvent::Closed { processed, .. } => Some(*processed), _ => None })
+}
+
+#[test]
+fn a_track_whose_volume_moved_after_it_started_is_closed_as_processed() {
+    let file = wav("volume-moved", 44_100);
+    assert_eq!(closed_as_processed(&file, false), Some(false), "a file left alone");
+    assert_eq!(closed_as_processed(&file, true), Some(true), "a file lowered halfway");
+    std::fs::remove_file(file).unwrap();
+    let stream = StreamFixture::wave("volume-moved-stream", 44_100);
+    assert_eq!(closed_as_processed(&stream.path, true), Some(true), "a stream lowered halfway");
+    let stream = StreamFixture::wave("volume-left-stream", 44_100);
+    assert_eq!(closed_as_processed(&stream.path, false), Some(false), "a stream left alone");
+}
+
+/// What the `Closed` of `path` says of its samples, changed from the start
+/// by a lowered volume or by DSP, and then cut by `failure` at the output.
+fn closed_after_failure(path: &Path, failure: StreamFailure, by_dsp: bool) -> Vec<bool> {
+    let written = Arc::new(AtomicU64::new(0));
+    let output = written.clone();
+    let p = Player::spawn(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(move |_, format, _| Ok(Box::new(FailingStreamSink { format, failure, written: output.clone(), discarded: false }) as Box<dyn AudioSink + Send>)),
+    );
+    if by_dsp {
+        p.dsp().set(Some(chilpa_audio::dsp::Preset { preamp_db: -6.0, ..Default::default() })).unwrap();
+    } else {
+        p.set_volume(0.5);
+    }
+    p.play(path, "fake");
+    let events = finished_events(&p);
+    assert!(written.load(Ordering::Acquire) > 0, "changed audio reached the output first: {events:?}");
+    events.iter().filter_map(|event| match event { PlayerEvent::Closed { processed, .. } => Some(*processed), _ => None }).collect()
+}
+
+#[test]
+fn a_scaled_stream_whose_drain_failed_is_closed_as_processed() {
+    let stream = StreamFixture::wave("scaled-then-drain-failed", 4_410);
+    assert_eq!(closed_after_failure(&stream.path, StreamFailure::Drain, false), [true]);
+}
+
+#[test]
+fn a_scaled_stream_that_unwound_is_closed_as_processed() {
+    let stream = StreamFixture::wave("scaled-stream-then-write-panicked", 4_410);
+    assert_eq!(closed_after_failure(&stream.path, StreamFailure::WritePanic, false), [true]);
+}
+
+#[test]
+fn a_scaled_file_that_unwound_is_closed_as_processed() {
+    let file = wav("scaled-file-then-write-panicked", 4_410);
+    assert_eq!(closed_after_failure(&file, StreamFailure::WritePanic, false), [true]);
+    std::fs::remove_file(file).unwrap();
+}
+
+#[test]
+fn a_file_the_dsp_changed_and_that_unwound_is_closed_as_processed() {
+    // The volume stays at unity: only the DSP's witness can say it.
+    let file = wav("dsp-then-write-panicked", 4_410);
+    assert_eq!(closed_after_failure(&file, StreamFailure::WritePanic, true), [true]);
+    std::fs::remove_file(file).unwrap();
 }

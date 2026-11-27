@@ -102,10 +102,14 @@ TestCase {
         const score=findChild(hit,"metadataReleaseHitScore")
         waitForRendering(hit)
         verify(score.visible)
-        compare(score.text,"93 / 100")
+        compare(score.text,"93%")
         verify(!score.truncated)
         verify(score.x + score.width <= hit.width)
         verify(title.mapToItem(hit,0,0).x + title.width <= score.x)
+        const disc=document("beets")
+        disc.lookup.hits[0].discs=[2]
+        MetadataEditor.show(disc)
+        tryCompare(score,"text","93% · Disc 2")
         hit.forceActiveFocus(); keyClick(Qt.Key_Return)
         compare(MetadataEditor.loadedHits,[0])
     }

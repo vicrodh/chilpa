@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic as Controls
 import QtQuick.Dialogs
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/LocalPaths.js" as LocalPaths
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
@@ -63,7 +64,7 @@ Flickable {
             PillButton { objectName: "deviceChooseFolder"; text: I18n.tr("Choose a folder…", I18n.rev); enabled: !form.busy; onClicked: picker.open() }
             Text {
                 width: parent.width
-                text: decodeURIComponent(form.chosenFolder.replace(/^file:\/\//, ""))
+                text: LocalPaths.fromUrl(form.chosenFolder)
                 textFormat: Text.PlainText
                 elide: Text.ElideMiddle
                 font.pointSize: Type.small

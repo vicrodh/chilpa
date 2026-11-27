@@ -3,6 +3,7 @@ import QtQuick.Dialogs
 import app.chilpa.kit
 import app.chilpa.themes
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/LocalPaths.js" as LocalPaths
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 
@@ -130,6 +131,6 @@ Item {
         id: imageDialog
         title: I18n.tr("Select Image...", I18n.rev)
         nameFilters: [I18n.tr("Image", I18n.rev) + " (*.png *.jpg *.jpeg *.webp *.bmp)"]
-        onAccepted: ThemeEditor.setImage(decodeURIComponent(selectedFile.toString().replace(/^file:\/\//, "")))
+        onAccepted: ThemeEditor.setImage(LocalPaths.fromUrl(selectedFile))
     }
 }

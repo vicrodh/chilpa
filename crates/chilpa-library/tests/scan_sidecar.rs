@@ -408,3 +408,32 @@ fn a_sidecar_that_cannot_be_read_this_time_is_asked_again_next_time() {
     assert_eq!(rows(&lib), with);
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_deleted_sidecar_read_back_file_by_file_leaves_the_files_title_and_the_folder_s_cover() {
+    let Some(dir) = record("deleted") else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    std::fs::write(dir.join("Record/cover.jpg"), b"the folder's").unwrap();
+    let lib = Library::in_memory().unwrap();
+    let cache = dir.join("cache");
+    let (home, _) = home_of(&dir);
+    stage(&home, overriding(), Some((b"the chosen one", "jpg")), 1).unwrap().land().unwrap();
+    chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+    assert_eq!(rows(&lib)[0].1, "Sidecar one");
+    assert_eq!(albums(&lib)[0].3.as_deref(), Some(home.cover("jpg").to_string_lossy().as_ref()));
+
+    // What the editor's delete does: an empty sidecar lands, then each file is read again.
+    stage(&home, Sidecar::new(2), None, 2).unwrap().land().unwrap();
+    assert!(!home.sidecar().exists() && !home.cover("jpg").exists(), "the sidecar goes with its cover");
+    let ids: Vec<(i64, String)> = lib.connection().prepare("SELECT id, external_id FROM tracks ORDER BY external_id").unwrap()
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?))).unwrap().collect::<Result<_, _>>().unwrap();
+    for (id, file) in &ids {
+        chilpa_library::scan::reconcile_metadata_file(&lib, *id, file, Path::new(file)).unwrap();
+        chilpa_library::scan::reclaim_cover(&lib, *id, Path::new(file), &cache).unwrap();
+    }
+    assert_eq!(rows(&lib)[0].1, "One", "the file's own title");
+    assert!(albums(&lib).iter().any(|album| album.3.as_deref().is_some_and(|cover| cover.ends_with("Record/cover.jpg"))), "the folder's cover again: {:?}", albums(&lib));
+    let _ = std::fs::remove_dir_all(dir);
+}

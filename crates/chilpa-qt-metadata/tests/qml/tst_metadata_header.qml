@@ -34,6 +34,33 @@ TestCase {
         MetadataEditor.modes = []
     }
 
+    SignalSpy { id: dropAsked; target: header; signalName: "dropSidecarAsked" }
+    SignalSpy { id: replaceAsked; target: header; signalName: "replaceAsked" }
+
+    function test_replace_asks_the_screen_for_its_dialog() {
+        const button = findChild(header, "metadataReplace")
+        verify(button.visible && button.enabled)
+        replaceAsked.clear()
+        button.clicked()
+        compare(replaceAsked.count, 1)
+    }
+
+    function test_a_sidecar_on_this_machine_can_be_deleted_from_the_head() {
+        const button = findChild(header, "metadataDropSidecar")
+        verify(!button.visible, "nothing to delete without a sidecar")
+        const kept = JSON.parse(JSON.stringify(test.files))
+        kept.save.sidecar_kept = true
+        header.doc = kept
+        verify(button.visible && button.enabled)
+        dropAsked.clear()
+        button.clicked()
+        compare(dropAsked.count, 1, "the screen asks before anything goes")
+        const saving = JSON.parse(JSON.stringify(kept))
+        saving.state = "saving"
+        header.doc = saving
+        verify(!button.enabled)
+    }
+
     function test_a_record_of_files_chooses_where_a_save_goes() {
         verify(findChild(header, "metadataSaveTo").visible, "the sidecar or the files")
         verify(!findChild(header, "metadataSaveToServer").visible)

@@ -31,7 +31,9 @@ pub(crate) fn native(root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &
     }
     let package = repositories.stage(repo, id)?;
     let (package_root, manifest) = crate::native_install::check(&package, &entry)?;
-    if installed.is_some() && active.load(std::sync::atomic::Ordering::Acquire) { return Err("Waiting for playback to stop.".into()); }
+    if installed.is_some() && active.load(std::sync::atomic::Ordering::Acquire) {
+        return Err(if automatic { "Waiting for playback to stop." } else { "Pause playback to update a plugin." }.into());
+    }
     let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
     // Its permissions are not put to the user for a process that cannot start here.
     runtime_available(&host, &manifest)?;

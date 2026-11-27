@@ -3,6 +3,7 @@ import QtQuick.Dialogs
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/LocalPaths.js" as LocalPaths
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // Where the playlist comes from: the origins the importer declares, in its
@@ -64,7 +65,7 @@ Column {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - choose.width - parent.spacing
                 textFormat: Text.PlainText; elide: Text.ElideMiddle; font.pointSize: Type.body
-                text: step.file !== "" ? decodeURIComponent(step.file.replace(/^file:\/\//, "")) : I18n.tr("No file chosen", I18n.rev)
+                text: step.file !== "" ? LocalPaths.fromUrl(step.file) : I18n.tr("No file chosen", I18n.rev)
                 color: step.file !== "" ? Theme.color.textPrimary : Theme.color.textTertiary
             }
         }

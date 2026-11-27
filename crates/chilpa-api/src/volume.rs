@@ -56,6 +56,13 @@ impl Chilpa {
         VolumeView { percent, muted, ..VolumeView::default() }
     }
 
+    /// Grows when [`Chilpa::player_volume`] may read differently: a step
+    /// from the window, the desktop or the tray, a mute, or a change of the
+    /// route that locks or frees the slider.
+    pub fn volume_revision(&self) -> u64 {
+        self.volume_revision
+    }
+
     fn pipewire_one_bit(&self) -> bool {
         self.now.playing && self.dsp.passthrough && self.stack_of(&self.chosen_output().0) == "pipewire"
     }
@@ -67,6 +74,8 @@ impl Chilpa {
 
     /// I apply a drag immediately and keep only its latest value in memory.
     pub fn preview_player_volume(&mut self, percent: u8) {
+        // Counted even when locked: whoever asked sees the slider stay put.
+        self.volume_revision += 1;
         if self.casting.active() { self.cast_set_volume(percent); return; }
         let percent = percent.min(100);
         let view = self.player_volume();
@@ -94,6 +103,7 @@ impl Chilpa {
     }
 
     pub fn set_player_muted(&mut self, muted: bool) {
+        self.volume_revision += 1;
         if self.casting.active() { self.cast_set_muted(muted); return; }
         let view = self.player_volume();
         if view.locked {
@@ -159,6 +169,7 @@ impl Chilpa {
     /// Hands the player the volume as it stands, and says at once that the
     /// samples are no longer untouched when it scales them.
     pub(crate) fn apply_volume(&mut self) {
+        self.volume_revision += 1;
         let gain = self.software_gain();
         if let Some(p) = &self.player {
             p.set_volume(gain);
@@ -231,6 +242,40 @@ mod tests {
         api.now.playing = false;
         api.dsp.passthrough = true;
         assert!(!api.player_volume().locked, "an old stream cannot lock a stopped player");
+    }
+
+    #[test]
+    fn a_step_from_outside_reaches_the_window_and_a_locked_route_reads_full() {
+        const CHILD: &str = "CHILPA_TEST_VOLUME_REVISION";
+        if std::env::var(CHILD).as_deref() != Ok("1") {
+            let profile = tempfile::tempdir().unwrap();
+            let result = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "volume::tests::a_step_from_outside_reaches_the_window_and_a_locked_route_reads_full", "--nocapture"])
+                .env(CHILD, "1").envs(crate::test_support::profile_environment(profile.path())).output().unwrap();
+            assert!(result.status.success(), "{}\n{}", String::from_utf8_lossy(&result.stdout), String::from_utf8_lossy(&result.stderr));
+            assert!(String::from_utf8_lossy(&result.stdout).contains("1 passed; 0 failed"));
+            return;
+        }
+        let mut api = Chilpa::new();
+        api.remember("pipewire:volume-fixture", false);
+        let before = api.volume_revision();
+        // What the desktop's SetVolume and the tray's wheel call.
+        api.set_player_volume(40);
+        assert!(api.volume_revision() > before, "the window re-reads a step it did not make");
+        assert_eq!(api.player_volume().percent, 40);
+        api.now.playing = true;
+        api.dsp.passthrough = true;
+        assert!(api.player_volume().locked);
+        let locked = api.volume_revision();
+        api.set_player_volume(70);
+        assert!(api.volume_revision() > locked, "a refused step is told back, so the desktop's slider returns");
+        assert_eq!(api.player_volume().percent, 100, "a locked route reads full");
+        api.dsp.passthrough = false;
+        assert_eq!(api.player_volume().percent, 40, "the refused step left the saved volume alone");
+        let unmuted = api.volume_revision();
+        api.set_player_muted(true);
+        assert!(api.volume_revision() > unmuted);
+        assert!(api.player_volume().muted);
     }
 
     #[test]

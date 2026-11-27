@@ -23,15 +23,15 @@ fn row(api: &mut Chilpa, key: &str) -> crate::settings_rows::SettingsRow {
 
 #[test]
 fn refusals_follow_the_switch_and_its_child() {
-    let off = Protection { on: false, sidecars: false };
+    let off = Protection { on: false, sidecars: false, ignore: false };
     assert!(off.writes_refused().is_empty() && off.sidecar_refused().is_empty());
-    let on = Protection { on: true, sidecars: false };
+    let on = Protection { on: true, sidecars: false, ignore: false };
     assert!(!on.writes_refused().is_empty());
     assert_eq!(on.sidecar_refused(), on.writes_refused());
-    let sidecars = Protection { on: true, sidecars: true };
+    let sidecars = Protection { on: true, sidecars: true, ignore: false };
     assert!(!sidecars.writes_refused().is_empty());
     assert!(sidecars.sidecar_refused().is_empty());
-    let child_alone = Protection { on: false, sidecars: true };
+    let child_alone = Protection { on: false, sidecars: true, ignore: false };
     assert!(child_alone.writes_refused().is_empty() && child_alone.sidecar_refused().is_empty());
 }
 
@@ -48,10 +48,37 @@ fn both_start_off_and_the_child_waits_for_its_parent() {
     assert_eq!(row(&mut api, SIDECARS).control, "toggle");
     assert!(api.adjust(SIDECARS, "true"));
     assert!(api.protected_sidecars());
-    assert_eq!(Protection::kept(), Protection { on: true, sidecars: true });
+    assert_eq!(Protection::kept(), Protection { on: true, sidecars: true, ignore: false });
     assert!(!api.adjust(ENABLED, "maybe"));
     assert!(api.adjust(ENABLED, "false"));
     assert!(Protection::kept().writes_refused().is_empty());
+}
+
+#[test]
+fn sidecars_are_ignored_only_while_they_are_not_allowed() {
+    assert!(Protection { on: true, sidecars: false, ignore: true }.ignores_sidecars());
+    assert!(!Protection { on: true, sidecars: true, ignore: true }.ignores_sidecars(), "allowed, they are read");
+    assert!(!Protection { on: false, sidecars: false, ignore: true }.ignores_sidecars(), "unprotected, they are read");
+    assert!(!Protection { on: true, sidecars: false, ignore: false }.ignores_sidecars());
+}
+
+#[test]
+fn the_ignore_switch_shows_with_sidecars_refused_and_tells_the_library() {
+    if !isolated("library_protection::tests::the_ignore_switch_shows_with_sidecars_refused_and_tells_the_library") { return; }
+    let mut api = Chilpa::new();
+    let shown = |api: &mut Chilpa| api.settings_rows("library", &crate::settings_rows::RowNotes::default()).0.iter().any(|row| row.key == IGNORE);
+    assert!(!shown(&mut api), "nothing to ignore while sidecars are read");
+    assert!(api.adjust(ENABLED, "true"));
+    assert!(shown(&mut api), "protected without sidecars, they can be left unread");
+    assert_eq!(row(&mut api, IGNORE).value, "false");
+    assert!(!chilpa_library::sidecar::ignored());
+    assert!(api.adjust(IGNORE, "true"));
+    assert!(chilpa_library::sidecar::ignored(), "the library leaves them unread");
+    assert!(api.adjust(SIDECARS, "true"));
+    assert!(!shown(&mut api));
+    assert!(!chilpa_library::sidecar::ignored(), "allowed again, they are read again");
+    assert!(api.adjust(SIDECARS, "false"));
+    assert!(chilpa_library::sidecar::ignored(), "the switch kept its place");
 }
 
 #[test]

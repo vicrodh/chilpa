@@ -81,8 +81,8 @@ mod tests {
         }
         let mut api = Chilpa::new();
         api.library = Some(lib);
-        assert_eq!(api.albums(20, 0).iter().map(|v| v.id).collect::<Vec<_>>(), [b]);
-        assert_eq!(api.artist_albums("Band")[0].id, b);
+        assert_eq!(api.albums(20, 0).iter().map(|v| v.id).collect::<Vec<_>>(), [a], "the local copy over the server's");
+        assert_eq!(api.artist_albums("Band")[0].id, a);
         assert_eq!(api.artist_release_cards("Band", false).len(), 1);
         assert!(api.set_group_artist_versions(false));
         assert_eq!(api.artist_release_cards("Band", false).len(), 2);
@@ -90,20 +90,21 @@ mod tests {
         assert!(api.set_group_artist_versions(true));
         let versions = api.album_versions(a);
         assert_eq!(versions.len(), 2);
-        assert_eq!(versions[0].id, b);
-        assert!(versions[0].label.starts_with("Home server · FLAC"));
-        assert_eq!(versions[0].brief, "Home server · FLAC 24-96");
-        assert!(versions[0].label.contains("1994 Remaster"));
-        assert!(versions[0].label.ends_with("1 track"));
-        assert_eq!(versions[0].source.icon, "qrc:/source.svg");
-        assert!(!versions[0].source.local);
+        assert_eq!((versions[0].id, versions[0].source.local), (a, true));
+        assert_eq!(versions[1].id, b);
+        assert!(versions[1].label.starts_with("Home server · FLAC"));
+        assert_eq!(versions[1].brief, "Home server · FLAC 24-96");
+        assert!(versions[1].label.contains("1994 Remaster"));
+        assert!(versions[1].label.ends_with("1 track"));
+        assert_eq!(versions[1].source.icon, "qrc:/source.svg");
+        assert!(!versions[1].source.local);
         assert_eq!(api.album_sources(a).len(), 2);
-        assert!(api.select_album_version(b, a));
-        assert_eq!(api.albums(20, 0)[0].id, a);
-        assert_eq!(api.artist_albums("Band")[0].id, a);
-        assert_eq!(api.album_track_rows(a).len(), 1);
-        assert_eq!(api.album_detail(a).unwrap().album.track_count, 1);
-        assert_eq!(api.album_paths(&[a]), ["1.flac"]);
+        assert!(api.select_album_version(a, b));
+        assert_eq!(api.albums(20, 0)[0].id, b);
+        assert_eq!(api.artist_albums("Band")[0].id, b);
+        assert_eq!(api.album_track_rows(b).len(), 1);
+        assert_eq!(api.album_detail(b).unwrap().album.track_count, 1);
+        assert_eq!(api.album_paths(&[b]), ["1.flac"]);
         assert!(api.set_group_album_versions(false));
         assert_eq!(api.albums(20, 0).len(), 2);
         assert_eq!(api.artist_release_cards("Band", false).len(), 1);
@@ -112,7 +113,7 @@ mod tests {
         assert_eq!(api.artist_release_cards("Band", false).len(), 2);
         assert_eq!(api.album_sources(a).len(), 1);
         assert!(api.set_group_album_versions(true));
-        assert_eq!(api.albums(20, 0)[0].id, a);
+        assert_eq!(api.albums(20, 0)[0].id, b, "the choice persists");
     }
 }
 

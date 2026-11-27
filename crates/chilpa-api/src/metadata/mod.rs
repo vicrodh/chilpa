@@ -13,10 +13,13 @@ pub(crate) use apply::said as failure_message;
 mod artwork;
 pub(crate) mod beets;
 mod draft;
+mod drop;
 pub(crate) mod fields;
 mod hosted;
 mod preview;
 mod save;
+mod substitute;
+pub use substitute::ReplaceField;
 mod server;
 pub mod view;
 pub(crate) mod worker;
@@ -485,9 +488,13 @@ impl Chilpa {
                             by_catalog.or_else(|| (discs.len() == 1).then(|| *discs.first().unwrap_or(&0)).filter(|n| *n > 1 && *n <= release.discs))
                                 .unwrap_or(0)
                         });
-                        let matched = editor.draft.as_ref().map_or(0, |d| apply::pair_for(d, &release, editor.selected_disc).iter().flatten().count());
-                        let total = editor.draft.as_ref().map_or(0, |d| d.rows.len());
-                        editor.notice = chilpa_i18n::t_args("{} of {} tracks match this release", &[&matched.to_string(), &total.to_string()]);
+                        let (pairs, by_order) = editor.draft.as_ref().map_or((Vec::new(), false), |d| apply::pairing(d, &release, editor.selected_disc));
+                        let (matched, total) = (pairs.iter().flatten().count(), editor.draft.as_ref().map_or(0, |d| d.rows.len()));
+                        editor.notice = if by_order {
+                            chilpa_i18n::t_args("{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying.", &[&matched.to_string(), &total.to_string()])
+                        } else {
+                            chilpa_i18n::t_args("{} of {} tracks match this release", &[&matched.to_string(), &total.to_string()])
+                        };
                         editor.release = Some(release);
                         editor.rebuild_preview();
                     }
@@ -503,7 +510,10 @@ impl Chilpa {
                         Ok(response) => {
                             editor.beets.accept(response);
                             editor.hits = editor.beets.candidates.iter().map(beets::hit).collect();
-                            if probing { editor.notice = chilpa_i18n::t_args("beets {} is ready.", &[&editor.beets.version]); }
+                            if probing {
+                                editor.notice = if editor.beets.version == chilpa_meta::beets::BEETS_VERSION { chilpa_i18n::t_args("beets {} is ready.", &[&editor.beets.version]) }
+                                    else { chilpa_i18n::t_args("beets {} is ready, but Chilpa was tested with beets {}; lookups may not work.", &[&editor.beets.version, chilpa_meta::beets::BEETS_VERSION]) };
+                            }
                             else if editor.hits.is_empty() { editor.error = chilpa_i18n::t("nothing was found"); }
                         }
                         Err(error) => editor.error = beets::said(error),
@@ -528,6 +538,7 @@ impl Chilpa {
             Done::Saved { written, .. } => return self.metadata_saved(written, None),
             Done::SaveFailed { reason, written, .. } => return self.metadata_saved(written, Some(reason)),
             Done::ServerSaved { outcome, .. } => return self.metadata_server_saved(outcome),
+            Done::Dropped { failed, contained, .. } => return self.metadata_dropped(failed, contained),
             // For a search, a load or a cover that is no longer the last asked for.
             other => artwork::discard(&other),
         }

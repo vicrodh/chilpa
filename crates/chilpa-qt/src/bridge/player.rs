@@ -163,7 +163,7 @@ const TICK: std::time::Duration = std::time::Duration::from_millis(250);
 
 #[derive(Default)]
 pub struct PlayerRust {
-    casting: bool,
+    volume_seen: (bool, u64),
     gapless: bool,
     normalize: bool,
     normalize_applies: bool,
@@ -367,11 +367,11 @@ impl qobject::Player {
     fn tick(mut self: Pin<&mut Self>) {
         let lyrics_shown = self.rust().lyrics_shown;
         let origin_seen = &self.rust().origin_seen;
-        let (now, origin, changed, casting, remote, queue_busy, outputs_rev, channel_rev) = app::with(|api| {
+        let (now, origin, changed, casting, remote, queue_busy, outputs_rev, channel_rev, volume_rev) = app::with(|api| {
             let now = chilpa_api::playback_view::PlaybackView::read(api.poll(), lyrics_shown);
             let origin = (api.playing_origin() != origin_seen.as_ref())
                 .then(|| (api.playing_origin().cloned(), api.playing_origin_json()));
-            (now, origin, api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy(), api.outputs_revision(), api.channel_offer_revision())
+            (now, origin, api.library_changed(), api.cast_destination().is_some(), api.source_revisions(), api.queue_busy(), api.outputs_revision(), api.channel_offer_revision(), api.volume_revision())
         });
         // The stacks answered, or a card came or went: the route follows, and the panel tells the lists.
         if chilpa_qt_controls::bridge::audio_output::publish(outputs_rev, channel_rev) { self.as_mut().read_route(); }
@@ -387,8 +387,8 @@ impl qobject::Player {
             use chilpa_api::WindowRequest;
             self.as_mut().window_asked(match asked { WindowRequest::Raise => 0, WindowRequest::Quit => 1, WindowRequest::Toggle => 2, WindowRequest::QuitAsked => 3, WindowRequest::Open => 4 });
         }
-        if casting || casting != self.rust().casting { self.as_mut().read_volume(); }
-        self.as_mut().rust_mut().casting = casting;
+        if casting || (casting, volume_rev) != self.rust().volume_seen { self.as_mut().read_volume(); }
+        self.as_mut().rust_mut().volume_seen = (casting, volume_rev);
         // A sync, a server or a folder came or went underneath the lists.
         if changed {
             crate::registry::library(|l| l.content_changed());

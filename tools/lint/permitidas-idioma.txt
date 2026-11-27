@@ -273,6 +273,7 @@ println
 proc
 propertykey
 propvariant
+proto
 ptr
 qinvokable
 qml

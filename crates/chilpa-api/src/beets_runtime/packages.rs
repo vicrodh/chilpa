@@ -49,6 +49,26 @@ pub(super) fn installed() -> Option<Installation> {
     (result.format == 1 && result.beets == BEETS && result.os == std::env::consts::OS && result.arch == std::env::consts::ARCH
         && owned(&root,&result.generation) && result.python().is_file()).then_some(result)
 }
+/// What Chilpa installed and still works with its own beets: the
+/// record of a copy of another version, which this Chilpa offers to update.
+fn recorded() -> Option<Installation> {
+    let root = root();
+    let mut bytes = Vec::new();
+    fs::File::open(root.join("current.json")).ok()?.take(8193).read_to_end(&mut bytes).ok()?;
+    if bytes.len() > 8192 { return None; }
+    let result: Installation = serde_json::from_slice(&bytes).ok()?;
+    (result.format == 1 && result.os == std::env::consts::OS && result.arch == std::env::consts::ARCH
+        && owned(&root,&result.generation) && result.python().is_file()).then_some(result)
+}
+/// The version of a copy Chilpa installed that is not the one this Chilpa
+/// works with.
+pub(super) fn outdated() -> Option<String> {
+    recorded().map(|installation| installation.beets).filter(|version| version != BEETS)
+}
+/// Whether `python` is the copy Chilpa installed, whatever its version.
+pub(super) fn is_managed(python: &str) -> bool {
+    recorded().is_some_and(|installation| installation.python() == Path::new(python))
+}
 fn active_generation(path: &str) -> Option<String> {
     let root = root();
     let relative = Path::new(path).strip_prefix(&root).ok()?;

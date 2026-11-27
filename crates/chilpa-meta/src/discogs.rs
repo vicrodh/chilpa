@@ -247,6 +247,7 @@ fn hit_of(row: &Value) -> Option<Hit> {
         format: texts(&row["format"]).join(", "),
         score: 0,
         release_group_id: String::new(),
+        discs: Vec::new(),
     })
 }
 

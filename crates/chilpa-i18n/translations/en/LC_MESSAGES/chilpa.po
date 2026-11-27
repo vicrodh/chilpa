@@ -1445,6 +1445,9 @@ msgstr ""
 msgid "Chilpa does not send {} requests to a server"
 msgstr ""
 
+msgid "Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it."
+msgstr ""
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr ""
 
@@ -1631,7 +1634,7 @@ msgstr ""
 msgid "Choose an available writable storage."
 msgstr "Choose an available writable storage."
 
-msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
+msgid "Choose an existing environment with beets. Chilpa is tested with beets 2.14.1; another version may not work. Leave this empty to use Chilpa's installed copy."
 msgstr ""
 
 msgid "Choose an image"
@@ -2441,8 +2444,14 @@ msgstr ""
 msgid "Delete selected presets?"
 msgstr ""
 
+msgid "Delete sidecar"
+msgstr ""
+
 msgid "Delete the saved query “{}”?"
 msgstr "Delete the saved query “{}”?"
+
+msgid "Delete the sidecar?"
+msgstr ""
 
 msgid "Delete track from server?"
 msgstr "Delete track from server?"
@@ -2780,6 +2789,9 @@ msgstr ""
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr ""
+
 msgid "Earlier"
 msgstr ""
 
@@ -3093,6 +3105,9 @@ msgid "Filter tracks"
 msgstr "Filter tracks"
 
 msgid "Filter, Enter to search, or a stream URL"
+msgstr ""
+
+msgid "Find"
 msgstr ""
 
 msgid "Find a preset or device"
@@ -3674,6 +3689,9 @@ msgid "Identity and provenance"
 msgstr ""
 
 msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
+msgstr ""
+
+msgid "Ignore existing sidecars"
 msgstr ""
 
 msgid "Image"
@@ -4298,6 +4316,9 @@ msgstr ""
 msgid "Listening time"
 msgstr ""
 
+msgid "Lists and playback use each file's own tags. When off, Chilpa keeps reading the sidecars already written."
+msgstr ""
+
 msgid "Lite fill"
 msgstr ""
 
@@ -4500,6 +4521,9 @@ msgid "Mastering engineer"
 msgstr ""
 
 msgid "Match"
+msgstr ""
+
+msgid "Match case"
 msgstr ""
 
 msgid "Match score: {}"
@@ -5403,6 +5427,9 @@ msgid "Only songs already in your library"
 msgstr "Only songs already in your library"
 
 msgid "Only the first {} outputs are listed."
+msgstr ""
+
+msgid "Only the whole value"
 msgstr ""
 
 msgid "Only tracks from this server go in its playlists"
@@ -6652,6 +6679,9 @@ msgstr ""
 msgid "Repeat"
 msgstr ""
 
+msgid "Replace"
+msgstr ""
+
 msgid "Replace current queue"
 msgstr ""
 
@@ -6664,7 +6694,19 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr ""
 
+msgid "Replace text"
+msgstr ""
+
+msgid "Replace text in a field"
+msgstr ""
+
 msgid "Replace values"
+msgstr ""
+
+msgid "Replace with"
+msgstr ""
+
+msgid "Replace…"
 msgstr ""
 
 msgid "Report an issue"
@@ -9086,6 +9128,9 @@ msgstr "Type / version"
 msgid "Type the code"
 msgstr ""
 
+msgid "Type the text to find."
+msgstr ""
+
 msgid "Type words and press Enter"
 msgstr ""
 
@@ -9244,6 +9289,9 @@ msgstr "Update all"
 
 msgid "Update available"
 msgstr "Update available"
+
+msgid "Update beets"
+msgstr ""
 
 msgid "Update cancelled."
 msgstr ""
@@ -9506,6 +9554,9 @@ msgid "What one press does. A second press right after goes to the previous trac
 msgstr "What one press does. A second press right after goes to the previous track."
 
 msgid "What should happen to the original queues?"
+msgstr ""
+
+msgid "What the sidecar says of this record goes, and its tracks show what their files say again. Changes not saved are lost too. This cannot be undone."
 msgstr ""
 
 msgid "What this route reports"
@@ -9877,6 +9928,9 @@ msgstr ""
 msgid "beets settings"
 msgstr ""
 
+msgid "beets {} is ready, but Chilpa was tested with beets {}; lookups may not work."
+msgstr ""
+
 msgid "beets {} is ready."
 msgstr ""
 
@@ -10207,6 +10261,9 @@ msgid "none of that server's addresses answers from here"
 msgstr ""
 
 msgid "not supported: {}"
+msgstr ""
+
+msgid "nothing matched"
 msgstr ""
 
 msgid "nothing was found"
@@ -10901,7 +10958,16 @@ msgstr ""
 msgid "the server's certificate is not trusted by this system"
 msgstr ""
 
+msgid "the sidecar could not be deleted: {}"
+msgstr ""
+
 msgid "the sidecar could not be written: {}"
+msgstr ""
+
+msgid "the sidecar was deleted"
+msgstr ""
+
+msgid "the sidecar was deleted, and the library could not read the files again: {}; rescan to see them"
 msgstr ""
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
@@ -11034,6 +11100,9 @@ msgid "this part of the source is not there now"
 msgstr ""
 
 msgid "this plugin declared no network permission"
+msgstr ""
+
+msgid "this record has no sidecar"
 msgstr ""
 
 msgid "this server cannot move a track that is in the playlist more than once"
@@ -11436,6 +11505,9 @@ msgstr ""
 msgid "{} of {} tracks match this release"
 msgstr ""
 
+msgid "{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying."
+msgstr ""
+
 msgid "{} part"
 msgid_plural "{} parts"
 msgstr[0] ""
@@ -11562,6 +11634,11 @@ msgstr ""
 
 msgid "{} unreadable"
 msgstr "{} unreadable"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} was not allowed in time; connect again"
 msgstr ""

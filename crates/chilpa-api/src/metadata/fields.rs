@@ -78,6 +78,44 @@ pub(crate) fn track(name: &str) -> Option<usize> {
     TRACK.iter().position(|f| f.name == name)
 }
 
+/// Whether a field's values can have text replaced in them: words, and the
+/// words of a list. Numbers, dates and identifiers cannot.
+pub(crate) fn replaceable(kind: Kind) -> bool {
+    matches!(kind, Kind::Text(_) | Kind::List)
+}
+
+/// `text` with `find` replaced by `to`. `whole` replaces the value only when
+/// it is `find`, ignoring the spaces around it; otherwise every occurrence
+/// is replaced. `case` tells capitals apart. Letters are compared one by one,
+/// so no character is ever cut in half.
+pub(crate) fn substitute(text: &str, find: &str, to: &str, whole: bool, case: bool) -> String {
+    if find.is_empty() {
+        return text.to_string();
+    }
+    let same = |a: char, b: char| if case { a == b } else { a == b || a.to_lowercase().eq(b.to_lowercase()) };
+    let needle: Vec<char> = find.chars().collect();
+    if whole {
+        let held: Vec<char> = text.trim().chars().collect();
+        let wanted: Vec<char> = find.trim().chars().collect();
+        let matches = held.len() == wanted.len() && held.iter().zip(&wanted).all(|(a, b)| same(*a, *b));
+        return if matches { to.to_string() } else { text.to_string() };
+    }
+    let letters: Vec<char> = text.chars().collect();
+    let mut out = String::with_capacity(text.len());
+    let mut at = 0;
+    while at < letters.len() {
+        let end = at + needle.len();
+        if end <= letters.len() && letters[at..end].iter().zip(&needle).all(|(a, b)| same(*a, *b)) {
+            out.push_str(to);
+            at = end;
+        } else {
+            out.push(letters[at]);
+            at += 1;
+        }
+    }
+    out
+}
+
 pub(crate) fn label(name: &str, of_track: bool) -> String {
     let label = match name {
         "title" if of_track => chilpa_i18n::mark("Title"), "title" => chilpa_i18n::mark("Album"), "album_artist" => chilpa_i18n::mark("Album artist"), "album_artists" => chilpa_i18n::mark("Album artists"),
@@ -192,6 +230,18 @@ pub(crate) fn invalid(field: &Field, of_a_track: bool, value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_value_has_text_replaced_in_one_step() {
+        assert_eq!(substitute("Live in Berlin (Live)", "Live", "Vivo", false, true), "Vivo in Berlin (Vivo)", "every occurrence");
+        assert_eq!(substitute("Feat. Somebody", "feat.", "feat.", false, false), "feat. Somebody", "capitals ignored unless asked");
+        assert_eq!(substitute("Feat. Somebody", "feat.", "with", false, true), "Feat. Somebody", "asked, they count");
+        assert_eq!(substitute(" The Band ", "the band", "Band, The", true, false), "Band, The", "the whole value, spaces around aside");
+        assert_eq!(substitute("The Band Live", "the band", "x", true, false), "The Band Live", "a part is not the whole");
+        assert_eq!(substitute("Çé Çé", "çé", "ok", false, false), "ok ok", "letters, not bytes");
+        assert_eq!(substitute("İstanbul", "i̇", "I", false, false), "İstanbul", "a letter that lowers to two never matches half of it");
+        assert_eq!(substitute("value", "", "x", false, false), "value", "nothing to find changes nothing");
+    }
 
     #[test]
     fn the_fields_are_the_ones_a_sidecar_holds_in_the_same_order() {

@@ -40,7 +40,37 @@ pub struct ListenEvent {
     pub bit_perfect: bool,
 }
 
+/// What the library holds of a track, as its lists show it: the row carries
+/// what a sidecar says over the file's own tags.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Shelved {
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    /// The cover chosen for its record, else empty.
+    pub cover: String,
+    pub track_number: Option<u16>,
+    pub recording_mbid: Option<String>,
+    pub isrc: Option<String>,
+}
+
 impl Library {
+    /// The row of the track at `external_id` (a file's path, a server's
+    /// entry), or `None` when the library does not hold it.
+    pub fn shelved(&self, external_id: &str) -> rusqlite::Result<Option<Shelved>> {
+        self.db.query_row(
+            "SELECT t.title, t.artist, coalesce(a.title, ''), coalesce(nullif(t.release_artwork, ''), a.artwork_path, ''),
+            t.track_number, t.recording_mbid, t.isrc
+            FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
+            WHERE t.external_id = ?1 AND t.present = 1 ORDER BY t.id LIMIT 1",
+            [external_id],
+            |r| Ok(Shelved {
+                title: r.get(0)?, artist: r.get(1)?, album: r.get(2)?, cover: r.get(3)?,
+                track_number: r.get(4)?, recording_mbid: r.get(5)?, isrc: r.get(6)?,
+            }),
+        ).optional()
+    }
+
     pub fn listen_context(&self, track_id: i64) -> rusqlite::Result<ListenContext> {
         let mut context = self.db.query_row(
             "SELECT t.source_id, t.external_id, t.album_id,

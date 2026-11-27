@@ -1114,9 +1114,14 @@ where
         }
         controls.dsp.begin_stream();
         controls.gain_active.store(false, std::sync::atomic::Ordering::Release);
-        if on_track(attempt, index, path, &delivery, &about) {
-            attempts.open(attempt, index);
-        }
+        // What changes this track's samples on the way out marks it as it
+        // happens; a track nobody announced has nobody to tell.
+        let touched = if on_track(attempt, index, path, &delivery, &about) {
+            attempts.open(attempt, index)
+        } else {
+            crate::attempts::Touched::default()
+        };
+        let dsp_witness = crate::attempts::DspWitness { dsp: shape.is_some().then(|| controls.dsp.clone()), touched: touched.clone() };
         // What was heard is the meter's count; and as this track plays, the
         // ones before it whose last audio has now left the device are closed.
         let on_progress = &mut |index: usize, progress: Progress| {
@@ -1133,20 +1138,19 @@ where
         let render_started = std::time::Instant::now();
         // Skipping a track ends the source just like a natural end, so it has
         // to be asked: with repeat-one, skipping advances.
-        let mut gain_format = delivery.opened;
-        if matches!(&source, Source::DsdPcm(_)) || matches!(&source, Source::Pcm(decoded, ..) if decoded.stream_format().sample_format == SampleFormat::F32) {
-            gain_format.sample_format = SampleFormat::F32;
-        } else if let Source::Pcm(decoded, ..) = &source {
-            let original = decoded.stream_format().sample_format;
-            if original.is_integer() && (gain_format.sample_format == SampleFormat::F32
-                || (decoded.codec() == "vorbis" && original.valid_bits() > gain_format.sample_format.valid_bits())) {
-                gain_format.sample_format = original;
-            }
-        }
+        let gain_format = match &source {
+            Source::DsdPcm(_) => StreamFormat { sample_format: SampleFormat::F32, ..delivery.opened },
+            Source::Pcm(decoded, ..) => crate::playback::gain_format(decoded, delivery.opened),
+            _ => delivery.opened,
+        };
         let mut output_level = level.take_output();
         let mut gain = |bytes: &mut [u8]| {
             let changed = output_level.packed(bytes, gain_format, delivery.duplicates_mono());
             controls.gain_active.store(changed, std::sync::atomic::Ordering::Release);
+            // A volume moved halfway is not in the verdict the start gave.
+            if changed {
+                touched.mark();
+            }
         };
         let output_gain = (shape.is_some() && (volume.is_some() || normalize.get())).then_some(&mut gain as &mut dyn FnMut(&mut [u8]));
         let (outcome, skipped) = match &mut source {
@@ -1258,6 +1262,8 @@ where
         // How it ended is known here; how much of it was heard, only once
         // what it left in the device has played or been thrown away.
         attempts.ended(attempt, crate::attempts::How::of(&outcome, skipped));
+        // What the DSP did, before the next track's stream clears it.
+        drop(dsp_witness);
         sink.end(if skipped { "skipped" } else {
             match &outcome {
                 Outcome::Finished { .. } => "finished",

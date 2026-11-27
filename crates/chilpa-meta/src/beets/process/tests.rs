@@ -23,8 +23,10 @@ def release(genres):
     track = types.SimpleNamespace(title='Part I', medium=1, medium_index=1, length=1, track_id='r', release_track_id='t')
     info = types.SimpleNamespace(data_source='MusicBrainz', tracks=[track], album_id='a', album='Album', genres=genres)
     return types.SimpleNamespace(info=info, mapping={{}}, distance=0.0)
-named = bridge['candidate'](release(['rock', 'metal', 'folk', 'jazz', 'blues', 'pop', 'soul']), {{}})['release']['genres']
-unnamed = bridge['candidate'](release(None), {{}})['release']['genres']
+fitted = (0.0, [1], 'CD', {{}})
+named = bridge['candidate'](release(['rock', 'metal', 'folk', 'jazz', 'blues', 'pop', 'soul']), {{}}, fitted)['release']['genres']
+whole = bridge['candidate'](release(None), {{}}, (0.25, [2], 'SACD', {{}}))
+unnamed = whole['release']['genres']
 class Setting(dict):
     def __missing__(self, key): self[key] = Setting(); return self[key]
     def set(self, value): self['value'] = value
@@ -32,12 +34,24 @@ class Setting(dict):
 config = Setting()
 sys.modules['beets'] = types.SimpleNamespace(__version__=bridge['BEETS_VERSION'], config=config)
 bridge['lookup']({{'operation': 'probe'}})
-print(json.dumps([named, unnamed, config['musicbrainz']['genres'].get('value')]))
+plain = config['match']['preferred']['media'].get('value')
+bridge['lookup']({{'operation': 'probe', 'media': 'SACD'}})
+sys.modules['beets'].__version__ = '2.99.0'
+chosen = bridge['lookup']({{'operation': 'probe', 'strict': False}})['beets_version']
+try:
+    bridge['lookup']({{'operation': 'probe'}})
+    refused = None
+except bridge['AdapterError'] as error:
+    refused = str(error)
+print(json.dumps([named, unnamed, config['musicbrainz']['genres'].get('value'), config['musicbrainz']['search_limit'].get('value'),
+    [whole['score'], whole['whole'], whole['discs'], whole['format']], plain,
+    config['match']['preferred']['media'].get('value'), config['match']['ignored_media'].get('value'), chosen, refused]))
 "#, helper = serde_json::to_string(HELPER).unwrap());
     let output = Command::new(python()).args(["-I", "-c", &script]).output().unwrap();
     assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
     let seen: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert_eq!(seen, serde_json::json!([["rock", "metal", "folk", "jazz", "blues"], [], true]));
+    assert_eq!(seen, serde_json::json!([["rock", "metal", "folk", "jazz", "blues"], [], true, 10,
+        [75, 100, [2], "SACD"], null, ["(Hybrid )?SACD"], ["Hybrid SACD (CD layer)"], "2.99.0", "incompatible_version"]));
 }
 
 #[test]

@@ -133,14 +133,36 @@ struct Frames<'a> {
     /// The first packing error, to report it instead of swallowing it.
     error: Option<PackError>,
     opus_trim: Option<chilpa_audio::gapless::Trimmer<f32>>,
+    /// What the blocks are packed in when the renderer scales and converts
+    /// them on their way out, as a queue's track; none packs for the device.
+    gain_format: Option<StreamFormat>,
 }
 
 impl<'a> Frames<'a> {
     fn new(decoded: &'a mut Decoded, delivery: &Delivery) -> Self {
         let opus_trim = (decoded.codec() == "opus").then(||
             chilpa_audio::gapless::Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), decoded.stream_format().channels));
-        Self { decoded, opened: delivery.opened, spread: delivery.duplicates_mono(), error: None, opus_trim }
+        Self { decoded, opened: delivery.opened, spread: delivery.duplicates_mono(), error: None, opus_trim, gain_format: None }
     }
+
+    /// Packed in `format` for the renderer to scale before it converts.
+    fn scaled_in(mut self, format: StreamFormat) -> Self {
+        self.gain_format = Some(format);
+        self
+    }
+}
+
+/// The format a PCM track is scaled in before it meets the output: float
+/// for a float source, so a lowered volume is neither clipped nor rounded
+/// before it is applied; the source's own integers when the output opened
+/// at float or is narrower than a Vorbis reference; the output's otherwise.
+pub(crate) fn gain_format(decoded: &Decoded, opened: StreamFormat) -> StreamFormat {
+    use chilpa_audio::format::SampleFormat::F32;
+    let original = decoded.stream_format().sample_format;
+    let own = original == F32
+        || (original.is_integer() && (opened.sample_format == F32
+            || (decoded.codec() == "vorbis" && original.valid_bits() > opened.sample_format.valid_bits())));
+    StreamFormat { sample_format: if own { original } else { opened.sample_format }, ..opened }
 }
 
 pub(crate) fn prepare_channels(decoded: &mut Decoded, caps: &chilpa_audio::negotiate::DeviceCaps, stereo: bool, fallback: bool) -> Result<(),PlayError> {
@@ -182,6 +204,8 @@ pub(crate) fn signal_bits(decoded: &Decoded, delivery: &Delivery) -> Option<u8> 
 }
 
 impl FrameSource for Frames<'_> {
+    fn pcm_format(&self) -> Option<StreamFormat> { self.gain_format }
+
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         loop {
             let block = match self.decoded.next_block() {
@@ -198,12 +222,20 @@ impl FrameSource for Frames<'_> {
                 Block::Float(data) if self.spread => Block::Float(duplicate_mono(&data)),
                 block => block,
             };
-            let samples = match &block {
-                Block::Int { data, bits } => Samples::Int { data, bits: *bits },
-                Block::Float(data) => Samples::Float(data),
-            };
             let mut bytes = Vec::new();
-            match pack_decoded(self.decoded, &samples, self.opened.sample_format, &mut bytes) {
+            let to = self.gain_format.map_or(self.opened.sample_format, |format| format.sample_format);
+            let packed = match &block {
+                // Kept as decoded, past full scale too, as a queue's track
+                // keeps it: the volume brings the overs back before the
+                // conversion to the device would clip them.
+                Block::Float(data) if self.gain_format.is_some() && to == chilpa_audio::format::SampleFormat::F32 => {
+                    bytes.extend(data.iter().flat_map(|sample| sample.to_le_bytes()));
+                    Ok(())
+                }
+                Block::Float(data) => pack_decoded(self.decoded, &Samples::Float(data), to, &mut bytes),
+                Block::Int { data, bits } => pack_decoded(self.decoded, &Samples::Int { data, bits: *bits }, to, &mut bytes),
+            };
+            match packed {
                 Ok(()) if bytes.is_empty() => continue,
                 Ok(()) => return Ok(Some(bytes)),
                 Err(e) => {
@@ -247,8 +279,15 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_stream_told(stream, caps, policy, stop, pause, false, false, dsp, crate::playback_events::Report::default(), open_sink,
-        &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, _, _)| played)
+    play_stream_told(stream, caps, policy, stop, pause, false, false, dsp, None, crate::attempts::Touched::default(), crate::playback_events::Report::default(), open_sink,
+        &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, ..)| played)
+}
+
+/// The player bar's volume as a stream takes it: the factor, read on every
+/// block, and the flag that says whether it changed any sample.
+pub(crate) struct StreamVolume {
+    pub level: crate::queue_playback::Level,
+    pub active: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -261,6 +300,8 @@ pub(crate) fn play_stream_told<F, K>(
     stereo: bool,
     fallback: bool,
     dsp: Option<chilpa_audio::dsp::Control>,
+    volume: Option<StreamVolume>,
+    touched: crate::attempts::Touched,
     report: crate::playback_events::Report,
     open_sink: F,
     on_delivery: &mut dyn FnMut(&Delivery, Option<u8>),
@@ -277,12 +318,37 @@ where
     if dsp.as_ref().is_some_and(|control| control.requested()) {
         delivery.transforms.push(chilpa_audio::negotiate::Transform::DspApplied);
     }
+    // The volume scales a stream as it scales a file, off the bit-perfect
+    // policy only, and is said in the delivery when it changes anything.
+    let volume = volume.filter(|_| policy != Policy::BitPerfect);
+    if volume.as_ref().is_some_and(|volume| volume.level.get() != 1.0) {
+        delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
+    }
     on_delivery(&delivery, signal_bits(&decoded, &delivery));
     let mut sink = crate::playback_events::Measured::reporting(open_sink(delivery.opened).map_err(PlayError::Sink)?, report.clone());
     sink.begin_attempt(1, None);
-    let mut frames = Frames::new(&mut decoded, &delivery);
-    let outcome =
-        chilpa_audio::render::render_processed(&mut frames, &mut sink, stop, pause, dsp, on_progress);
+    // Scaled where a queue's track is, before the conversion to the device,
+    // so a file and a stream sound the same at the same volume.
+    let scaled = gain_format(&decoded, delivery.opened);
+    let spread = delivery.duplicates_mono();
+    let mut frames = Frames::new(&mut decoded, &delivery).scaled_in(scaled);
+    // Marked as it happens, so a stream that fails or unwinds afterwards
+    // still closes with what was done to it.
+    let dsp_witness = crate::attempts::DspWitness { dsp: dsp.clone(), touched: touched.clone() };
+    let mut processor = dsp.map(|control| chilpa_audio::dsp::Processor::new(control, sink.format()));
+    let mut level = crate::loudness::level::Leveler::volume_only(volume.as_ref().map(|volume| volume.level.clone()));
+    let mut gain = |bytes: &mut [u8]| {
+        let changed = level.packed(bytes, scaled, spread);
+        if changed {
+            touched.mark();
+        }
+        if let Some(volume) = &volume {
+            volume.active.store(changed, std::sync::atomic::Ordering::Release);
+        }
+    };
+    let gain = volume.is_some().then_some(&mut gain as &mut dyn FnMut(&mut [u8]));
+    let outcome = chilpa_audio::render::render_with_volume(&mut frames, &mut sink, stop, pause, processor.as_mut(), gain, on_progress);
+    drop(dsp_witness);
     sink.end(match &outcome {
         Outcome::Finished { .. } => "finished",
         Outcome::Stopped { .. } => "stopped",

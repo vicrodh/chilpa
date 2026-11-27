@@ -9,6 +9,8 @@
 //! track is closed when its audio is accounted for, or when the play ends.
 
 use std::collections::VecDeque;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use chilpa_audio::render::Outcome;
 use chilpa_audio::sink::StopSignal;
@@ -47,13 +49,47 @@ impl How {
 }
 
 /// A track that started, closed: its turn in the play, its place in the
-/// queue, how many frames of it left the device and how it ended.
+/// queue, how many frames of it left the device, how it ended, and whether
+/// volume, normalization or DSP changed any of its samples on the way out,
+/// which its start could not know when they changed later.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Closed {
     pub attempt: u64,
     pub index: usize,
     pub heard: u64,
     pub how: How,
+    pub processed: bool,
+}
+
+/// Whether volume, normalization or DSP changed samples of one attempt,
+/// said as it happens: a play that fails or unwinds halfway still closes
+/// the attempt with what was done to it.
+#[derive(Clone, Default, Debug)]
+pub(crate) struct Touched(Arc<AtomicBool>);
+
+impl Touched {
+    pub fn mark(&self) {
+        self.0.store(true, Ordering::Release);
+    }
+
+    pub fn get(&self) -> bool {
+        self.0.load(Ordering::Acquire)
+    }
+}
+
+/// Marks `touched` when the render it guards is over, or unwinds, if the
+/// DSP changed samples since the track's stream began.
+pub(crate) struct DspWitness {
+    pub dsp: Option<chilpa_audio::dsp::Control>,
+    pub touched: Touched,
+}
+
+impl Drop for DspWitness {
+    fn drop(&mut self) {
+        if self.dsp.as_ref().is_some_and(|dsp| dsp.touched()) {
+            self.touched.mark();
+        }
+    }
 }
 
 struct Open {
@@ -61,6 +97,7 @@ struct Open {
     index: usize,
     how: Option<How>,
     heard: u64,
+    processed: Touched,
 }
 
 pub(crate) struct Attempts<'a> {
@@ -83,9 +120,12 @@ impl<'a> Attempts<'a> {
     }
 
     /// A track was announced: it is owed an ending from here on, device or
-    /// no device.
-    pub fn open(&mut self, attempt: u64, index: usize) {
-        self.open.push_back(Open { attempt, index, how: None, heard: 0 });
+    /// no device. What changes its samples on the way out marks the flag
+    /// handed back.
+    pub fn open(&mut self, attempt: u64, index: usize) -> Touched {
+        let processed = Touched::default();
+        self.open.push_back(Open { attempt, index, how: None, heard: 0, processed: processed.clone() });
+        processed
     }
 
     /// How `attempt` ended, as far as is known now. Never lowered.
@@ -127,7 +167,7 @@ impl<'a> Attempts<'a> {
 
     fn close(&mut self, open: Open) {
         // An ending nobody could say is the play breaking under it.
-        (self.tell)(Closed { attempt: open.attempt, index: open.index, heard: open.heard, how: open.how.unwrap_or(How::Failed) });
+        (self.tell)(Closed { attempt: open.attempt, index: open.index, heard: open.heard, how: open.how.unwrap_or(How::Failed), processed: open.processed.get() });
     }
 }
 
@@ -164,6 +204,18 @@ mod tests {
         assert_eq!(said.iter().map(|closed| (closed.attempt, closed.how)).collect::<Vec<_>>(),
             [(1, How::Broken), (2, How::Failed), (3, How::Failed)],
             "a stop does not lower a break, a failure is kept, and an ending nobody said is a failure");
+    }
+
+    #[test]
+    fn a_track_is_closed_as_processed_only_when_its_own_samples_were() {
+        let mut said = Vec::new();
+        let mut tell = |closed: Closed| said.push(closed);
+        {
+            let mut attempts = Attempts::new(&mut tell, StopSignal::new());
+            let _first = attempts.open(1, 0);
+            attempts.open(2, 1).mark();
+        }
+        assert_eq!(said.iter().map(|closed| (closed.attempt, closed.processed)).collect::<Vec<_>>(), [(1, false), (2, true)]);
     }
 
     #[test]

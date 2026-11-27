@@ -48,3 +48,38 @@ fn limits_versions_and_failure_statuses_are_checked() {
     request.tracks = vec![Track { title:"x".repeat(4097), ..Track::default() }];
     assert_eq!(request.encode().unwrap_err(), Error::InputLimit);
 }
+
+#[test]
+fn a_score_of_some_discs_says_which_and_an_older_answer_still_reads() {
+    let older = Response::decode(&serde_json::to_vec(&response()).unwrap(), &request()).unwrap();
+    assert_eq!((older.candidates[0].whole, older.candidates[0].discs.len(), older.candidates[0].format.as_str()), (0, 0, ""), "an answer without them");
+    let mut value = response();
+    value["candidates"][0]["whole"] = json!(59);
+    value["candidates"][0]["discs"] = json!([2]);
+    value["candidates"][0]["format"] = json!("Hybrid SACD (SACD layer, 2 channels)");
+    let candidate = Response::decode(&serde_json::to_vec(&value).unwrap(), &request()).unwrap().candidates.remove(0);
+    assert_eq!((candidate.score, candidate.whole, candidate.discs, candidate.format.as_str()), (97, 59, vec![2], "Hybrid SACD (SACD layer, 2 channels)"));
+    value["candidates"][0]["whole"] = json!(101);
+    assert_eq!(Response::decode(&serde_json::to_vec(&value).unwrap(), &request()).unwrap_err(), Error::InvalidResponse);
+}
+
+#[test]
+fn the_request_carries_at_most_the_ids_it_may() {
+    let mut asked = request();
+    asked.release_ids = vec!["release".into(); MAX_IDS];
+    assert!(asked.encode().is_ok());
+    asked.release_ids.push("one more".into());
+    assert_eq!(asked.encode().unwrap_err(), Error::InputLimit);
+}
+
+#[test]
+fn only_a_strict_request_refuses_another_beets() {
+    let mut value = response();
+    value["beets_version"] = json!("2.99.0");
+    let bytes = serde_json::to_vec(&value).unwrap();
+    assert_eq!(Response::decode(&bytes, &request()).unwrap_err(), Error::IncompatibleVersion, "Chilpa's own copy");
+    let chosen = Request { strict:false, ..request() };
+    assert_eq!(Response::decode(&bytes, &chosen).unwrap().beets_version, "2.99.0", "an environment the listener chose");
+    value["beets_version"] = json!("");
+    assert_eq!(Response::decode(&serde_json::to_vec(&value).unwrap(), &chosen).unwrap_err(), Error::InvalidResponse);
+}

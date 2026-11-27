@@ -1445,6 +1445,9 @@ msgstr "Chilpa n'a pas pu régler le graphe de PipeWire sur {} Hz : ses paramèt
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpa n'envoie pas de requêtes {} à un serveur"
 
+msgid "Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it."
+msgstr "Chilpa a installé beets {} ; cette version de Chilpa fonctionne avec beets {}. Mettez-le à jour."
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "Chilpa est empaqueté en Flatpak/Snap et ne peut pas inspecter la pile audio de votre hôte. Si la lecture fonctionne déjà, tout est en ordre. Choisissez ci-dessous votre distribution et votre système d'initialisation pour obtenir les bonnes commandes de configuration."
 
@@ -1631,8 +1634,8 @@ msgstr ""
 msgid "Choose an available writable storage."
 msgstr ""
 
-msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
-msgstr ""
+msgid "Choose an existing environment with beets. Chilpa is tested with beets 2.14.1; another version may not work. Leave this empty to use Chilpa's installed copy."
+msgstr "Choisissez un environnement existant avec beets. Chilpa est testé avec beets 2.14.1 ; une autre version pourrait ne pas fonctionner. Laissez vide pour utiliser la copie installée par Chilpa."
 
 msgid "Choose an image"
 msgstr "Choisir une image"
@@ -2441,8 +2444,14 @@ msgstr ""
 msgid "Delete selected presets?"
 msgstr ""
 
+msgid "Delete sidecar"
+msgstr "Supprimer le fichier annexe"
+
 msgid "Delete the saved query “{}”?"
 msgstr "Supprimer la requête enregistrée « {} » ?"
+
+msgid "Delete the sidecar?"
+msgstr "Supprimer le fichier annexe ?"
 
 msgid "Delete track from server?"
 msgstr "Supprimer le titre du serveur ?"
@@ -2780,6 +2789,9 @@ msgstr "Chaque fichier est copié, la copie est écrite puis relue, et ce n'est 
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr "Le texte est remplacé dans chaque valeur de chaque fichier. Une valeur qui reste vide est supprimée."
+
 msgid "Earlier"
 msgstr "Plus tôt"
 
@@ -3094,6 +3106,9 @@ msgstr "Filtrer les pistes"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "Filtrer, Entrée pour rechercher, ou une URL de flux"
+
+msgid "Find"
+msgstr "Rechercher"
 
 msgid "Find a preset or device"
 msgstr "Rechercher un préréglage ou un périphérique"
@@ -3675,6 +3690,9 @@ msgstr "Identité et provenance"
 
 msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
 msgstr "Si c'est votre première source de musique, nous vous conseillons d'attendre la fin. Ce qui est déjà apparu peut être écouté en attendant."
+
+msgid "Ignore existing sidecars"
+msgstr "Ignorer les fichiers annexes existants"
 
 msgid "Image"
 msgstr "Image"
@@ -4298,6 +4316,9 @@ msgstr "Statistiques d'écoute"
 msgid "Listening time"
 msgstr "Temps d'écoute"
 
+msgid "Lists and playback use each file's own tags. When off, Chilpa keeps reading the sidecars already written."
+msgstr "Les listes et la lecture utilisent les étiquettes propres à chaque fichier. Désactivé, Chilpa continue de lire les fichiers annexes déjà écrits."
+
 msgid "Lite fill"
 msgstr "Remplissage léger"
 
@@ -4501,6 +4522,9 @@ msgstr "Ingénieur de mastering"
 
 msgid "Match"
 msgstr "Correspondre à"
+
+msgid "Match case"
+msgstr "Respecter la casse"
 
 msgid "Match score: {}"
 msgstr ""
@@ -5404,6 +5428,9 @@ msgstr "Uniquement les morceaux déjà dans votre bibliothèque"
 
 msgid "Only the first {} outputs are listed."
 msgstr "Seules les {} premières sorties sont listées."
+
+msgid "Only the whole value"
+msgstr "Uniquement la valeur entière"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "Seules les pistes de ce serveur vont dans ses playlists"
@@ -6652,6 +6679,9 @@ msgstr "Réparé. Rien n'a été perdu."
 msgid "Repeat"
 msgstr "Répéter"
 
+msgid "Replace"
+msgstr "Remplacer"
+
 msgid "Replace current queue"
 msgstr "Remplacer la file d'attente actuelle"
 
@@ -6664,8 +6694,20 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr "Remplacer la file d'attente {}"
 
+msgid "Replace text"
+msgstr "Remplacer le texte"
+
+msgid "Replace text in a field"
+msgstr "Remplacer du texte dans un champ"
+
 msgid "Replace values"
 msgstr ""
+
+msgid "Replace with"
+msgstr "Remplacer par"
+
+msgid "Replace…"
+msgstr "Remplacer…"
 
 msgid "Report an issue"
 msgstr "Signaler un problème"
@@ -9086,6 +9128,9 @@ msgstr "Type / version"
 msgid "Type the code"
 msgstr "Saisissez le code"
 
+msgid "Type the text to find."
+msgstr "Saisissez le texte à rechercher."
+
 msgid "Type words and press Enter"
 msgstr "Tapez des mots et appuyez sur Entrée"
 
@@ -9244,6 +9289,9 @@ msgstr "Tout mettre à jour"
 
 msgid "Update available"
 msgstr "Mise à jour disponible"
+
+msgid "Update beets"
+msgstr "Mettre à jour beets"
 
 msgid "Update cancelled."
 msgstr "Mise à jour annulée."
@@ -9507,6 +9555,9 @@ msgstr "Ce que fait un appui. Un second appui juste après revient au titre pré
 
 msgid "What should happen to the original queues?"
 msgstr "Que faire des files d'attente d'origine ?"
+
+msgid "What the sidecar says of this record goes, and its tracks show what their files say again. Changes not saved are lost too. This cannot be undone."
+msgstr "Ce que le fichier annexe indique pour cet album est supprimé, et ses pistes affichent de nouveau ce que disent leurs fichiers. Les modifications non enregistrées sont aussi perdues. Cette action est irréversible."
 
 msgid "What this route reports"
 msgstr "Ce que signale ce parcours"
@@ -9877,6 +9928,9 @@ msgstr ""
 msgid "beets settings"
 msgstr ""
 
+msgid "beets {} is ready, but Chilpa was tested with beets {}; lookups may not work."
+msgstr "beets {} est prêt, mais Chilpa a été testé avec beets {} ; les recherches pourraient ne pas fonctionner."
+
 msgid "beets {} is ready."
 msgstr ""
 
@@ -10208,6 +10262,9 @@ msgstr "aucune des adresses de ce serveur ne répond d'ici"
 
 msgid "not supported: {}"
 msgstr "non pris en charge : {}"
+
+msgid "nothing matched"
+msgstr "aucune correspondance"
 
 msgid "nothing was found"
 msgstr "rien n'a été trouvé"
@@ -10901,8 +10958,17 @@ msgstr "le serveur a mis trop de temps à répondre"
 msgid "the server's certificate is not trusted by this system"
 msgstr "le certificat du serveur n'est pas approuvé par ce système"
 
+msgid "the sidecar could not be deleted: {}"
+msgstr "le fichier annexe n'a pas pu être supprimé : {}"
+
 msgid "the sidecar could not be written: {}"
 msgstr "le fichier annexe n'a pas pu être écrit : {}"
+
+msgid "the sidecar was deleted"
+msgstr "le fichier annexe a été supprimé"
+
+msgid "the sidecar was deleted, and the library could not read the files again: {}; rescan to see them"
+msgstr "le fichier annexe a été supprimé, mais la bibliothèque n'a pas pu relire les fichiers : {} ; analysez à nouveau pour les voir"
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr "les cartes son sont listées dans /proc/asound, mais leurs périphériques dans /dev/snd ne peuvent pas être ouverts d'ici ; dans un Flatpak, autorisez-les avec : flatpak override --user --device=all app.chilpa.Chilpa"
@@ -11035,6 +11101,9 @@ msgstr "cette partie de la source n'est pas disponible pour le moment"
 
 msgid "this plugin declared no network permission"
 msgstr "ce plugin n'a déclaré aucune autorisation réseau"
+
+msgid "this record has no sidecar"
+msgstr "cet album n'a pas de fichier annexe"
 
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "ce serveur ne peut pas déplacer une piste présente plus d'une fois dans la playlist"
@@ -11436,6 +11505,9 @@ msgstr "{} formats sur {} sortent intacts"
 msgid "{} of {} tracks match this release"
 msgstr "{} pistes sur {} correspondent à cette sortie"
 
+msgid "{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying."
+msgstr "{} pistes sur {} ont été associées selon leur ordre : la sortie les numérote autrement. Vérifiez les titres avant d'appliquer."
+
 msgid "{} part"
 msgid_plural "{} parts"
 msgstr[0] ""
@@ -11562,6 +11634,11 @@ msgstr "{} pistes correspondent au disque {}"
 
 msgid "{} unreadable"
 msgstr "{} illisibles"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] "{} valeur modifiée"
+msgstr[1] "{} valeurs modifiées"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{} n'a pas été autorisé à temps ; reconnectez-vous"

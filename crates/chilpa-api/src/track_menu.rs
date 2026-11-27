@@ -132,9 +132,9 @@ mod tests {
         let state = |menu: &[Value], act: &str| menu.iter().find(|entry| entry["act"] == act).map(|entry| entry["enabled"] != false);
         let open = track_menu_with(context(), Protection::default());
         assert_eq!((state(&open, "metadata"), state(&open, "server_delete")), (Some(true), Some(true)));
-        let shut = track_menu_with(context(), Protection { on: true, sidecars: false });
+        let shut = track_menu_with(context(), Protection { on: true, sidecars: false, ignore: false });
         assert_eq!((state(&shut, "metadata"), state(&shut, "server_delete")), (Some(false), Some(false)), "visible, greyed out");
-        let sidecars = track_menu_with(context(), Protection { on: true, sidecars: true });
+        let sidecars = track_menu_with(context(), Protection { on: true, sidecars: true, ignore: false });
         assert_eq!((state(&sidecars, "metadata"), state(&sidecars, "server_delete")), (Some(true), Some(false)));
     }
 

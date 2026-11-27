@@ -147,6 +147,11 @@ pub fn genres_by_barcode(net: &Net, barcode: &str) -> Result<Vec<String>, Failur
 /// The address of a search, built from what there is. `None` when there is
 /// nothing to search for.
 pub fn search_url(title: &str, artist: &str, catalog_number: &str, limit: usize) -> Option<String> {
+    search_url_in(title, artist, catalog_number, "", limit)
+}
+
+/// The same, among the releases of one format when `format` names one.
+pub fn search_url_in(title: &str, artist: &str, catalog_number: &str, format: &str, limit: usize) -> Option<String> {
     let part = |field: &str, value: &str| {
         let value = value.trim();
         (!value.is_empty()).then(|| format!("{field}:\"{}\"", query_escape(value)))
@@ -160,6 +165,7 @@ pub fn search_url(title: &str, artist: &str, catalog_number: &str, limit: usize)
     if parts.is_empty() {
         return None;
     }
+    let parts: Vec<String> = parts.into_iter().chain(part("format", format)).collect();
     let query = parts.join(" AND ");
     Some(format!("{API}/release?query={}&fmt=json&limit={}", encode(&query), limit.clamp(1, 25)))
 }
@@ -299,6 +305,7 @@ fn hit_of(release: &Value) -> Option<Hit> {
         format: text(&release["media"][0]["format"]),
         score: release["score"].as_u64().unwrap_or(0).min(100) as u8,
         release_group_id: text(&release["release-group"]["id"]),
+        discs: Vec::new(),
     })
 }
 
@@ -385,6 +392,15 @@ pub fn search(net: &Net, title: &str, artist: &str, catalog_number: &str) -> Res
     match search_url(title, artist, "", ROWS) {
         Some(url) => Ok(hits_of(&get(net, &url)?)),
         None => Ok(hits),
+    }
+}
+
+/// Searches for a release among those of one format, by title and artist:
+/// a record whose files say what it is, as an SACD's do.
+pub fn search_in(net: &Net, title: &str, artist: &str, format: &str) -> Result<Vec<Hit>, Failure> {
+    match search_url_in(title, artist, "", format, ROWS) {
+        Some(url) => Ok(hits_of(&get(net, &url)?)),
+        None => Ok(Vec::new()),
     }
 }
 
@@ -478,6 +494,8 @@ mod tests {
         assert_eq!(query("A", "", "C1").as_deref(), Some("/release?query=catno%3A%22C1%22&fmt=json&limit=12"));
         assert_eq!(query(" ", "", " "), None);
         assert!(search_url("A", "", "", 900).unwrap().ends_with("limit=25"));
+        let sacd = search_url_in("Kind of Blue", "Miles Davis", "", "SACD", 12).unwrap().replace(API, "");
+        assert!(sacd.contains(&encode("release:\"Kind of Blue\" AND artist:\"Miles Davis\" AND format:\"SACD\"").to_string()), "{sacd}");
     }
 
     #[test]

@@ -80,6 +80,8 @@ Item {
         doc: page.doc
         onSaveAsked: page.askSave()
         onCloseAsked: page.askClose()
+        onDropSidecarAsked: { page.forceActiveFocus(); dropSidecar.open() }
+        onReplaceAsked: { page.forceActiveFocus(); replace.open() }
     }
 
     Row {
@@ -148,6 +150,19 @@ Item {
         destructive: true
         doubleConfirmation: true
         onConfirmed: MetadataEditor.save()
+    }
+    MetadataReplace {
+        id: replace
+        fields: page.doc.replaceable || []
+        onReplaceAsked: (field, find, replacement, whole, matchCase) => MetadataEditor.substitute(field, find, replacement, whole, matchCase)
+    }
+    ConfirmDialog {
+        id: dropSidecar
+        title: I18n.tr("Delete the sidecar?", I18n.rev)
+        message: I18n.tr("What the sidecar says of this record goes, and its tracks show what their files say again. Changes not saved are lost too. This cannot be undone.", I18n.rev)
+        confirmText: I18n.tr("Delete sidecar", I18n.rev)
+        destructive: true
+        onConfirmed: MetadataEditor.dropSidecar()
     }
     ConfirmDialog {
         id: switchRecord

@@ -1447,6 +1447,9 @@ msgstr "Chilpa не удалось установить граф PipeWire на {
 msgid "Chilpa does not send {} requests to a server"
 msgstr "Chilpa не отправляет на сервер запросы {}"
 
+msgid "Chilpa installed beets {}; this version of Chilpa works with beets {}. Update it."
+msgstr "Chilpa установила beets {}; эта версия Chilpa работает с beets {}. Обновите его."
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "Chilpa упакована как Flatpak/Snap и не может проверить аудиостек хоста. Если воспроизведение уже работает, всё в порядке. Ниже выберите дистрибутив и систему инициализации, чтобы получить нужные команды настройки."
 
@@ -1633,8 +1636,8 @@ msgstr ""
 msgid "Choose an available writable storage."
 msgstr ""
 
-msgid "Choose an existing environment with beets 2.14.1, or leave this empty to use Chilpa's installed copy."
-msgstr ""
+msgid "Choose an existing environment with beets. Chilpa is tested with beets 2.14.1; another version may not work. Leave this empty to use Chilpa's installed copy."
+msgstr "Выберите существующее окружение с beets. Chilpa проверена с beets 2.14.1; другая версия может не работать. Оставьте поле пустым, чтобы использовать копию, установленную Chilpa."
 
 msgid "Choose an image"
 msgstr "Выберите изображение"
@@ -2443,8 +2446,14 @@ msgstr ""
 msgid "Delete selected presets?"
 msgstr ""
 
+msgid "Delete sidecar"
+msgstr "Удалить вспомогательный файл"
+
 msgid "Delete the saved query “{}”?"
 msgstr "Удалить сохранённый запрос «{}»?"
+
+msgid "Delete the sidecar?"
+msgstr "Удалить вспомогательный файл?"
 
 msgid "Delete track from server?"
 msgstr "Удалить трек с сервера?"
@@ -2782,6 +2791,9 @@ msgstr "Каждый файл копируется, копия записыва�
 msgid "Each selected hard-link path is replaced independently. Other hard-link paths keep their previous contents."
 msgstr ""
 
+msgid "Each value of each file has the text replaced. A value left empty goes."
+msgstr "Текст заменяется в каждом значении каждого файла. Значение, оставшееся пустым, удаляется."
+
 msgid "Earlier"
 msgstr "Раньше"
 
@@ -3096,6 +3108,9 @@ msgstr "Фильтр треков"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "Фильтр, Enter для поиска или URL потока"
+
+msgid "Find"
+msgstr "Найти"
 
 msgid "Find a preset or device"
 msgstr "Найти пресет или устройство"
@@ -3678,6 +3693,9 @@ msgstr "Идентификатор и происхождение данных"
 
 msgid "If this is your first music source, we suggest waiting until it finishes. What has appeared plays meanwhile."
 msgstr "Если это ваш первый источник музыки, советуем дождаться окончания. То, что уже появилось, можно слушать и сейчас."
+
+msgid "Ignore existing sidecars"
+msgstr "Игнорировать существующие вспомогательные файлы"
 
 msgid "Image"
 msgstr "Изображение"
@@ -4303,6 +4321,9 @@ msgstr "Статистика прослушивания"
 msgid "Listening time"
 msgstr "Время прослушивания"
 
+msgid "Lists and playback use each file's own tags. When off, Chilpa keeps reading the sidecars already written."
+msgstr "Списки и воспроизведение используют теги самих файлов. Если выключено, Chilpa продолжает читать уже записанные вспомогательные файлы."
+
 msgid "Lite fill"
 msgstr "Лёгкая заливка"
 
@@ -4506,6 +4527,9 @@ msgstr "Мастеринг-инженер"
 
 msgid "Match"
 msgstr "Совпадение"
+
+msgid "Match case"
+msgstr "Учитывать регистр"
 
 msgid "Match score: {}"
 msgstr ""
@@ -5409,6 +5433,9 @@ msgstr "Только песни, которые уже есть в вашей б
 
 msgid "Only the first {} outputs are listed."
 msgstr "Показаны только первые {} выводов."
+
+msgid "Only the whole value"
+msgstr "Только всё значение целиком"
 
 msgid "Only tracks from this server go in its playlists"
 msgstr "В его плейлисты попадают только треки этого сервера"
@@ -6658,6 +6685,9 @@ msgstr "Исправлено. Ничего не потеряно."
 msgid "Repeat"
 msgstr "Повтор"
 
+msgid "Replace"
+msgstr "Заменить"
+
 msgid "Replace current queue"
 msgstr "Заменить текущую очередь"
 
@@ -6670,8 +6700,20 @@ msgstr ""
 msgid "Replace queue {}"
 msgstr "Заменить очередь: {}"
 
+msgid "Replace text"
+msgstr "Заменить текст"
+
+msgid "Replace text in a field"
+msgstr "Заменить текст в поле"
+
 msgid "Replace values"
 msgstr ""
+
+msgid "Replace with"
+msgstr "Заменить на"
+
+msgid "Replace…"
+msgstr "Заменить…"
 
 msgid "Report an issue"
 msgstr "Сообщить о проблеме"
@@ -9097,6 +9139,9 @@ msgstr "Тип / версия"
 msgid "Type the code"
 msgstr "Введите код"
 
+msgid "Type the text to find."
+msgstr "Введите текст для поиска."
+
 msgid "Type words and press Enter"
 msgstr "Введите слова и нажмите Enter"
 
@@ -9255,6 +9300,9 @@ msgstr "Обновить все"
 
 msgid "Update available"
 msgstr "Доступно обновление"
+
+msgid "Update beets"
+msgstr "Обновить beets"
 
 msgid "Update cancelled."
 msgstr "Обновление отменено."
@@ -9519,6 +9567,9 @@ msgstr "Что делает одно нажатие. Второе нажатие
 
 msgid "What should happen to the original queues?"
 msgstr "Что сделать с исходными очередями?"
+
+msgid "What the sidecar says of this record goes, and its tracks show what their files say again. Changes not saved are lost too. This cannot be undone."
+msgstr "Всё, что вспомогательный файл говорит об этом альбоме, будет удалено, и треки снова покажут то, что записано в их файлах. Несохранённые изменения тоже пропадут. Это действие нельзя отменить."
 
 msgid "What this route reports"
 msgstr "Что сообщает этот путь"
@@ -9889,6 +9940,9 @@ msgstr ""
 msgid "beets settings"
 msgstr ""
 
+msgid "beets {} is ready, but Chilpa was tested with beets {}; lookups may not work."
+msgstr "beets {} готов, но Chilpa проверялась с beets {}; поиск может не работать."
+
 msgid "beets {} is ready."
 msgstr ""
 
@@ -10221,6 +10275,9 @@ msgstr "ни один из адресов этого сервера не отв�
 
 msgid "not supported: {}"
 msgstr "не поддерживается: {}"
+
+msgid "nothing matched"
+msgstr "совпадений нет"
 
 msgid "nothing was found"
 msgstr "ничего не найдено"
@@ -10915,8 +10972,17 @@ msgstr "сервер слишком долго отвечал"
 msgid "the server's certificate is not trusted by this system"
 msgstr "сертификат сервера не пользуется доверием этой системы"
 
+msgid "the sidecar could not be deleted: {}"
+msgstr "не удалось удалить вспомогательный файл: {}"
+
 msgid "the sidecar could not be written: {}"
 msgstr "не удалось записать вспомогательный файл: {}"
+
+msgid "the sidecar was deleted"
+msgstr "вспомогательный файл удалён"
+
+msgid "the sidecar was deleted, and the library could not read the files again: {}; rescan to see them"
+msgstr "вспомогательный файл удалён, но библиотека не смогла заново прочитать файлы: {}; пересканируйте, чтобы их увидеть"
 
 msgid "the sound cards are listed in /proc/asound, but their devices in /dev/snd cannot be opened from here; inside a Flatpak, allow them with: flatpak override --user --device=all app.chilpa.Chilpa"
 msgstr "звуковые карты перечислены в /proc/asound, но их устройства в /dev/snd отсюда открыть нельзя; внутри Flatpak разрешите их командой: flatpak override --user --device=all app.chilpa.Chilpa"
@@ -11049,6 +11115,9 @@ msgstr "этой части источника сейчас нет"
 
 msgid "this plugin declared no network permission"
 msgstr "этот плагин не объявил сетевого разрешения"
+
+msgid "this record has no sidecar"
+msgstr "у этого альбома нет вспомогательного файла"
 
 msgid "this server cannot move a track that is in the playlist more than once"
 msgstr "этот сервер не может переместить трек, который есть в плейлисте больше одного раза"
@@ -11479,6 +11548,9 @@ msgstr "Форматов без изменений: {} из {}"
 msgid "{} of {} tracks match this release"
 msgstr "Треков, совпадающих с этим релизом: {} из {}"
 
+msgid "{} of {} tracks were paired by their order: the release numbers them differently. Check the titles before applying."
+msgstr "Треков, сопоставленных по порядку: {} из {}; в релизе у них другая нумерация. Проверьте названия перед применением."
+
 msgid "{} part"
 msgid_plural "{} parts"
 msgstr[0] ""
@@ -11622,6 +11694,12 @@ msgstr "Треков, совпадающих с диском {2}: {1}"
 
 msgid "{} unreadable"
 msgstr "Не удалось прочитать: {}"
+
+msgid "{} value changed"
+msgid_plural "{} values changed"
+msgstr[0] "Изменено значение: {}"
+msgstr[1] "Изменено значения: {}"
+msgstr[2] "Изменено значений: {}"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "{}: разрешение не получено вовремя; подключите снова"

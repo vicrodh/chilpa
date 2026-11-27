@@ -928,6 +928,23 @@ fn has_album(lib: &Library, track: Option<i64>) -> bool {
 }
 
 
+/// After a sidecar's cover was deleted: a record or a track whose cover was
+/// that file has none, and takes its file's own, as a scan would.
+pub fn reclaim_cover(lib: &Library, track_id: i64, path: &Path, cache: &Path) -> rusqlite::Result<()> {
+    let (album, kept): (Option<i64>, Option<String>) = lib.db.query_row(
+        "SELECT t.album_id, t.release_artwork FROM tracks t WHERE t.id = ?1", params![track_id], |r| Ok((r.get(0)?, r.get(1)?)))?;
+    let gone = |cover: &Option<String>| cover.as_deref().is_some_and(|cover| !Path::new(cover).exists());
+    if gone(&kept) {
+        lib.db.execute("UPDATE tracks SET release_artwork = NULL WHERE id = ?1", params![track_id])?;
+    }
+    let Some(album) = album else { return Ok(()) };
+    let record: Option<String> = lib.db.query_row("SELECT artwork_path FROM albums WHERE id = ?1", params![album], |r| r.get(0))?;
+    if gone(&record) {
+        lib.db.execute("UPDATE albums SET artwork_path = NULL WHERE id = ?1", params![album])?;
+    }
+    save_cover(lib, album, path, cache)
+}
+
 /// Gives the album a cover if it does not have one yet.
 ///
 /// The file's own first; failing that, the one next to it in the folder,

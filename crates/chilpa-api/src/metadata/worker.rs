@@ -32,6 +32,8 @@ pub(crate) enum Job {
     ArtworkFile { session: u64, turn: u64, path: PathBuf },
     Save { session: u64, plan: Plan },
     SaveServer { session: u64, plan: ServerPlan, reach: Reach },
+    /// What the record's sidecars say of it goes.
+    Drop { session: u64, plan: super::drop::DropPlan },
 }
 
 pub(crate) enum Done {
@@ -45,6 +47,7 @@ pub(crate) enum Done {
     Saved { session: u64, written: Written },
     SaveFailed { session: u64, reason: String, written: Written },
     ServerSaved { session: u64, outcome: Outcome },
+    Dropped { session: u64, failed: Option<String>, contained: bool },
 }
 
 impl Done {
@@ -59,7 +62,8 @@ impl Done {
             | Done::Progress { session, .. }
             | Done::Saved { session, .. }
             | Done::SaveFailed { session, .. }
-            | Done::ServerSaved { session, .. } => *session,
+            | Done::ServerSaved { session, .. }
+            | Done::Dropped { session, .. } => *session,
         }
     }
 }
@@ -229,7 +233,7 @@ fn run(job: Job, http: &dyn Http, credential: &discogs::CredentialProvider,accou
             };
             Done::Loaded { session, turn, account_epoch, release }
         }
-        Job::Beets { session, turn, task } => Done::Beets { session, turn, slot:task.run() },
+        Job::Beets { session, turn, task } => Done::Beets { session, turn, slot:task.run(http) },
         Job::ArtworkSearch { session, turn, provider, title, artist, catalog_number } => {
             Done::Candidates { session, turn, account_epoch, candidates: artwork::find(http, session, turn, provider, &title, &artist, &catalog_number,credential) }
         }
@@ -237,6 +241,7 @@ fn run(job: Job, http: &dyn Http, credential: &discogs::CredentialProvider,accou
         Job::ArtworkFile { session, turn, path } => Done::Cover { session, turn, cover: artwork::from_file(session, &path) },
         Job::Save { session, plan } => save::run(session, plan, finished),
         Job::SaveServer { session, plan, reach } => server::run(session, plan, reach),
+        Job::Drop { session, plan } => super::drop::run(session, plan),
     };
     let _ = finished.send(done);
 }

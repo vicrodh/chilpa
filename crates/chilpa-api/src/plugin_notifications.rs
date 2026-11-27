@@ -66,7 +66,10 @@ impl Inbox {
         }
         self.save(root)
     }
-    pub(crate) fn check(&mut self, root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &PluginRepositories) -> Result<(), String> {
+    /// Asked for, it reads every repository the listener added as well, so
+    /// the plugin list shows what each one offers now; the periodic check
+    /// reads only the ones updates and new plugins come from.
+    pub(crate) fn check(&mut self, root: &Path, plugins: &Arc<Mutex<Plugins>>, repositories: &PluginRepositories, asked: bool) -> Result<(), String> {
         if chilpa_core::network::current().offline { return Ok(()); }
         let installed = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.list();
         let installed_ids: Vec<String> = installed.iter().map(|plugin| plugin.id.clone()).collect();
@@ -87,7 +90,9 @@ impl Inbox {
         // not an update failure.
         let third_party = repositories.third_party_id();
         let offered = ["native".to_string(), third_party.clone()];
-        for repo in sources.iter().chain(offered.iter().filter(|repo| !sources.contains(*repo))) {
+        let added: Vec<String> = if asked { repositories.sources().into_iter().map(|repository| repository.id).collect() } else { Vec::new() };
+        let mut read = BTreeSet::new();
+        for repo in sources.iter().chain(offered.iter()).chain(added.iter()).filter(|repo| read.insert(repo.to_string())) {
             if let Err(error) = repositories.refresh(repo, "EN") { if sources.contains(repo) { failure = Some(error); } continue; }
             let entries = repositories.cached(repo)?;
             if offered.contains(repo) { self.note_new(repo, &entries, &installed_ids, *repo == third_party); }

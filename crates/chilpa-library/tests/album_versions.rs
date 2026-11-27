@@ -32,13 +32,14 @@ fn sparse_track_ids_preserve_grouped_order_duration_and_source_selection() {
         INSERT INTO tracks(id, source_id, external_id, title, duration_ms, added_at) VALUES (7, 1, '/loose', 'Loose', 53, 1);
         INSERT INTO tracks(id, source_id, external_id, title, album_id, present, duration_ms, added_at)
         VALUES (-900, 1, '/missing', 'Missing', 10, 0, 999, 1);").unwrap();
-    assert_selected_tracks(&lib, &Filter::default(), &[0, i64::MAX - 3, 7], 667);
-    let excluded = Filter { excluded_sources: vec!["server:fixture".into()], ..Default::default() };
-    assert_selected_tracks(&lib, &excluded, &[-17, 9_000_000_001, 7], 255);
-    assert!(lib.select_album_version(20, 10).unwrap());
+    // The local copy leads over the server's 24-bit deluxe edition.
     assert_selected_tracks(&lib, &Filter::default(), &[-17, 9_000_000_001, 7], 255);
-    lib.connection().execute("UPDATE tracks SET reachable = 0 WHERE album_id = 10", []).unwrap();
+    let excluded = Filter { excluded_sources: vec!["local:default".into()], ..Default::default() };
+    assert_selected_tracks(&lib, &excluded, &[0, i64::MAX - 3], 614);
+    assert!(lib.select_album_version(10, 20).unwrap());
     assert_selected_tracks(&lib, &Filter::default(), &[0, i64::MAX - 3, 7], 667);
+    lib.connection().execute("UPDATE tracks SET reachable = 0 WHERE album_id = 20", []).unwrap();
+    assert_selected_tracks(&lib, &Filter::default(), &[-17, 9_000_000_001, 7], 255);
     assert!(lib.set_album_apart(10, true).unwrap());
     assert_selected_tracks(&lib, &Filter::default(), &[-17, 9_000_000_001, 0, i64::MAX - 3, 7], 869);
     assert_eq!(lib.connection().query_row("SELECT count(*) FROM tracks", [], |row| row.get::<_, i64>(0)).unwrap(), 6);
@@ -264,12 +265,12 @@ fn grouped_results_respect_source_exclusions_and_never_interleave_versions() {
     album(&lib, 2, "Coda (Remastered)", "Led Zeppelin");
     track(&lib, 1, 1, local, "/coda/1.flac", 16, 44100);
     track(&lib, 2, 2, server, "opaque-release-track", 24, 96000);
-    assert_eq!(lib.grouped_snapshot(&Filter::default(), TrackOrder::Album).unwrap().ids, vec![2]);
-    let mut filter = Filter { excluded_sources: vec!["server:home".into()], ..Filter::default() };
-    assert_eq!(lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap().ids, vec![1]);
-    filter.excluded_sources.clear();
-    filter.albums = vec![1];
+    assert_eq!(lib.grouped_snapshot(&Filter::default(), TrackOrder::Album).unwrap().ids, vec![1], "the local copy over the server's");
+    let mut filter = Filter { excluded_sources: vec!["local:default".into()], ..Filter::default() };
     assert_eq!(lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap().ids, vec![2]);
+    filter.excluded_sources.clear();
+    filter.albums = vec![2];
+    assert_eq!(lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap().ids, vec![1]);
 }
 
 #[test]

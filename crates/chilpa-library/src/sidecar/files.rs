@@ -158,10 +158,23 @@ impl Home {
     }
 }
 
+static IGNORED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Whether the sidecars already on disk are left unread: every file then
+/// says what its own tags say. The application sets it from its settings.
+pub fn set_ignored(on: bool) {
+    IGNORED.store(on, std::sync::atomic::Ordering::Release);
+}
+
+pub fn ignored() -> bool {
+    IGNORED.load(std::sync::atomic::Ordering::Acquire)
+}
+
 /// The file whose word is in force for a home: its own sidecar, or the
-/// first of QBZ's that is there. Nothing on disk for a home on a server.
+/// first of QBZ's that is there. Nothing on disk for a home on a server,
+/// and nothing at all while sidecars are ignored.
 pub fn in_force(home: &Home, external_id: &str) -> Option<PathBuf> {
-    if home.is_hosted() {
+    if home.is_hosted() || ignored() {
         return None;
     }
     let own = home.sidecar();

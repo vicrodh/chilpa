@@ -101,10 +101,12 @@ impl Chilpa {
                 }
             }
             // A track that started is over: how it ended and what of it left
-            // the device settle its listen.
-            PlayerEvent::Closed { attempt, heard, how, .. } => {
+            // the device settle its listen. Samples changed after its start,
+            // by a volume moved or DSP turned on, are not what its start said.
+            PlayerEvent::Closed { attempt, heard, how, processed, .. } => {
                 if let Some(listen) = self.plays.get_mut(id).and_then(|play| play.ledger.listen_mut(attempt)) {
                     listen.played_frames = heard;
+                    listen.bit_perfect &= !processed;
                     crate::scrobble::if_heard(self.scrobbler.as_ref(), listen);
                 }
                 let written = self.plays.get_mut(id).map(|play| play.ledger.closed(attempt, heard, how, fate)).unwrap_or_default();
@@ -187,7 +189,14 @@ impl Chilpa {
                 *saved = sourced.to_string();
             }
         }
-        let listen = crate::scrobble::listen_of(tags, &context.title, &context.artist, &context.album, duration_ms, started_at);
+        let mut listen = crate::scrobble::listen_of(tags, &context.title, &context.artist, &context.album, duration_ms, started_at);
+        // What the library row says of who it is wins over the file, as its
+        // names do: a sidecar can correct both.
+        if let Some(listen) = &mut listen {
+            if face.track_number.is_some() { listen.track_number = face.track_number; }
+            if let Some(id) = &face.recording_mbid { listen.recording_mbid = id.clone(); }
+            if let Some(code) = &face.isrc { listen.isrc = code.clone(); }
+        }
         if let (true, Some(listen)) = (shown, &listen) {
             self.announce(listen);
         }

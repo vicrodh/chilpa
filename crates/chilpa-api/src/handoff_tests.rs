@@ -74,7 +74,7 @@ fn seconds(count: u64) -> u64 {
 }
 
 fn closed(heard: u64, how: How) -> PlayerEvent {
-    PlayerEvent::Closed { attempt: 1, index: 0, heard, how }
+    PlayerEvent::Closed { attempt: 1, index: 0, heard, how, processed: false }
 }
 
 fn logged(api: &mut Chilpa, started_at: i64) -> ListenMetrics {
@@ -206,7 +206,7 @@ fn the_close_of_another_track_or_of_another_play_leaves_the_listen_open() {
     let (a, other, at) = (81, 82, 1_000_000_081);
     let mut api = playing(a, "/music/closed-other.flac", at);
     say(&mut api, a, PlayerEvent::Progress { frames: seconds(3), played: seconds(3) });
-    say(&mut api, a, PlayerEvent::Closed { attempt: 2, index: 1, heard: seconds(9), how: How::Failed });
+    say(&mut api, a, PlayerEvent::Closed { attempt: 2, index: 1, heard: seconds(9), how: How::Failed, processed: false });
     say(&mut api, other, closed(seconds(9), How::Failed));
     let listen = api.plays.get(a).and_then(|play| play.ledger.newest()).expect("still open");
     assert_eq!(listen.played_frames, seconds(3));
@@ -300,7 +300,7 @@ fn a_track_that_started_in_a_replaced_play_is_a_listen_of_that_play() {
     let before = api.listening_summary(&recent).unwrap();
     start(&mut api, a, "/music/second-of-the-old.flac");
     say(&mut api, a, PlayerEvent::Progress { frames: seconds(1), played: seconds(1) });
-    say(&mut api, a, PlayerEvent::Closed { attempt: 1, index: 1, heard: seconds(1), how: How::Stopped });
+    say(&mut api, a, PlayerEvent::Closed { attempt: 1, index: 1, heard: seconds(1), how: How::Stopped, processed: false });
     say(&mut api, a, PlayerEvent::Stopped { frames: seconds(1) });
     let after = api.listening_summary(&recent).unwrap();
     assert_eq!((after.events - before.events, after.skips - before.skips), (1, 1), "the one cut off by the new play is the old play's too, cut short: {after:?}");
@@ -635,7 +635,7 @@ fn local_identity(play: u64, tags: Option<chilpa_tags::Tags>, card: Option<crate
     api.search.playing = card.map(|card| (path.clone(), card));
     api.launched(play, 0, Relaunch::Track);
     let face = api.face_of(play, Path::new(&path), tags.as_ref(), None);
-    assert_eq!([face.title.as_str(), face.artist.as_str(), face.album.as_str()], visible, "the window keeps its existing names");
+    assert_eq!([face.title.as_str(), face.artist.as_str(), face.album.as_str()], visible, "what the window shows");
     api.listen_started(play, 1, Path::new(&path), tags.as_ref(), &face, RATE, Some(16), false, None, false);
     let at = 1_810_002_000 + play as i64;
     let listen = api.plays.get_mut(play).unwrap().ledger.listen_mut(1).unwrap();
@@ -648,8 +648,8 @@ fn local_identity(play: u64, tags: Option<chilpa_tags::Tags>, card: Option<crate
 }
 
 #[test]
-fn a_path_derived_face_title_keeps_the_library_snapshot_for_history_and_scrobble() {
-    local_identity(814, None, None, ["history-814", "", ""], ["Library title", "Library artist", "Library album"]);
+fn a_file_without_tags_is_named_by_its_library_row_everywhere() {
+    local_identity(814, None, None, ["Library title", "Library artist", "Library album"], ["Library title", "Library artist", "Library album"]);
 }
 
 #[test]
@@ -660,7 +660,93 @@ fn empty_face_fields_keep_the_library_snapshot_per_field() {
 }
 
 #[test]
-fn event_tag_fields_override_the_library_snapshot() {
+fn the_library_row_names_a_held_file_over_its_tags() {
+    // The row carries what a sidecar lays over the file, as the lists show it.
     let tags = chilpa_tags::Tags { title: Some("Tagged title".into()), artists: vec!["Tagged artist".into()], album: Some("Tagged album".into()), ..Default::default() };
-    local_identity(816, Some(tags), None, ["Tagged title", "Tagged artist", "Tagged album"], ["Tagged title", "Tagged artist", "Tagged album"]);
+    local_identity(816, Some(tags), None, ["Library title", "Library artist", "Library album"], ["Library title", "Library artist", "Library album"]);
+}
+
+#[test]
+fn a_track_whose_samples_changed_after_it_started_is_logged_as_processed() {
+    // Its start said untouched; its close says what reached the device.
+    for (play, at, processed, logged_perfect) in [(941, 1_000_000_941, false, 1), (942, 1_000_000_942, true, 0)] {
+        let mut api = playing(play, "/music/moved-volume.flac", at);
+        api.plays.get_mut(play).unwrap().ledger.listen_mut(1).unwrap().bit_perfect = true;
+        say(&mut api, play, PlayerEvent::Closed { attempt: 1, index: 0, heard: seconds(30), how: How::Completed, processed });
+        let logged = logged(&mut api, at);
+        assert_eq!(logged.events, 1, "{logged:?}");
+        assert_eq!(logged.bit_perfect, logged_perfect, "processed: {processed}");
+    }
+}
+
+/// Turns the DSP on once it has been handed its first block, as a listener
+/// does halfway through a track.
+struct DspLater {
+    format: chilpa_audio::format::StreamFormat,
+    dsp: std::sync::Arc<std::sync::OnceLock<chilpa_audio::dsp::Control>>,
+    written: bool,
+}
+
+impl chilpa_audio::sink::AudioSink for DspLater {
+    fn format(&self) -> chilpa_audio::format::StreamFormat { self.format }
+    fn write(&mut self, bytes: &[u8]) -> Result<usize, chilpa_audio::sink::SinkError> {
+        if !std::mem::replace(&mut self.written, true) {
+            if let Some(dsp) = self.dsp.get() {
+                dsp.set(Some(chilpa_audio::dsp::Preset { preamp_db: -6.0, ..Default::default() })).unwrap();
+            }
+        }
+        Ok(bytes.len() / self.format.frame_bytes())
+    }
+    fn close(&mut self) -> Result<(), chilpa_audio::sink::SinkError> { Ok(()) }
+}
+
+/// A second of stereo 16-bit sound at 44.1 kHz.
+fn sound(path: &Path) {
+    let frames = 44_100u32;
+    let data = frames * 4;
+    let mut bytes = Vec::with_capacity(44 + data as usize);
+    bytes.extend_from_slice(b"RIFF");
+    bytes.extend_from_slice(&(36 + data).to_le_bytes());
+    bytes.extend_from_slice(b"WAVEfmt ");
+    for field in [16u32.to_le_bytes().to_vec(), 1u16.to_le_bytes().to_vec(), 2u16.to_le_bytes().to_vec(),
+        44_100u32.to_le_bytes().to_vec(), 176_400u32.to_le_bytes().to_vec(), 4u16.to_le_bytes().to_vec(), 16u16.to_le_bytes().to_vec()] {
+        bytes.extend_from_slice(&field);
+    }
+    bytes.extend_from_slice(b"data");
+    bytes.extend_from_slice(&data.to_le_bytes());
+    for i in 0..frames {
+        let sample = ((i % 400) as i16 - 200) * 50;
+        bytes.extend_from_slice(&sample.to_le_bytes());
+        bytes.extend_from_slice(&sample.to_le_bytes());
+    }
+    std::fs::write(path, bytes).unwrap();
+}
+
+#[test]
+fn a_track_the_dsp_reached_after_its_start_is_kept_in_the_history_as_processed() {
+    // A real player, a real file and an output that takes it untouched: the
+    // start says bit-perfect, and the DSP comes on after the first block.
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("dsp-later.wav");
+    sound(&path);
+    let mut api = facade();
+    let before = api.listening_summary(&ListenFilter::default()).unwrap();
+    let dsp = std::sync::Arc::new(std::sync::OnceLock::new());
+    let held = dsp.clone();
+    let player = chilpa_core::player::Player::spawn(
+        Box::new(|_| chilpa_core::probe_device("file:capture")),
+        Box::new(move |_, format, _| Ok(Box::new(DspLater { format, dsp: held.clone(), written: false }) as Box<dyn chilpa_audio::sink::AudioSink + Send>)),
+    );
+    assert!(dsp.set(player.dsp()).is_ok());
+    api.player = Some(player);
+    api.launch(chilpa_core::launch::LaunchSpec { paths: vec![path.clone()], device: "file:capture".into(), ..Default::default() }, 0, Relaunch::Track);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while !api.plays.is_empty() {
+        assert!(std::time::Instant::now() < deadline, "the play did not settle");
+        api.read_player_events();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    let after = api.listening_summary(&ListenFilter::default()).unwrap();
+    assert_eq!(after.events, before.events + 1, "one listen: {after:?}");
+    assert_eq!(after.bit_perfect, before.bit_perfect, "the history keeps what reached the device, not what its start said");
 }

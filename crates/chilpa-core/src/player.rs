@@ -74,8 +74,10 @@ pub enum PlayerEvent {
     /// left the device, which is what was heard. Said once for every
     /// `Started`, before the play ends, and possibly after the next track
     /// started: the last of a track is still in the device when the queue
-    /// moves on.
-    Closed { attempt: u64, index: usize, heard: u64, how: crate::attempts::How },
+    /// moves on. `processed` says that volume, normalization or DSP changed
+    /// some of its samples, also when they changed after `Started` said it
+    /// went out untouched.
+    Closed { attempt: u64, index: usize, heard: u64, how: crate::attempts::How, processed: bool },
     /// Something went wrong that did not end the play: an unreadable sector
     /// cut a track of a disc, and the disc goes on. `attempt` is the track's
     /// turn in the play, counted from one; `message` is text the interface
@@ -683,7 +685,8 @@ fn play(
     let start = crate::queue_playback::first_live(queue, controls, named_start);
     if let Some((index, first)) = &start {
         if is_url(first) {
-            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp, controls.stereo_downmix.get(), controls.stereo_fallback.get()).map_err(|error|error.at_entry(first,*index));
+            let volume = crate::playback::StreamVolume { level: controls.volume.clone(), active: controls.gain_active.clone() };
+            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, *index, total, &controls.dsp, volume, controls.stereo_downmix.get(), controls.stereo_fallback.get()).map_err(|error|error.at_entry(first,*index));
         }
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, controls, open, drive, events);
@@ -817,7 +820,7 @@ fn play(
             let _ = events.send(PlayerEvent::Skipped { attempt, index, path: path.to_path_buf(), message: why.to_string() });
         },
         &mut |closed| {
-            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how });
+            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how, processed: closed.processed });
         },
     )?;
 
@@ -869,10 +872,12 @@ fn play_stream(
     index: usize,
     queue_len: usize,
     dsp: &chilpa_audio::dsp::Control,
+    volume: crate::playback::StreamVolume,
     stereo: bool,
     fallback: bool,
 ) -> Result<Outcome, PlayError> {
     dsp.begin_stream();
+    volume.active.store(false, Ordering::Release);
     let exact_path = crate::path_is_exact(device, exclusive);
     let parts = parts_of(url);
     let address = parts.first().cloned().unwrap_or_default();
@@ -886,7 +891,7 @@ fn play_stream(
     // A stream is one track, the play's first and only attempt. Once it is
     // announced it is owed an ending, also when the device then fails to
     // open or the play unwinds.
-    let owed = Owed { events: &events, index, announced: std::cell::Cell::new(false), report: Default::default() };
+    let owed = Owed { events: &events, index, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() };
     let tag = chilpa_tags::Tags {
         title: station.clone().or_else(|| Some(address.clone())),
         album: Some("Radio".into()),
@@ -902,6 +907,8 @@ fn play_stream(
         stereo,
         fallback,
         Some(dsp.clone()),
+        Some(volume),
+        owed.touched.clone(),
         owed.report.clone(),
         |format| open(device, format, exclusive),
         &mut |delivery, bits| {
@@ -938,12 +945,14 @@ struct Owed<'a> {
     index: usize,
     announced: std::cell::Cell<bool>,
     report: crate::playback_events::Report,
+    /// What changed the stream's samples, marked as it happened.
+    touched: crate::attempts::Touched,
 }
 
 impl Owed<'_> {
     fn close(&self, heard: u64, how: crate::attempts::How) {
         if self.announced.replace(false) {
-            let _ = self.events.send(PlayerEvent::Closed { attempt: 1, index: self.index, heard, how });
+            let _ = self.events.send(PlayerEvent::Closed { attempt: 1, index: self.index, heard, how, processed: self.touched.get() });
         }
     }
 }
@@ -1043,7 +1052,8 @@ fn play_cd_drive(
                     route: crate::output_evidence::route(device, delivery, exclusive),
                 channels: chilpa_cd::CDDA_FORMAT.channels,
                 bits: delivery.bits_carried(),
-                bit_perfect,
+                // A volume below full scales the disc on its way out.
+                bit_perfect: bit_perfect && controls.volume.get() == 1.0,
                 // A CD is 44,100 frames per second, and its sectors are
                 // already PCM.
                 total_frames: Some(u64::from(track.sectors) * chilpa_cd::FRAMES_PER_SECTOR as u64),
@@ -1073,7 +1083,7 @@ fn play_cd_drive(
             });
         },
         &mut |closed| {
-            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how });
+            let _ = events.send(PlayerEvent::Closed { attempt: closed.attempt, index: closed.index, heard: closed.heard, how: closed.how, processed: closed.processed });
         },
     )
     .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))

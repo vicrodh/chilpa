@@ -55,6 +55,9 @@ pub(crate) struct Desktop {
     /// What the desktop was last told, to tell it only what changed.
     #[cfg(target_os = "linux")]
     told: (Option<TrackMeta>, Option<PlaybackStatus>),
+    /// The volume revision the desktop was last told about.
+    #[cfg(target_os = "linux")]
+    volume_told: u64,
     /// A jump the desktop has not heard of yet, in seconds.
     pub(crate) seeked: Option<f64>,
     /// When the back button last restarted the track, for the second press.
@@ -292,7 +295,16 @@ impl Chilpa {
             };
             let meta = self.now.playing.then(|| meta_of(&self.now));
             let position = Duration::from_secs_f64(self.now.seconds.max(0.0));
+            // The desktop's slider follows the window's. A route that locks
+            // the volume reads full, so a slider moved outside snaps back.
+            let (said, revision) = (&self.desktop.told, self.volume_revision);
+            let due = revision != self.desktop.volume_told || meta != said.0 || said.1 != Some(status);
+            let volume = due.then(|| self.player_volume());
+            self.desktop.volume_told = revision;
             let Desktop { link: Some((handle, _)), told, seeked, .. } = &mut self.desktop else { return };
+            if let Some(volume) = volume {
+                handle.set_volume(f64::from(volume.percent) / 100.0);
+            }
             let another = meta != told.0;
             if another {
                 if let Some(meta) = &meta {
