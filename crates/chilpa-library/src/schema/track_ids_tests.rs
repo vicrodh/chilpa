@@ -75,6 +75,12 @@ fn schema_of(db: &Connection) -> Vec<(String, String, String, Option<String>)> {
         .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))).unwrap().map(Result::unwrap).collect()
 }
 
+/// Step 57 alone, as the upgrade runs it. The steps after it add tables of
+/// their own, which are not this step's to keep or to change.
+fn rebuild_57(db: &Connection) {
+    super::rebuild::run(db, 57, &super::track_ids::TRACKS, &mut |_| Ok(())).unwrap();
+}
+
 fn version(db: &Connection) -> i64 {
     db.query_row("PRAGMA user_version", [], |row| row.get(0)).unwrap()
 }
@@ -89,7 +95,7 @@ fn every_id_row_and_column_is_kept() {
     let db = filled();
     let before = everything(&db);
     let columns: Vec<String> = db.prepare("PRAGMA table_info(tracks)").unwrap().query_map([], |row| row.get(1)).unwrap().map(Result::unwrap).collect();
-    migrate(&db).unwrap();
+    rebuild_57(&db);
     assert_eq!(version(&db), 57);
     let after_columns: Vec<String> = db.prepare("PRAGMA table_info(tracks)").unwrap().query_map([], |row| row.get(1)).unwrap().map(Result::unwrap).collect();
     assert_eq!(after_columns, columns);
@@ -106,7 +112,7 @@ fn every_id_row_and_column_is_kept() {
 fn only_the_tracks_table_changes_in_the_schema() {
     let db = filled();
     let before = schema_of(&db);
-    migrate(&db).unwrap();
+    rebuild_57(&db);
     let after = schema_of(&db);
     let others = |schema: &[(String, String, String, Option<String>)]| schema.iter().filter(|row| !(row.0 == "table" && row.1 == "tracks")).cloned().collect::<Vec<_>>();
     assert_eq!(others(&after), others(&before), "every index and trigger, of tracks and of the rest, is as it was");
@@ -206,7 +212,7 @@ fn the_next_id_passes_ids_that_rows_elsewhere_still_name() {
     let broken = |db: &Connection| db.prepare("PRAGMA foreign_key_check").unwrap().query_map([], |_| Ok(())).unwrap().count();
     let before = broken(&db);
     assert!(before > 0);
-    migrate(&db).unwrap();
+    rebuild_57(&db);
     assert_eq!(version(&db), 57);
     assert_eq!(broken(&db), before, "what was already broken is kept, not fixed and not refused");
     assert!(insert(&db, "/music/new.flac") > 100);
@@ -253,7 +259,7 @@ fn a_failure_after_the_drop_leaves_fifty_six_as_it_was() {
     assert_eq!(everything(&db), rows);
     assert_eq!(db.query_row("PRAGMA foreign_keys", [], |row| row.get::<_, i64>(0)).unwrap(), 1, "the connection's settings are back");
     migrate(&db).unwrap();
-    assert_eq!(version(&db), 57);
+    assert_eq!(version(&db), super::VERSION, "the next try goes through step 57 and on");
 }
 
 #[test]
@@ -313,7 +319,7 @@ fn a_kill_between_the_copy_and_the_commit_leaves_fifty_six() {
     drop(db);
     upgrade::run(&path, &mut |_| {}, &upgrade::Stop::default()).unwrap();
     let db = Connection::open(&path).unwrap();
-    assert_eq!(version(&db), 57);
+    assert_eq!(version(&db), super::VERSION, "the next upgrade goes through step 57 and on");
     assert_eq!(db.query_row("PRAGMA integrity_check", [], |row| row.get::<_, String>(0)).unwrap(), "ok");
 }
 
@@ -347,7 +353,7 @@ fn every_foreign_key_to_and_from_tracks_survives_the_rebuild() {
     let (children, own) = (keys_to_tracks(&db), keys_of_tracks(&db));
     assert_eq!(children.len(), 13, "{children:?}");
     assert_eq!(own.iter().map(|key| key.1.as_str()).collect::<Vec<_>>(), ["albums", "sources"], "{own:?}");
-    migrate(&db).unwrap();
+    rebuild_57(&db);
     assert_eq!(keys_to_tracks(&db), children, "every child still names tracks, by the same column, with the same rule");
     assert_eq!(keys_of_tracks(&db), own, "and tracks still names its source and its album");
 }
