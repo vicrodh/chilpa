@@ -650,6 +650,10 @@ pub struct Chilpa {
     queue_work: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     queue_origins: Vec<Option<queue_origin::QueueOrigin>>,
     browse_origin: Option<queue_origin::QueueOrigin>,
+    /// Each album's and playlist's place, read when first needed.
+    resume_places: Option<queue::resume::Places>,
+    /// Play on a list with a place, waiting for the window's answer.
+    resume_offer: Option<queue::resume::Offer>,
     /// The page shown, to tell a change of page from a redraw.
     browse_route: Option<navigation::Route>,
     listen: listen::Workspace,
@@ -805,6 +809,8 @@ impl Chilpa {
             queue: Vec::new(),
             queue_work: Default::default(),
             queue_origins: Vec::new(),
+            resume_places: None,
+            resume_offer: None,
             browse_origin: None,
             browse_route: None,
             listen: listen::Workspace::default(),

@@ -11,9 +11,14 @@ pub mod qobject {
         #[qml_element]
         #[qml_singleton]
         #[qproperty(bool, busy)]
+        /// Play on a list with a place, waiting for its answer, as JSON.
+        #[qproperty(QString, offer)]
         type QueueActivity = super::QueueActivityRust;
         #[qinvokable]
         fn refresh(self: Pin<&mut QueueActivity>);
+        /// "continue", "restart", or anything else to play nothing.
+        #[qinvokable]
+        fn answer(self: Pin<&mut QueueActivity>, answer: &QString);
         #[qinvokable]
         fn collection_menu(self: &QueueActivity) -> QString;
     }
@@ -100,13 +105,20 @@ pub fn paths(paths: QueuePaths, then: impl FnOnce(&mut chilpa_api::Chilpa, &[Str
 
 unsafe extern "C" { fn chilpa_queue_cursor(busy: bool); }
 #[derive(Default)]
-pub struct QueueActivityRust { busy: bool }
+pub struct QueueActivityRust { busy: bool, offer: cxx_qt_lib::QString }
 impl qobject::QueueActivity {
     pub fn collection_menu(&self) -> cxx_qt_lib::QString {
         cxx_qt_lib::QString::from(crate::app::with(|api| api.collection_queue_menu()).to_string())
     }
 
+    pub fn answer(mut self: Pin<&mut Self>, answer: &cxx_qt_lib::QString) {
+        crate::app::with(|api| api.answer_resume(&answer.to_string()));
+        self.as_mut().refresh();
+    }
+
     pub fn refresh(mut self: Pin<&mut Self>) {
+        let offer = cxx_qt_lib::QString::from(crate::app::with(|api| api.resume_offer_json()));
+        if *self.offer() != offer { self.as_mut().set_offer(offer); }
         let busy = crate::app::with(|api| api.queue_busy());
         BUSY.store(busy, std::sync::atomic::Ordering::Relaxed);
         if *self.busy() == busy { return; }

@@ -20,6 +20,7 @@ use super::*;
 pub(crate) mod back_button;
 pub(crate) mod ended;
 pub(crate) mod normalization;
+pub(crate) mod resume;
 pub(crate) mod rows;
 pub(crate) mod shuffle;
 pub(crate) mod unavailable;

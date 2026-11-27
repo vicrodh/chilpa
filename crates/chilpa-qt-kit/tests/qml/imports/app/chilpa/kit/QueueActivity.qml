@@ -6,4 +6,7 @@ QtObject {
     property bool pending: false
     property int refreshes: 0
     function refresh() { ++refreshes; busy = pending }
+    property string offer: ""
+    property var answers: []
+    function answer(choice) { answers = answers.concat([choice]); offer = "" }
 }

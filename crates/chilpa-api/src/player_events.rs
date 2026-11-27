@@ -222,6 +222,7 @@ impl Chilpa {
         self.dsp.passthrough = dsd_passthrough;
         // What was playing until now is left where it was.
         self.keep_place(true);
+        self.note_place(index, path);
         self.sample_rate = opened.sample_rate_hz;
         self.now.path = path.display().to_string();
         // What came from a source already carries its card: without it the

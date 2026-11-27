@@ -3398,6 +3398,9 @@ msgstr "返回"
 msgid "Go Forward"
 msgstr "前進"
 
+msgid "Go on where you left off?"
+msgstr "要從上次停下的地方繼續嗎？"
+
 msgid "Go to"
 msgstr "前往"
 
@@ -5879,6 +5882,9 @@ msgstr "立即播放"
 msgid "Play on"
 msgstr "播放於"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "播放聽到一半的專輯或播放清單時，會詢問要從最後一首繼續還是重新開始。"
+
 msgid "Play random"
 msgstr "隨機播放"
 
@@ -6532,6 +6538,9 @@ msgstr "記住設定"
 
 msgid "Remember for this output"
 msgstr ""
+
+msgid "Remember position in playlists and albums"
+msgstr "記住播放清單與專輯的位置"
 
 msgid "Remember stereo conversion for this output"
 msgstr ""
@@ -7661,6 +7670,9 @@ msgstr "開始"
 msgid "Start from current theme"
 msgstr "從目前主題開始"
 
+msgid "Start over"
+msgstr "重新開始"
+
 msgid "Start silent check"
 msgstr "開始靜音檢查"
 
@@ -8148,6 +8160,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "這裡最後播放的是「{}」，第 {} 首，共 {} 首。"
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "無法變更音樂庫。請重試；下方的詳細資訊說明了發生的情況。"

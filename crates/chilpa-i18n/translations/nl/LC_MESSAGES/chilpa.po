@@ -3392,6 +3392,9 @@ msgstr "Terug"
 msgid "Go Forward"
 msgstr "Vooruit"
 
+msgid "Go on where you left off?"
+msgstr "Verdergaan waar je was gebleven?"
+
 msgid "Go to"
 msgstr "Ga naar"
 
@@ -5876,6 +5879,9 @@ msgstr "Nu afspelen"
 msgid "Play on"
 msgstr "Afspelen op"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "Afspelen van een album of playlist die je halverwege liet, vraagt of je verdergaat vanaf het laatste nummer of opnieuw begint."
+
 msgid "Play random"
 msgstr "Willekeurig album afspelen"
 
@@ -6529,6 +6535,9 @@ msgstr "Onthouden"
 
 msgid "Remember for this output"
 msgstr ""
+
+msgid "Remember position in playlists and albums"
+msgstr "Positie in playlists en albums onthouden"
 
 msgid "Remember stereo conversion for this output"
 msgstr ""
@@ -7661,6 +7670,9 @@ msgstr "Starten"
 msgid "Start from current theme"
 msgstr "Beginnen vanaf huidig thema"
 
+msgid "Start over"
+msgstr "Opnieuw beginnen"
+
 msgid "Start silent check"
 msgstr "Stille controle starten"
 
@@ -8150,6 +8162,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "Het laatste nummer dat hier speelde was ‘{}’, {} van {}."
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "De bibliotheek kon niet worden gewijzigd. Probeer het opnieuw; het detail hieronder zegt wat er gebeurde."

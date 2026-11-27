@@ -147,6 +147,7 @@ pub const SECTIONS: &[Section] = &[
                     setting(crate::queue::normalization::PREVENT_CLIPPING, Chilpa::mark("Prevent clipping"), Chilpa::mark("Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."), Control::Toggle),
                     setting(crate::queue::back_button::BACK, Chilpa::mark("Back button"), Chilpa::mark("What one press does. A second press right after goes to the previous track."), Control::Select),
                     setting("playback.keepQueue", Chilpa::mark("Keep the queue between sessions"), Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."), Control::Toggle),
+                    setting(crate::queue::resume::REMEMBER, Chilpa::mark("Remember position in playlists and albums"), Chilpa::mark("Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."), Control::Toggle),
                 ],
             },
             Group {

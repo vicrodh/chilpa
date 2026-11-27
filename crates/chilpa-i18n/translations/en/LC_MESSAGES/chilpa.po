@@ -3392,6 +3392,9 @@ msgstr ""
 msgid "Go Forward"
 msgstr ""
 
+msgid "Go on where you left off?"
+msgstr ""
+
 msgid "Go to"
 msgstr ""
 
@@ -5876,6 +5879,9 @@ msgstr ""
 msgid "Play on"
 msgstr ""
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr ""
+
 msgid "Play random"
 msgstr ""
 
@@ -6528,6 +6534,9 @@ msgid "Remember"
 msgstr ""
 
 msgid "Remember for this output"
+msgstr ""
+
+msgid "Remember position in playlists and albums"
 msgstr ""
 
 msgid "Remember stereo conversion for this output"
@@ -7661,6 +7670,9 @@ msgstr ""
 msgid "Start from current theme"
 msgstr ""
 
+msgid "Start over"
+msgstr ""
+
 msgid "Start silent check"
 msgstr ""
 
@@ -8149,6 +8161,9 @@ msgid "The installer did not match its pinned checksum."
 msgstr ""
 
 msgid "The installer exceeded its output limit."
+msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
 msgstr ""
 
 msgid "The library could not be changed. Try again; the detail below says what happened."

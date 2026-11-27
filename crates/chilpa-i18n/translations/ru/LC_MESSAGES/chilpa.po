@@ -3394,6 +3394,9 @@ msgstr "Назад"
 msgid "Go Forward"
 msgstr "Вперёд"
 
+msgid "Go on where you left off?"
+msgstr "Продолжить с того места, где вы остановились?"
+
 msgid "Go to"
 msgstr "Перейти к"
 
@@ -5881,6 +5884,9 @@ msgstr "Воспроизвести сейчас"
 msgid "Play on"
 msgstr "Воспроизвести на"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "При запуске альбома или плейлиста, прослушанного наполовину, спрашивает, продолжить с последнего трека или начать сначала."
+
 msgid "Play random"
 msgstr "Случайное воспроизведение"
 
@@ -6534,6 +6540,9 @@ msgstr "Запомнить"
 
 msgid "Remember for this output"
 msgstr ""
+
+msgid "Remember position in playlists and albums"
+msgstr "Запоминать позицию в плейлистах и альбомах"
 
 msgid "Remember stereo conversion for this output"
 msgstr ""
@@ -7669,6 +7678,9 @@ msgstr "Начать"
 msgid "Start from current theme"
 msgstr "Начать с текущей темы"
 
+msgid "Start over"
+msgstr "Начать сначала"
+
 msgid "Start silent check"
 msgstr "Начать тихую проверку"
 
@@ -8160,6 +8172,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "Последним здесь играл трек «{}», {} из {}."
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Не удалось изменить библиотеку. Попробуйте снова; ниже указано, что произошло."

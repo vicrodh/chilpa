@@ -3390,6 +3390,9 @@ msgstr "戻る"
 msgid "Go Forward"
 msgstr "進む"
 
+msgid "Go on where you left off?"
+msgstr "前回の続きから再生しますか？"
+
 msgid "Go to"
 msgstr "移動先"
 
@@ -5871,6 +5874,9 @@ msgstr "今すぐ再生"
 msgid "Play on"
 msgstr "再生先"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "途中までだったアルバムやプレイリストを再生すると、最後の曲から続けるか最初からにするかを確認します。"
+
 msgid "Play random"
 msgstr "ランダム再生"
 
@@ -6524,6 +6530,9 @@ msgstr "前回のまま"
 
 msgid "Remember for this output"
 msgstr ""
+
+msgid "Remember position in playlists and albums"
+msgstr "プレイリストとアルバムの位置を記憶"
 
 msgid "Remember stereo conversion for this output"
 msgstr ""
@@ -7653,6 +7662,9 @@ msgstr "開始"
 msgid "Start from current theme"
 msgstr "現在のテーマから開始"
 
+msgid "Start over"
+msgstr "最初から"
+
 msgid "Start silent check"
 msgstr "無音チェックを開始"
 
@@ -8140,6 +8152,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "ここで最後に再生されたのは「{}」（{}/{} 曲目）です。"
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "ライブラリを変更できませんでした。もう一度お試しください。下の詳細に何が起きたかが書かれています。"

@@ -3392,6 +3392,9 @@ msgstr "Voltar"
 msgid "Go Forward"
 msgstr "Avançar"
 
+msgid "Go on where you left off?"
+msgstr "Continuar de onde você parou?"
+
 msgid "Go to"
 msgstr "Ir para"
 
@@ -5876,6 +5879,9 @@ msgstr "Reproduzir agora"
 msgid "Play on"
 msgstr "Reproduzir em"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "Reproduzir um álbum ou uma playlist que você deixou pela metade pergunta se continua da última faixa ou começa de novo."
+
 msgid "Play random"
 msgstr "Reproduzir um ao acaso"
 
@@ -6529,6 +6535,9 @@ msgstr "Lembrar"
 
 msgid "Remember for this output"
 msgstr ""
+
+msgid "Remember position in playlists and albums"
+msgstr "Lembrar a posição em playlists e álbuns"
 
 msgid "Remember stereo conversion for this output"
 msgstr ""
@@ -7661,6 +7670,9 @@ msgstr "Iniciar"
 msgid "Start from current theme"
 msgstr "Partir do tema atual"
 
+msgid "Start over"
+msgstr "Começar de novo"
+
 msgid "Start silent check"
 msgstr "Iniciar verificação silenciosa"
 
@@ -8150,6 +8162,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "A última faixa que tocou aqui foi “{}”, {} de {}."
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Não foi possível alterar a biblioteca. Tente de novo; o detalhe abaixo diz o que aconteceu."
