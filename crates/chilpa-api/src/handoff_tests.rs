@@ -678,3 +678,75 @@ fn a_track_whose_samples_changed_after_it_started_is_logged_as_processed() {
         assert_eq!(logged.bit_perfect, logged_perfect, "processed: {processed}");
     }
 }
+
+/// Turns the DSP on once it has been handed its first block, as a listener
+/// does halfway through a track.
+struct DspLater {
+    format: chilpa_audio::format::StreamFormat,
+    dsp: std::sync::Arc<std::sync::OnceLock<chilpa_audio::dsp::Control>>,
+    written: bool,
+}
+
+impl chilpa_audio::sink::AudioSink for DspLater {
+    fn format(&self) -> chilpa_audio::format::StreamFormat { self.format }
+    fn write(&mut self, bytes: &[u8]) -> Result<usize, chilpa_audio::sink::SinkError> {
+        if !std::mem::replace(&mut self.written, true) {
+            if let Some(dsp) = self.dsp.get() {
+                dsp.set(Some(chilpa_audio::dsp::Preset { preamp_db: -6.0, ..Default::default() })).unwrap();
+            }
+        }
+        Ok(bytes.len() / self.format.frame_bytes())
+    }
+    fn close(&mut self) -> Result<(), chilpa_audio::sink::SinkError> { Ok(()) }
+}
+
+/// A second of stereo 16-bit sound at 44.1 kHz.
+fn sound(path: &Path) {
+    let frames = 44_100u32;
+    let data = frames * 4;
+    let mut bytes = Vec::with_capacity(44 + data as usize);
+    bytes.extend_from_slice(b"RIFF");
+    bytes.extend_from_slice(&(36 + data).to_le_bytes());
+    bytes.extend_from_slice(b"WAVEfmt ");
+    for field in [16u32.to_le_bytes().to_vec(), 1u16.to_le_bytes().to_vec(), 2u16.to_le_bytes().to_vec(),
+        44_100u32.to_le_bytes().to_vec(), 176_400u32.to_le_bytes().to_vec(), 4u16.to_le_bytes().to_vec(), 16u16.to_le_bytes().to_vec()] {
+        bytes.extend_from_slice(&field);
+    }
+    bytes.extend_from_slice(b"data");
+    bytes.extend_from_slice(&data.to_le_bytes());
+    for i in 0..frames {
+        let sample = ((i % 400) as i16 - 200) * 50;
+        bytes.extend_from_slice(&sample.to_le_bytes());
+        bytes.extend_from_slice(&sample.to_le_bytes());
+    }
+    std::fs::write(path, bytes).unwrap();
+}
+
+#[test]
+fn a_track_the_dsp_reached_after_its_start_is_kept_in_the_history_as_processed() {
+    // A real player, a real file and an output that takes it untouched: the
+    // start says bit-perfect, and the DSP comes on after the first block.
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("dsp-later.wav");
+    sound(&path);
+    let mut api = facade();
+    let before = api.listening_summary(&ListenFilter::default()).unwrap();
+    let dsp = std::sync::Arc::new(std::sync::OnceLock::new());
+    let held = dsp.clone();
+    let player = chilpa_core::player::Player::spawn(
+        Box::new(|_| chilpa_core::probe_device("file:capture")),
+        Box::new(move |_, format, _| Ok(Box::new(DspLater { format, dsp: held.clone(), written: false }) as Box<dyn chilpa_audio::sink::AudioSink + Send>)),
+    );
+    assert!(dsp.set(player.dsp()).is_ok());
+    api.player = Some(player);
+    api.launch(chilpa_core::launch::LaunchSpec { paths: vec![path.clone()], device: "file:capture".into(), ..Default::default() }, 0, Relaunch::Track);
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while !api.plays.is_empty() {
+        assert!(std::time::Instant::now() < deadline, "the play did not settle");
+        api.read_player_events();
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    let after = api.listening_summary(&ListenFilter::default()).unwrap();
+    assert_eq!(after.events, before.events + 1, "one listen: {after:?}");
+    assert_eq!(after.bit_perfect, before.bit_perfect, "the history keeps what reached the device, not what its start said");
+}

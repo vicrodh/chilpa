@@ -209,11 +209,12 @@ where
         let attempt = index as u64 + 1;
         sink.begin_attempt(attempt, None);
         on_track(index, &delivery);
-        attempts.open(attempt, index);
+        let touched = attempts.open(attempt, index);
+        let dsp_witness = crate::attempts::DspWitness { dsp: Some(controls.dsp.clone()), touched: touched.clone() };
         let base = Arc::new(AtomicI64::new(0));
         let delivered = Arc::new(AtomicU64::new(0));
         let mut reader = TrackReader::new(drive, track);
-        let (outcome, skipped, scaled) = {
+        let (outcome, skipped) = {
             let mut laid = LaidOut {
                 reader: &mut reader,
                 to: delivery.opened.sample_format,
@@ -225,11 +226,12 @@ where
                 base: Arc::clone(&base),
                 delivered: Arc::clone(&delivered),
             };
-            let scaled = std::cell::Cell::new(false);
             let mut gain = |bytes: &mut [u8]| {
                 let changed = level.packed(bytes, delivery.opened, delivery.duplicates_mono());
                 controls.gain_active.store(changed, Ordering::Release);
-                scaled.set(scaled.get() || changed);
+                if changed {
+                    touched.mark();
+                }
             };
             let outcome = render_with_volume(&mut laid, &mut sink, &controls.stop, &controls.pause, Some(&mut processor), Some(&mut gain), &mut |f| {
                 delivered.store(f, Ordering::Relaxed);
@@ -238,12 +240,10 @@ where
                 attempts.settle();
                 on_progress(index, Progress { position: at.max(0) as u64, delivered: f }, heard);
             });
-            (outcome, laid.skipped, scaled.get())
+            (outcome, laid.skipped)
         };
         attempts.ended(attempt, crate::attempts::How::of(&outcome, skipped));
-        if scaled || controls.dsp.touched() {
-            attempts.processed(attempt);
-        }
+        drop(dsp_witness);
         if let Some(problem) = reader.error.as_ref() {
             // Its source ran out, as far as the render knows; the track was
             // cut.

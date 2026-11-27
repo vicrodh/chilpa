@@ -891,7 +891,7 @@ fn play_stream(
     // A stream is one track, the play's first and only attempt. Once it is
     // announced it is owed an ending, also when the device then fails to
     // open or the play unwinds.
-    let owed = Owed { events: &events, index, announced: std::cell::Cell::new(false), report: Default::default() };
+    let owed = Owed { events: &events, index, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() };
     let tag = chilpa_tags::Tags {
         title: station.clone().or_else(|| Some(address.clone())),
         album: Some("Radio".into()),
@@ -908,6 +908,7 @@ fn play_stream(
         fallback,
         Some(dsp.clone()),
         Some(volume),
+        owed.touched.clone(),
         owed.report.clone(),
         |format| open(device, format, exclusive),
         &mut |delivery, bits| {
@@ -931,8 +932,8 @@ fn play_stream(
         },
         &mut |frames| publish_progress(&events, &mut titles, frames),
     )?;
-    let (played, heard, how, processed) = played;
-    owed.close(heard, how, processed);
+    let (played, heard, how) = played;
+    owed.close(heard, how);
     Ok(played.outcome)
 }
 
@@ -944,12 +945,14 @@ struct Owed<'a> {
     index: usize,
     announced: std::cell::Cell<bool>,
     report: crate::playback_events::Report,
+    /// What changed the stream's samples, marked as it happened.
+    touched: crate::attempts::Touched,
 }
 
 impl Owed<'_> {
-    fn close(&self, heard: u64, how: crate::attempts::How, processed: bool) {
+    fn close(&self, heard: u64, how: crate::attempts::How) {
         if self.announced.replace(false) {
-            let _ = self.events.send(PlayerEvent::Closed { attempt: 1, index: self.index, heard, how, processed });
+            let _ = self.events.send(PlayerEvent::Closed { attempt: 1, index: self.index, heard, how, processed: self.touched.get() });
         }
     }
 }
@@ -958,8 +961,7 @@ impl Drop for Owed<'_> {
     fn drop(&mut self) {
         let heard = self.report.take().into_iter().find(|retired| retired.attempt == 1)
             .map(|retired| retired.played).or_else(|| self.report.played(1)).unwrap_or(0);
-        // Unwound before the render could say what it did to the samples.
-        self.close(heard, crate::attempts::How::Failed, false);
+        self.close(heard, crate::attempts::How::Failed);
     }
 }
 

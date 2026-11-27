@@ -454,16 +454,16 @@ fn a_stream_that_was_announced_is_closed_once_whether_or_not_it_got_to_play() {
     let events = Events { to, generation: 9 };
     // Announced, and then let go of with nothing said: the device would not
     // open, or the play unwound.
-    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() };
+    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() };
     owed.announced.set(true);
     drop(owed);
     // Announced and played.
-    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() };
+    let owed = Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() };
     owed.announced.set(true);
-    owed.close(480, crate::attempts::How::Stopped, false);
+    owed.close(480, crate::attempts::How::Stopped);
     drop(owed);
     // Never announced: nothing is owed.
-    drop(Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default() });
+    drop(Owed { events: &events, index: 3, announced: std::cell::Cell::new(false), report: Default::default(), touched: Default::default() });
     let said: Vec<PlayerEvent> = heard.try_iter().map(|(_, event)| event).collect();
     assert_eq!(said, [
         PlayerEvent::Closed { attempt: 1, index: 3, heard: 0, how: crate::attempts::How::Failed, processed: false },
@@ -933,4 +933,31 @@ fn a_track_whose_volume_moved_after_it_started_is_closed_as_processed() {
     assert_eq!(closed_as_processed(&stream.path, true), Some(true), "a stream lowered halfway");
     let stream = StreamFixture::wave("volume-left-stream", 44_100);
     assert_eq!(closed_as_processed(&stream.path, false), Some(false), "a stream left alone");
+}
+
+/// What the `Closed` of `path` says of its samples, scaled from the start
+/// and then cut by `failure` at the output.
+fn closed_after_failure(path: &Path, failure: StreamFailure) -> Vec<bool> {
+    let written = Arc::new(AtomicU64::new(0));
+    let output = written.clone();
+    let p = Player::spawn(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+        Box::new(move |_, format, _| Ok(Box::new(FailingStreamSink { format, failure, written: output.clone(), discarded: false }) as Box<dyn AudioSink + Send>)),
+    );
+    p.set_volume(0.5);
+    p.play(path, "fake");
+    let events = finished_events(&p);
+    assert!(written.load(Ordering::Acquire) > 0, "scaled audio reached the output first: {events:?}");
+    events.iter().filter_map(|event| match event { PlayerEvent::Closed { processed, .. } => Some(*processed), _ => None }).collect()
+}
+
+#[test]
+fn a_track_scaled_and_then_cut_by_its_output_is_closed_as_processed() {
+    let stream = StreamFixture::wave("scaled-then-drain-failed", 4_410);
+    assert_eq!(closed_after_failure(&stream.path, StreamFailure::Drain), [true], "a stream whose drain failed");
+    let stream = StreamFixture::wave("scaled-then-write-panicked", 4_410);
+    assert_eq!(closed_after_failure(&stream.path, StreamFailure::WritePanic), [true], "a stream that unwound");
+    let file = wav("scaled-then-write-panicked", 4_410);
+    assert_eq!(closed_after_failure(&file, StreamFailure::WritePanic), [true], "a file that unwound");
+    std::fs::remove_file(file).unwrap();
 }

@@ -279,7 +279,7 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_stream_told(stream, caps, policy, stop, pause, false, false, dsp, None, crate::playback_events::Report::default(), open_sink,
+    play_stream_told(stream, caps, policy, stop, pause, false, false, dsp, None, crate::attempts::Touched::default(), crate::playback_events::Report::default(), open_sink,
         &mut |delivery, _| on_delivery(delivery), on_progress).map(|(played, ..)| played)
 }
 
@@ -301,11 +301,12 @@ pub(crate) fn play_stream_told<F, K>(
     fallback: bool,
     dsp: Option<chilpa_audio::dsp::Control>,
     volume: Option<StreamVolume>,
+    touched: crate::attempts::Touched,
     report: crate::playback_events::Report,
     open_sink: F,
     on_delivery: &mut dyn FnMut(&Delivery, Option<u8>),
     on_progress: &mut dyn FnMut(u64),
-) -> Result<(Played, u64, crate::attempts::How, bool), PlayError>
+) -> Result<(Played, u64, crate::attempts::How), PlayError>
 where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
@@ -331,20 +332,23 @@ where
     let scaled = gain_format(&decoded, delivery.opened);
     let spread = delivery.duplicates_mono();
     let mut frames = Frames::new(&mut decoded, &delivery).scaled_in(scaled);
-    let touched = dsp.clone();
+    // Marked as it happens, so a stream that fails or unwinds afterwards
+    // still closes with what was done to it.
+    let dsp_witness = crate::attempts::DspWitness { dsp: dsp.clone(), touched: touched.clone() };
     let mut processor = dsp.map(|control| chilpa_audio::dsp::Processor::new(control, sink.format()));
     let mut level = crate::loudness::level::Leveler::volume_only(volume.as_ref().map(|volume| volume.level.clone()));
-    // Whether the volume changed any sample, at whatever point it moved.
-    let changed_any = std::cell::Cell::new(false);
     let mut gain = |bytes: &mut [u8]| {
         let changed = level.packed(bytes, scaled, spread);
-        changed_any.set(changed_any.get() || changed);
+        if changed {
+            touched.mark();
+        }
         if let Some(volume) = &volume {
             volume.active.store(changed, std::sync::atomic::Ordering::Release);
         }
     };
     let gain = volume.is_some().then_some(&mut gain as &mut dyn FnMut(&mut [u8]));
     let outcome = chilpa_audio::render::render_with_volume(&mut frames, &mut sink, stop, pause, processor.as_mut(), gain, on_progress);
+    drop(dsp_witness);
     sink.end(match &outcome {
         Outcome::Finished { .. } => "finished",
         Outcome::Stopped { .. } => "stopped",
@@ -369,8 +373,7 @@ where
         _ => {}
     }
     let heard = retired.map_or(0, |retired| retired.played);
-    let processed = changed_any.get() || touched.is_some_and(|control| control.touched());
-    Ok((Played { delivery, outcome, total_frames: None }, heard, how, processed))
+    Ok((Played { delivery, outcome, total_frames: None }, heard, how))
 }
 
 /// Plays a file on a device, with the given policy.
