@@ -74,6 +74,8 @@ mod queue_activity;
 pub use queue_activity::{QueueWork, AlbumQueueWork, CollectionQueueAction};
 mod outputs;
 mod playlists;
+mod playlist_export;
+pub use playlist_export::{name_is_unusual as playlist_name_is_unusual, Exported as PlaylistExport};
 pub use playlists::PlaylistTarget;
 mod preferences;
 pub mod saved_queries;

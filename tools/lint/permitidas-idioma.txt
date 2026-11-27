@@ -1135,3 +1135,5 @@ teardown
 unsatisfiable
 # The keyed hash that signs requests to Chilpa's own services.
 hmac
+# The open playlist format the importer also reads.
+xspf

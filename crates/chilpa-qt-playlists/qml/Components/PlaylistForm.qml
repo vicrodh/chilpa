@@ -29,6 +29,7 @@ Column {
         placeholder: I18n.tr("Playlist name", I18n.rev)
         onAccepted: if (form.valid) form.accepted()
     }
+    PlaylistNameNote { width: parent.width; name: nameField.text }
     Text { visible: form.described; text: I18n.tr("Description", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
     TextField { id: descriptionField; visible: form.described; width: parent.width; placeholder: I18n.tr("Description", I18n.rev) }
     Text { visible: form.localMetadata; text: I18n.tr("Tags, separated by commas", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }

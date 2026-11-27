@@ -6,8 +6,8 @@ import "../Components"
 import "../Patterns"
 
 // The playlists' pieces: the manager's cards, the picker's list, its "Already
-// in" column and its question about repeats, the picker itself, and the
-// importer's steps.
+// in" column and its question about repeats, the picker itself, the note
+// under a name a source may cut, the export, and the importer's steps.
 Item {
     id: gallery
     implicitWidth: pieces.implicitWidth + Metrics.contentX * 2 // derived: the samples and their margins
@@ -31,6 +31,7 @@ Item {
     PlaylistsFlyout {}
     SidebarPlaylistsHead { width: Metrics.sidebarWidth }
     PlaylistTree { id: playlistTree }
+    PlaylistExport {}
 
     Column {
         id: pieces
@@ -93,6 +94,7 @@ Item {
                 rows: [{index: 1, original: {title: "Song", artist: "Band"}, errors: {}, matches: {mixed: {source: "demo", title: "Song", quality: {codec: "flac", bits: 16, rate: 44100}, confidence: 0.95}},
                     alternatives: {mixed: [{source: "demo", ref: "d:2", title: "Song (Live)", version: "Live", confidence: 0.9}]}}]})
         }
+        PlaylistNameNote { width: Metrics.confirmWidth; name: "Road trip 🚗" }
         ImportResultCard { width: Metrics.confirmWidth; name: "Chilpa playlist"; sourceInfo: ({chilpa: true}); output: ({written: 40, unmatched: 2, duplicates: 0, error: "", parts: [{ref: "1", title: "Evening music"}]}) }
         ImportResultCard { width: Metrics.confirmWidth; name: "Example source"; output: ({written: 10, unmatched: 0, duplicates: 1, error: "The account refused the playlist.", parts: []}) }
         ImportSummaryStep {

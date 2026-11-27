@@ -3002,6 +3002,9 @@ msgstr "Diagnose exportieren"
 msgid "Export listening history"
 msgstr "Hörverlauf exportieren"
 
+msgid "Export playlist"
+msgstr "Playlist exportieren"
+
 msgid "Export…"
 msgstr "Exportieren…"
 
@@ -4499,6 +4502,9 @@ msgstr "Songtext-Ansicht"
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "Songtexte ohne Übersetzung werden an die Songtext-API von Chilpa gesendet."
 
+msgid "M3U8 playlist"
+msgstr "M3U8-Playlist"
+
 msgid "Madrigal"
 msgstr "Madrigal"
 
@@ -5986,6 +5992,9 @@ msgstr "Playlist-Name"
 
 msgid "Playlist artwork in the sidebar"
 msgstr "Playlist-Artwork in der Seitenleiste"
+
+msgid "Playlist exported"
+msgstr "Playlist exportiert"
 
 msgid "Playlist icon"
 msgstr "Playlist-Symbol"
@@ -7655,6 +7664,9 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Some sources accept only part of these characters and may cut the name short."
+msgstr "Manche Quellen akzeptieren nur einen Teil dieser Zeichen und können den Namen kürzen."
+
 msgid "Sonata"
 msgstr "Sonate"
 
@@ -8369,6 +8381,9 @@ msgstr ""
 
 msgid "The playlist changed on {}; it now shows what the server has. Try again."
 msgstr "Die Playlist hat sich auf {} geändert; sie zeigt jetzt, was der Server hat. Versuche es noch einmal."
+
+msgid "The playlist could not be exported"
+msgstr "Die Playlist konnte nicht exportiert werden"
 
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "Die Playlist wurde erstellt, aber einige Titel konnten nicht hinzugefügt werden. Öffne sie, bevor du es erneut versuchst."
@@ -9784,6 +9799,9 @@ msgstr "Falscher Liedtext"
 msgid "XML can be edited only for SACD images"
 msgstr "XML lässt sich nur für SACD-Images bearbeiten"
 
+msgid "XSPF playlist"
+msgstr "XSPF-Playlist"
+
 msgid "YOU MAY ALSO LIKE"
 msgstr "DAS KÖNNTE DIR AUCH GEFALLEN"
 
@@ -10561,6 +10579,9 @@ msgstr "danach kann {} nicht gefragt werden"
 
 msgid "that list is empty"
 msgstr "diese Liste ist leer"
+
+msgid "that list is gone"
+msgstr "diese Liste gibt es nicht mehr"
 
 msgid "that music item is no longer available from this server"
 msgstr ""
@@ -11707,6 +11728,11 @@ msgid_plural "{} tracks"
 msgstr[0] "{} Titel"
 msgstr[1] "{} Titel"
 
+msgid "{} track is not a file on this computer and was left out; an XSPF file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name."
+msgstr[0] "{} Titel ist keine Datei auf diesem Computer und wurde ausgelassen; eine XSPF-Datei behält ihn mit Namen."
+msgstr[1] "{} Titel sind keine Dateien auf diesem Computer und wurden ausgelassen; eine XSPF-Datei behält sie mit Namen."
+
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] "{} Titel seiner Playlists ist nicht in deiner Bibliothek und wurde weggelassen."
@@ -11721,6 +11747,11 @@ msgid "{} track selected"
 msgid_plural "{} tracks selected"
 msgstr[0] "{} Titel ausgewählt"
 msgstr[1] "{} Titel ausgewählt"
+
+msgid "{} track was written."
+msgid_plural "{} tracks were written."
+msgstr[0] "{} Titel wurde geschrieben."
+msgstr[1] "{} Titel wurden geschrieben."
 
 msgid "{} tracks"
 msgstr "{} Titel"

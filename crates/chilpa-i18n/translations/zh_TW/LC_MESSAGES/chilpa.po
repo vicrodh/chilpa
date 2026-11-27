@@ -3008,6 +3008,9 @@ msgstr "匯出診斷資訊"
 msgid "Export listening history"
 msgstr "匯出聆聽歷史"
 
+msgid "Export playlist"
+msgstr "匯出播放清單"
+
 msgid "Export…"
 msgstr "匯出…"
 
@@ -4502,6 +4505,9 @@ msgstr "歌詞檢視"
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "未包含翻譯的歌詞會發送至 Chilpa 歌詞 API。"
 
+msgid "M3U8 playlist"
+msgstr "M3U8 播放清單"
+
 msgid "Madrigal"
 msgstr "牧歌"
 
@@ -5989,6 +5995,9 @@ msgstr "播放清單名稱"
 
 msgid "Playlist artwork in the sidebar"
 msgstr "側邊欄中的播放清單封面"
+
+msgid "Playlist exported"
+msgstr "已匯出播放清單"
 
 msgid "Playlist icon"
 msgstr "播放清單圖示"
@@ -7655,6 +7664,9 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Some sources accept only part of these characters and may cut the name short."
+msgstr "部分來源只接受其中一部分字元，名稱可能會被截短。"
+
 msgid "Sonata"
 msgstr "奏鳴曲"
 
@@ -8367,6 +8379,9 @@ msgstr "播放器沒有回應。請重新連線後再試一次。"
 
 msgid "The playlist changed on {}; it now shows what the server has. Try again."
 msgstr "播放清單已於 {} 發生變更；現在顯示的是伺服器上的內容。請重試。"
+
+msgid "The playlist could not be exported"
+msgstr "無法匯出播放清單"
 
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "播放清單已建立，但部分曲目無法新增。重試前請先開啟該清單。"
@@ -9780,6 +9795,9 @@ msgstr "錯誤歌詞"
 msgid "XML can be edited only for SACD images"
 msgstr "僅能針對 SACD 映像檔編輯 XML"
 
+msgid "XSPF playlist"
+msgstr "XSPF 播放清單"
+
 msgid "YOU MAY ALSO LIKE"
 msgstr "你可能也會喜歡"
 
@@ -10555,6 +10573,9 @@ msgstr "這不是可向 {} 請求的項目"
 
 msgid "that list is empty"
 msgstr "該列表為空"
+
+msgid "that list is gone"
+msgstr "該清單已不存在"
 
 msgid "that music item is no longer available from this server"
 msgstr ""
@@ -11658,6 +11679,10 @@ msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] "{} 首曲目"
 
+msgid "{} track is not a file on this computer and was left out; an XSPF file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name."
+msgstr[0] "{} 首曲目不是這台電腦上的檔案，已略過；XSPF 檔案會以名稱保留它們。"
+
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] "其播放清單中有 {} 首曲目不在你的音樂庫中，已予以排除。"
@@ -11669,6 +11694,10 @@ msgstr[0] "伺服器上有 {} 首曲目不在你的音樂庫中"
 msgid "{} track selected"
 msgid_plural "{} tracks selected"
 msgstr[0] ""
+
+msgid "{} track was written."
+msgid_plural "{} tracks were written."
+msgstr[0] "已寫入 {} 首曲目。"
 
 msgid "{} tracks"
 msgstr "{} 首曲目"

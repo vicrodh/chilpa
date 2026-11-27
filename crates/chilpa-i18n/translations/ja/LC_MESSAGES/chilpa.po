@@ -3000,6 +3000,9 @@ msgstr "診断情報をエクスポート"
 msgid "Export listening history"
 msgstr "再生履歴をエクスポート"
 
+msgid "Export playlist"
+msgstr "プレイリストをエクスポート"
+
 msgid "Export…"
 msgstr "エクスポート…"
 
@@ -4494,6 +4497,9 @@ msgstr "歌詞表示"
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "翻訳のない歌詞は、Chilpaの歌詞APIに送信されます。"
 
+msgid "M3U8 playlist"
+msgstr "M3U8 プレイリスト"
+
 msgid "Madrigal"
 msgstr "マドリガーレ"
 
@@ -5981,6 +5987,9 @@ msgstr "プレイリスト名"
 
 msgid "Playlist artwork in the sidebar"
 msgstr "サイドバーのプレイリストアートワーク"
+
+msgid "Playlist exported"
+msgstr "プレイリストをエクスポートしました"
 
 msgid "Playlist icon"
 msgstr "プレイリストアイコン"
@@ -7647,6 +7656,9 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Some sources accept only part of these characters and may cut the name short."
+msgstr "一部のソースはこれらの文字の一部しか受け付けず、名前が途中で切れることがあります。"
+
 msgid "Sonata"
 msgstr "ソナタ"
 
@@ -8359,6 +8371,9 @@ msgstr ""
 
 msgid "The playlist changed on {}; it now shows what the server has. Try again."
 msgstr "{}でプレイリストが変更されました。サーバー上の内容を表示しています。もう一度お試しください。"
+
+msgid "The playlist could not be exported"
+msgstr "プレイリストをエクスポートできませんでした"
 
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "プレイリストは作成されましたが、一部のトラックを追加できませんでした。再試行する前に開いて確認してください。"
@@ -9772,6 +9787,9 @@ msgstr "歌詞が違う"
 msgid "XML can be edited only for SACD images"
 msgstr "XMLを編集できるのはSACDイメージのみです"
 
+msgid "XSPF playlist"
+msgstr "XSPF プレイリスト"
+
 msgid "YOU MAY ALSO LIKE"
 msgstr "こちらもおすすめ"
 
@@ -10547,6 +10565,9 @@ msgstr "{}に問い合わせられるものではありません"
 
 msgid "that list is empty"
 msgstr "そのリストは空です"
+
+msgid "that list is gone"
+msgstr "そのリストはもうありません"
 
 msgid "that music item is no longer available from this server"
 msgstr ""
@@ -11650,6 +11671,10 @@ msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] "{}トラック"
 
+msgid "{} track is not a file on this computer and was left out; an XSPF file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name."
+msgstr[0] "{} トラックはこのコンピューター上のファイルではないため除外されました。XSPF ファイルなら名前で残せます。"
+
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] "プレイリストの{}トラックはライブラリにないため、除外されました。"
@@ -11661,6 +11686,10 @@ msgstr[0] "サーバーの{}トラックはライブラリにありません"
 msgid "{} track selected"
 msgid_plural "{} tracks selected"
 msgstr[0] "{}トラックを選択中"
+
+msgid "{} track was written."
+msgid_plural "{} tracks were written."
+msgstr[0] "{} トラックを書き出しました。"
 
 msgid "{} tracks"
 msgstr "{}トラック"

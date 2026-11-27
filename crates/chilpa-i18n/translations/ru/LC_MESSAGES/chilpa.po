@@ -3004,6 +3004,9 @@ msgstr "Экспорт диагностики"
 msgid "Export listening history"
 msgstr "Экспорт истории прослушивания"
 
+msgid "Export playlist"
+msgstr "Экспорт плейлиста"
+
 msgid "Export…"
 msgstr "Экспорт…"
 
@@ -4504,6 +4507,9 @@ msgstr "Вид текста песни"
 msgid "Lyrics without one are sent to Chilpa's lyrics API."
 msgstr "Тексты без перевода отправляются в API текстов песен Chilpa."
 
+msgid "M3U8 playlist"
+msgstr "Плейлист M3U8"
+
 msgid "Madrigal"
 msgstr "Мадригал"
 
@@ -5991,6 +5997,9 @@ msgstr "Название плейлиста"
 
 msgid "Playlist artwork in the sidebar"
 msgstr "Обложки плейлистов на боковой панели"
+
+msgid "Playlist exported"
+msgstr "Плейлист экспортирован"
 
 msgid "Playlist icon"
 msgstr "Значок плейлиста"
@@ -7663,6 +7672,9 @@ msgstr ""
 msgid "Some selected files were outside this lookup. Look up the selected group again."
 msgstr ""
 
+msgid "Some sources accept only part of these characters and may cut the name short."
+msgstr "Некоторые источники принимают лишь часть этих символов и могут обрезать название."
+
 msgid "Sonata"
 msgstr "Соната"
 
@@ -8379,6 +8391,9 @@ msgstr ""
 
 msgid "The playlist changed on {}; it now shows what the server has. Try again."
 msgstr "Плейлист изменился на {}; теперь он показывает то, что есть на сервере. Попробуйте ещё раз."
+
+msgid "The playlist could not be exported"
+msgstr "Не удалось экспортировать плейлист"
 
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "Плейлист создан, но некоторые треки добавить не удалось. Откройте его, прежде чем повторять попытку."
@@ -9796,6 +9811,9 @@ msgstr "Неверный текст"
 msgid "XML can be edited only for SACD images"
 msgstr "XML можно редактировать только для образов SACD"
 
+msgid "XSPF playlist"
+msgstr "Плейлист XSPF"
+
 msgid "YOU MAY ALSO LIKE"
 msgstr "ВАМ ТАКЖЕ МОЖЕТ ПОНРАВИТЬСЯ"
 
@@ -10575,6 +10593,9 @@ msgstr "у {} нельзя запросить это"
 
 msgid "that list is empty"
 msgstr "этот список пуст"
+
+msgid "that list is gone"
+msgstr "этого списка больше нет"
 
 msgid "that music item is no longer available from this server"
 msgstr ""
@@ -11764,6 +11785,12 @@ msgstr[0] "{} трек"
 msgstr[1] "{} трека"
 msgstr[2] "{} треков"
 
+msgid "{} track is not a file on this computer and was left out; an XSPF file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name."
+msgstr[0] "{} трек не является файлом на этом компьютере и пропущен; файл XSPF сохранит его по названию."
+msgstr[1] "{} трека не являются файлами на этом компьютере и пропущены; файл XSPF сохранит их по названию."
+msgstr[2] "{} треков не являются файлами на этом компьютере и пропущены; файл XSPF сохранит их по названию."
+
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
 msgstr[0] "{} трек из его плейлистов отсутствует в вашей библиотеке и пропущен."
@@ -11781,6 +11808,12 @@ msgid_plural "{} tracks selected"
 msgstr[0] "Выбран {} трек"
 msgstr[1] "Выбрано {} трека"
 msgstr[2] "Выбрано {} треков"
+
+msgid "{} track was written."
+msgid_plural "{} tracks were written."
+msgstr[0] "Записан {} трек."
+msgstr[1] "Записано {} трека."
+msgstr[2] "Записано {} треков."
 
 msgid "{} tracks"
 msgstr "Треков: {}"
