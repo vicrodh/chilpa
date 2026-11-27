@@ -15,11 +15,14 @@ Flow {
     spacing: Metrics.gap16
 
     TopTile {
+        objectName: "topArtists"
         width: tops.tile
         height: Charts.tileTall
         kind: "artists"
         title: I18n.tr("Artists", I18n.rev)
         numbers: tops.report.artists || ({})
+        from: tops.report.from || ""
+        to: tops.report.to || ""
         tint: Theme.color.statsArtists
     }
     TopTile {
@@ -28,6 +31,8 @@ Flow {
         kind: "albums"
         title: I18n.tr("Albums", I18n.rev)
         numbers: tops.report.albums || ({})
+        from: tops.report.from || ""
+        to: tops.report.to || ""
         tint: Theme.color.statsAlbums
     }
     TopTile {

@@ -192,12 +192,16 @@ impl Library {
     /// The listens of the period, newest first, `limit` of them after the
     /// first `skip`, and how many there are in all. With `search`, only the
     /// listens whose track, artist or record, as the listen named them,
-    /// hold every word of it.
-    pub fn listening_history(&self, filter: &ListenFilter, search: &str, skip: usize, limit: usize) -> rusqlite::Result<(Vec<HistoryEntry>, u64)> {
+    /// hold every word of it; without `with_skipped`, only the ones that
+    /// were not skipped.
+    pub fn listening_history(&self, filter: &ListenFilter, search: &str, with_skipped: bool, skip: usize, limit: usize) -> rusqlite::Result<(Vec<HistoryEntry>, u64)> {
         use rusqlite::types::Value;
         offset(filter)?;
         // Only the bounds the filter has, so the time index can be used.
         let mut conditions = vec!["1".to_string()];
+        if !with_skipped {
+            conditions.push("p.skipped = 0".to_string());
+        }
         let mut values: Vec<Value> = Vec::new();
         for (bound, sql) in [(filter.from, "p.started_at >= ?"), (filter.until, "p.started_at < ?"), (filter.source_id, "p.source_id = ?")] {
             if let Some(value) = bound {
@@ -283,6 +287,12 @@ impl Library {
     /// midnight of that day where the listens were heard.
     pub fn local_date_start(&self, date: &str) -> rusqlite::Result<i64> {
         self.db.query_row("SELECT unixepoch(?1, 'utc')", [date], |r| r.get(0))
+    }
+
+    /// Where a local date ended: the midnight that starts the day after it,
+    /// so a day is whole whatever the clock did in it.
+    pub fn local_date_end(&self, date: &str) -> rusqlite::Result<i64> {
+        self.db.query_row("SELECT unixepoch(date(?1, '+1 day'), 'utc')", [date], |r| r.get(0))
     }
 
     /// Where the local day began `days_ago` days back from today, in Unix
@@ -372,44 +382,12 @@ impl Library {
         limit: usize,
     ) -> rusqlite::Result<Vec<ListenBucket>> {
         let offset = offset(filter)?;
-        let (key, label, hour, join) = match dimension {
-            ListenDimension::Track => ("identity", "title", "NULL", ""),
-            ListenDimension::Album => ("cast(release_id AS TEXT)", "album", "NULL", ""),
-            ListenDimension::Artist => ("nullif(artist, '') COLLATE NOCASE", "artist", "NULL", ""),
-            ListenDimension::Genre => (
-                "g.genre",
-                "g.genre",
-                "NULL",
-                "LEFT JOIN play_genres g ON g.event_id = listens.id",
-            ),
-            ListenDimension::GenreHour => (
-                "g.genre",
-                "g.genre",
-                "cast(listens.hour AS INTEGER)",
-                "LEFT JOIN play_genres g ON g.event_id = listens.id",
-            ),
-            ListenDimension::Source => (
-                "cast(source_id AS TEXT)",
-                "cast(source_id AS TEXT)",
-                "NULL",
-                "",
-            ),
-            ListenDimension::Hour => ("listens.hour", "listens.hour", "NULL", ""),
-            // SQLite weekday: Sunday = 0, Saturday = 6.
-            ListenDimension::Weekday => ("weekday", "weekday", "NULL", ""),
-            ListenDimension::Day => ("day", "day", "NULL", ""),
-            ListenDimension::Decade => ("cast(year / 10 * 10 AS TEXT)", "cast(year / 10 * 10 AS TEXT)", "NULL", ""),
-            ListenDimension::Month => ("substr(day, 1, 7)", "substr(day, 1, 7)", "NULL", ""),
-        };
-        let ordering = match order {
-            ListenOrder::Plays => "5 DESC, 6 DESC, 1, 3",
-            ListenOrder::ListenedTime => "6 DESC, 5 DESC, 1, 3",
-            ListenOrder::Key => "1, 3",
-        };
+        let (key, label, hour, join) = bucket_columns(dimension);
         let sql = format!(
             "{} SELECT {key}, coalesce(min({label}), ''), {hour}, {METRICS}
-            FROM listens {join} GROUP BY 1, 3 ORDER BY {ordering} LIMIT ?6",
-            listens(filter)
+            FROM listens {join} GROUP BY 1, 3 ORDER BY {} LIMIT ?6",
+            listens(filter),
+            bucket_order(order)
         );
         self.db
             .prepare(&sql)?
@@ -432,5 +410,84 @@ impl Library {
                 },
             )?
             .collect()
+    }
+
+    /// One page of the period's ranking along `dimension`: `limit` of its
+    /// named entries after the first `skip`, and how many named entries it
+    /// has in all. Listens with no artist, record or genre to name are not
+    /// ranked.
+    pub fn listening_ranking(
+        &self,
+        filter: &ListenFilter,
+        dimension: ListenDimension,
+        order: ListenOrder,
+        skip: usize,
+        limit: usize,
+    ) -> rusqlite::Result<(Vec<ListenBucket>, u64)> {
+        let offset = offset(filter)?;
+        let (key, label, hour, join) = bucket_columns(dimension);
+        let grouped = format!("FROM listens {join} GROUP BY 1, 3 HAVING {key} IS NOT NULL");
+        let total: i64 = self.db.query_row(
+            &format!("{} SELECT count(*) FROM (SELECT {key}, NULL, {hour} {grouped})", listens(filter)),
+            params![filter.from, filter.until, filter.source_id, filter.genre, offset],
+            |r| r.get(0),
+        )?;
+        let sql = format!(
+            "{} SELECT {key}, coalesce(min({label}), ''), {hour}, {METRICS}
+            {grouped} ORDER BY {} LIMIT ?6 OFFSET ?7",
+            listens(filter),
+            bucket_order(order)
+        );
+        let rows = self.db
+            .prepare(&sql)?
+            .query_map(
+                params![filter.from, filter.until, filter.source_id, filter.genre, offset, limit.min(1000) as i64, skip as i64],
+                |r| Ok(ListenBucket { key: r.get(0)?, label: r.get(1)?, hour: r.get(2)?, metrics: metrics(r, 3)? }),
+            )?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok((rows, total.max(0) as u64))
+    }
+}
+
+/// What a dimension groups by, what names it, its second key and the join
+/// it needs.
+fn bucket_columns(dimension: ListenDimension) -> (&'static str, &'static str, &'static str, &'static str) {
+    match dimension {
+        ListenDimension::Track => ("identity", "title", "NULL", ""),
+        ListenDimension::Album => ("cast(release_id AS TEXT)", "album", "NULL", ""),
+        ListenDimension::Artist => ("nullif(artist, '') COLLATE NOCASE", "artist", "NULL", ""),
+        ListenDimension::Genre => (
+            "g.genre",
+            "g.genre",
+            "NULL",
+            "LEFT JOIN play_genres g ON g.event_id = listens.id",
+        ),
+        ListenDimension::GenreHour => (
+            "g.genre",
+            "g.genre",
+            "cast(listens.hour AS INTEGER)",
+            "LEFT JOIN play_genres g ON g.event_id = listens.id",
+        ),
+        ListenDimension::Source => (
+            "cast(source_id AS TEXT)",
+            "cast(source_id AS TEXT)",
+            "NULL",
+            "",
+        ),
+        ListenDimension::Hour => ("listens.hour", "listens.hour", "NULL", ""),
+        // SQLite weekday: Sunday = 0, Saturday = 6.
+        ListenDimension::Weekday => ("weekday", "weekday", "NULL", ""),
+        ListenDimension::Day => ("day", "day", "NULL", ""),
+        ListenDimension::Decade => ("cast(year / 10 * 10 AS TEXT)", "cast(year / 10 * 10 AS TEXT)", "NULL", ""),
+        ListenDimension::Month => ("substr(day, 1, 7)", "substr(day, 1, 7)", "NULL", ""),
+    }
+}
+
+/// The order of a ranking: by plays or by time, then by what it names.
+fn bucket_order(order: ListenOrder) -> &'static str {
+    match order {
+        ListenOrder::Plays => "5 DESC, 6 DESC, 1, 3",
+        ListenOrder::ListenedTime => "6 DESC, 5 DESC, 1, 3",
+        ListenOrder::Key => "1, 3",
     }
 }

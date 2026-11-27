@@ -71,6 +71,7 @@ PageTransition {
         case "stats": return stats
         case "listeningHistory": return listeningHistory
         case "listeningRecap": return listeningRecap
+        case "listeningRanking": return listeningRanking
         case "source": return source
         case "sourceEntry": return medium ? mediaDetail : sourceEntry
         default: return pending
@@ -109,6 +110,7 @@ PageTransition {
     Component { id: stats; StatsScreen {} }
     Component { id: listeningHistory; HistoryScreen {} }
     Component { id: listeningRecap; RecapScreen {} }
+    Component { id: listeningRanking; RankingScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: source; SourceScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: mediaSource; MediaSourceScreen { routeKey: host.routeKeyOf(parent) } }
     Component { id: mediaDetail; MediaDetailScreen { key: host.routeKeyOf(parent) } }

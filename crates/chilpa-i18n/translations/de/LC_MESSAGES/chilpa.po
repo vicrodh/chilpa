@@ -510,6 +510,9 @@ msgstr "Alle Komponisten"
 msgid "All compositions"
 msgstr "Alle Werke"
 
+msgid "All days"
+msgstr "Alle Tage"
+
 msgid "All discs"
 msgstr "Alle Discs"
 
@@ -3161,6 +3164,9 @@ msgstr ""
 msgid "Finished"
 msgstr "Abgeschlossen"
 
+msgid "First day"
+msgstr "Erster Tag"
+
 msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
 msgstr "Erste Zeile des Status. Felder: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] erscheint nur, wenn ein Feld darin einen Wert hat. Funktionen: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Leer stellt den Standard wieder her."
 
@@ -3547,6 +3553,9 @@ msgstr "Prüfdetails ausblenden"
 
 msgid "Hide sidebar"
 msgstr "Seitenleiste ausblenden"
+
+msgid "Hide skipped listens"
+msgstr "Übersprungene Wiedergaben ausblenden"
 
 msgid "Hide the console line"
 msgstr "Konsolenzeile ausblenden"
@@ -4159,6 +4168,9 @@ msgstr "Letzte 3 Monate"
 
 msgid "Last check"
 msgstr "Letzte Prüfung"
+
+msgid "Last day"
+msgstr "Letzter Tag"
 
 msgid "Last file changed: {}"
 msgstr ""
@@ -5287,6 +5299,9 @@ msgstr "Hier ist noch nichts: Füge der Bibliothek einen Ordner hinzu, dann ersc
 
 msgid "Nothing here."
 msgstr "Hier ist nichts."
+
+msgid "Nothing in these days."
+msgstr "Nichts an diesen Tagen."
 
 msgid "Nothing in this period."
 msgstr "Nichts in diesem Zeitraum."
@@ -7413,6 +7428,9 @@ msgstr "Prüfdetails anzeigen"
 msgid "Show saved tracks in Tracks"
 msgstr "Gespeicherte Titel unter Titel anzeigen"
 
+msgid "Show skipped listens"
+msgstr "Übersprungene Wiedergaben anzeigen"
+
 msgid "Show source recommendations by default in Home"
 msgstr "Empfehlungen der Quelle standardmäßig auf der Startseite anzeigen"
 
@@ -8990,8 +9008,17 @@ msgstr "Werkzeuge"
 msgid "Top album"
 msgstr "Top-Album"
 
+msgid "Top albums"
+msgstr "Top-Alben"
+
 msgid "Top artist"
 msgstr "Top-Künstler"
+
+msgid "Top artists"
+msgstr "Top-Künstler"
+
+msgid "Top genres"
+msgstr "Top-Genres"
 
 msgid "Top level"
 msgstr "Oberste Ebene"
@@ -11359,6 +11386,11 @@ msgid "{} folder comes in:"
 msgid_plural "{} folders come in:"
 msgstr[0] "{} Ordner kommt dazu:"
 msgstr[1] "{} Ordner kommen dazu:"
+
+msgid "{} genre"
+msgid_plural "{} genres"
+msgstr[0] "{} Genre"
+msgstr[1] "{} Genres"
 
 msgid "{} has no place for \"{}\""
 msgstr "{} hat keinen Platz für „{}“"

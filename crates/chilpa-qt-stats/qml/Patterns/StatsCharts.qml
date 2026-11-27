@@ -1,4 +1,5 @@
 import QtQuick
+import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Theme"
@@ -41,7 +42,10 @@ Flow {
     StatsCard {
         width: charts.card
         height: Charts.chartTall
+        objectName: "genresCard"
         title: I18n.tr("Genres", I18n.rev)
+        action: (charts.report.genres || []).length > 0 ? I18n.tr("See all", I18n.rev) : ""
+        onActed: Navigation.goKey("listeningRanking", ["genres", charts.report.from || "", charts.report.to || ""].join("/"))
 
         RankBars {
             width: parent.width

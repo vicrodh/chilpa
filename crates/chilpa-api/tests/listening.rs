@@ -130,9 +130,9 @@ fn ratings_survive_reopen_and_handoff_and_shutdown_keep_delivered_time() {
     assert_eq!(today["kind"], "day");
     assert_eq!(today["comparison"], "Today vs Yesterday");
     assert_eq!(today["series"].as_array().unwrap().len(), 24, "a day goes by the hour");
-    let found: serde_json::Value = serde_json::from_str(&reopened.listening_history_json(1, 20, "one band")).unwrap();
+    let found: serde_json::Value = serde_json::from_str(&reopened.listening_history_json(1, 20, "one band", "", "", true)).unwrap();
     assert_eq!(found["total"], 1);
-    let none: serde_json::Value = serde_json::from_str(&reopened.listening_history_json(1, 20, "nothing")).unwrap();
+    let none: serde_json::Value = serde_json::from_str(&reopened.listening_history_json(1, 20, "nothing", "", "", true)).unwrap();
     assert_eq!(none["total"], 0);
     let sheet = dir.join("history.csv");
     assert_eq!(reopened.export_listening_history(&sheet).as_deref(), Some("1 listen saved"));

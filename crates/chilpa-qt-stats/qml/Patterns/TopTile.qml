@@ -7,7 +7,8 @@ import "../Components"
 
 // A tile of the period's artists, records or tracks: how many there were,
 // in the tile's color, against the period before, and the first five,
-// the first larger. An artist opens its page, a record its own.
+// the first larger. An artist opens its page, a record its own; the
+// artists and the records go on to all of the period's, ranked.
 StatsCard {
     id: tile
 
@@ -15,7 +16,13 @@ StatsCard {
     property string kind
     property var numbers: ({})
     property color tint: Theme.color.accent
+    // The period's first and last days, for its ranking.
+    property string from
+    property string to
     readonly property var leaders: numbers.top || []
+
+    action: tile.kind !== "tracks" && tile.leaders.length > 0 ? I18n.tr("See all", I18n.rev) : ""
+    onActed: Navigation.goKey("listeningRanking", [tile.kind, tile.from, tile.to].join("/"))
 
     Row {
         id: figure

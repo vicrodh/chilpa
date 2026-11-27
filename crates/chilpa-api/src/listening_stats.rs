@@ -236,6 +236,10 @@ impl crate::Chilpa {
             "today": day == today,
             "current": current,
             "earlier": if kind == Kind::All { String::new() } else { period::iso(previous.first) },
+            // The period's first and last days, for a ranking of it; up to
+            // today, for one that is not over.
+            "from": if kind == Kind::All { String::new() } else { period::iso(this.first) },
+            "to": if kind == Kind::All { String::new() } else { period::iso((this.end - 1).min(today)) },
             "later": if kind == Kind::All || this.end > today { String::new() } else { period::iso(this.after(week_start).first) },
             "range": range,
             "comparison": comparison,
@@ -265,14 +269,17 @@ impl crate::Chilpa {
     }
 
     /// The history a page at a time, newest first: `page` from 1, with
-    /// `per_page` listens, 20, 50 or 100, and with `search` only the listens
-    /// whose track, artist or record hold every word of it.
-    pub fn listening_history_json(&mut self, page: i64, per_page: i64, search: &str) -> String {
+    /// `per_page` listens, 20, 50 or 100; with `search` only the listens
+    /// whose track, artist or record hold every word of it; only the days
+    /// from `from` to `to`, when they are given; and skipped listens only
+    /// `with_skipped`.
+    pub fn listening_history_json(&mut self, page: i64, per_page: i64, search: &str, from: &str, to: &str, with_skipped: bool) -> String {
         let catalog = self.catalog.clone();
         let Some(lib) = self.library() else { return "{}".into() };
         let per_page = if matches!(per_page, 20 | 50 | 100) { per_page as usize } else { 20 };
         let page = page.max(1) as usize;
-        let (rows, total) = lib.listening_history(&ListenFilter::default(), search, (page - 1) * per_page, per_page).unwrap_or_default();
+        let (filter, from, to) = crate::listening_ranking::span(lib, from, to);
+        let (rows, total) = lib.listening_history(&filter, search, with_skipped, (page - 1) * per_page, per_page).unwrap_or_default();
         let pages = (total as usize).div_ceil(per_page).max(1);
         let today = lib.local_days(0, 1).unwrap_or_default().pop().unwrap_or_default();
         let yesterday = lib.local_days(1, 1).unwrap_or_default().pop().unwrap_or_default();
@@ -306,7 +313,12 @@ impl crate::Chilpa {
                 })
             })
             .collect();
-        json!({"page": page.min(pages), "pages": pages, "per_page": per_page, "total": total, "rows": rows}).to_string()
+        let (first, _) = crate::listening_ranking::bounds(lib);
+        json!({
+            "page": page.min(pages), "pages": pages, "per_page": per_page, "total": total, "rows": rows,
+            "from": from, "to": to, "first": first, "today": today, "with_skipped": with_skipped,
+        })
+        .to_string()
     }
 }
 

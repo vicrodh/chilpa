@@ -517,6 +517,9 @@ msgstr "所有作曲者"
 msgid "All compositions"
 msgstr "所有作品"
 
+msgid "All days"
+msgstr "所有日期"
+
 msgid "All discs"
 msgstr "所有碟片"
 
@@ -3167,6 +3170,9 @@ msgstr ""
 msgid "Finished"
 msgstr "已完成"
 
+msgid "First day"
+msgstr "起始日"
+
 msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
 msgstr ""
 
@@ -3553,6 +3559,9 @@ msgstr "隱藏審核詳細資訊"
 
 msgid "Hide sidebar"
 msgstr "隱藏側邊欄"
+
+msgid "Hide skipped listens"
+msgstr "隱藏已略過的聆聽"
 
 msgid "Hide the console line"
 msgstr "隱藏主控台指令列"
@@ -4162,6 +4171,9 @@ msgstr "最近 3 個月"
 
 msgid "Last check"
 msgstr "上次檢查"
+
+msgid "Last day"
+msgstr "結束日"
 
 msgid "Last file changed: {}"
 msgstr ""
@@ -5290,6 +5302,9 @@ msgstr "這裡尚無內容：將資料夾新增至音樂庫後，其紀錄將顯
 
 msgid "Nothing here."
 msgstr "這裡什麼都沒有。"
+
+msgid "Nothing in these days."
+msgstr "這些日子沒有內容。"
 
 msgid "Nothing in this period."
 msgstr "此期間無內容。"
@@ -7414,6 +7429,9 @@ msgstr "顯示審核詳細資訊"
 msgid "Show saved tracks in Tracks"
 msgstr "在「曲目」中顯示已儲存的曲目"
 
+msgid "Show skipped listens"
+msgstr "顯示已略過的聆聽"
+
 msgid "Show source recommendations by default in Home"
 msgstr "預設在「首頁」顯示來源推薦"
 
@@ -8987,8 +9005,17 @@ msgstr "工具"
 msgid "Top album"
 msgstr "最常聽的專輯"
 
+msgid "Top albums"
+msgstr "熱門專輯"
+
 msgid "Top artist"
 msgstr "最常聽的藝人"
+
+msgid "Top artists"
+msgstr "熱門演出者"
+
+msgid "Top genres"
+msgstr "熱門類型"
 
 msgid "Top level"
 msgstr "最上層"
@@ -11335,6 +11362,10 @@ msgstr[0] "{} 個資料夾"
 msgid "{} folder comes in:"
 msgid_plural "{} folders come in:"
 msgstr[0] "引入 {} 個資料夾："
+
+msgid "{} genre"
+msgid_plural "{} genres"
+msgstr[0] "{} 種類型"
 
 msgid "{} has no place for \"{}\""
 msgstr "{} 沒有放置「{}」的位置"

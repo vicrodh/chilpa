@@ -22,8 +22,13 @@ fn top(lib: &Library, filter: &ListenFilter, dimension: ListenDimension, limit: 
 }
 
 pub(crate) fn artists(lib: &Library, filter: &ListenFilter, limit: usize) -> Vec<Value> {
+    artist_rows(lib, top(lib, filter, ListenDimension::Artist, limit))
+}
+
+/// Each artist of a ranking with its plays, its time and its picture.
+pub(crate) fn artist_rows(lib: &Library, buckets: impl IntoIterator<Item = ListenBucket>) -> Vec<Value> {
     let pictures = lib.artist_pictures().unwrap_or_default();
-    top(lib, filter, ListenDimension::Artist, limit)
+    buckets.into_iter()
         .map(|b| {
             let art = pictures.of(&b.label).map(str::to_string).or_else(|| lib.artist_cover(&b.label).ok().flatten()).unwrap_or_default();
             json!({"name": b.label, "plays": b.metrics.plays, "listened_ms": b.metrics.listened_ms, "art": art})
@@ -32,7 +37,13 @@ pub(crate) fn artists(lib: &Library, filter: &ListenFilter, limit: usize) -> Vec
 }
 
 pub(crate) fn albums(lib: &Library, catalog: &Catalog, filter: &ListenFilter, limit: usize) -> Vec<Value> {
-    top(lib, filter, ListenDimension::Album, limit)
+    album_rows(lib, catalog, top(lib, filter, ListenDimension::Album, limit))
+}
+
+/// Each record of a ranking with its plays, its time, its cover and where
+/// it opens: the library's record, or the source's card.
+pub(crate) fn album_rows(lib: &Library, catalog: &Catalog, buckets: impl IntoIterator<Item = ListenBucket>) -> Vec<Value> {
+    buckets.into_iter()
         .map(|b| {
             let id = b.key.as_deref().and_then(|k| k.strip_prefix("album:")).and_then(|id| id.parse::<i64>().ok());
             let album = id.and_then(|id| lib.album(id).ok().flatten()).map(|(a, _)| a);

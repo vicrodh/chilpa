@@ -54,6 +54,9 @@ pub enum Screen {
     ListeningHistory,
     /// A month or a year gone by, as a card to look back at.
     ListeningRecap,
+    /// Every artist, record or genre of a span of days, most played first;
+    /// its key is the kind and the span: "artists/2026-10-01/2026-10-09".
+    ListeningRanking,
     /// A plugin's own tree, browsed. The route's key is the plugin's id.
     Source,
     /// The page of one entry of a source: a station, an episode. The key
@@ -91,6 +94,7 @@ impl Screen {
             Screen::Stats => "stats",
             Screen::ListeningHistory => "listeningHistory",
             Screen::ListeningRecap => "listeningRecap",
+            Screen::ListeningRanking => "listeningRanking",
             Screen::Search => "search",
             Screen::Source => "source",
             Screen::SourceEntry => "sourceEntry",
@@ -98,7 +102,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Genres, Screen::Composers, Screen::Compositions, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::FolderMetadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::ListeningRecap, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Genres, Screen::Composers, Screen::Compositions, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::OfflineMusic, Screen::DeviceSync, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::FolderMetadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::ListeningRecap, Screen::ListeningRanking, Screen::Search, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -342,6 +346,11 @@ impl crate::Chilpa {
             Screen::Stats => (self.t("Listening stats"), "chartBar"),
             Screen::ListeningHistory => (self.t("Listening history"), "history"),
             Screen::ListeningRecap => (self.t("Recap"), "calendar"),
+            Screen::ListeningRanking => (match r.key.split('/').next().unwrap_or_default() {
+                "albums" => self.t("Top albums"),
+                "genres" => self.t("Top genres"),
+                _ => self.t("Top artists"),
+            }, "chartBar"),
             Screen::Search => (r.key.clone(), "search"),
             Screen::Source | Screen::SourceEntry => {
                 let (plugin, entry) = r.key.split_once(' ').unwrap_or((r.key.as_str(), ""));

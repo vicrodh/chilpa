@@ -34,9 +34,16 @@ pub mod qobject {
         fn recap(self: &Stats, year: i32, month: i32, rev: i32) -> QString;
 
         /// One page of the history, newest first: `page` from 1, with 20, 50
-        /// or 100 listens, only those that hold every word of `query`.
+        /// or 100 listens, only those that hold every word of `query`, of the
+        /// days from `from` to `to` ("2026-10-09"; empty for no bound), and
+        /// the skipped ones only `with_skipped`.
         #[qinvokable]
-        fn history(self: &Stats, page: i32, per_page: i32, query: &QString, rev: i32) -> QString;
+        fn history(self: &Stats, page: i32, per_page: i32, query: &QString, from: &QString, to: &QString, with_skipped: bool, rev: i32) -> QString;
+
+        /// One page of the ranking of `kind` ("artists", "albums" or
+        /// "genres") over the days from `from` to `to`, most played first.
+        #[qinvokable]
+        fn ranking(self: &Stats, kind: &QString, from: &QString, to: &QString, page: i32, per_page: i32, rev: i32) -> QString;
 
         /// A bounded page of the persisted local analysis inventory.
         #[qinvokable]
@@ -87,9 +94,15 @@ impl qobject::Stats {
         QString::from(&app::with(|api| api.recap_json(i64::from(year), i64::from(month))))
     }
 
-    pub fn history(&self, page: i32, per_page: i32, query: &QString, _rev: i32) -> QString {
-        let query = query.to_string();
-        QString::from(&app::with(|api| api.listening_history_json(i64::from(page), i64::from(per_page), &query)))
+    #[allow(clippy::too_many_arguments)]
+    pub fn history(&self, page: i32, per_page: i32, query: &QString, from: &QString, to: &QString, with_skipped: bool, _rev: i32) -> QString {
+        let (query, from, to) = (query.to_string(), from.to_string(), to.to_string());
+        QString::from(&app::with(|api| api.listening_history_json(i64::from(page), i64::from(per_page), &query, &from, &to, with_skipped)))
+    }
+
+    pub fn ranking(&self, kind: &QString, from: &QString, to: &QString, page: i32, per_page: i32, _rev: i32) -> QString {
+        let (kind, from, to) = (kind.to_string(), from.to_string(), to.to_string());
+        QString::from(&app::with(|api| api.listening_ranking_json(&kind, &from, &to, i64::from(page), i64::from(per_page))))
     }
 
     pub fn inventory(&self, filter: &QString, search: &QString, offset: i32, run: i64) -> QString {

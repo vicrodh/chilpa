@@ -510,6 +510,9 @@ msgstr ""
 msgid "All compositions"
 msgstr ""
 
+msgid "All days"
+msgstr ""
+
 msgid "All discs"
 msgstr ""
 
@@ -3161,6 +3164,9 @@ msgstr ""
 msgid "Finished"
 msgstr ""
 
+msgid "First day"
+msgstr ""
+
 msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
 msgstr "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
 
@@ -3546,6 +3552,9 @@ msgid "Hide review details"
 msgstr "Hide review details"
 
 msgid "Hide sidebar"
+msgstr ""
+
+msgid "Hide skipped listens"
 msgstr ""
 
 msgid "Hide the console line"
@@ -4158,6 +4167,9 @@ msgid "Last 3 months"
 msgstr ""
 
 msgid "Last check"
+msgstr ""
+
+msgid "Last day"
 msgstr ""
 
 msgid "Last file changed: {}"
@@ -5286,6 +5298,9 @@ msgid "Nothing here yet: add a folder to the library and its records show up her
 msgstr ""
 
 msgid "Nothing here."
+msgstr ""
+
+msgid "Nothing in these days."
 msgstr ""
 
 msgid "Nothing in this period."
@@ -7413,6 +7428,9 @@ msgstr "Show review details"
 msgid "Show saved tracks in Tracks"
 msgstr ""
 
+msgid "Show skipped listens"
+msgstr ""
+
 msgid "Show source recommendations by default in Home"
 msgstr ""
 
@@ -8990,7 +9008,16 @@ msgstr "Tools"
 msgid "Top album"
 msgstr ""
 
+msgid "Top albums"
+msgstr ""
+
 msgid "Top artist"
+msgstr ""
+
+msgid "Top artists"
+msgstr ""
+
+msgid "Top genres"
 msgstr ""
 
 msgid "Top level"
@@ -11357,6 +11384,11 @@ msgstr[1] ""
 
 msgid "{} folder comes in:"
 msgid_plural "{} folders come in:"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} genre"
+msgid_plural "{} genres"
 msgstr[0] ""
 msgstr[1] ""
 
