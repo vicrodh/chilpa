@@ -25,7 +25,7 @@ TestCase {
     }
 
     function test_the_route_says_the_kind_and_the_days() {
-        const page = createTemporaryObject(rankingOf, this, { routeKey: "albums\u001f2026-10-01\u001f2026-10-09" })
+        const page = createTemporaryObject(rankingOf, this, { routeKey: "albums/2026-10-01/2026-10-09" })
         compare([page.kind, page.from, page.to], ["albums", "2026-10-01", "2026-10-09"])
         compare(Stats.asked[Stats.asked.length - 1], "ranking:albums:2026-10-01:2026-10-09")
         compare(findChild(page, "rankingTotal").text, "5 albums")

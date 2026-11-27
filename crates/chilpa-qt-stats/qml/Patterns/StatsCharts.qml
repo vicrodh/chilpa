@@ -45,7 +45,7 @@ Flow {
         objectName: "genresCard"
         title: I18n.tr("Genres", I18n.rev)
         action: (charts.report.genres || []).length > 0 ? I18n.tr("See all", I18n.rev) : ""
-        onActed: Navigation.goKey("listeningRanking", ["genres", charts.report.from || "", charts.report.to || ""].join("\u001f"))
+        onActed: Navigation.goKey("listeningRanking", ["genres", charts.report.from || "", charts.report.to || ""].join("/"))
 
         RankBars {
             width: parent.width

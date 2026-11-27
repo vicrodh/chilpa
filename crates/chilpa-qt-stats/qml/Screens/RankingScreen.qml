@@ -10,16 +10,16 @@ import "../Components"
 
 // Every artist, record or genre of a span of days, most played first, a
 // page at a time: its place, its picture, its plays and the time it was
-// heard. The route's key says which and the span, as "albums", the first
-// day and the last, apart by U+001F; both can be changed here, and how
-// many a page shows is kept. An artist opens its page, a record its own
-// and a genre the genres.
+// heard. The route's key says which and the span, "albums/2026-10-01/
+// 2026-10-09" (either day may be empty); both can be changed here, under
+// the title, and how many a page shows is kept. An artist opens its page,
+// a record its own and a genre the genres.
 Item {
     id: ranking
 
     property string routeKey
     readonly property var kinds: ["artists", "albums", "genres"]
-    readonly property var parts: routeKey.split("\u001f")
+    readonly property var parts: routeKey.split("/")
     property string kind: kinds.indexOf(parts[0]) >= 0 ? parts[0] : "artists"
     property string from: parts[1] || ""
     property string to: parts[2] || ""
@@ -71,38 +71,36 @@ Item {
             font.pointSize: Type.body
             color: Theme.color.textSecondary
         }
-        Row {
+        SegmentedControl {
+            objectName: "rankingKind"
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Metrics.gap12
-
-            DateRange {
-                objectName: "rankingRange"
-                anchors.verticalCenter: parent.verticalCenter
-                from: ranking.from
-                to: ranking.to
-                latest: ranking.doc.today || ""
-                onChosen: (from, to) => {
-                    ranking.from = from
-                    ranking.to = to
-                    ranking.show(1)
-                }
+            options: [{ text: I18n.tr("Artists", I18n.rev) }, { text: I18n.tr("Albums", I18n.rev) }, { text: I18n.tr("Genres", I18n.rev) }]
+            current: ranking.kinds.indexOf(ranking.kind)
+            onActivated: (index) => {
+                ranking.kind = ranking.kinds[index]
+                ranking.show(1)
             }
-            SegmentedControl {
-                objectName: "rankingKind"
-                anchors.verticalCenter: parent.verticalCenter
-                options: [{ text: I18n.tr("Artists", I18n.rev) }, { text: I18n.tr("Albums", I18n.rev) }, { text: I18n.tr("Genres", I18n.rev) }]
-                current: ranking.kinds.indexOf(ranking.kind)
-                onActivated: (index) => {
-                    ranking.kind = ranking.kinds[index]
-                    ranking.show(1)
-                }
-            }
+        }
+    }
+    DateRange {
+        id: span
+        objectName: "rankingRange"
+        anchors.top: head.bottom
+        anchors.topMargin: Metrics.gap4
+        x: head.x
+        from: ranking.from
+        to: ranking.to
+        latest: ranking.doc.today || ""
+        onChosen: (from, to) => {
+            ranking.from = from
+            ranking.to = to
+            ranking.show(1)
         }
     }
     Flickable {
         id: list
-        anchors.top: head.bottom
+        anchors.top: span.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: foot.top
         anchors.bottomMargin: Metrics.gap8

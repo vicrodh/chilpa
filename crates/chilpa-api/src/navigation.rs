@@ -55,7 +55,7 @@ pub enum Screen {
     /// A month or a year gone by, as a card to look back at.
     ListeningRecap,
     /// Every artist, record or genre of a span of days, most played first;
-    /// its key is the kind and the span: "artists\u{1f}2026-10-01\u{1f}2026-10-09".
+    /// its key is the kind and the span: "artists/2026-10-01/2026-10-09".
     ListeningRanking,
     /// A plugin's own tree, browsed. The route's key is the plugin's id.
     Source,
@@ -346,7 +346,7 @@ impl crate::Chilpa {
             Screen::Stats => (self.t("Listening stats"), "chartBar"),
             Screen::ListeningHistory => (self.t("Listening history"), "history"),
             Screen::ListeningRecap => (self.t("Recap"), "calendar"),
-            Screen::ListeningRanking => (match r.key.split('\u{1f}').next().unwrap_or_default() {
+            Screen::ListeningRanking => (match r.key.split('/').next().unwrap_or_default() {
                 "albums" => self.t("Top albums"),
                 "genres" => self.t("Top genres"),
                 _ => self.t("Top artists"),

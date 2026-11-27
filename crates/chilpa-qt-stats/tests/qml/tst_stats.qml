@@ -345,7 +345,7 @@ TestCase {
     function test_the_report_goes_on_to_its_rankings_with_its_days() {
         const page = createTemporaryObject(statsPage, this)
         mouseClick(findChild(findChild(page, "topArtists"), "cardAction"))
-        compare(Navigation.went, ["listeningRanking", "artists\u001f2026-10-05\u001f2026-10-09"])
+        compare(Navigation.went, ["listeningRanking", "artists/2026-10-05/2026-10-09"])
         verify(!findChild(findChild(page, "genresCard"), "cardAction").enabled, "no genres, nothing to rank")
     }
 

@@ -22,7 +22,7 @@ StatsCard {
     readonly property var leaders: numbers.top || []
 
     action: tile.kind !== "tracks" && tile.leaders.length > 0 ? I18n.tr("See all", I18n.rev) : ""
-    onActed: Navigation.goKey("listeningRanking", [tile.kind, tile.from, tile.to].join("\u001f"))
+    onActed: Navigation.goKey("listeningRanking", [tile.kind, tile.from, tile.to].join("/"))
 
     Row {
         id: figure

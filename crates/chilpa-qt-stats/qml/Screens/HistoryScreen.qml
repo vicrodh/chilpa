@@ -65,37 +65,6 @@ Item {
             font.pointSize: Type.body
             color: Theme.color.textSecondary
         }
-        Row {
-            anchors.right: search.left
-            anchors.rightMargin: Metrics.gap12
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Metrics.gap8
-
-            DateRange {
-                objectName: "historyRange"
-                anchors.verticalCenter: parent.verticalCenter
-                from: history.from
-                to: history.to
-                latest: history.doc.today || ""
-                onChosen: (from, to) => {
-                    history.from = from
-                    history.to = to
-                    history.show(1)
-                }
-            }
-            IconButton {
-                objectName: "historySkipped"
-                anchors.verticalCenter: parent.verticalCenter
-                glyph: Icons.playerSkipForwardFilled
-                filled: true
-                checked: history.withSkipped
-                tip: history.withSkipped ? I18n.tr("Hide skipped listens", I18n.rev) : I18n.tr("Show skipped listens", I18n.rev)
-                onClicked: {
-                    history.withSkipped = !history.withSkipped
-                    history.show(1)
-                }
-            }
-        }
         Kit.SearchField {
             id: search
             objectName: "historySearch"
@@ -109,9 +78,42 @@ Item {
             }
         }
     }
+    // What the list keeps: a span of days and the skipped listens.
+    Row {
+        id: filters
+        anchors.top: head.bottom
+        anchors.topMargin: Metrics.gap4
+        x: head.x
+        spacing: Metrics.gap8
+
+        DateRange {
+            objectName: "historyRange"
+            anchors.verticalCenter: parent.verticalCenter
+            from: history.from
+            to: history.to
+            latest: history.doc.today || ""
+            onChosen: (from, to) => {
+                history.from = from
+                history.to = to
+                history.show(1)
+            }
+        }
+        IconButton {
+            objectName: "historySkipped"
+            anchors.verticalCenter: parent.verticalCenter
+            glyph: Icons.playerSkipForwardFilled
+            filled: true
+            checked: history.withSkipped
+            tip: history.withSkipped ? I18n.tr("Hide skipped listens", I18n.rev) : I18n.tr("Show skipped listens", I18n.rev)
+            onClicked: {
+                history.withSkipped = !history.withSkipped
+                history.show(1)
+            }
+        }
+    }
     HistoryHeader {
         id: columns
-        anchors.top: head.bottom
+        anchors.top: filters.bottom
         anchors.topMargin: Metrics.gap12
         x: head.x
         width: head.width
