@@ -147,6 +147,14 @@ pub const SECTIONS: &[Section] = &[
                     setting(crate::queue::normalization::PREVENT_CLIPPING, Chilpa::mark("Prevent clipping"), Chilpa::mark("Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."), Control::Toggle),
                     setting(crate::queue::back_button::BACK, Chilpa::mark("Back button"), Chilpa::mark("What one press does. A second press right after goes to the previous track."), Control::Select),
                     setting("playback.keepQueue", Chilpa::mark("Keep the queue between sessions"), Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."), Control::Toggle),
+                    setting(crate::queue::resume::REMEMBER, Chilpa::mark("Remember position in playlists and albums"), Chilpa::mark("Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."), Control::Toggle),
+                ],
+            },
+            Group {
+                title: Chilpa::mark("Shuffle"),
+                settings: &[
+                    setting(crate::queue::shuffle::WORKS, Chilpa::mark("Keep classical works together when shuffling"), Chilpa::mark("Shuffle moves whole works: their movements play together, in order."), Control::Toggle),
+                    setting(crate::queue::shuffle::SMOOTH, Chilpa::mark("Smooth shuffle"), Chilpa::mark("Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."), Control::Toggle),
                 ],
             },
         ],

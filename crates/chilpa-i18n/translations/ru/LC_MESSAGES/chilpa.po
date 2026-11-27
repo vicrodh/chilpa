@@ -430,6 +430,9 @@ msgstr "Адрес"
 msgid "Address of the media server, or of its description"
 msgstr "Адрес медиасервера или его описания"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "Увеличивает счётчик прослушиваний, когда трек прослушан достаточно. Сервер, который скробблит за вас, передаёт это дальше."
+
 msgid "Add…"
 msgstr "Добавить…"
 
@@ -2173,6 +2176,9 @@ msgstr "Не удалось сохранить плейлист. Повтори�
 msgid "Couldn't load the test tracks"
 msgstr "Не удалось загрузить тестовые треки"
 
+msgid "Count plays on the server"
+msgstr "Засчитывать прослушивания на сервере"
+
 msgid "Counting tracks…"
 msgstr "Подсчёт треков…"
 
@@ -2181,6 +2187,9 @@ msgstr "Страны"
 
 msgid "Country"
 msgstr "Страна"
+
+msgid "Counts as a play at"
+msgstr "Засчитывать прослушивание на"
 
 msgid "Cover collage"
 msgstr "Коллаж из обложек"
@@ -3406,6 +3415,9 @@ msgstr "Назад"
 msgid "Go Forward"
 msgstr "Вперёд"
 
+msgid "Go on where you left off?"
+msgstr "Продолжить с того места, где вы остановились?"
+
 msgid "Go to"
 msgstr "Перейти к"
 
@@ -3618,6 +3630,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "Какую часть трека нужно прослушать, чтобы сервер засчитал его. Ваша история сохраняет своё правило."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Насколько размыты обои за окном: 0 % — чётко, 100 % — максимальное размытие."
@@ -4089,6 +4104,9 @@ msgstr ""
 
 msgid "Keep at most 64 personal presets."
 msgstr "Можно хранить не более 64 личных пресетов."
+
+msgid "Keep classical works together when shuffling"
+msgstr "Не разделять классические произведения при перемешивании"
 
 msgid "Keep current values"
 msgstr ""
@@ -5833,6 +5851,9 @@ msgstr "Физический выход не указан"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Выберите тему или оставьте «Системный», чтобы следовать рабочему столу, выберите язык и нажмите :, чтобы открыть командную строку."
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "Выбирает каждую следующую песню близкой к предыдущей: общий жанр, близкий год, похожие темп и громкость, и никогда один и тот же исполнитель дважды подряд. Начинает работать после первого чтения библиотеки. Воспроизведение альбома или плейлиста сохраняет их порядок."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "Закрепить DAC и частоты (WirePlumber)"
 
@@ -5905,6 +5926,9 @@ msgstr "Воспроизвести сейчас"
 msgid "Play on"
 msgstr "Воспроизвести на"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "При запуске альбома или плейлиста, прослушанного наполовину, спрашивает, продолжить с последнего трека или начать сначала."
+
 msgid "Play random"
 msgstr "Случайное воспроизведение"
 
@@ -5925,6 +5949,12 @@ msgstr "Ошибка воспроизведения"
 
 msgid "Playback options"
 msgstr "Параметры воспроизведения"
+
+msgid "Playback settings"
+msgstr "Настройки воспроизведения"
+
+msgid "Playback settings…"
+msgstr "Настройки воспроизведения…"
 
 msgid "Playback state"
 msgstr "Состояние воспроизведения"
@@ -6553,6 +6583,9 @@ msgstr "Запомнить"
 msgid "Remember for this output"
 msgstr ""
 
+msgid "Remember position in playlists and albums"
+msgstr "Запоминать позицию в плейлистах и альбомах"
+
 msgid "Remember stereo conversion for this output"
 msgstr ""
 
@@ -6732,6 +6765,9 @@ msgstr "Заменить…"
 
 msgid "Report an issue"
 msgstr "Сообщить о проблеме"
+
+msgid "Report playback to the server"
+msgstr "Сообщать серверу о воспроизведении"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "Сообщайте об ошибках плагинов в репозитории соответствующего плагина."
@@ -7489,6 +7525,9 @@ msgstr "Перемешать"
 msgid "Shuffle all"
 msgstr "Перемешать все"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "Перемешивание переставляет произведения целиком: их части звучат вместе и по порядку."
+
 msgid "Side by side, all must hold"
 msgstr "Рядом стоящие условия должны выполняться все"
 
@@ -7587,6 +7626,9 @@ msgstr "Уменьшенные обложки и фоновые изображе
 
 msgid "Smallest"
 msgstr "Самые маленькие"
+
+msgid "Smooth shuffle"
+msgstr "Плавное перемешивание"
 
 msgid "Soft"
 msgstr "Слабое"
@@ -7695,6 +7737,9 @@ msgstr "Начать"
 
 msgid "Start from current theme"
 msgstr "Начать с текущей темы"
+
+msgid "Start over"
+msgstr "Начать сначала"
 
 msgid "Start silent check"
 msgstr "Начать тихую проверку"
@@ -7923,6 +7968,12 @@ msgstr "Целевая громкость"
 
 msgid "Technical data"
 msgstr "Технические данные"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "Сообщает серверу, что играет и с какого места, не засчитывая прослушивание."
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "Сообщает серверу, что играет и с какого места. Этот сервер засчитывает прослушивание, как только узнаёт о его начале, и передаёт его сервисам, куда он скробблит."
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -8181,6 +8232,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "Последним здесь играл трек «{}», {} из {}."
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Не удалось изменить библиотеку. Попробуйте снова; ниже указано, что произошло."
@@ -9603,6 +9657,9 @@ msgstr "Что сообщает этот путь"
 
 msgid "What to test with"
 msgstr "На чём тестировать"
+
+msgid "What you play is not reported to it."
+msgstr "Этому серверу не сообщается, что вы слушаете."
 
 msgid "What you play most"
 msgstr "Что вы слушаете чаще всего"

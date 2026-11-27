@@ -428,6 +428,9 @@ msgstr "アドレス"
 msgid "Address of the media server, or of its description"
 msgstr "メディアサーバーまたはその説明のアドレス"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "曲を十分に聴いたところで再生回数に加えます。あなたの代わりに Scrobble するサーバーは、それを送ります。"
+
 msgid "Add…"
 msgstr "追加…"
 
@@ -2169,6 +2172,9 @@ msgstr "プレイリストを保存できませんでした。もう一度お試
 msgid "Couldn't load the test tracks"
 msgstr "テストトラックを読み込めませんでした"
 
+msgid "Count plays on the server"
+msgstr "サーバーで再生回数を数える"
+
 msgid "Counting tracks…"
 msgstr "トラックを数えています…"
 
@@ -2177,6 +2183,9 @@ msgstr "国"
 
 msgid "Country"
 msgstr "国"
+
+msgid "Counts as a play at"
+msgstr "再生回数に数える位置"
 
 msgid "Cover collage"
 msgstr "カバーコラージュ"
@@ -3402,6 +3411,9 @@ msgstr "戻る"
 msgid "Go Forward"
 msgstr "進む"
 
+msgid "Go on where you left off?"
+msgstr "前回の続きから再生しますか？"
+
 msgid "Go to"
 msgstr "移動先"
 
@@ -3614,6 +3626,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "サーバーが再生回数に数えるまでに聴く割合です。あなた自身の履歴は独自のルールのままです。"
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "ウィンドウの背後に見える壁紙のぼかしの強さ。0%でくっきり、100%で最も強くぼかします。"
@@ -4079,6 +4094,9 @@ msgstr ""
 
 msgid "Keep at most 64 personal presets."
 msgstr "個人用プリセットは最大64個まで保持できます。"
+
+msgid "Keep classical works together when shuffling"
+msgstr "シャッフル時にクラシック作品をまとめる"
 
 msgid "Keep current values"
 msgstr ""
@@ -5823,6 +5841,9 @@ msgstr "物理出力の情報なし"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "テーマを選ぶか、「システム」のままにしてデスクトップに合わせます。言語を選び、: を押すとコマンドラインが開きます。"
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "次の曲を直前の曲に近いものから選びます。共通のジャンル、近い年、似たテンポとラウドネスで、同じアーティストが2回続くことはありません。ライブラリを初めて読み込んだ後から有効になります。アルバムやプレイリストを再生した場合は元の順序のままです。"
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "DACとレートを固定（WirePlumber）"
 
@@ -5895,6 +5916,9 @@ msgstr "今すぐ再生"
 msgid "Play on"
 msgstr "再生先"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "途中までだったアルバムやプレイリストを再生すると、最後の曲から続けるか最初からにするかを確認します。"
+
 msgid "Play random"
 msgstr "ランダム再生"
 
@@ -5915,6 +5939,12 @@ msgstr "再生エラー"
 
 msgid "Playback options"
 msgstr "再生オプション"
+
+msgid "Playback settings"
+msgstr "再生の設定"
+
+msgid "Playback settings…"
+msgstr "再生の設定…"
 
 msgid "Playback state"
 msgstr "再生状態"
@@ -6543,6 +6573,9 @@ msgstr "前回のまま"
 msgid "Remember for this output"
 msgstr ""
 
+msgid "Remember position in playlists and albums"
+msgstr "プレイリストとアルバムの位置を記憶"
+
 msgid "Remember stereo conversion for this output"
 msgstr ""
 
@@ -6720,6 +6753,9 @@ msgstr "置換…"
 
 msgid "Report an issue"
 msgstr "問題を報告"
+
+msgid "Report playback to the server"
+msgstr "再生状況をサーバーに通知"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "プラグインのエラーは、該当するプラグインのリポジトリで報告してください。"
@@ -7475,6 +7511,9 @@ msgstr "シャッフル"
 msgid "Shuffle all"
 msgstr "すべてシャッフル"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "シャッフルは作品単位で移動します。楽章は順番どおりにまとめて再生されます。"
+
 msgid "Side by side, all must hold"
 msgstr "並べた条件はすべて満たす必要があります"
 
@@ -7571,6 +7610,9 @@ msgstr "小さいカバーと背景画像。Chilpaが再作成できます。"
 
 msgid "Smallest"
 msgstr "小さい順"
+
+msgid "Smooth shuffle"
+msgstr "スムーズシャッフル"
 
 msgid "Soft"
 msgstr "弱"
@@ -7679,6 +7721,9 @@ msgstr "開始"
 
 msgid "Start from current theme"
 msgstr "現在のテーマから開始"
+
+msgid "Start over"
+msgstr "最初から"
 
 msgid "Start silent check"
 msgstr "無音チェックを開始"
@@ -7903,6 +7948,12 @@ msgstr "目標ラウドネス"
 
 msgid "Technical data"
 msgstr "技術データ"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "再生中の曲と再生位置をサーバーに伝えます。再生回数には数えません。"
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "再生中の曲と再生位置をサーバーに伝えます。このサーバーは再生開始を受け取った時点で再生回数に数え、Scrobble 先のサービスにも送ります。"
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -8161,6 +8212,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "ここで最後に再生されたのは「{}」（{}/{} 曲目）です。"
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "ライブラリを変更できませんでした。もう一度お試しください。下の詳細に何が起きたかが書かれています。"
@@ -9579,6 +9633,9 @@ msgstr "この経路からの報告"
 
 msgid "What to test with"
 msgstr "テストに使うもの"
+
+msgid "What you play is not reported to it."
+msgstr "再生内容はこのサーバーに通知されません。"
 
 msgid "What you play most"
 msgstr "最もよく再生するもの"

@@ -69,6 +69,7 @@ impl Chilpa {
             PlayerEvent::Progress { frames, played } => {
                 if let Some(listen) = self.plays.get_mut(id).and_then(|play| play.ledger.progress(played)) {
                     crate::scrobble::if_heard(self.scrobbler.as_ref(), listen);
+                    crate::servers::report::if_heard(self.servers.reporter.as_ref(), listen);
                 }
                 if shown {
                     self.now.frames = frames;
@@ -108,6 +109,7 @@ impl Chilpa {
                     listen.played_frames = heard;
                     listen.bit_perfect &= !processed;
                     crate::scrobble::if_heard(self.scrobbler.as_ref(), listen);
+                    crate::servers::report::if_heard(self.servers.reporter.as_ref(), listen);
                 }
                 let written = self.plays.get_mut(id).map(|play| play.ledger.closed(attempt, heard, how, fate)).unwrap_or_default();
                 for written in written {
@@ -200,6 +202,7 @@ impl Chilpa {
         if let (true, Some(listen)) = (shown, &listen) {
             self.announce(listen);
         }
+        let server_mark = self.server_listen_started(path, duration_ms, shown);
         self.home.changed();
         let Some(play) = self.plays.get_mut(id) else { return };
         play.ledger.open(attempt, InProgress {
@@ -215,6 +218,8 @@ impl Chilpa {
             played_frames: 0,
             listen,
             scrobbled: false,
+            server_mark,
+            server_counted: false,
         });
     }
 
@@ -226,6 +231,7 @@ impl Chilpa {
         self.dsp.passthrough = dsd_passthrough;
         // What was playing until now is left where it was.
         self.keep_place(true);
+        self.note_place(index, path);
         self.sample_rate = opened.sample_rate_hz;
         self.now.path = path.display().to_string();
         // What came from a source already carries its card: without it the

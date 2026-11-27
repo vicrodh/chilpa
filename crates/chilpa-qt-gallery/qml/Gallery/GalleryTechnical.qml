@@ -40,6 +40,8 @@ Column {
         destructive: true
         doubleConfirmation: true
     }
+    PillButton { text: "Resume offer"; onClicked: resume.open() }
+    ResumeOffer { id: resume; automatic: false; source: '{"title":"Allegro con brio","number":3,"total":8}' }
     AlbumGridInteraction { grid: null }
     TrackColumns { id: rowCols; width: section.width }
     Item {

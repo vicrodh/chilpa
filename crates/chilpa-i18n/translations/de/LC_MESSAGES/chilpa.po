@@ -429,6 +429,9 @@ msgstr "Adresse"
 msgid "Address of the media server, or of its description"
 msgstr "Adresse des Medienservers oder seiner Beschreibung"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "Erhöht seinen Wiedergabezähler, sobald genug von einem Titel gehört wurde. Ein Server, der für dich scrobbelt, gibt das weiter."
+
 msgid "Add…"
 msgstr "Hinzufügen…"
 
@@ -2171,6 +2174,9 @@ msgstr "Die Playlist konnte nicht gespeichert werden. Versuche es erneut."
 msgid "Couldn't load the test tracks"
 msgstr "Die Testtitel konnten nicht geladen werden"
 
+msgid "Count plays on the server"
+msgstr "Wiedergaben auf dem Server zählen"
+
 msgid "Counting tracks…"
 msgstr "Titel werden gezählt…"
 
@@ -2179,6 +2185,9 @@ msgstr "Länder"
 
 msgid "Country"
 msgstr "Land"
+
+msgid "Counts as a play at"
+msgstr "Zählt als Wiedergabe bei"
 
 msgid "Cover collage"
 msgstr "Cover-Collage"
@@ -3404,6 +3413,9 @@ msgstr "Zurück"
 msgid "Go Forward"
 msgstr "Vorwärts"
 
+msgid "Go on where you left off?"
+msgstr "Dort weitermachen, wo du aufgehört hast?"
+
 msgid "Go to"
 msgstr "Gehe zu"
 
@@ -3616,6 +3628,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "Wie viel von einem Titel gehört werden muss, bevor der Server ihn zählt. Dein eigener Verlauf behält seine Regel."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Wie stark das Hintergrundbild hinter dem Fenster weichgezeichnet wird: 0 % lässt es scharf, 100 % ist die stärkste Unschärfe."
@@ -4084,6 +4099,9 @@ msgstr ""
 
 msgid "Keep at most 64 personal presets."
 msgstr "Behalte höchstens 64 eigene Presets."
+
+msgid "Keep classical works together when shuffling"
+msgstr "Klassische Werke bei Zufallswiedergabe zusammenhalten"
 
 msgid "Keep current values"
 msgstr ""
@@ -5828,6 +5846,9 @@ msgstr "Physischer Ausgang nicht gemeldet"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Wähle ein Theme oder behalte System, um deinem Desktop zu folgen, wähle deine Sprache und drücke :, um die Befehlszeile zu öffnen."
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "Wählt jeden nächsten Song nah am vorigen: ein gemeinsames Genre, ein nahes Jahr, ähnliches Tempo und ähnliche Lautheit, und nie zweimal hintereinander derselbe Künstler. Es beginnt, sobald die Bibliothek zum ersten Mal gelesen wurde. Wiedergabe eines Albums oder einer Playlist behält ihre Reihenfolge."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "DAC + Raten festlegen (WirePlumber)"
 
@@ -5900,6 +5921,9 @@ msgstr "Jetzt abspielen"
 msgid "Play on"
 msgstr "Wiedergeben auf"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "Wiedergabe eines Albums oder einer Playlist, die du halb gehört hast, fragt, ob es beim letzten Titel weitergeht oder von vorn beginnt."
+
 msgid "Play random"
 msgstr "Zufällig abspielen"
 
@@ -5920,6 +5944,12 @@ msgstr "Wiedergabefehler"
 
 msgid "Playback options"
 msgstr "Wiedergabeoptionen"
+
+msgid "Playback settings"
+msgstr "Wiedergabeeinstellungen"
+
+msgid "Playback settings…"
+msgstr "Wiedergabeeinstellungen…"
 
 msgid "Playback state"
 msgstr "Wiedergabestatus"
@@ -6548,6 +6578,9 @@ msgstr "Merken"
 msgid "Remember for this output"
 msgstr ""
 
+msgid "Remember position in playlists and albums"
+msgstr "Position in Playlists und Alben merken"
+
 msgid "Remember stereo conversion for this output"
 msgstr ""
 
@@ -6726,6 +6759,9 @@ msgstr "Ersetzen…"
 
 msgid "Report an issue"
 msgstr "Problem melden"
+
+msgid "Report playback to the server"
+msgstr "Wiedergabe an den Server melden"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "Pluginfehler im Repository des jeweiligen Plugins melden."
@@ -7482,6 +7518,9 @@ msgstr "Zufallswiedergabe"
 msgid "Shuffle all"
 msgstr "Alle zufällig wiedergeben"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "Die Zufallswiedergabe verschiebt ganze Werke: ihre Sätze laufen zusammen und in Reihenfolge."
+
 msgid "Side by side, all must hold"
 msgstr "Nebeneinander müssen alle zutreffen"
 
@@ -7579,6 +7618,9 @@ msgstr "Kleinere Cover und Hintergrundbilder; Chilpa kann sie erneut erstellen."
 
 msgid "Smallest"
 msgstr "Kleinste"
+
+msgid "Smooth shuffle"
+msgstr "Sanfte Zufallswiedergabe"
 
 msgid "Soft"
 msgstr "Leicht"
@@ -7687,6 +7729,9 @@ msgstr "Starten"
 
 msgid "Start from current theme"
 msgstr "Vom aktuellen Theme ausgehen"
+
+msgid "Start over"
+msgstr "Von vorn beginnen"
 
 msgid "Start silent check"
 msgstr "Stille Prüfung starten"
@@ -7913,6 +7958,12 @@ msgstr "Ziel-Lautheit"
 
 msgid "Technical data"
 msgstr "Technische Daten"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "Teilt dem Server mit, was läuft und an welcher Stelle, ohne es als Wiedergabe zu zählen."
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "Teilt dem Server mit, was läuft und an welcher Stelle. Dieser Server zählt eine Wiedergabe, sobald er erfährt, dass sie begonnen hat, und gibt sie an die Dienste weiter, an die er scrobbelt."
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -8171,6 +8222,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "Zuletzt lief hier „{}“, Titel {} von {}."
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "Die Bibliothek konnte nicht geändert werden. Versuche es erneut; das Detail unten sagt, was passiert ist."
@@ -9591,6 +9645,9 @@ msgstr "Was dieser Signalweg meldet"
 
 msgid "What to test with"
 msgstr "Womit testen"
+
+msgid "What you play is not reported to it."
+msgstr "Was du abspielst, wird ihm nicht gemeldet."
 
 msgid "What you play most"
 msgstr "Was du am meisten spielst"

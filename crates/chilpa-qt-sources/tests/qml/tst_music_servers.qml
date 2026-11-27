@@ -46,7 +46,7 @@ TestCase {
         compare(folder.folder,"")
         compare(SettingsModel.kept("offline.folder"),"")
     }
-    function cleanup() { dialog.close(); removal.close(); tryCompare(dialog,"visible",false); tryCompare(removal,"visible",false) }
+    function cleanup() { findChild(table,"serverPlayback").close(); dialog.close(); removal.close(); tryCompare(dialog,"visible",false); tryCompare(removal,"visible",false) }
     function open() { dialog.open(); tryCompare(dialog,"opened",true); waitForRendering(dialog.contentItem) }
     function field(name) { return findChild(dialog.contentItem,name) }
     function last() { return Servers.calls[Servers.calls.length-1] }
@@ -382,5 +382,16 @@ TestCase {
         compare(field("serverSecret"),null)
         open(); choose("jellyfin")
         compare(field("serverSecret").text,"")
+    }
+
+    // #51: a server's menu opens its playback settings here, not in Settings.
+    function test_a_server_s_menu_opens_its_playback_settings() {
+        const list = findChild(table,"musicServerList")
+        tryVerify(() => list.itemAtIndex(3) !== null)
+        list.itemAtIndex(3).actionRequested("playback")
+        const playback = findChild(table,"serverPlayback")
+        tryCompare(playback,"opened",true)
+        compare(playback.serverId,3)
+        compare(actionSpy.count,0,"the settings screen is not asked")
     }
 }

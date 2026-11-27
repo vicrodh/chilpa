@@ -19,6 +19,7 @@ use chilpa_qt_link as _;
 use chilpa_qt_query as _;
 use chilpa_qt_devices as _;
 use chilpa_qt_offline as _;
+use chilpa_qt_server_playback as _;
 use chilpa_qt_playlists as _;
 use chilpa_qt_wizard as _;
 use chilpa_qt_controls as _;
@@ -51,25 +52,10 @@ const INTER: &std::ffi::CStr = c":/qt/qml/app/chilpa/kit/assets/fonts/Inter.ttf"
 /// The face Japanese falls back to, whatever font is chosen.
 const LINE_SEED_JP: &std::ffi::CStr = c":/qt/qml/app/chilpa/kit/assets/fonts/LINESeedJP-Regular.ttf";
 
-/// I bound glibc's retained worker heaps before starting Qt or app threads.
-#[cfg(all(target_os = "linux", target_env = "gnu"))]
-fn cap_heap_arenas() {
-    let explicit_tunable = std::env::var_os("GLIBC_TUNABLES").is_some_and(|value| {
-        value.to_string_lossy().split(':').any(|entry| {
-            entry.split_once('=').is_some_and(|(key, _)| key == "glibc.malloc.arena_max")
-        })
-    });
-    if std::env::var_os("MALLOC_ARENA_MAX").is_some() || explicit_tunable { return; }
-    // SAFETY: I apply this at the beginning of main, before Qt and my workers.
-    if unsafe { libc::mallopt(libc::M_ARENA_MAX, 2) } != 1 {
-        eprintln!("memory: could not limit glibc malloc arenas");
-    }
-}
-
 fn main() {
     use chilpa_api::graphics_boot;
     #[cfg(all(target_os = "linux", target_env = "gnu"))]
-    cap_heap_arenas();
+    chilpa_api::heap_arenas::cap();
     // The interface size, before any Qt object; the startup children
     // inherit it. QBZ's order from here to the window.
     graphics_boot::apply_interface_size();

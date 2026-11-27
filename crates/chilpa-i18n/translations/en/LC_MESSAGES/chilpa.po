@@ -429,6 +429,9 @@ msgstr ""
 msgid "Address of the media server, or of its description"
 msgstr ""
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr ""
+
 msgid "Add…"
 msgstr ""
 
@@ -2171,6 +2174,9 @@ msgstr ""
 msgid "Couldn't load the test tracks"
 msgstr ""
 
+msgid "Count plays on the server"
+msgstr ""
+
 msgid "Counting tracks…"
 msgstr ""
 
@@ -2179,6 +2185,9 @@ msgstr ""
 
 msgid "Country"
 msgstr "Country"
+
+msgid "Counts as a play at"
+msgstr ""
 
 msgid "Cover collage"
 msgstr ""
@@ -3404,6 +3413,9 @@ msgstr ""
 msgid "Go Forward"
 msgstr ""
 
+msgid "Go on where you left off?"
+msgstr ""
+
 msgid "Go to"
 msgstr ""
 
@@ -3616,6 +3628,9 @@ msgstr "How many tracks should be added to the queue?"
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr "How many tracks should be shuffled from the whole collection?"
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr ""
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr ""
@@ -4083,6 +4098,9 @@ msgid "Keep at most 64 DSP output assignments."
 msgstr ""
 
 msgid "Keep at most 64 personal presets."
+msgstr ""
+
+msgid "Keep classical works together when shuffling"
 msgstr ""
 
 msgid "Keep current values"
@@ -5828,6 +5846,9 @@ msgstr "Physical output unreported"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr ""
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr ""
 
@@ -5900,6 +5921,9 @@ msgstr ""
 msgid "Play on"
 msgstr ""
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr ""
+
 msgid "Play random"
 msgstr ""
 
@@ -5919,6 +5943,12 @@ msgid "Playback error"
 msgstr "Playback error"
 
 msgid "Playback options"
+msgstr ""
+
+msgid "Playback settings"
+msgstr ""
+
+msgid "Playback settings…"
 msgstr ""
 
 msgid "Playback state"
@@ -6548,6 +6578,9 @@ msgstr ""
 msgid "Remember for this output"
 msgstr ""
 
+msgid "Remember position in playlists and albums"
+msgstr ""
+
 msgid "Remember stereo conversion for this output"
 msgstr ""
 
@@ -6725,6 +6758,9 @@ msgid "Replace…"
 msgstr ""
 
 msgid "Report an issue"
+msgstr ""
+
+msgid "Report playback to the server"
 msgstr ""
 
 msgid "Report plugin errors in the corresponding plugin's repository."
@@ -7482,6 +7518,9 @@ msgstr ""
 msgid "Shuffle all"
 msgstr ""
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr ""
+
 msgid "Side by side, all must hold"
 msgstr ""
 
@@ -7578,6 +7617,9 @@ msgid "Smaller covers and background images; Chilpa can make these again."
 msgstr ""
 
 msgid "Smallest"
+msgstr ""
+
+msgid "Smooth shuffle"
 msgstr ""
 
 msgid "Soft"
@@ -7686,6 +7728,9 @@ msgid "Start"
 msgstr ""
 
 msgid "Start from current theme"
+msgstr ""
+
+msgid "Start over"
 msgstr ""
 
 msgid "Start silent check"
@@ -7913,6 +7958,12 @@ msgstr ""
 
 msgid "Technical data"
 msgstr "Technical data"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr ""
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr ""
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -8170,6 +8221,9 @@ msgid "The installer did not match its pinned checksum."
 msgstr ""
 
 msgid "The installer exceeded its output limit."
+msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
 msgstr ""
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
@@ -9590,6 +9644,9 @@ msgid "What this route reports"
 msgstr ""
 
 msgid "What to test with"
+msgstr ""
+
+msgid "What you play is not reported to it."
 msgstr ""
 
 msgid "What you play most"

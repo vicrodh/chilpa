@@ -436,6 +436,9 @@ msgstr "位址"
 msgid "Address of the media server, or of its description"
 msgstr "媒體伺服器的位址或其描述"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "曲目聽得夠多時計入它的播放次數。替你 scrobble 的伺服器會把它轉送出去。"
+
 msgid "Add…"
 msgstr "新增…"
 
@@ -2177,6 +2180,9 @@ msgstr "無法儲存播放清單，請再試一次。"
 msgid "Couldn't load the test tracks"
 msgstr "無法載入測試曲目"
 
+msgid "Count plays on the server"
+msgstr "在伺服器上計入播放次數"
+
 msgid "Counting tracks…"
 msgstr "正在計算曲目數…"
 
@@ -2185,6 +2191,9 @@ msgstr "國家/地區"
 
 msgid "Country"
 msgstr "國家/地區"
+
+msgid "Counts as a play at"
+msgstr "計為播放的位置"
 
 msgid "Cover collage"
 msgstr "封面拼貼"
@@ -3410,6 +3419,9 @@ msgstr "返回"
 msgid "Go Forward"
 msgstr "前進"
 
+msgid "Go on where you left off?"
+msgstr "要從上次停下的地方繼續嗎？"
+
 msgid "Go to"
 msgstr "前往"
 
@@ -3622,6 +3634,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "曲目要聽多少，伺服器才會計入。你自己的記錄維持原本的規則。"
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "視窗後方桌布的模糊程度：0% 保持清晰，100% 為最強模糊。"
@@ -4087,6 +4102,9 @@ msgstr ""
 
 msgid "Keep at most 64 personal presets."
 msgstr "最多保留 64 個個人預設值。"
+
+msgid "Keep classical works together when shuffling"
+msgstr "隨機播放時保持古典作品完整"
 
 msgid "Keep current values"
 msgstr ""
@@ -5831,6 +5849,9 @@ msgstr "實體輸出未回報"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "選擇主題，或保持「系統」以跟隨你的桌面，選擇語言，然後按 : 開啟指令列。"
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "每首下一首歌都挑選與上一首相近的：相同的類型、相近的年份、相似的速度與響度，且不會連續兩次是同一位演出者。資料庫第一次讀取完成後才會開始。播放專輯或播放清單時會保留原本的順序。"
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "固定 DAC + 取樣率 (WirePlumber)"
 
@@ -5903,6 +5924,9 @@ msgstr "立即播放"
 msgid "Play on"
 msgstr "播放於"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "播放聽到一半的專輯或播放清單時，會詢問要從最後一首繼續還是重新開始。"
+
 msgid "Play random"
 msgstr "隨機播放"
 
@@ -5923,6 +5947,12 @@ msgstr "播放錯誤"
 
 msgid "Playback options"
 msgstr "播放選項"
+
+msgid "Playback settings"
+msgstr "播放設定"
+
+msgid "Playback settings…"
+msgstr "播放設定…"
 
 msgid "Playback state"
 msgstr "播放狀態"
@@ -6551,6 +6581,9 @@ msgstr "記住設定"
 msgid "Remember for this output"
 msgstr ""
 
+msgid "Remember position in playlists and albums"
+msgstr "記住播放清單與專輯的位置"
+
 msgid "Remember stereo conversion for this output"
 msgstr ""
 
@@ -6728,6 +6761,9 @@ msgstr "取代…"
 
 msgid "Report an issue"
 msgstr "回報問題"
+
+msgid "Report playback to the server"
+msgstr "向伺服器回報播放"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "請在對應外掛的儲存庫中回報外掛錯誤。"
@@ -7483,6 +7519,9 @@ msgstr "隨機播放"
 msgid "Shuffle all"
 msgstr "全部隨機播放"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "隨機播放會以整部作品為單位移動：各樂章會依序一起播放。"
+
 msgid "Side by side, all must hold"
 msgstr "並列條件，必須全部符合"
 
@@ -7579,6 +7618,9 @@ msgstr "較小的封面與背景圖片；Chilpa 可以重新產生這些圖片�
 
 msgid "Smallest"
 msgstr ""
+
+msgid "Smooth shuffle"
+msgstr "平順隨機播放"
 
 msgid "Soft"
 msgstr "柔和"
@@ -7687,6 +7729,9 @@ msgstr "開始"
 
 msgid "Start from current theme"
 msgstr "從目前主題開始"
+
+msgid "Start over"
+msgstr "重新開始"
 
 msgid "Start silent check"
 msgstr "開始靜音檢查"
@@ -7911,6 +7956,12 @@ msgstr "目標響度"
 
 msgid "Technical data"
 msgstr ""
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "告訴伺服器正在播放什麼、播到哪裡，但不計入播放次數。"
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "告訴伺服器正在播放什麼、播到哪裡。這台伺服器一得知開始播放就會計入播放次數，並轉送給它 scrobble 的服務。"
 
 msgid "Temporary episode storage is unavailable."
 msgstr "暫存單集儲存空間無法使用。"
@@ -8169,6 +8220,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "這裡最後播放的是「{}」，第 {} 首，共 {} 首。"
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "無法變更音樂庫。請重試；下方的詳細資訊說明了發生的情況。"
@@ -9587,6 +9641,9 @@ msgstr "此路徑回報的內容"
 
 msgid "What to test with"
 msgstr "測試內容選擇"
+
+msgid "What you play is not reported to it."
+msgstr "不會向它回報你播放的內容。"
 
 msgid "What you play most"
 msgstr "你最常播放的內容"

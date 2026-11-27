@@ -421,7 +421,7 @@ impl qobject::TrackListModel {
 
     pub fn play_all(self: Pin<&mut Self>, shuffled: bool) {
         self.playlist_started();
-        self.with_all_paths(move |api, paths| api.play_list(paths, shuffled));
+        self.with_all_paths(move |api, paths| if shuffled { api.play_list(paths, true) } else { api.play_list_or_offer(paths) });
     }
 
     /// A playlist's own list that starts playing is a listen of the playlist.

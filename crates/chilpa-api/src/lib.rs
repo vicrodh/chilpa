@@ -176,6 +176,8 @@ mod sources;
 mod servers;
 pub mod settings_rows;
 pub mod graphics_boot;
+#[cfg(all(target_os = "linux", target_env = "gnu"))]
+pub mod heap_arenas;
 pub mod startup_chain;
 mod library_upgrade;
 pub mod settings_schema;
@@ -445,6 +447,11 @@ struct InProgress {
     listen: Option<scrobble::Listen>,
     /// It was already sent: a seek back past the mark does not send it twice.
     scrobbled: bool,
+    /// The percent of it at which its server counts the play; none when the
+    /// track is not on a server, or its server is not told to count.
+    server_mark: Option<u8>,
+    /// It was counted on its server already.
+    server_counted: bool,
 }
 
 /// A smart list, with whatever it yields today.
@@ -647,6 +654,10 @@ pub struct Chilpa {
     queue_work: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     queue_origins: Vec<Option<queue_origin::QueueOrigin>>,
     browse_origin: Option<queue_origin::QueueOrigin>,
+    /// Each album's and playlist's place, read when first needed.
+    resume_places: Option<queue::resume::Places>,
+    /// Play on a list with a place, waiting for the window's answer.
+    resume_offer: Option<queue::resume::Offer>,
     /// The page shown, to tell a change of page from a redraw.
     browse_route: Option<navigation::Route>,
     listen: listen::Workspace,
@@ -804,6 +815,8 @@ impl Chilpa {
             queue: Vec::new(),
             queue_work: Default::default(),
             queue_origins: Vec::new(),
+            resume_places: None,
+            resume_offer: None,
             browse_origin: None,
             browse_route: None,
             listen: listen::Workspace::default(),
@@ -1317,6 +1330,7 @@ impl Chilpa {
         self.mark_scaled(gain);
         if self.player.as_ref().is_some_and(|p| p.dsp().touched()) { self.now.bit_perfect = false; }
         self.finish_tick(started);
+        self.server_tick();
         self.plugin_update_activity(self.plugin_playback_active());
         &self.now
     }

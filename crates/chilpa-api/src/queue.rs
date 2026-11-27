@@ -20,7 +20,9 @@ use super::*;
 pub(crate) mod back_button;
 pub(crate) mod ended;
 pub(crate) mod normalization;
+pub(crate) mod resume;
 pub(crate) mod rows;
+pub(crate) mod shuffle;
 pub(crate) mod unavailable;
 pub(crate) mod walk_order;
 
@@ -70,11 +72,8 @@ impl Chilpa {
         self.queue_groups.clear();
         self.removed = vec![false; self.queue.len()];
         self.restored_at = None;
-        let mut order = if self.shuffle { chilpa_core::queue_playback::shuffled(self.queue.len(), crate::now_unix() as u64) } else { (0..self.queue.len()).collect() };
+        let order = if self.shuffle { self.shuffle_order(start, crate::now_unix() as u64) } else { (0..self.queue.len()).collect() };
         let first = start.unwrap_or_else(|| order.first().copied().unwrap_or(0));
-        if self.shuffle {
-            if let Some(at) = order.iter().position(|&index| index == first) { order.swap(0, at); }
-        }
         // The play that follows is launched with it.
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
         self.casting.order = order;
@@ -920,11 +919,8 @@ impl Chilpa {
         self.shuffle = shuffle;
         // Shuffling and the mix are two orders: one replaces the other.
         self.mix = false;
-        let mut order = if shuffle { chilpa_core::queue_playback::shuffled_now(self.queue.len()) }
+        let order = if shuffle { self.shuffle_order(Some(self.now.index), shuffle::seed_now()) }
             else { (0..self.queue.len()).collect() };
-        if shuffle {
-            if let Some(at) = order.iter().position(|&index| index == self.now.index) { order.swap(0, at); }
-        }
         self.casting.order = order.clone();
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
         self.set_walk_order(order, self.queue.len());

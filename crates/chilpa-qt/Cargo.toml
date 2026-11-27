@@ -24,6 +24,7 @@ chilpa-qt-query.workspace = true
 chilpa-qt-playlists.workspace = true
 chilpa-qt-devices.workspace = true
 chilpa-qt-offline.workspace = true
+chilpa-qt-server-playback.workspace = true
 chilpa-qt-wizard.workspace = true
 chilpa-qt-artwork.workspace = true
 chilpa-qt-about.workspace = true
@@ -41,9 +42,6 @@ serde_json = "1"
 # every Linux desktop answers.
 rfd = { version = "0.17", default-features = false, features = ["xdg-portal"] }
 pollster = "0.4"
-
-[target.'cfg(all(target_os = "linux", target_env = "gnu"))'.dependencies]
-libc = "0.2"
 
 [build-dependencies]
 cxx-qt-build = "0.7"

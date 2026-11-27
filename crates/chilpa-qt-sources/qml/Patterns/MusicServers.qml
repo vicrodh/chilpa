@@ -9,6 +9,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "qrc:/qt/qml/app/chilpa/offline/qml/Components"
+import "qrc:/qt/qml/app/chilpa/server/playback/qml/Components"
 
 Item {
     id: table
@@ -85,7 +86,14 @@ Item {
             server: isServer ? JSON.parse(entry.value || "{}") : ({})
             options: entry.options || []
             values: entry.optionValues || []
-            onActionRequested: value => table.actionRequested(entry.key, value)
+            // Its playback settings open here, and keep each change at once.
+            onActionRequested: value => value === "playback" ? playback.show(Number(entry.key.split("/")[1])) : table.actionRequested(entry.key, value)
         }
+    }
+    ServerPlaybackDialog {
+        id: playback
+        objectName: "serverPlayback"
+        // The server's line says when it is told nothing.
+        onChanged: if (table.model && typeof table.model.refresh === "function") table.model.refresh()
     }
 }

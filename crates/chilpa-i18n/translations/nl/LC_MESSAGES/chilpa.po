@@ -429,6 +429,9 @@ msgstr "Adres"
 msgid "Address of the media server, or of its description"
 msgstr "Adres van de mediaserver of van zijn beschrijving"
 
+msgid "Adds to its play count once enough of a track was heard. A server that scrobbles for you passes it on."
+msgstr "Telt mee in de afspeelteller zodra genoeg van een nummer is gehoord. Een server die voor je scrobblet, geeft het door."
+
 msgid "Add…"
 msgstr "Toevoegen…"
 
@@ -2171,6 +2174,9 @@ msgstr "Kon de afspeellijst niet opslaan. Probeer het opnieuw."
 msgid "Couldn't load the test tracks"
 msgstr "Kon de testnummers niet laden"
 
+msgid "Count plays on the server"
+msgstr "Afspeelbeurten op de server tellen"
+
 msgid "Counting tracks…"
 msgstr "Nummers tellen…"
 
@@ -2179,6 +2185,9 @@ msgstr "Landen"
 
 msgid "Country"
 msgstr "Land"
+
+msgid "Counts as a play at"
+msgstr "Telt als afspeelbeurt bij"
 
 msgid "Cover collage"
 msgstr "Hoescollage"
@@ -3404,6 +3413,9 @@ msgstr "Terug"
 msgid "Go Forward"
 msgstr "Vooruit"
 
+msgid "Go on where you left off?"
+msgstr "Verdergaan waar je was gebleven?"
+
 msgid "Go to"
 msgstr "Ga naar"
 
@@ -3616,6 +3628,9 @@ msgstr ""
 
 msgid "How many tracks should be shuffled from the whole collection?"
 msgstr ""
+
+msgid "How much of a track has to be heard before the server counts it. Your own history keeps its rule."
+msgstr "Hoeveel van een nummer gehoord moet zijn voordat de server het telt. Je eigen geschiedenis houdt haar eigen regel."
 
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr "Hoe sterk de bureaubladachtergrond achter het venster wordt vervaagd: 0% houdt hem scherp, 100% is de sterkste vervaging."
@@ -4084,6 +4099,9 @@ msgstr ""
 
 msgid "Keep at most 64 personal presets."
 msgstr "Bewaar maximaal 64 persoonlijke presets."
+
+msgid "Keep classical works together when shuffling"
+msgstr "Klassieke werken bij shuffle bij elkaar houden"
 
 msgid "Keep current values"
 msgstr ""
@@ -5828,6 +5846,9 @@ msgstr "Fysieke uitvoer niet gemeld"
 msgid "Pick a theme, or keep System to follow your desktop, choose your language, and press : to open the command line."
 msgstr "Kies een thema of houd Systeem aan om je bureaublad te volgen, kies je taal en druk op : om de opdrachtregel te openen."
 
+msgid "Picks each next song close to the last one: a shared genre, a near year, tempo and loudness, and never the same artist twice in a row. It starts once the library has been read for the first time. Play on an album or a playlist keeps its order."
+msgstr "Kiest elk volgend nummer dicht bij het vorige: een gedeeld genre, een nabij jaar, vergelijkbaar tempo en luidheid, en nooit twee keer achter elkaar dezelfde artiest. Het begint zodra de bibliotheek voor het eerst is ingelezen. Afspelen van een album of playlist houdt de volgorde."
+
 msgid "Pin the DAC + rates (WirePlumber)"
 msgstr "DAC + frequenties vastzetten (WirePlumber)"
 
@@ -5900,6 +5921,9 @@ msgstr "Nu afspelen"
 msgid "Play on"
 msgstr "Afspelen op"
 
+msgid "Play on an album or a playlist you left halfway asks whether to go on from the last track or start over."
+msgstr "Afspelen van een album of playlist die je halverwege liet, vraagt of je verdergaat vanaf het laatste nummer of opnieuw begint."
+
 msgid "Play random"
 msgstr "Willekeurig album afspelen"
 
@@ -5920,6 +5944,12 @@ msgstr "Afspeelfout"
 
 msgid "Playback options"
 msgstr "Afspeelopties"
+
+msgid "Playback settings"
+msgstr "Afspeelinstellingen"
+
+msgid "Playback settings…"
+msgstr "Afspeelinstellingen…"
 
 msgid "Playback state"
 msgstr "Afspeelstatus"
@@ -6548,6 +6578,9 @@ msgstr "Onthouden"
 msgid "Remember for this output"
 msgstr ""
 
+msgid "Remember position in playlists and albums"
+msgstr "Positie in playlists en albums onthouden"
+
 msgid "Remember stereo conversion for this output"
 msgstr ""
 
@@ -6726,6 +6759,9 @@ msgstr "Vervangen…"
 
 msgid "Report an issue"
 msgstr "Probleem melden"
+
+msgid "Report playback to the server"
+msgstr "Afspelen aan de server melden"
 
 msgid "Report plugin errors in the corresponding plugin's repository."
 msgstr "Meld fouten in plugins in de repository van de betreffende plugin."
@@ -7482,6 +7518,9 @@ msgstr "Shuffle"
 msgid "Shuffle all"
 msgstr "Alles shuffelen"
 
+msgid "Shuffle moves whole works: their movements play together, in order."
+msgstr "Shuffle verplaatst hele werken: hun delen spelen samen en op volgorde."
+
 msgid "Side by side, all must hold"
 msgstr "Naast elkaar moeten ze allemaal gelden"
 
@@ -7579,6 +7618,9 @@ msgstr "Kleinere hoezen en achtergrondafbeeldingen; Chilpa kan deze opnieuw make
 
 msgid "Smallest"
 msgstr "Kleinste"
+
+msgid "Smooth shuffle"
+msgstr "Vloeiende shuffle"
 
 msgid "Soft"
 msgstr "Zacht"
@@ -7687,6 +7729,9 @@ msgstr "Starten"
 
 msgid "Start from current theme"
 msgstr "Beginnen vanaf huidig thema"
+
+msgid "Start over"
+msgstr "Opnieuw beginnen"
 
 msgid "Start silent check"
 msgstr "Stille controle starten"
@@ -7913,6 +7958,12 @@ msgstr "Doelluidheid"
 
 msgid "Technical data"
 msgstr "Technische gegevens"
+
+msgid "Tells the server what plays and where, without counting it."
+msgstr "Vertelt de server wat er speelt en waar, zonder het als afspeelbeurt te tellen."
+
+msgid "Tells the server what plays and where. This server counts a play as soon as it hears that it started, and passes it on to the services it scrobbles to."
+msgstr "Vertelt de server wat er speelt en waar. Deze server telt een afspeelbeurt zodra hij hoort dat die begonnen is, en geeft die door aan de diensten waarnaar hij scrobblet."
 
 msgid "Temporary episode storage is unavailable."
 msgstr ""
@@ -8171,6 +8222,9 @@ msgstr ""
 
 msgid "The installer exceeded its output limit."
 msgstr ""
+
+msgid "The last track that played here was “{}”, {} of {}."
+msgstr "Het laatste nummer dat hier speelde was ‘{}’, {} van {}."
 
 msgid "The library could not be changed. Try again; the detail below says what happened."
 msgstr "De bibliotheek kon niet worden gewijzigd. Probeer het opnieuw; het detail hieronder zegt wat er gebeurde."
@@ -9591,6 +9645,9 @@ msgstr "Wat dit pad meldt"
 
 msgid "What to test with"
 msgstr "Waarmee te testen"
+
+msgid "What you play is not reported to it."
+msgstr "Wat je afspeelt, wordt niet aan deze server gemeld."
 
 msgid "What you play most"
 msgstr "Wat je het meest afspeelt"
