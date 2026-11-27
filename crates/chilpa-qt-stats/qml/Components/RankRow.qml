@@ -22,6 +22,8 @@ Item {
     property bool clickable: true
     property color tint: Theme.color.accent
     property string note
+    // A genre has no picture, and no empty square takes its place.
+    property bool pictured: true
     // Room for the place: wider in a ranking that runs to hundreds.
     property real rankWidth: Metrics.gap16
     readonly property int side: lead ? Charts.thumbLead : Charts.thumb
@@ -49,7 +51,8 @@ Item {
         id: cover
         x: place.width + Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
-        width: row.side
+        visible: row.pictured
+        width: row.pictured ? row.side : 0
         height: row.side
         path: row.art
         radius: row.round ? row.side / 2 : Metrics.radiusItem // derived: a circle for an artist
@@ -57,7 +60,7 @@ Item {
     }
     Column {
         anchors.left: cover.right
-        anchors.leftMargin: Metrics.gap10
+        anchors.leftMargin: row.pictured ? Metrics.gap10 : 0
         anchors.right: count.left
         anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter

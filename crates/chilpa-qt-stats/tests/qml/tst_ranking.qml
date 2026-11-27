@@ -53,6 +53,7 @@ TestCase {
         findChild(page, "rankingKind").activated(2)
         compare([page.kind, page.at], ["genres", 1])
         compare(findChild(page, "rankingTotal").text, "12 genres")
+        verify(!findChild(page, "rankingRow0").pictured, "a genre has no picture")
         mouseClick(findChild(findChild(page, "rankingPager"), "page1"))
         findChild(page, "rankingRange").chosen("2026-10-01", "")
         compare([page.from, page.to, page.at], ["2026-10-01", "", 1])

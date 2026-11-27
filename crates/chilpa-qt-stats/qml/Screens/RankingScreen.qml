@@ -133,6 +133,7 @@ Item {
                     most: ranking.doc.most || 1
                     note: modelData.listened || ""
                     round: ranking.kind === "artists"
+                    pictured: ranking.kind !== "genres"
                     clickable: ranking.kind !== "albums" || (modelData.id || 0) > 0
                     tint: ranking.tint
                     onClicked: ranking.open(modelData)
