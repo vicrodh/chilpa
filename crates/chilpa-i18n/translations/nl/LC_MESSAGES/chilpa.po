@@ -6017,6 +6017,9 @@ msgstr "Afspeellijsthoes in de zijbalk"
 msgid "Playlist exported"
 msgstr "Afspeellijst geëxporteerd"
 
+msgid "Playlist files"
+msgstr "Afspeellijstbestanden"
+
 msgid "Playlist icon"
 msgstr "Afspeellijstpictogram"
 

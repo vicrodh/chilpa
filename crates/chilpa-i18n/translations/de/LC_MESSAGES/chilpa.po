@@ -6017,6 +6017,9 @@ msgstr "Playlist-Artwork in der Seitenleiste"
 msgid "Playlist exported"
 msgstr "Playlist exportiert"
 
+msgid "Playlist files"
+msgstr "Playlist-Dateien"
+
 msgid "Playlist icon"
 msgstr "Playlist-Symbol"
 

@@ -127,35 +127,22 @@ impl qobject::MetadataEditor {
     pub fn take_discogs_quota(self: Pin<&mut Self>) -> bool { self.then(|api|api.take_discogs_quota()) }
 
     pub fn artwork_from_file(self: Pin<&mut Self>) {
-        // The picker is the desktop's and blocks until it is answered, so it
-        // runs on a thread of its own and hands the file back queued.
-        let title = app::t("Choose a cover");
-        let thread = self.qt_thread();
-        std::thread::spawn(move || {
-            let picked = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).add_filter("JPEG, PNG", &["jpg", "jpeg", "png"]).pick_file());
-            if let Some(file) = picked {
-                let path = file.path().to_path_buf();
-                let _ = thread.queue(move |editor| {
-                    editor.then(|api| api.metadata_artwork_from_file(&path));
-                });
-            }
+        let filters = vec![("JPEG, PNG".to_string(), vec!["jpg".to_string(), "jpeg".to_string(), "png".to_string()])];
+        chilpa_qt_kit::dialogs::ask(self.qt_thread(), app::t("Choose a cover"), chilpa_qt_kit::dialogs::Ask::File { filters }, |editor, path| {
+            editor.then(|api| api.metadata_artwork_from_file(&path));
         });
     }
 
     pub fn choose_beets_runtime(mut self: Pin<&mut Self>) {
         if *self.choosing_beets_runtime() { return; }
         self.as_mut().set_choosing_beets_runtime(true);
-        let title = app::t("Choose the Python executable for beets");
-        let thread = self.qt_thread();
-        std::thread::spawn(move || {
-            let picked = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).pick_file());
-            let _ = thread.queue(move |mut editor| {
-                editor.as_mut().set_choosing_beets_runtime(false);
-                if let Some(file) = picked {
-                    let runtime = file.path().to_string_lossy().into_owned();
-                    editor.then(|api| api.metadata_set_beets_runtime(&runtime));
-                }
-            });
+        let ask = chilpa_qt_kit::dialogs::Ask::File { filters: Vec::new() };
+        chilpa_qt_kit::dialogs::ask_answered(self.qt_thread(), app::t("Choose the Python executable for beets"), ask, |mut editor, picked| {
+            editor.as_mut().set_choosing_beets_runtime(false);
+            if let Some(path) = picked {
+                let runtime = path.to_string_lossy().into_owned();
+                editor.then(|api| api.metadata_set_beets_runtime(&runtime));
+            }
         });
     }
 

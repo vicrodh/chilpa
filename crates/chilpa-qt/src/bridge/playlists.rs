@@ -84,7 +84,6 @@ pub mod qobject {
         #[qinvokable] fn picker_json(self: &Playlists, track_ids_json: &QString, query: &QString) -> QString;
         #[qinvokable] fn add_track_ids(self: Pin<&mut Playlists>, playlist_id: i64, track_ids_json: &QString, repeats: bool) -> QString;
         #[qinvokable] fn create_full(self: Pin<&mut Playlists>, name: &QString, description: &QString, artwork: &QString, tags: &QString, folder_id: i64, track_ids_json: &QString) -> i64;
-        #[qinvokable] fn choose_artwork(self: &Playlists) -> QString;
         #[qinvokable] fn create_folder(self: Pin<&mut Playlists>, name: &QString, color: &QString) -> i64;
         #[qinvokable] fn update_folder(self: Pin<&mut Playlists>, id: i64, name: &QString, color: &QString) -> bool;
         #[qinvokable] fn remove_folder(self: Pin<&mut Playlists>, id: i64);
@@ -292,10 +291,6 @@ impl qobject::Playlists {
             self.as_mut().changed();
         }
         id
-    }
-
-    pub fn choose_artwork(&self) -> QString {
-        pollster::block_on(rfd::AsyncFileDialog::new().set_title(&app::t("Choose playlist artwork")).add_filter("Images", &["png", "jpg", "jpeg", "webp"]).pick_file()).map(|file| QString::from(&file.path().display().to_string())).unwrap_or_default()
     }
 
     pub fn create_folder(mut self: Pin<&mut Self>, name: &QString, color: &QString) -> i64 { let id = app::with(|api| api.create_playlist_folder(&name.to_string(), &color.to_string())).unwrap_or(0); if id > 0 { self.as_mut().changed(); } id }

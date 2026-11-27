@@ -163,36 +163,21 @@ impl qobject::Artwork {
         self.set_rev(rev);
     }
 
-    /// The system's picker blocks until it is answered, so it runs on a
-    /// thread of its own and hands the file back to the window's thread,
-    /// where the facade lives. Cancelling it does nothing.
+    /// Picks an image with the system's dialog and hands it to the facade.
+    /// Cancelling it does nothing.
     fn pick(self: Pin<&mut Self>, title: String, then: impl FnOnce(&mut chilpa_api::Chilpa, &std::path::Path) -> bool + Send + 'static) {
-        let thread = self.qt_thread();
-        let images = app::t("Images");
-        std::thread::spawn(move || {
-            let picked = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).add_filter(&images, &KINDS).pick_file());
-            if let Some(file) = picked {
-                let path = file.path().to_path_buf();
-                let _ = thread.queue(move |artwork| {
-                    app::with(|api| then(api, &path));
-                    artwork.follow();
-                });
-            }
+        let filters = vec![(app::t("Images"), KINDS.iter().map(|kind| kind.to_string()).collect())];
+        chilpa_qt_kit::dialogs::ask(self.qt_thread(), title, chilpa_qt_kit::dialogs::Ask::File { filters }, move |artwork, path| {
+            app::with(|api| then(api, &path));
+            artwork.follow();
         });
     }
 
-    /// Asks where, on a thread of its own, and copies there from the
-    /// window's thread.
+    /// Asks where with the system's save dialog and copies there.
     fn save(self: Pin<&mut Self>, title: String, from: PathBuf, suggested: String) {
-        let thread = self.qt_thread();
-        std::thread::spawn(move || {
-            let chosen = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).set_file_name(&suggested).save_file());
-            if let Some(to) = chosen {
-                let to = to.path().to_path_buf();
-                let _ = thread.queue(move |_| {
-                    app::with(|api| api.save_art(&from, &to));
-                });
-            }
+        let ask = chilpa_qt_kit::dialogs::Ask::Save { suggested, filters: Vec::new() };
+        chilpa_qt_kit::dialogs::ask(self.qt_thread(), title, ask, move |_, to| {
+            app::with(|api| api.save_art(&from, &to));
         });
     }
 }

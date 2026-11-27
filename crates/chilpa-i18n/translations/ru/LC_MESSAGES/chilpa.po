@@ -6022,6 +6022,9 @@ msgstr "Обложки плейлистов на боковой панели"
 msgid "Playlist exported"
 msgstr "Плейлист экспортирован"
 
+msgid "Playlist files"
+msgstr "Файлы плейлистов"
+
 msgid "Playlist icon"
 msgstr "Значок плейлиста"
 

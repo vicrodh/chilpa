@@ -6020,6 +6020,9 @@ msgstr "側邊欄中的播放清單封面"
 msgid "Playlist exported"
 msgstr "已匯出播放清單"
 
+msgid "Playlist files"
+msgstr "播放清單檔案"
+
 msgid "Playlist icon"
 msgstr "播放清單圖示"
 

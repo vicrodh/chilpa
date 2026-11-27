@@ -21,7 +21,6 @@ TestCase {
         id: actions
         property string editingServerKey: ""
         function set(key, value) { test.writes.push([key, value]); credits.value = value }
-        function setFile(key, value) { test.writes.push([key, value.toString()]) }
         function press(key) { test.presses.push(key) }
         function refresh() {}
     }
@@ -101,9 +100,10 @@ TestCase {
         compare(field.text, "%title%"); field.focusInput(); keyClick(Qt.Key_X); keyClick(Qt.Key_Return)
         compare(writes[0], ["integrations.discord.titleFormat", "x"]); format.value = "x"
     }
-    function test_an_executable_picker_forwards_the_file_url_and_can_restore_the_default() {
-        const field = findChild(runtime, "settingFile.metadata.beetsPython"), selected = "file:///fixture/Curated%20library/%23venv/bin/python"
-        compare(field.filters, ["All files (*)"]); field.pickedUrl(selected); compare(writes, [["metadata.beetsPython", selected]])
+    function test_an_executable_picker_forwards_the_path_and_can_restore_the_default() {
+        const field = findChild(runtime, "settingFile.metadata.beetsPython"), selected = "/fixture/Curated library/#venv/bin/python"
+        compare(field.filters, ["All files (*)"]); compare(field.dialogFilters(), "[]", "every file: no filter for the dialog")
+        field.picked(selected); compare(writes, [["metadata.beetsPython", selected]])
         field.cleared(); compare(writes[1], ["metadata.beetsPython", ""])
         compare(field.enabled, true); runtime.control = "fileBusy"; compare(field.enabled, false)
     }

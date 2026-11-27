@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Dialogs
 import app.chilpa.kit
 import app.chilpa.themes
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -57,7 +56,8 @@ Item {
             PillButton {
                 objectName: "autoImage"
                 text: I18n.tr("Select Image...", I18n.rev)
-                onClicked: imageDialog.open()
+                onClicked: SystemDialogs.pickFile("themeImage", I18n.tr("Select Image...", I18n.rev),
+                    JSON.stringify([{name: I18n.tr("Image", I18n.rev), extensions: ["png", "jpg", "jpeg", "webp", "bmp"]}]))
             }
         }
         ThemeOptionRow {
@@ -127,10 +127,8 @@ Item {
         }
     }
 
-    FileDialog {
-        id: imageDialog
-        title: I18n.tr("Select Image...", I18n.rev)
-        nameFilters: [I18n.tr("Image", I18n.rev) + " (*.png *.jpg *.jpeg *.webp *.bmp)"]
-        onAccepted: ThemeEditor.setImage(LocalPaths.fromUrl(selectedFile))
+    Connections {
+        target: SystemDialogs
+        function onChosen(asker, path) { if (asker === "themeImage") ThemeEditor.setImage(path) }
     }
 }

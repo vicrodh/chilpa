@@ -202,7 +202,7 @@ Item {
             title: row.title
             clearTip: I18n.tr("Use the default", I18n.rev)
             filters: row.options.length > 0 ? row.options : [I18n.tr("Images", I18n.rev) + " (*.png *.jpg *.jpeg *.webp *.bmp)"]
-            onPickedUrl: file => row.page.setFile(row.key, file)
+            onPicked: path => row.page.set(row.key, path)
             onCleared: row.page.set(row.key, "")
         }
     }

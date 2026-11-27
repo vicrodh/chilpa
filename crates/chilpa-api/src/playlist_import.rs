@@ -160,10 +160,13 @@ impl Chilpa {
         std::thread::spawn(move || {
             let result = (|| {
                 if let Some(path) = input["file"].as_str() {
-                    let path = url::Url::parse(path)
-                        .ok()
-                        .and_then(|u| u.to_file_path().ok())
-                        .ok_or("Choose a local playlist file.")?;
+                    // The system's dialog gives a path; a file URL is still read.
+                    let path = if path.starts_with("file:") {
+                        url::Url::parse(path).ok().and_then(|u| u.to_file_path().ok())
+                    } else {
+                        Some(std::path::PathBuf::from(path)).filter(|p| p.is_absolute())
+                    }
+                    .ok_or("Choose a local playlist file.")?;
                     use std::io::Read;
                     let file = std::fs::File::open(&path)
                         .map_err(|_| "The selected file could not be opened.")?;

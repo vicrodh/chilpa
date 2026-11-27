@@ -15,6 +15,8 @@ Column {
     property alias tags: tagsField.text
     property alias artwork: artworkField.text
     readonly property bool valid: name.trim() !== ""
+    // The system's dialog answers whoever asked: this form, by its identity.
+    readonly property string asker: "playlistForm " + String(form)
     signal accepted()
     spacing: Metrics.gap8
 
@@ -44,9 +46,13 @@ Column {
             id: choose
             text: I18n.tr("Choose", I18n.rev)
             onClicked: {
-                const path = Playlists.chooseArtwork()
-                if (path !== "") form.artwork = path
+                SystemDialogs.pickFile(form.asker, I18n.tr("Choose playlist artwork", I18n.rev),
+                    JSON.stringify([{name: I18n.tr("Images", I18n.rev), extensions: ["png", "jpg", "jpeg", "webp"]}]))
             }
         }
+    }
+    Connections {
+        target: SystemDialogs
+        function onChosen(asker, path) { if (asker === form.asker) form.artwork = path }
     }
 }

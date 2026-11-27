@@ -5,7 +5,8 @@
 //!
 //! The dialog blocks until it is answered, so it runs on a thread of its own
 //! and hands the place back to the window's thread, where the facade lives.
-//! Cancelling it calls nothing.
+//! Cancelling it calls nothing, unless the caller asked to hear it
+//! ([`ask_answered`]).
 
 use core::pin::Pin;
 use std::path::{Path, PathBuf};
@@ -20,6 +21,19 @@ pub enum Ask {
 /// Opens the dialog and runs `then` on the window's thread with the place
 /// chosen.
 pub fn ask<T>(thread: cxx_qt::CxxQtThread<T>, title: String, ask: Ask, then: impl FnOnce(Pin<&mut T>, PathBuf) + Send + 'static)
+where
+    T: cxx_qt::Threading + 'static,
+{
+    ask_answered(thread, title, ask, move |qobject, chosen| {
+        if let Some(path) = chosen {
+            then(qobject, path);
+        }
+    });
+}
+
+/// As [`ask`], and `then` runs when the dialog is cancelled too, with
+/// nothing: for whoever has to know the question ended.
+pub fn ask_answered<T>(thread: cxx_qt::CxxQtThread<T>, title: String, ask: Ask, then: impl FnOnce(Pin<&mut T>, Option<PathBuf>) + Send + 'static)
 where
     T: cxx_qt::Threading + 'static,
 {
@@ -41,10 +55,8 @@ where
             }
             Ask::Save { suggested, filters } => pollster::block_on(filtered(dialog, &filters).set_file_name(&suggested).save_file()),
         };
-        if let Some(chosen) = chosen {
-            let path = chosen.path().to_path_buf();
-            let _ = thread.queue(move |qobject| then(qobject, path));
-        }
+        let chosen = chosen.map(|chosen| chosen.path().to_path_buf());
+        let _ = thread.queue(move |qobject| then(qobject, chosen));
     });
 }
 
