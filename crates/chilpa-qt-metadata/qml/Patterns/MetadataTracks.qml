@@ -7,9 +7,10 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 
-// The metadata editor's tracks as a spreadsheet: disc, number, title and
-// artist edited in place, the file for reference, and under the table a bar
-// that opens the rest of the chosen track's fields. The table scrolls on its
+// The metadata editor's tracks as a spreadsheet: the mark of each track's
+// work, disc, number, title and artist edited in place, the file for
+// reference, and under the table a bar that opens the rest of the chosen
+// track's fields. The table scrolls on its
 // own; the page does not. `doc` is the editor's view.
 Rectangle {
     id: root
@@ -26,9 +27,39 @@ Rectangle {
     readonly property real table: width - Metrics.gap8 * 2 // derived: the table's inset on each side
     readonly property real artistWidth: Math.max(Metrics.metadataCellMin, table * 0.23) // derived: QBZ's share of the table
     readonly property real fileWidth: Math.max(Metrics.metadataCellMin, table * 0.22) // derived: QBZ's share of the table
-    readonly property var widths: [Metrics.metadataDisc, Metrics.metadataTrack,
-        Math.max(Metrics.metadataTitleMin, table - Metrics.metadataDisc - Metrics.metadataTrack - artistWidth - fileWidth),
+    readonly property var widths: [Metrics.metadataWork, Metrics.metadataDisc, Metrics.metadataTrack,
+        Math.max(Metrics.metadataTitleMin, table - Metrics.metadataWork - Metrics.metadataDisc - Metrics.metadataTrack - artistWidth - fileWidth),
         artistWidth, fileWidth]
+    // Each work of the tracks, numbered in the order it first appears: the
+    // number picks its mark, so two works side by side never share colours
+    // until there are more works than marks.
+    readonly property var works: {
+        const numbered = {}
+        let next = 0
+        for (const track of tracks) {
+            const work = ((track.fields || []).find(f => f.name === "work") || {}).value || ""
+            if (work !== "" && numbered[work] === undefined)
+                numbered[work] = next++
+        }
+        return numbered
+    }
+
+    // The track's fields open with the keyboard in its work.
+    function openWork(index) {
+        chosen = index
+        detailsOpen = true
+        Qt.callLater(focusWork)
+    }
+    function focusWork() {
+        for (let i = 0; i < restFields.count; ++i) {
+            const field = restFields.itemAt(i)
+            if (field && field.name === "work") {
+                detailsFlick.contentY = Math.max(0, Math.min(field.y, detailsFlick.contentHeight - detailsFlick.height))
+                field.focusInput()
+                return
+            }
+        }
+    }
     // What the bar opens: every field of the track but the four in the row.
     readonly property var rest: track ? track.fields.filter(f => ["disc_number", "track_number", "title", "artist_credit"].indexOf(f.name) < 0) : []
 
@@ -55,7 +86,7 @@ Rectangle {
         color: Theme.color.stateStripe
         Row {
             Repeater {
-                model: [I18n.tr("Disc", I18n.rev), I18n.tr("Track", I18n.rev), I18n.tr("Title", I18n.rev), I18n.tr("Artist", I18n.rev), I18n.tr("File", I18n.rev)]
+                model: ["W", I18n.tr("Disc", I18n.rev), I18n.tr("Track", I18n.rev), I18n.tr("Title", I18n.rev), I18n.tr("Artist", I18n.rev), I18n.tr("File", I18n.rev)]
                 Text {
                     required property string modelData
                     required property int index
@@ -93,7 +124,9 @@ Rectangle {
             widths: root.widths
             track: root.tracks[index]
             chosen: index === root.chosen
+            workIndex: work === "" ? -1 : (root.works[work] ?? -1)
             onChoose: root.chosen = index
+            onOpenWork: root.openWork(index)
             onEdited: (trackId, name, value) => MetadataEditor.setTrack(trackId, name, value)
         }
     }
@@ -131,6 +164,7 @@ Rectangle {
         height: root.detailsOpen ? Metrics.metadataDetails : 0
         clip: true
         Flickable {
+            id: detailsFlick
             anchors.fill: parent
             contentHeight: fields.height + Metrics.gap8 * 2 // derived: the fields and their vertical insets
             clip: true
@@ -144,6 +178,7 @@ Rectangle {
                 columnSpacing: Metrics.gap12
                 rowSpacing: Metrics.gap6
                 Repeater {
+                    id: restFields
                     model: root.rest.length
                     MetadataField {
                         required property int index

@@ -66,6 +66,9 @@ Item {
         return n
     }
 
+    // Gives the field the keyboard, with what it holds selected.
+    function focusInput() { input.focusInput() }
+
     // What the facade holds, unless it is being typed over.
     function refresh() {
         if (!input.editing)

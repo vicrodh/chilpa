@@ -612,6 +612,9 @@ QtObject {
     readonly property int metadataRow: 32
     readonly property int metadataHit: 40
     readonly property int metadataDisc: 56
+    // The column that marks a track's work, and the mark in it.
+    readonly property int metadataWork: 36
+    readonly property int metadataWorkMark: 20
     readonly property int metadataTrack: 64
     readonly property int metadataTitleMin: 180
     readonly property int metadataCellMin: 150

@@ -21,6 +21,14 @@ QtObject {
     // What the sung line of lyrics can be tinted with, after the text's own
     // color and the accent: the design's four accents (design/05).
     readonly property var lyricColors: ["#A3161F", "#D8323A", "#3DAEE9", "#5C6166"]
+    // A work's mark in the metadata editor: sixteen fills, each with the text
+    // that reads on it, far enough apart to tell neighbouring works apart.
+    // Kelly's colours of maximum contrast, the same in every theme.
+    readonly property var workMarks: [
+        {bg: "#F3C300", fg: "#1B1B1B"}, {bg: "#875692", fg: "#FFFFFF"}, {bg: "#F38400", fg: "#1B1B1B"}, {bg: "#0067A5", fg: "#FFFFFF"},
+        {bg: "#A1CAF1", fg: "#1B1B1B"}, {bg: "#BE0032", fg: "#FFFFFF"}, {bg: "#C2B280", fg: "#1B1B1B"}, {bg: "#008856", fg: "#FFFFFF"},
+        {bg: "#E68FAC", fg: "#1B1B1B"}, {bg: "#604E97", fg: "#FFFFFF"}, {bg: "#F99379", fg: "#1B1B1B"}, {bg: "#882D17", fg: "#FFFFFF"},
+        {bg: "#DCD300", fg: "#1B1B1B"}, {bg: "#B3446C", fg: "#FFFFFF"}, {bg: "#8DB600", fg: "#1B1B1B"}, {bg: "#2B3D26", fg: "#FFFFFF"}]
 
     readonly property QtObject color: QtObject {
         readonly property color surfaceWindow: ThemeModel.color("surface.window", theme.rev)
