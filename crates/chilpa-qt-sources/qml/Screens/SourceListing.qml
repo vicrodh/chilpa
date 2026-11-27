@@ -11,16 +11,24 @@ import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 import "../Patterns"
 
-// The source folder, album grid and track list share one scrolling page.
+// Folders and albums share the page scroller. A track-only list can recycle its rows.
 Flickable {
     id: page
     property string source
     readonly property var about: JSON.parse(Sources.page(source, Library.remoteRev) || "{}")
+    readonly property bool noCardsOrFolders: cards.albums === 0 && !(about.folders || []).length
+    readonly property bool standaloneTracks: noCardsOrFolders && tracks.count > 0
+        && height - Metrics.contentTop - trackList.y > Metrics.rowHeader + Metrics.rowRich
+    // Don't restore to the loading page before its rows have a viewport.
+    readonly property var scrollView: standaloneTracks ? trackList.rows
+        : noCardsOrFolders && tracks.count === 0 && about.loading === true ? null : page
 
     contentWidth: width
-    contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
+    contentHeight: standaloneTracks ? height : column.height + Metrics.contentTop + Metrics.contentBottom
+    interactive: !standaloneTracks
+    onInteractiveChanged: if (!interactive) contentY = 0
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ViewportScrollBar {}
+    ScrollBar.vertical: ViewportScrollBar { policy: page.standaloneTracks ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
     SourcePlaylistEditor { id: playlistEditor }
 
     AlbumGridModel {
@@ -60,7 +68,7 @@ Flickable {
         Flow {
             width: parent.width
             spacing: Metrics.gap12
-            SearchField { id: find; width: Metrics.screenSearch; placeholder: I18n.tr("Search", I18n.rev); onEscaped: text = "" }
+            SearchField { id: find; objectName: "sourceListingSearch"; width: Metrics.screenSearch; placeholder: I18n.tr("Search", I18n.rev); onEscaped: text = "" }
             SourceLibraryControls { id: controls; source: page.source; entity: page.about.entity || "track" }
             PillButton { visible: page.about.playlist_edit === true; text: I18n.tr("New playlist", I18n.rev); onClicked: playlistEditor.begin({plugin:page.about.plugin}, "create") }
         }
@@ -83,6 +91,7 @@ Flickable {
 
         AlbumGrid {
             id: grid
+            objectName: "sourceListingAlbums"
             width: parent.width
             height: implicitHeight
             visible: cards.albums > 0
@@ -100,11 +109,13 @@ Flickable {
             title: I18n.tr("Tracks", I18n.rev)
         }
         TrackList {
+            id: trackList
             width: parent.width
-            height: implicitHeight
+            height: page.standaloneTracks ? page.height - Metrics.contentTop - y : implicitHeight
             visible: tracks.count > 0
-            fitContent: true
-            viewport: page
+            fitContent: !page.standaloneTracks
+            viewport: page.standaloneTracks ? null : page
+            bottomInset: page.standaloneTracks ? Metrics.contentBottom : 0
             model: tracks
         }
 
