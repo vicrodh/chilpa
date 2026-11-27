@@ -3006,6 +3006,9 @@ msgstr "診断情報をエクスポート"
 msgid "Export listening history"
 msgstr "再生履歴をエクスポート"
 
+msgid "Export plain data…"
+msgstr "データのみエクスポート…"
+
 msgid "Export playlist"
 msgstr "プレイリストをエクスポート"
 
@@ -4532,6 +4535,9 @@ msgstr ""
 
 msgid "Manage"
 msgstr "管理"
+
+msgid "Manage offline music"
+msgstr "オフラインの音楽を管理"
 
 msgid "Manage playlists"
 msgstr "プレイリストを管理"
@@ -8194,6 +8200,9 @@ msgstr ""
 
 msgid "The file tags have been written."
 msgstr ""
+
+msgid "The files downloaded from your self-hosted servers: what is kept, its limit and each server's folder."
+msgstr "セルフホストのサーバーからダウンロードしたファイル：保存する内容、上限、各サーバーのフォルダー。"
 
 msgid "The filter cannot be read."
 msgstr "フィルターを読み取れません。"

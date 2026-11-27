@@ -3008,6 +3008,9 @@ msgstr "Diagnostiek exporteren"
 msgid "Export listening history"
 msgstr "Luistergeschiedenis exporteren"
 
+msgid "Export plain data…"
+msgstr "Alleen gegevens exporteren…"
+
 msgid "Export playlist"
 msgstr "Afspeellijst exporteren"
 
@@ -4537,6 +4540,9 @@ msgstr ""
 
 msgid "Manage"
 msgstr "Beheren"
+
+msgid "Manage offline music"
+msgstr "Offline muziek beheren"
 
 msgid "Manage playlists"
 msgstr "Afspeellijsten beheren"
@@ -8204,6 +8210,9 @@ msgstr ""
 
 msgid "The file tags have been written."
 msgstr ""
+
+msgid "The files downloaded from your self-hosted servers: what is kept, its limit and each server's folder."
+msgstr "De bestanden die van je eigen servers zijn gedownload: wat bewaard blijft, de limiet en de map van elke server."
 
 msgid "The filter cannot be read."
 msgstr "Het filter kan niet worden gelezen."

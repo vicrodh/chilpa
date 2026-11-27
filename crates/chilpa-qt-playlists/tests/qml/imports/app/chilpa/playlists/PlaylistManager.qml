@@ -25,9 +25,10 @@ QtObject {
     property int serverRefreshes: 0
     function refreshServers() { serverRefreshes++ }
     // What exporting answers, and each playlist it was asked to write where.
-    property var exported: ({written: 3, left_out: 0, error: ""})
+    property var exportResult: ({written: 3, left_out: 0, error: ""})
     property var exports: []
-    function exportTo(id, path) { exports = exports.concat([{id: id, path: path}]); return JSON.stringify(exported) }
+    signal exported(string result)
+    function exportList(id, plain) { exports = exports.concat([{id: id, plain: plain}]); exported(JSON.stringify(exportResult)) }
     // Emoji and the symbol blocks, as the facade judges a name.
     function nameIsUnusual(name) { return /[\u2190-\u2BFF]|[\uD83C-\uDBFF][\uDC00-\uDFFF]/.test(name) }
     function groupSources(grouped) { Playlists.catalog = Object.assign({}, Playlists.catalog, {group_sources:grouped}); SettingsModel.keep("navigation.groupSourcePlaylists", String(grouped)); Prefs.changed() }

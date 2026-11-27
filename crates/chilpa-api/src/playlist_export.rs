@@ -102,8 +102,9 @@ fn file_uri(path: &Path) -> String {
     uri
 }
 
-/// An XSPF list: every row, with its file when it is one here.
-pub fn xspf(name: &str, description: &str, rows: &[TrackRow]) -> String {
+/// An XSPF list: every row, with its file when it is one here and the list
+/// is not plain data.
+pub fn xspf(name: &str, description: &str, rows: &[TrackRow], plain: bool) -> String {
     let mut text = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<playlist version=\"1\" xmlns=\"http://xspf.org/ns/0/\">\n");
     if !name.is_empty() {
         let _ = writeln!(text, "  <title>{}</title>", escaped(name));
@@ -114,7 +115,7 @@ pub fn xspf(name: &str, description: &str, rows: &[TrackRow]) -> String {
     text.push_str("  <trackList>\n");
     for row in rows {
         text.push_str("    <track>\n");
-        if let Some(file) = file_of(row) {
+        if let Some(file) = file_of(row).filter(|_| !plain) {
             let _ = writeln!(text, "      <location>{}</location>", escaped(&file_uri(&file)));
         }
         for (tag, value) in [("title", &row.title), ("creator", &row.artist), ("album", &row.album)] {
@@ -162,12 +163,22 @@ enum Format {
     Json,
 }
 
-fn format_of(path: &Path) -> Format {
+/// Plain data has no files to list, so it is never M3U8.
+fn format_of(path: &Path, plain: bool) -> Format {
     match path.extension().map(|ext| ext.to_ascii_lowercase()) {
         Some(ext) if ext == "xspf" => Format::Xspf,
         Some(ext) if ext == "json" => Format::Json,
+        _ if plain => Format::Json,
         _ => Format::M3u8,
     }
+}
+
+/// The place with the format's extension when the name came without one.
+fn with_extension(path: &Path, plain: bool) -> PathBuf {
+    if path.extension().is_some() {
+        return path.to_path_buf();
+    }
+    path.with_extension(if plain { "json" } else { "m3u8" })
 }
 
 /// Writes the text whole or not at all: a list cut in half by a full disk
@@ -200,15 +211,36 @@ pub fn name_is_unusual(name: &str) -> bool {
 }
 
 impl crate::Chilpa {
-    /// Writes a playlist to `path`: XSPF for a `.xspf` file, JSON for a
-    /// `.json` one, M3U8 for any other.
-    pub fn export_playlist(&mut self, playlist_id: i64, path: &Path) -> Exported {
-        let Some(list) = self.playlist(playlist_id) else {
+    /// A list's name, tracks and description: a playlist of the library
+    /// (`id` above 0) or a source's playlist as its record shows it (below).
+    fn list_to_export(&mut self, id: i64) -> Option<(String, String, Vec<TrackRow>)> {
+        if id > 0 {
+            let list = self.playlist(id)?;
+            Some((list.name, list.description, self.playlist_rows(id)))
+        } else {
+            let page = self.cached_album_page(id)?;
+            let rows = page.entries.into_iter().filter_map(|entry| match entry { crate::TrackEntry::Track(row) => Some(row), _ => None }).collect();
+            Some((page.detail.album.title, String::new(), rows))
+        }
+    }
+
+    /// The name the save dialog suggests for a list.
+    pub fn export_file_name(&mut self, id: i64, plain: bool) -> String {
+        let name = self.list_to_export(id).map(|(name, _, _)| name).filter(|name| !name.trim().is_empty()).unwrap_or_else(|| chilpa_i18n::t("Playlist"));
+        format!("{name}.{}", if plain || id < 0 { "json" } else { "m3u8" })
+    }
+
+    /// Writes a list to `path`: XSPF for a `.xspf` file, JSON for a `.json`
+    /// one, M3U8 for any other. Plain data leaves every file out and is
+    /// never M3U8; a source's playlist has no file here and goes out plain.
+    pub fn export_list(&mut self, id: i64, path: &Path, plain: bool) -> Exported {
+        let plain = plain || id < 0;
+        let Some((name, description, rows)) = self.list_to_export(id) else {
             return Exported { error: chilpa_i18n::t("that list is gone"), ..Default::default() };
         };
-        let rows = self.playlist_rows(playlist_id);
-        let (text, left_out) = match format_of(path) {
-            Format::Xspf => (xspf(&list.name, &list.description, &rows), 0),
+        let path = with_extension(path, plain);
+        let (text, left_out) = match format_of(&path, plain) {
+            Format::Xspf => (xspf(&name, &description, &rows, plain), 0),
             Format::Json => {
                 let ids: Vec<i64> = rows.iter().map(|row| row.id).filter(|id| *id > 0).collect();
                 let mut isrcs = HashMap::new();
@@ -221,11 +253,11 @@ impl crate::Chilpa {
                         }
                     }
                 }
-                (json(&list.name, &list.description, &rows, &isrcs), 0)
+                (json(&name, &description, &rows, &isrcs), 0)
             }
-            Format::M3u8 => m3u8(&list.name, &rows, path.parent().unwrap_or(Path::new("."))),
+            Format::M3u8 => m3u8(&name, &rows, path.parent().unwrap_or(Path::new("."))),
         };
-        match write_whole(path, &text) {
+        match write_whole(&path, &text) {
             Ok(()) => Exported { written: rows.len() - left_out, left_out, error: String::new() },
             Err(error) => Exported { error: chilpa_i18n::t_args("the list could not be saved: {}", &[&error.to_string()]), ..Default::default() },
         }
@@ -260,7 +292,7 @@ mod tests {
     #[test]
     fn xspf_keeps_every_track_escaped_with_its_file_when_it_has_one() {
         let rows = [row("/music/a b/Ünö.flac", "<One>", "Band", 61_400), row("remote:plugin/source/7", "Streamed", "Band & Co", 0)];
-        let text = xspf("Mix 🎸", "for \"now\"", &rows);
+        let text = xspf("Mix 🎸", "for \"now\"", &rows, false);
         assert!(text.contains("<title>Mix 🎸</title>"), "{text}");
         assert!(text.contains("<annotation>for &quot;now&quot;</annotation>"), "{text}");
         assert!(text.contains("<location>file:///music/a%20b/%C3%9Cn%C3%B6.flac</location>"), "{text}");
@@ -283,10 +315,21 @@ mod tests {
 
     #[test]
     fn the_format_follows_the_file_s_extension() {
-        assert_eq!(format_of(Path::new("/tmp/list.XSPF")), Format::Xspf);
-        assert_eq!(format_of(Path::new("/tmp/list.json")), Format::Json);
-        assert_eq!(format_of(Path::new("/tmp/list.m3u8")), Format::M3u8);
-        assert_eq!(format_of(Path::new("/tmp/list")), Format::M3u8);
+        assert_eq!(format_of(Path::new("/tmp/list.XSPF"), false), Format::Xspf);
+        assert_eq!(format_of(Path::new("/tmp/list.json"), false), Format::Json);
+        assert_eq!(format_of(Path::new("/tmp/list.m3u8"), false), Format::M3u8);
+        assert_eq!(format_of(Path::new("/tmp/list.m3u8"), true), Format::Json, "plain data has no files for an M3U8");
+        assert_eq!(with_extension(Path::new("/tmp/list"), false), Path::new("/tmp/list.m3u8"));
+        assert_eq!(with_extension(Path::new("/tmp/list"), true), Path::new("/tmp/list.json"));
+        assert_eq!(with_extension(Path::new("/tmp/list.xspf"), true), Path::new("/tmp/list.xspf"));
+    }
+
+    #[test]
+    fn plain_data_names_every_track_and_no_file() {
+        let rows = [row("/music/a/One.flac", "One", "Band", 61_400), row("remote:plugin/source/7", "Streamed", "Band", 0)];
+        let text = xspf("Mix", "", &rows, true);
+        assert_eq!(text.matches("<track>").count(), 2);
+        assert!(!text.contains("<location>"), "{text}");
     }
 
     #[test]
