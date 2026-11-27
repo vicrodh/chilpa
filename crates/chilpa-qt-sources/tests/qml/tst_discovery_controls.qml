@@ -38,6 +38,14 @@ TestCase {
         keyClick(Qt.Key_Escape)
         tryCompare(popup, "opened", false)
     }
+    // Chosen on one tab, the genres are the plugin's: kept for every tab.
+    function test_applied_genres_are_kept_for_the_plugin() {
+        controls.about = {plugin:"fixture",tab:"editors",genres:[{id:"1",name:"Rock"},{id:"9",name:"Metal"}],genre_filter:"",shelves:[]}
+        controls.selectedGenres = ["9"]
+        findChild(controls, "discoveryGenresApply").clicked()
+        compare(SettingsModel.kept("ui.source.fixture.discover.genres"), "9")
+        compare(Navigation.went, ["source", "fixture native:discover:editors:9"])
+    }
     function test_consolidated_module_retains_order_size_and_visibility_once() {
         const available = [{id:"before"}, {id:"mixed", previous_ids:["old:artist", "old:album", "old:playlist"]}, {id:"after"}]
         const previous = [{id:"after"}, {id:"old:artist", enabled:false, size:12}, {id:"old:album", enabled:true, size:24},

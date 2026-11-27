@@ -106,7 +106,8 @@ Item {
             }
             Row {
                 spacing: Metrics.gap8
-                PillButton { text: I18n.tr("Apply", I18n.rev); kind: "primary"; onClicked: { genres.close(); SettingsModel.keep("ui.source." + controls.about.plugin + ".discover." + controls.about.tab + ".genres", controls.selectedGenres.join(",")); Navigation.goKey("source", controls.about.plugin + " native:discover:" + controls.about.tab + ":" + controls.selectedGenres.join(",")) } }
+                // The filter is the plugin's: a tab the sidebar opens later gets it back.
+                PillButton { objectName: "discoveryGenresApply"; text: I18n.tr("Apply", I18n.rev); kind: "primary"; onClicked: { genres.close(); SettingsModel.keep("ui.source." + controls.about.plugin + ".discover.genres", controls.selectedGenres.join(",")); Navigation.goKey("source", controls.about.plugin + " native:discover:" + controls.about.tab + ":" + controls.selectedGenres.join(",")) } }
                 PillButton { text: I18n.tr("Clear", I18n.rev); onClicked: controls.selectedGenres = [] }
             }
         }
