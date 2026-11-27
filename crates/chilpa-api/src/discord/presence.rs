@@ -51,6 +51,10 @@ pub(crate) struct Options {
     pub upload: bool,
     pub source: Source,
     pub hours: u32,
+    /// What a server's member list shows under the listener's name, as
+    /// Discord's `status_display_type`: 0 the app's name, 1 the second line
+    /// (`state`), 2 the first (`details`).
+    pub member_list: u8,
 }
 
 /// Which way to a cover is tried first once uploading is allowed (Fooyin's
@@ -107,6 +111,7 @@ pub(crate) struct Presence {
     pub small: Option<(&'static str, &'static str)>,
     pub start: Option<i64>,
     pub end: Option<i64>,
+    pub status_display: u8,
 }
 
 /// The year a date starts with, as Fooyin's `%year%`.
@@ -197,6 +202,7 @@ pub(crate) fn presence(playing: &Playing, tags: &Tags, formats: &Formats, artwor
         small,
         start,
         end,
+        status_display: options.member_list,
     })
 }
 
@@ -219,6 +225,7 @@ pub(crate) fn activity(presence: &Presence) -> Value {
     }
     json!({
         "type": 2,
+        "status_display_type": presence.status_display,
         "instance": false,
         "state": presence.state,
         "details": presence.details,

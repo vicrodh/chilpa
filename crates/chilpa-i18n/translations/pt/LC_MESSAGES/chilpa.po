@@ -7479,6 +7479,9 @@ msgstr "Mostrar na pasta"
 msgid "Show in sidebar"
 msgstr "Mostrar na barra lateral"
 
+msgid "Show in the member list"
+msgstr "Mostrar na lista de membros"
+
 msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
 msgstr "Mostra letras de arquivos, do cache e de serviços online. Desative para interromper todas as buscas e traduções de letras e limpar as letras atuais."
 
@@ -9678,6 +9681,9 @@ msgstr "Boas-vindas ao Chilpa"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "O que a tecla Enter faz com um resultado da busca da visualização imersiva. Desativada desliga a busca."
+
+msgid "What a server's member list shows under your name: the first line, the second, or Chilpa. Your profile and messages always show both lines."
+msgstr "O que a lista de membros de um servidor mostra sob o seu nome: a primeira linha, a segunda ou Chilpa. Seu perfil e suas mensagens sempre mostram as duas linhas."
 
 msgid "What is tried first for a local album's cover."
 msgstr "O que é tentado primeiro para a capa de um álbum local."

@@ -7472,6 +7472,9 @@ msgstr "フォルダーで表示"
 msgid "Show in sidebar"
 msgstr "サイドバーに表示"
 
+msgid "Show in the member list"
+msgstr "メンバーリストに表示"
+
 msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
 msgstr "ファイル、キャッシュ、オンラインから歌詞を表示します。オフにすると、すべての歌詞の検索と翻訳を止め、現在の歌詞を消去します。"
 
@@ -9666,6 +9669,9 @@ msgstr "Chilpaへようこそ"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "没入表示の検索結果でEnterキーを押したときの動作です。「無効」にすると検索がオフになります。"
+
+msgid "What a server's member list shows under your name: the first line, the second, or Chilpa. Your profile and messages always show both lines."
+msgstr "サーバーのメンバーリストで名前の下に表示する内容：1 行目、2 行目、または Chilpa。プロフィールとメッセージには常に両方の行が表示されます。"
 
 msgid "What is tried first for a local album's cover."
 msgstr "ローカルアルバムのカバーで最初に試す方法。"

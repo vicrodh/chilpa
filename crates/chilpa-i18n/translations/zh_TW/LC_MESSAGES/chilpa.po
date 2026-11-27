@@ -7480,6 +7480,9 @@ msgstr "在資料夾中顯示"
 msgid "Show in sidebar"
 msgstr "在側邊欄中顯示"
 
+msgid "Show in the member list"
+msgstr "在成員清單中顯示"
+
 msgid "Show lyrics from files, cache and online services. Turn off to stop all lyric lookups and translations and clear the current lyrics."
 msgstr "顯示來自檔案、快取與線上服務的歌詞。關閉將停止所有歌詞查詢與翻譯，並清除目前歌詞。"
 
@@ -9674,6 +9677,9 @@ msgstr "歡迎使用 Chilpa"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "在沉浸式檢視搜尋結果中按 Enter 的行為。「停用」將關閉搜尋。"
+
+msgid "What a server's member list shows under your name: the first line, the second, or Chilpa. Your profile and messages always show both lines."
+msgstr "伺服器成員清單在你的名稱下方顯示的內容：第一行、第二行或 Chilpa。你的個人檔案與訊息一律顯示兩行。"
 
 msgid "What is tried first for a local album's cover."
 msgstr ""
