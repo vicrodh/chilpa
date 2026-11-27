@@ -171,7 +171,6 @@ Item {
     QtObject {
         id: actions
         property string editingServerKey: ""
-        function setFile(key, value) { rows.setFile(key, value) }
         function set(key, value) {
             if (key.startsWith("sources.server/") && value === "edit") {
                 editingServerKey = key

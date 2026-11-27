@@ -130,24 +130,16 @@ impl qobject::Developers {
             });
         });
     }
-    /// The system's save dialog blocks until it is answered, so it runs on a
-    /// thread of its own and the reviewed text is written back on the
-    /// window's thread. Cancelling it does nothing.
+    /// Asks where with the system's save dialog and writes the reviewed
+    /// text there. Cancelling it does nothing.
     pub fn export_report(self: Pin<&mut Self>) {
-        let thread = self.qt_thread();
         let report = self.review().to_string();
-        let title = app::t("Export diagnostics");
-        std::thread::spawn(move || {
-            let chosen = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).set_file_name("chilpa-diagnostics.txt").save_file());
-            if let Some(file) = chosen {
-                let path = file.path().to_path_buf();
-                let _ = thread.queue(move |developers| {
-                    let note = match developer::save_report(&path, &report) {
-                        Ok(()) => app::t("Report saved"), Err(error) => error,
-                    };
-                    developers.set_status(QString::from(&note));
-                });
-            }
+        let ask = chilpa_qt_kit::dialogs::Ask::Save { suggested: "chilpa-diagnostics.txt".into(), filters: Vec::new() };
+        chilpa_qt_kit::dialogs::ask(self.qt_thread(), app::t("Export diagnostics"), ask, move |developers, path| {
+            let note = match developer::save_report(&path, &report) {
+                Ok(()) => app::t("Report saved"), Err(error) => error,
+            };
+            developers.set_status(QString::from(&note));
         });
     }
     pub fn log_url(&self) -> QString { QString::from(&developer::logs::file_url()) }

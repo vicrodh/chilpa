@@ -807,8 +807,6 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
- "pollster",
- "rfd",
  "serde_json",
 ]
 
@@ -822,8 +820,6 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
- "pollster",
- "rfd",
 ]
 
 [[package]]
@@ -848,8 +844,6 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
- "pollster",
- "rfd",
 ]
 
 [[package]]
@@ -915,8 +909,6 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
- "pollster",
- "rfd",
 ]
 
 [[package]]
@@ -1002,8 +994,6 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
- "pollster",
- "rfd",
  "serde_json",
 ]
 
@@ -1092,8 +1082,6 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
- "pollster",
- "rfd",
  "serde_json",
 ]
 
@@ -1107,8 +1095,6 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
- "pollster",
- "rfd",
 ]
 
 [[package]]

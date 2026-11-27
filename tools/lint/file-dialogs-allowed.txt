@@ -2,23 +2,3 @@
 # when the lock was written (frontend ADR-0022, draft). This list only
 # shrinks: a file leaves it when it asks through the kit's dialogs.
 # tools/lint/file-dialogs reads it.
-crates/chilpa-qt-about/Cargo.toml
-crates/chilpa-qt-about/src/bridge/developers.rs
-crates/chilpa-qt-artwork/Cargo.toml
-crates/chilpa-qt-artwork/src/bridge/artwork.rs
-crates/chilpa-qt-devices/qml/Patterns/DevicePairing.qml
-crates/chilpa-qt-folders/Cargo.toml
-crates/chilpa-qt-folders/src/bridge/folders.rs
-crates/chilpa-qt-kit/qml/Primitives/FileField.qml
-crates/chilpa-qt-metadata/Cargo.toml
-crates/chilpa-qt-metadata/src/bridge/metadata.rs
-crates/chilpa-qt-playlists/qml/Patterns/ImportOriginStep.qml
-crates/chilpa-qt-sources/Cargo.toml
-crates/chilpa-qt-sources/src/bridge/open_media.rs
-crates/chilpa-qt-sources/src/bridge/plugin_center.rs
-crates/chilpa-qt-stats/Cargo.toml
-crates/chilpa-qt-stats/src/bridge/stats.rs
-crates/chilpa-qt-themes/qml/Patterns/ThemeOptionsPanel.qml
-crates/chilpa-qt-wizard/qml/Components/PathField.qml
-crates/chilpa-qt/Cargo.toml
-crates/chilpa-qt/src/bridge/playlists.rs

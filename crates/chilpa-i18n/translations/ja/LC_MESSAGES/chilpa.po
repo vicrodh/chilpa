@@ -6012,6 +6012,9 @@ msgstr "サイドバーのプレイリストアートワーク"
 msgid "Playlist exported"
 msgstr "プレイリストをエクスポートしました"
 
+msgid "Playlist files"
+msgstr "プレイリストファイル"
+
 msgid "Playlist icon"
 msgstr "プレイリストアイコン"
 

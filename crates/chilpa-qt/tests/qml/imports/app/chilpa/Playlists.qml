@@ -30,7 +30,6 @@ QtObject {
     property bool repeated: false
     function addTrackIds(id, ids, repeats) { added = ids; repeated = repeats; if (!fail) lastTarget = id; return JSON.stringify({ added: 0, exact: 1, similar: 1, rejected: fail }) }
     function createFull(name, description, artwork, tags, folder, ids) { created = [name, description, artwork, tags, folder, ids]; return fail ? 0 : 7 }
-    function chooseArtwork() { return "" }
     function folderId(id, revision) { return 4 }
     function name(id, revision) { return "Stored playlist" }
     function editable(id, revision) { return id > 0 }

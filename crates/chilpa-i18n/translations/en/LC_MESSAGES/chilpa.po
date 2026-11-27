@@ -6017,6 +6017,9 @@ msgstr ""
 msgid "Playlist exported"
 msgstr ""
 
+msgid "Playlist files"
+msgstr ""
+
 msgid "Playlist icon"
 msgstr ""
 

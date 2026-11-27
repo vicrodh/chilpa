@@ -99,17 +99,13 @@ impl qobject::OpenMedia {
         let generation = self.rust().generation;
         self.as_mut().set_loading(true);
         let title = crate::app::t(if kind == "sacd" { "Open SACD…" } else { "Open a folder" });
-        let thread = self.qt_thread();
-        std::thread::spawn(move || {
-            let dialog = rfd::AsyncFileDialog::new().set_title(&title);
-            let picked = if kind == "sacd" { pollster::block_on(dialog.add_filter("SACD", &["iso", "ISO"]).pick_file()) }
-                else { pollster::block_on(dialog.pick_folder()) };
-            let path = picked.map(|p| p.path().to_string_lossy().into_owned());
-            let _ = thread.queue(move |mut model| {
-                if model.rust().generation != generation { return; }
-                model.as_mut().set_loading(false);
-                if let Some(path) = path { model.open_path(&QString::from(kind), &QString::from(path)); }
-            });
+        let ask = if kind == "sacd" { chilpa_qt_kit::dialogs::Ask::File { filters: vec![("SACD".into(), vec!["iso".into(), "ISO".into()])] } }
+            else { chilpa_qt_kit::dialogs::Ask::Folder { from: None } };
+        // Cancelling ends the wait as well: the page stops saying it is loading.
+        chilpa_qt_kit::dialogs::ask_answered(self.qt_thread(), title, ask, move |mut model, picked| {
+            if model.rust().generation != generation { return; }
+            model.as_mut().set_loading(false);
+            if let Some(path) = picked { model.open_path(&QString::from(kind), &QString::from(&path.to_string_lossy().into_owned())); }
         });
     }
 }

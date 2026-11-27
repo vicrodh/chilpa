@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls.Basic as Controls
-import QtQuick.Dialogs
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/LocalPaths.js" as LocalPaths
@@ -61,7 +60,7 @@ Flickable {
                 font.pointSize: Type.small
                 color: Theme.color.textSecondary
             }
-            PillButton { objectName: "deviceChooseFolder"; text: I18n.tr("Choose a folder…", I18n.rev); enabled: !form.busy; onClicked: picker.open() }
+            PillButton { objectName: "deviceChooseFolder"; text: I18n.tr("Choose a folder…", I18n.rev); enabled: !form.busy; onClicked: SystemDialogs.pickFolder("devicePairing", I18n.tr("Choose a folder on the memory card", I18n.rev), "") }
             Text {
                 width: parent.width
                 text: LocalPaths.fromUrl(form.chosenFolder)
@@ -84,5 +83,5 @@ Flickable {
             PillButton { text: I18n.tr("Cancel", I18n.rev); enabled: !form.busy; onClicked: form.dismissed() }
         }
     }
-    FolderDialog { id: picker; title: I18n.tr("Choose a folder on the memory card", I18n.rev); onAccepted: form.chosenFolder = selectedFolder.toString() }
+    Connections { target: SystemDialogs; function onChosen(asker, path) { if (asker === "devicePairing") form.chosenFolder = path } }
 }

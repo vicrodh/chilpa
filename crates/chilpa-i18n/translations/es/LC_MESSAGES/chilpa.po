@@ -6017,6 +6017,9 @@ msgstr "Imagen de playlist en el sidebar"
 msgid "Playlist exported"
 msgstr "Playlist exportada"
 
+msgid "Playlist files"
+msgstr "Archivos de playlist"
+
 msgid "Playlist icon"
 msgstr "Icono de playlist"
 

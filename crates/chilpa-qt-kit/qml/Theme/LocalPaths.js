@@ -5,6 +5,15 @@
 // Windows the drive comes without the slash before it: `file:///C:/Music`
 // is `C:/Music`, which `/C:/Music` is not. Anything that is not a file URL
 // is already a path and is left alone. `os` stands in for Qt.platform.os.
+// A path on disk as a file URL, each part escaped, for what takes URLs.
+function toUrl(path) {
+    const text = String(path || "")
+    if (text === "" || text.startsWith("file://"))
+        return text
+    const parts = text.replace(/\\/g, "/").split("/").map(encodeURIComponent).join("/")
+    return "file://" + (parts.startsWith("/") ? "" : "/") + parts
+}
+
 function fromUrl(url, os) {
     const text = String(url || "")
     if (!text.startsWith("file://"))

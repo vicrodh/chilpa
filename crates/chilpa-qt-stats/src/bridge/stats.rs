@@ -127,20 +127,13 @@ impl qobject::Stats {
         self.ask(title, suggested, move |api, to| api.save_art(&from, to).then(|| api.t("Image saved")));
     }
 
-    /// The system's save dialog blocks until it is answered, so it runs on
-    /// a thread of its own and hands the place back to the window's thread,
-    /// where the facade lives. Cancelling it does nothing.
+    /// Asks where with the system's save dialog and saves there.
+    /// Cancelling it does nothing.
     fn ask(self: Pin<&mut Self>, title: String, suggested: String, then: impl FnOnce(&mut chilpa_api::Chilpa, &Path) -> Option<String> + Send + 'static) {
-        let thread = self.qt_thread();
-        std::thread::spawn(move || {
-            let chosen = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).set_file_name(&suggested).save_file());
-            if let Some(to) = chosen {
-                let to = to.path().to_path_buf();
-                let _ = thread.queue(move |stats| {
-                    if let Some(note) = app::with(|api| then(api, &to)) {
-                        stats.saved(QString::from(&note));
-                    }
-                });
+        let ask = chilpa_qt_kit::dialogs::Ask::Save { suggested, filters: Vec::new() };
+        chilpa_qt_kit::dialogs::ask(self.qt_thread(), title, ask, move |stats, to| {
+            if let Some(note) = app::with(|api| then(api, &to)) {
+                stats.saved(QString::from(&note));
             }
         });
     }

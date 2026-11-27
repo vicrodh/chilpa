@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Dialogs
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -25,11 +24,9 @@ Column {
             token: input.private_token ? token.text : undefined, station: Number(((input.choices || [])[stations.current] || {}).id || 0)}
     }
     spacing: Metrics.gap16
-    FileDialog {
-        id: picker
-        title: I18n.tr("Choose playlist file", I18n.rev)
-        nameFilters: ["Playlist files (*.m3u *.m3u8 *.pls *.xspf *.json)", "All files (*)"]
-        onAccepted: step.file = selectedFile.toString()
+    Connections {
+        target: SystemDialogs
+        function onChosen(asker, path) { if (asker === "importOrigin") step.file = path }
     }
     SegmentedControl {
         id: kinds
@@ -60,7 +57,8 @@ Column {
         Text { text: step.input.name || ""; textFormat: Text.PlainText; font.pointSize: Type.small; color: Theme.color.textSecondary }
         Row {
             width: parent.width; spacing: Metrics.gap12
-            PillButton { id: choose; objectName: "importChooseFile"; text: I18n.tr("Choose file…", I18n.rev); enabled: !step.busy; onClicked: picker.open() }
+            PillButton { id: choose; objectName: "importChooseFile"; text: I18n.tr("Choose file…", I18n.rev); enabled: !step.busy; onClicked: SystemDialogs.pickFile("importOrigin", I18n.tr("Choose playlist file", I18n.rev),
+                JSON.stringify([{name: I18n.tr("Playlist files", I18n.rev), extensions: ["m3u", "m3u8", "pls", "xspf", "json"]}])) }
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 width: parent.width - choose.width - parent.spacing
