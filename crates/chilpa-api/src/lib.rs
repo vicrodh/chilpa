@@ -175,6 +175,8 @@ mod sources;
 mod servers;
 pub mod settings_rows;
 pub mod graphics_boot;
+#[cfg(all(target_os = "linux", target_env = "gnu"))]
+pub mod heap_arenas;
 pub mod startup_chain;
 mod library_upgrade;
 pub mod settings_schema;
