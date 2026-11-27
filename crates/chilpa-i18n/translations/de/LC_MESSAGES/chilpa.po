@@ -4070,6 +4070,9 @@ msgstr "Seine Titel, Alben und Playlists verlassen deine Bibliothek. Das kann ei
 msgid "Its {} leave too."
 msgstr "Auch seine {} gehen."
 
+msgid "JSON playlist"
+msgstr "JSON-Playlist"
+
 msgid "JUMP TO"
 msgstr "SPRINGEN ZU"
 
@@ -11728,10 +11731,10 @@ msgid_plural "{} tracks"
 msgstr[0] "{} Titel"
 msgstr[1] "{} Titel"
 
-msgid "{} track is not a file on this computer and was left out; an XSPF file keeps it by name."
-msgid_plural "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name."
-msgstr[0] "{} Titel ist keine Datei auf diesem Computer und wurde ausgelassen; eine XSPF-Datei behält ihn mit Namen."
-msgstr[1] "{} Titel sind keine Dateien auf diesem Computer und wurden ausgelassen; eine XSPF-Datei behält sie mit Namen."
+msgid "{} track is not a file on this computer and was left out; an XSPF or JSON file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF or JSON file keeps them by name."
+msgstr[0] "{} Titel ist keine Datei auf diesem Computer und wurde ausgelassen; eine XSPF- oder JSON-Datei behält ihn mit Namen."
+msgstr[1] "{} Titel sind keine Dateien auf diesem Computer und wurden ausgelassen; eine XSPF- oder JSON-Datei behält sie mit Namen."
 
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."

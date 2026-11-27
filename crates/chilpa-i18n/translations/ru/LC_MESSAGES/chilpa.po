@@ -4075,6 +4075,9 @@ msgstr "Его песни, альбомы и плейлисты удаляютс
 msgid "Its {} leave too."
 msgstr "Также удаляются его {}."
 
+msgid "JSON playlist"
+msgstr "Плейлист JSON"
+
 msgid "JUMP TO"
 msgstr "ПЕРЕЙТИ К"
 
@@ -11785,11 +11788,11 @@ msgstr[0] "{} трек"
 msgstr[1] "{} трека"
 msgstr[2] "{} треков"
 
-msgid "{} track is not a file on this computer and was left out; an XSPF file keeps it by name."
-msgid_plural "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name."
-msgstr[0] "{} трек не является файлом на этом компьютере и пропущен; файл XSPF сохранит его по названию."
-msgstr[1] "{} трека не являются файлами на этом компьютере и пропущены; файл XSPF сохранит их по названию."
-msgstr[2] "{} треков не являются файлами на этом компьютере и пропущены; файл XSPF сохранит их по названию."
+msgid "{} track is not a file on this computer and was left out; an XSPF or JSON file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF or JSON file keeps them by name."
+msgstr[0] "{} трек не является файлом на этом компьютере и пропущен; файл XSPF или JSON сохранит его по названию."
+msgstr[1] "{} трека не являются файлами на этом компьютере и пропущены; файл XSPF или JSON сохранит их по названию."
+msgstr[2] "{} треков не являются файлами на этом компьютере и пропущены; файл XSPF или JSON сохранит их по названию."
 
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."

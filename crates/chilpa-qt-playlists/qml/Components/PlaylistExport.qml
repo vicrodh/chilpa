@@ -8,8 +8,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/LocalPaths.js" as LocalPaths
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // Saves a playlist as a file another player opens: M3U8 with the tracks
-// that are files here, XSPF with every track, the others by name. Once it
-// is written it says how it went.
+// that are files here, XSPF or the importer's JSON with every track, the
+// others by name. Once it is written it says how it went.
 Item {
     id: exporter
     property int playlistId: 0
@@ -27,10 +27,12 @@ Item {
 
     FileDialog {
         id: picker
+        objectName: "playlistExportPicker"
         fileMode: FileDialog.SaveFile
         title: I18n.tr("Export playlist", I18n.rev)
-        nameFilters: [I18n.tr("M3U8 playlist", I18n.rev) + " (*.m3u8)", I18n.tr("XSPF playlist", I18n.rev) + " (*.xspf)"]
-        defaultSuffix: selectedNameFilter.index === 1 ? "xspf" : "m3u8"
+        nameFilters: [I18n.tr("M3U8 playlist", I18n.rev) + " (*.m3u8)", I18n.tr("XSPF playlist", I18n.rev) + " (*.xspf)",
+            I18n.tr("JSON playlist", I18n.rev) + " (*.json)"]
+        defaultSuffix: ["m3u8", "xspf", "json"][selectedNameFilter.index] || "m3u8"
         onAccepted: exporter.save(LocalPaths.fromUrl(selectedFile))
     }
 
@@ -53,8 +55,8 @@ Item {
                 width: parent.width
                 text: (exporter.result.error || "") !== "" ? exporter.result.error
                     : I18n.trCount("{} track was written.", "{} tracks were written.", exporter.result.written || 0, I18n.rev)
-                    + ((exporter.result.left_out || 0) > 0 ? " " + I18n.trCount("{} track is not a file on this computer and was left out; an XSPF file keeps it by name.",
-                        "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name.", exporter.result.left_out, I18n.rev) : "")
+                    + ((exporter.result.left_out || 0) > 0 ? " " + I18n.trCount("{} track is not a file on this computer and was left out; an XSPF or JSON file keeps it by name.",
+                        "{} tracks are not files on this computer and were left out; an XSPF or JSON file keeps them by name.", exporter.result.left_out, I18n.rev) : "")
                 textFormat: Text.PlainText
                 wrapMode: Text.WordWrap
                 font.pointSize: Type.body

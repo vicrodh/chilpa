@@ -4073,6 +4073,9 @@ msgstr "其歌曲、專輯與播放清單正在從你的音樂庫中移除。這
 msgid "Its {} leave too."
 msgstr "其 {} 也會一併移除。"
 
+msgid "JSON playlist"
+msgstr "JSON 播放清單"
+
 msgid "JUMP TO"
 msgstr "跳轉至"
 
@@ -11679,9 +11682,9 @@ msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] "{} 首曲目"
 
-msgid "{} track is not a file on this computer and was left out; an XSPF file keeps it by name."
-msgid_plural "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name."
-msgstr[0] "{} 首曲目不是這台電腦上的檔案，已略過；XSPF 檔案會以名稱保留它們。"
+msgid "{} track is not a file on this computer and was left out; an XSPF or JSON file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF or JSON file keeps them by name."
+msgstr[0] "{} 首曲目不是這台電腦上的檔案，已略過；XSPF 或 JSON 檔案會以名稱保留它們。"
 
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."

@@ -1,10 +1,13 @@
 //! A playlist written to a file another player reads, and what a name may
 //! lose on its way to a source.
 //!
-//! M3U8 lists the tracks that are files on this computer; XSPF also keeps,
-//! by title, artist and album, the ones that are not (a server's, a
-//! source's), so the importer can find them again elsewhere.
+//! M3U8 lists the tracks that are files on this computer; XSPF and JSON
+//! also keep, by title, artist and album, the ones that are not (a server's,
+//! a source's), so the importer can find them again elsewhere. The JSON is
+//! the importer's own playlist: a name, a description and tracks with title,
+//! artist, album, `duration_ms` and ISRC.
 
+use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
@@ -128,9 +131,43 @@ pub fn xspf(name: &str, description: &str, rows: &[TrackRow]) -> String {
     text
 }
 
-/// Whether a path names an XSPF file; any other is written as M3U8.
-fn is_xspf(path: &Path) -> bool {
-    path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("xspf"))
+/// The playlist as the importer reads it back: every row, with the ISRC
+/// the library knows for it.
+pub fn json(name: &str, description: &str, rows: &[TrackRow], isrcs: &HashMap<i64, String>) -> String {
+    let tracks: Vec<serde_json::Value> = rows.iter().map(|row| {
+        let mut track = serde_json::json!({"title": row.title, "artist": row.artist});
+        if !row.album.is_empty() {
+            track["album"] = row.album.clone().into();
+        }
+        if row.duration_ms > 0 {
+            track["duration_ms"] = row.duration_ms.into();
+        }
+        if let Some(isrc) = isrcs.get(&row.id) {
+            track["isrc"] = isrc.clone().into();
+        }
+        track
+    }).collect();
+    let mut document = serde_json::json!({"name": name, "tracks": tracks});
+    if !description.is_empty() {
+        document["description"] = description.into();
+    }
+    serde_json::to_string_pretty(&document).unwrap_or_default() + "\n"
+}
+
+/// The format a file's extension names; M3U8 for any other.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Format {
+    M3u8,
+    Xspf,
+    Json,
+}
+
+fn format_of(path: &Path) -> Format {
+    match path.extension().map(|ext| ext.to_ascii_lowercase()) {
+        Some(ext) if ext == "xspf" => Format::Xspf,
+        Some(ext) if ext == "json" => Format::Json,
+        _ => Format::M3u8,
+    }
 }
 
 /// Writes the text whole or not at all: a list cut in half by a full disk
@@ -163,17 +200,30 @@ pub fn name_is_unusual(name: &str) -> bool {
 }
 
 impl crate::Chilpa {
-    /// Writes a playlist to `path`: XSPF for a `.xspf` file, M3U8 for any
-    /// other.
+    /// Writes a playlist to `path`: XSPF for a `.xspf` file, JSON for a
+    /// `.json` one, M3U8 for any other.
     pub fn export_playlist(&mut self, playlist_id: i64, path: &Path) -> Exported {
         let Some(list) = self.playlist(playlist_id) else {
             return Exported { error: chilpa_i18n::t("that list is gone"), ..Default::default() };
         };
         let rows = self.playlist_rows(playlist_id);
-        let (text, left_out) = if is_xspf(path) {
-            (xspf(&list.name, &list.description, &rows), 0)
-        } else {
-            m3u8(&list.name, &rows, path.parent().unwrap_or(Path::new(".")))
+        let (text, left_out) = match format_of(path) {
+            Format::Xspf => (xspf(&list.name, &list.description, &rows), 0),
+            Format::Json => {
+                let ids: Vec<i64> = rows.iter().map(|row| row.id).filter(|id| *id > 0).collect();
+                let mut isrcs = HashMap::new();
+                if let Some(lib) = self.library() {
+                    for chunk in ids.chunks(500) {
+                        for (id, (isrc, _)) in lib.fingerprints_for(chunk).unwrap_or_default() {
+                            if let Some(isrc) = isrc.filter(|isrc| !isrc.is_empty()) {
+                                isrcs.insert(id, isrc);
+                            }
+                        }
+                    }
+                }
+                (json(&list.name, &list.description, &rows, &isrcs), 0)
+            }
+            Format::M3u8 => m3u8(&list.name, &rows, path.parent().unwrap_or(Path::new("."))),
         };
         match write_whole(path, &text) {
             Ok(()) => Exported { written: rows.len() - left_out, left_out, error: String::new() },
@@ -233,9 +283,26 @@ mod tests {
 
     #[test]
     fn the_format_follows_the_file_s_extension() {
-        assert!(is_xspf(Path::new("/tmp/list.XSPF")));
-        assert!(!is_xspf(Path::new("/tmp/list.m3u8")));
-        assert!(!is_xspf(Path::new("/tmp/list")));
+        assert_eq!(format_of(Path::new("/tmp/list.XSPF")), Format::Xspf);
+        assert_eq!(format_of(Path::new("/tmp/list.json")), Format::Json);
+        assert_eq!(format_of(Path::new("/tmp/list.m3u8")), Format::M3u8);
+        assert_eq!(format_of(Path::new("/tmp/list")), Format::M3u8);
+    }
+
+    #[test]
+    fn json_is_the_importer_s_playlist_with_every_track_and_its_isrc() {
+        let mut one = row("/music/a/One.flac", "One", "Band", 61_400);
+        one.id = 12;
+        let rows = [one, row("remote:plugin/source/7", "Streamed \"live\"", "Band", 0)];
+        let isrcs = HashMap::from([(12, "USRC17607839".to_string())]);
+        let text = json("Mix 🎸", "", &rows, &isrcs);
+        let document: serde_json::Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(document["name"], "Mix 🎸");
+        assert!(document.get("description").is_none(), "an empty description is left out");
+        let tracks = document["tracks"].as_array().unwrap();
+        assert_eq!(tracks.len(), 2, "a track that is no file here is kept by name");
+        assert_eq!(tracks[0], serde_json::json!({"title": "One", "artist": "Band", "album": "Album & Co", "duration_ms": 61_400, "isrc": "USRC17607839"}));
+        assert_eq!(tracks[1], serde_json::json!({"title": "Streamed \"live\"", "artist": "Band", "album": "Album & Co"}));
     }
 
     #[test]

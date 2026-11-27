@@ -37,6 +37,13 @@ TestCase {
         menu().close()
     }
 
+    // M3U8 for players, XSPF and the importer's JSON for every track.
+    function test_the_three_formats_are_offered() {
+        const filters = findChild(exporter, "playlistExportPicker").nameFilters
+        compare(filters.length, 3)
+        verify(filters[0].indexOf("*.m3u8") >= 0 && filters[1].indexOf("*.xspf") >= 0 && filters[2].indexOf("*.json") >= 0, String(filters))
+    }
+
     function test_a_written_list_says_how_many_tracks_went_in() {
         PlaylistManager.exported = {written: 3, left_out: 0, error: ""}
         exporter.playlistId = 21

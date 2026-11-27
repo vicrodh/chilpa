@@ -4070,6 +4070,9 @@ msgstr "De nummers, albums en playlists ervan verdwijnen uit je bibliotheek. Dit
 msgid "Its {} leave too."
 msgstr "Ook de {} ervan verdwijnen."
 
+msgid "JSON playlist"
+msgstr "JSON-afspeellijst"
+
 msgid "JUMP TO"
 msgstr "SPRING NAAR"
 
@@ -11728,10 +11731,10 @@ msgid_plural "{} tracks"
 msgstr[0] "{} nummer"
 msgstr[1] "{} nummers"
 
-msgid "{} track is not a file on this computer and was left out; an XSPF file keeps it by name."
-msgid_plural "{} tracks are not files on this computer and were left out; an XSPF file keeps them by name."
-msgstr[0] "{} nummer is geen bestand op deze computer en is weggelaten; een XSPF-bestand bewaart het op naam."
-msgstr[1] "{} nummers zijn geen bestanden op deze computer en zijn weggelaten; een XSPF-bestand bewaart ze op naam."
+msgid "{} track is not a file on this computer and was left out; an XSPF or JSON file keeps it by name."
+msgid_plural "{} tracks are not files on this computer and were left out; an XSPF or JSON file keeps them by name."
+msgstr[0] "{} nummer is geen bestand op deze computer en is weggelaten; een XSPF- of JSON-bestand bewaart het op naam."
+msgstr[1] "{} nummers zijn geen bestanden op deze computer en zijn weggelaten; een XSPF- of JSON-bestand bewaart ze op naam."
 
 msgid "{} track of its playlists is not in your library and was left out."
 msgid_plural "{} tracks of its playlists are not in your library and were left out."
