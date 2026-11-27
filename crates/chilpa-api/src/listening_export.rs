@@ -56,7 +56,7 @@ impl crate::Chilpa {
         file.write_all(line(&head.map(i18n::t)).as_bytes()).ok()?;
         let mut count = 0;
         loop {
-            let (rows, _) = lib.listening_history(&ListenFilter::default(), "", count as usize, CHUNK).ok()?;
+            let (rows, _) = lib.listening_history(&ListenFilter::default(), "", true, count as usize, CHUNK).ok()?;
             for e in &rows {
                 let cells = [
                     e.local_time.get(..10).unwrap_or_default().to_string(),

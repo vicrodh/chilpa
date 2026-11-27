@@ -510,6 +510,9 @@ msgstr "Alle componisten"
 msgid "All compositions"
 msgstr "Alle composities"
 
+msgid "All days"
+msgstr "Alle dagen"
+
 msgid "All discs"
 msgstr "Alle schijven"
 
@@ -3146,6 +3149,9 @@ msgstr ""
 msgid "Finished"
 msgstr "Voltooid"
 
+msgid "First day"
+msgstr "Eerste dag"
+
 msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
 msgstr "Eerste regel van de status. Velden: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Tekst tussen [ ] verschijnt alleen als een veld erin een waarde heeft. Functies: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Leeg zet de standaard terug."
 
@@ -3532,6 +3538,9 @@ msgstr "Controledetails verbergen"
 
 msgid "Hide sidebar"
 msgstr "Zijbalk verbergen"
+
+msgid "Hide skipped listens"
+msgstr "Overgeslagen luisterbeurten verbergen"
 
 msgid "Hide the console line"
 msgstr "Consoleregel verbergen"
@@ -4141,6 +4150,9 @@ msgstr "Afgelopen 3 maanden"
 
 msgid "Last check"
 msgstr "Laatste controle"
+
+msgid "Last day"
+msgstr "Laatste dag"
 
 msgid "Last file changed: {}"
 msgstr ""
@@ -5263,6 +5275,9 @@ msgstr "Hier is nog niets: voeg een map aan de bibliotheek toe en de albums erin
 
 msgid "Nothing here."
 msgstr "Hier is niets."
+
+msgid "Nothing in these days."
+msgstr "Niets op deze dagen."
 
 msgid "Nothing in this period."
 msgstr "Niets in deze periode."
@@ -7371,6 +7386,9 @@ msgstr "Controledetails tonen"
 msgid "Show saved tracks in Tracks"
 msgstr "Opgeslagen nummers tonen in Nummers"
 
+msgid "Show skipped listens"
+msgstr "Overgeslagen luisterbeurten tonen"
+
 msgid "Show source recommendations by default in Home"
 msgstr "Aanbevelingen van bronnen standaard tonen op de startpagina"
 
@@ -8948,8 +8966,17 @@ msgstr "Hulpmiddelen"
 msgid "Top album"
 msgstr "Topalbum"
 
+msgid "Top albums"
+msgstr "Topalbums"
+
 msgid "Top artist"
 msgstr "Topartiest"
+
+msgid "Top artists"
+msgstr "Topartiesten"
+
+msgid "Top genres"
+msgstr "Topgenres"
 
 msgid "Top level"
 msgstr "Bovenste niveau"
@@ -11290,6 +11317,11 @@ msgid "{} folder comes in:"
 msgid_plural "{} folders come in:"
 msgstr[0] "{} map komt erbij:"
 msgstr[1] "{} mappen komen erbij:"
+
+msgid "{} genre"
+msgid_plural "{} genres"
+msgstr[0] "{} genre"
+msgstr[1] "{} genres"
 
 msgid "{} has no place for \"{}\""
 msgstr "{} heeft geen plek voor ‘{}'"

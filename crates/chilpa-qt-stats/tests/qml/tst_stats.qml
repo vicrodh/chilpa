@@ -309,6 +309,46 @@ TestCase {
         compare(findChild(page, "historyRow0").listen.title, "Match 1")
     }
 
+    function test_skipped_listens_stay_out_until_asked_for() {
+        const page = createTemporaryObject(historyPage, this)
+        compare(Stats.asked[Stats.asked.length - 1], "history:::false", "hidden by default")
+        compare(findChild(page, "historyTotal").text, "130 listens")
+        mouseClick(findChild(findChild(page, "historyPager"), "page2"))
+        const toggle = findChild(page, "historySkipped")
+        verify(!toggle.checked)
+        mouseClick(toggle)
+        verify(toggle.checked)
+        compare(page.at, 1, "from the first page")
+        compare(Stats.asked[Stats.asked.length - 1], "history:::true")
+        compare(findChild(page, "historyTotal").text, "156 listens")
+        mouseClick(toggle)
+        compare(findChild(page, "historyTotal").text, "130 listens")
+    }
+
+    function test_a_span_of_days_keeps_its_days_from_the_first_page() {
+        const page = createTemporaryObject(historyPage, this)
+        mouseClick(findChild(findChild(page, "historyPager"), "page2"))
+        const range = findChild(page, "historyRange")
+        compare(range.latest, "2026-10-09", "nothing after today")
+        range.chosen("2026-10-01", "2026-10-09")
+        compare([page.from, page.to, page.at], ["2026-10-01", "2026-10-09", 1])
+        compare(Stats.asked[Stats.asked.length - 1], "history:2026-10-01:2026-10-09:false")
+        compare(findChild(page, "historyTotal").text, "12 listens")
+        const clear = findChild(page, "rangeClear")
+        verify(clear.visible)
+        waitForItemPolished(range)
+        mouseClick(clear)
+        compare([page.from, page.to], ["", ""])
+        compare(findChild(page, "historyTotal").text, "130 listens")
+    }
+
+    function test_the_report_goes_on_to_its_rankings_with_its_days() {
+        const page = createTemporaryObject(statsPage, this)
+        mouseClick(findChild(findChild(page, "topArtists"), "cardAction"))
+        compare(Navigation.went, ["listeningRanking", "artists\u001f2026-10-05\u001f2026-10-09"])
+        verify(!findChild(findChild(page, "genresCard"), "cardAction").enabled, "no genres, nothing to rank")
+    }
+
     function test_the_columns_stay_put_whatever_a_row_holds() {
         const page = createTemporaryObject(historyPage, this)
         const plain = findChild(page, "historyRow0")

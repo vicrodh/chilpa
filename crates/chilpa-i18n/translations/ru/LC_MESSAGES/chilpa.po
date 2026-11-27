@@ -511,6 +511,9 @@ msgstr "Все композиторы"
 msgid "All compositions"
 msgstr "Все произведения"
 
+msgid "All days"
+msgstr "Все дни"
+
 msgid "All discs"
 msgstr "Все диски"
 
@@ -3148,6 +3151,9 @@ msgstr ""
 msgid "Finished"
 msgstr "Завершено"
 
+msgid "First day"
+msgstr "Первый день"
+
 msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
 msgstr "Первая строка статуса. Поля: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Текст в [ ] показывается, только если у какого-нибудь поля внутри есть значение. Функции: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Пустое поле возвращает значение по умолчанию."
 
@@ -3534,6 +3540,9 @@ msgstr "Скрыть подробности проверки"
 
 msgid "Hide sidebar"
 msgstr "Скрыть боковую панель"
+
+msgid "Hide skipped listens"
+msgstr "Скрыть пропущенные прослушивания"
 
 msgid "Hide the console line"
 msgstr "Скрыть строку консоли"
@@ -4146,6 +4155,9 @@ msgstr "Последние 3 месяца"
 
 msgid "Last check"
 msgstr "Последняя проверка"
+
+msgid "Last day"
+msgstr "Последний день"
 
 msgid "Last file changed: {}"
 msgstr ""
@@ -5268,6 +5280,9 @@ msgstr "Здесь пока ничего нет: добавьте папку в 
 
 msgid "Nothing here."
 msgstr "Здесь ничего нет."
+
+msgid "Nothing in these days."
+msgstr "За эти дни ничего нет."
 
 msgid "Nothing in this period."
 msgstr "За этот период ничего нет."
@@ -7378,6 +7393,9 @@ msgstr "Показать подробности проверки"
 msgid "Show saved tracks in Tracks"
 msgstr "Показывать сохранённые треки в «Треках»"
 
+msgid "Show skipped listens"
+msgstr "Показать пропущенные прослушивания"
+
 msgid "Show source recommendations by default in Home"
 msgstr "Показывать рекомендации источников на главной по умолчанию"
 
@@ -8959,8 +8977,17 @@ msgstr "Инструменты"
 msgid "Top album"
 msgstr "Главный альбом"
 
+msgid "Top albums"
+msgstr "Лучшие альбомы"
+
 msgid "Top artist"
 msgstr "Главный исполнитель"
+
+msgid "Top artists"
+msgstr "Лучшие исполнители"
+
+msgid "Top genres"
+msgstr "Лучшие жанры"
 
 msgid "Top level"
 msgstr "Верхний уровень"
@@ -11322,6 +11349,12 @@ msgid_plural "{} folders come in:"
 msgstr[0] "Добавляется {} папка:"
 msgstr[1] "Добавляются {} папки:"
 msgstr[2] "Добавляются {} папок:"
+
+msgid "{} genre"
+msgid_plural "{} genres"
+msgstr[0] "{} жанр"
+msgstr[1] "{} жанра"
+msgstr[2] "{} жанров"
 
 msgid "{} has no place for \"{}\""
 msgstr "в {} нет места для «{}»"

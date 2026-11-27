@@ -291,7 +291,7 @@ fn source_adapters_can_log_stable_keys_before_tracks_are_cached() {
             .len(),
         2
     );
-    let (history, _) = lib.listening_history(&f, "", 0, 10).unwrap();
+    let (history, _) = lib.listening_history(&f, "", true, 0, 10).unwrap();
     let source = history.iter().find(|entry| entry.source_id == Some(plugin)).unwrap();
     assert_eq!((source.external_id.as_str(), source.album_external_id.as_str()), ("opaque-track", "opaque-album"));
     assert_eq!(source.artwork_path.as_deref(), Some("/cache/source.jpg"));
@@ -337,15 +337,15 @@ fn the_history_goes_newest_first_a_page_at_a_time_and_says_its_total() {
         lib.record_listen(&event(&lib, track, at, Some(0), 1000)).unwrap();
     }
     let filter = ListenFilter::default();
-    let (first, total) = lib.listening_history(&filter, "", 0, 2).unwrap();
+    let (first, total) = lib.listening_history(&filter, "", true, 0, 2).unwrap();
     assert_eq!(total, 3);
     assert_eq!(first.iter().map(|e| e.started_at).collect::<Vec<_>>(), [10800, 7200]);
     assert_eq!(first[0].title, "One");
     assert_eq!(first[0].local_time, "1970-01-01 03:00", "where it was heard");
-    let (rest, _) = lib.listening_history(&filter, "", 2, 2).unwrap();
+    let (rest, _) = lib.listening_history(&filter, "", true, 2, 2).unwrap();
     assert_eq!(rest.iter().map(|e| e.started_at).collect::<Vec<_>>(), [3600]);
     let late = ListenFilter { from: Some(7200), ..ListenFilter::default() };
-    assert_eq!(lib.listening_history(&late, "", 0, 10).unwrap().1, 2);
+    assert_eq!(lib.listening_history(&late, "", true, 0, 10).unwrap().1, 2);
 }
 
 #[test]
@@ -381,13 +381,13 @@ fn the_history_finds_every_word_in_a_track_its_artist_or_its_record() {
         lib.record_listen(&event(&lib, track, at, Some(0), 1000)).unwrap();
     }
     let filter = ListenFilter::default();
-    let (found, total) = lib.listening_history(&filter, "singer b", 0, 10).unwrap();
+    let (found, total) = lib.listening_history(&filter, "singer b", true, 0, 10).unwrap();
     assert_eq!((total, found.len()), (1, 1));
     assert_eq!(found[0].title, "Two");
-    assert_eq!(lib.listening_history(&filter, "one compilation", 0, 10).unwrap().1, 2, "words across the track and its record");
-    assert_eq!(lib.listening_history(&filter, "nothing", 0, 10).unwrap().1, 0);
+    assert_eq!(lib.listening_history(&filter, "one compilation", true, 0, 10).unwrap().1, 2, "words across the track and its record");
+    assert_eq!(lib.listening_history(&filter, "nothing", true, 0, 10).unwrap().1, 0);
     let late = ListenFilter { from: Some(7200), ..ListenFilter::default() };
-    assert_eq!(lib.listening_history(&late, "one", 0, 10).unwrap().1, 1, "the search keeps the period's bounds");
+    assert_eq!(lib.listening_history(&late, "one", true, 0, 10).unwrap().1, 1, "the search keeps the period's bounds");
 }
 
 #[test]
@@ -397,7 +397,7 @@ fn history_keeps_library_and_server_cover_scope() {
         UPDATE tracks SET release_artwork = '/covers/server-disc.jpg' WHERE id = 2;").unwrap();
     lib.record_listen(&event(&lib, 1, 1000, Some(0), 1000)).unwrap();
     lib.record_listen(&event(&lib, 2, 2000, Some(0), 1000)).unwrap();
-    let (history, _) = lib.listening_history(&ListenFilter::default(), "", 0, 10).unwrap();
+    let (history, _) = lib.listening_history(&ListenFilter::default(), "", true, 0, 10).unwrap();
     assert_eq!(history[0].artwork_path.as_deref(), Some("/covers/server-disc.jpg"));
     assert_eq!(history[1].artwork_path.as_deref(), Some("/covers/album.jpg"));
 }
@@ -428,4 +428,49 @@ fn a_period_counts_what_was_heard_for_the_first_time_in_it() {
     assert_eq!(lib.listening_firsts(&period(20 * 86_400, 30 * 86_400)).unwrap(), (0, 0, 0));
     assert_eq!(lib.listening_firsts(&ListenFilter::default()).unwrap(), (2, 1, 2), "no bounds is the whole log");
     assert_eq!(lib.listening_first_day().unwrap().as_deref(), Some("1970-01-02"));
+}
+
+#[test]
+fn the_history_leaves_skipped_listens_out_unless_asked_for_them() {
+    let lib = fixture();
+    for (at, heard) in [(3600, 1000), (7200, 100), (10800, 1000)] {
+        lib.record_listen(&event(&lib, 1, at, Some(0), heard)).unwrap();
+    }
+    let filter = ListenFilter::default();
+    let (heard, total) = lib.listening_history(&filter, "", false, 0, 10).unwrap();
+    assert_eq!(total, 2, "the total counts what the page shows");
+    assert_eq!(heard.iter().map(|e| e.started_at).collect::<Vec<_>>(), [10800, 3600]);
+    assert!(heard.iter().all(|e| !e.skipped));
+    let (all, total) = lib.listening_history(&filter, "", true, 0, 10).unwrap();
+    assert_eq!((all.len(), total), (3, 3));
+}
+
+#[test]
+fn a_ranking_goes_a_page_at_a_time_says_its_total_and_leaves_unnamed_listens_out() {
+    let lib = fixture();
+    // Singer A three times, Singer B once, one listen of a track with no artist.
+    lib.db.execute_batch("INSERT INTO tracks(id, source_id, external_id, title, artist, album_id, added_at) VALUES (3, 1, 'nameless', 'Nameless', '', NULL, 0);").unwrap();
+    for (at, track) in [(3600, 1), (7200, 1), (10800, 1), (14400, 2), (18000, 3)] {
+        lib.record_listen(&event(&lib, track, at, Some(0), 1000)).unwrap();
+    }
+    let filter = ListenFilter::default();
+    let (first, total) = lib.listening_ranking(&filter, ListenDimension::Artist, ListenOrder::Plays, 0, 1).unwrap();
+    assert_eq!(total, 2, "the nameless artist is not ranked");
+    assert_eq!((first[0].label.as_str(), first[0].metrics.plays), ("Singer A", 3));
+    let (second, _) = lib.listening_ranking(&filter, ListenDimension::Artist, ListenOrder::Plays, 1, 1).unwrap();
+    assert_eq!(second[0].label, "Singer B");
+    let (genres, total) = lib.listening_ranking(&filter, ListenDimension::Genre, ListenOrder::Plays, 0, 10).unwrap();
+    assert_eq!(total, 2);
+    assert_eq!(genres.iter().map(|b| (b.label.as_str(), b.metrics.plays)).collect::<Vec<_>>(), [("Rock", 4), ("Blues", 3)]);
+    let early = ListenFilter { until: Some(7201), ..ListenFilter::default() };
+    assert_eq!(lib.listening_ranking(&early, ListenDimension::Artist, ListenOrder::Plays, 0, 10).unwrap().1, 1);
+}
+
+#[test]
+fn a_local_day_ends_where_the_next_one_starts() {
+    let lib = fixture();
+    let start = lib.local_date_start("2026-10-09").unwrap();
+    let end = lib.local_date_end("2026-10-09").unwrap();
+    assert_eq!(end, lib.local_date_start("2026-10-10").unwrap());
+    assert!(end > start);
 }

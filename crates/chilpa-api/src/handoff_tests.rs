@@ -606,7 +606,7 @@ fn station_history(play: u64, name: Option<&str>) {
     assert_eq!([listen.context.title.as_str(), listen.context.artist.as_str(), listen.context.album.as_str()], [title, "", "Radio"]);
     say(&mut api, play, closed(seconds(3), How::Completed));
     let filter = ListenFilter { from: Some(at), until: Some(at + 1), ..Default::default() };
-    let (rows, _) = api.library().unwrap().listening_history(&filter, "", 0, 10).unwrap();
+    let (rows, _) = api.library().unwrap().listening_history(&filter, "", true, 0, 10).unwrap();
     assert_eq!(rows.len(), 1);
     assert_eq!([rows[0].title.as_str(), rows[0].artist.as_str(), rows[0].album.as_str()], [title, "", "Radio"]);
 }

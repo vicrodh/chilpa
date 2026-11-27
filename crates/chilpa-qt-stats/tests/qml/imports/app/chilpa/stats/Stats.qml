@@ -24,6 +24,7 @@ QtObject {
         return JSON.stringify({
             kind: kind, anchor: past ? anchor : "2026-10-09", now: "2026-10-09", today: !past, current: !past,
             earlier: kind === "all" ? "" : "2026-10-01", later: past ? "2026-10-09" : "",
+            from: kind === "all" ? "" : "2026-10-05", to: kind === "all" ? "" : "2026-10-09",
             range: kind + " " + (past ? anchor : "now"), comparison: past ? "vs before" : "This week vs Last week",
             plays: past ? 11 : 10, plays_change: past ? -10 : 25,
             listened: "1 h 2 min", listened_change: null,
@@ -66,13 +67,30 @@ QtObject {
             new_tracks: 63, new_albums: 24, new_artists: 13
         })
     }
-    function history(page, perPage, query, rev) {
-        const all = query === "" ? total : 3
+    // The skipped listens add a fifth when they show; a span of days keeps
+    // a dozen.
+    function history(page, perPage, query, from, to, withSkipped, rev) {
+        asked.push("history:" + from + ":" + to + ":" + withSkipped)
+        const shown = withSkipped ? total + Math.floor(total / 5) : total
+        const all = query !== "" ? 3 : (from !== "" || to !== "") ? 12 : shown
         const pages = Math.max(1, Math.ceil(all / perPage))
         const at = Math.min(page, pages)
         const count = Math.max(0, Math.min(perPage, all - (at - 1) * perPage))
         const rows = Array.from({ length: count }, (_, i) => ({ day: i < 2 ? "Today" : "Yesterday", clock: "08:0" + (i % 10), title: (query === "" ? "Track " : "Match ") + ((at - 1) * perPage + i + 1), artist: "Mora Vale", album: "Faded Lines", played: "0:31", length: "4:00", quality: "16/44.1", bit_perfect: i === 0, skipped: i === 1, art: "", album_id: 7 }))
-        return JSON.stringify({ page: at, pages: pages, per_page: perPage, total: all, rows: rows })
+        return JSON.stringify({ page: at, pages: pages, per_page: perPage, total: all, rows: rows, from: from, to: to, first: "2025-03-01", today: "2026-10-09", with_skipped: withSkipped })
+    }
+    // 75 artists, 40 records or 12 genres; a span of days keeps 5.
+    function ranking(kind, from, to, page, perPage, rev) {
+        asked.push("ranking:" + kind + ":" + from + ":" + to)
+        const all = (from !== "" || to !== "") ? 5 : kind === "albums" ? 40 : kind === "genres" ? 12 : 75
+        const pages = Math.max(1, Math.ceil(all / perPage))
+        const at = Math.min(page, pages)
+        const count = Math.max(0, Math.min(perPage, all - (at - 1) * perPage))
+        const rows = Array.from({ length: count }, (_, i) => {
+            const rank = (at - 1) * perPage + i + 1
+            return { rank: rank, name: kind + " " + rank, title: kind + " " + rank, artist: kind === "albums" ? "Mora Vale" : "", art: "", id: kind === "albums" ? rank : 0, plays: 200 - rank, listened: rank + " min" }
+        })
+        return JSON.stringify({ kind: kind, from: from, to: to, first: "2025-03-01", today: "2026-10-09", page: at, pages: pages, per_page: perPage, total: all, most: 199, rows: rows })
     }
     function exportHistory() {
         exports.push("csv")

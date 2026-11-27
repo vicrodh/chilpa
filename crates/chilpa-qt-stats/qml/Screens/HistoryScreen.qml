@@ -13,7 +13,8 @@ import "../Components"
 // day each fell on, in fixed columns, rich or compact as the track lists
 // are: a page of 20, 50 or 100 at a time, the pages below it and, apart
 // from them, how many a page shows, which is kept. The search keeps the
-// listens whose track, artist or record hold every word.
+// listens whose track, artist or record hold every word; a span of days
+// keeps those days; skipped listens show only when asked for.
 Item {
     id: history
 
@@ -21,8 +22,11 @@ Item {
     property int perPage: sizes.indexOf(Number(SettingsModel.kept("ui.history.perPage"))) >= 0 ? Number(SettingsModel.kept("ui.history.perPage")) : 20
     property int at: 1
     property string query
+    property string from
+    property string to
+    property bool withSkipped: false
     readonly property bool rich: SettingsModel.density === "rich"
-    readonly property var doc: JSON.parse(Stats.history(at, perPage, query, I18n.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev) || "{}")
+    readonly property var doc: JSON.parse(Stats.history(at, perPage, query, from, to, withSkipped, I18n.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev) || "{}")
     readonly property var rows: doc.rows || []
     readonly property real wide: Math.min(width - 2 * Metrics.contentX, Charts.widest) // derived: padding on both sides
 
@@ -61,7 +65,39 @@ Item {
             font.pointSize: Type.body
             color: Theme.color.textSecondary
         }
+        Row {
+            anchors.right: search.left
+            anchors.rightMargin: Metrics.gap12
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Metrics.gap8
+
+            DateRange {
+                objectName: "historyRange"
+                anchors.verticalCenter: parent.verticalCenter
+                from: history.from
+                to: history.to
+                latest: history.doc.today || ""
+                onChosen: (from, to) => {
+                    history.from = from
+                    history.to = to
+                    history.show(1)
+                }
+            }
+            IconButton {
+                objectName: "historySkipped"
+                anchors.verticalCenter: parent.verticalCenter
+                glyph: Icons.playerSkipForwardFilled
+                filled: true
+                checked: history.withSkipped
+                tip: history.withSkipped ? I18n.tr("Hide skipped listens", I18n.rev) : I18n.tr("Show skipped listens", I18n.rev)
+                onClicked: {
+                    history.withSkipped = !history.withSkipped
+                    history.show(1)
+                }
+            }
+        }
         Kit.SearchField {
+            id: search
             objectName: "historySearch"
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
@@ -132,7 +168,7 @@ Item {
         Text {
             anchors.centerIn: parent
             visible: history.rows.length === 0
-            text: history.query === "" ? I18n.tr("Nothing played yet.", I18n.rev) : I18n.tr("No listens match.", I18n.rev)
+            text: (history.doc.first || "") === "" ? I18n.tr("Nothing played yet.", I18n.rev) : I18n.tr("No listens match.", I18n.rev)
             font.pointSize: Type.body
             color: Theme.color.textTertiary
         }

@@ -5,8 +5,9 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
 // One name of a top list: its place, its picture, what it is and whose,
-// its plays, and a thin bar for how near it came to the first. The first
-// is drawn larger; an artist's picture is round.
+// its plays (and, given, the time it was heard), and a thin bar for how
+// near it came to the first. The first is drawn larger; an artist's
+// picture is round.
 Item {
     id: row
 
@@ -20,6 +21,9 @@ Item {
     property bool lead: false
     property bool clickable: true
     property color tint: Theme.color.accent
+    property string note
+    // Room for the place: wider in a ranking that runs to hundreds.
+    property real rankWidth: Metrics.gap16
     readonly property int side: lead ? Charts.thumbLead : Charts.thumb
 
     signal clicked()
@@ -33,7 +37,7 @@ Item {
     }
     Text {
         id: place
-        width: Metrics.gap16
+        width: row.rankWidth
         anchors.verticalCenter: parent.verticalCenter
         horizontalAlignment: Text.AlignRight
         text: row.rank
@@ -87,7 +91,7 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap4
         anchors.verticalCenter: parent.verticalCenter
-        text: I18n.trCount("{} play", "{} plays", row.plays, I18n.rev)
+        text: I18n.trCount("{} play", "{} plays", row.plays, I18n.rev) + (row.note !== "" ? " · " + row.note : "")
         font.pointSize: Type.small
         font.features: { "tnum": 1 }
         color: Theme.color.textSecondary

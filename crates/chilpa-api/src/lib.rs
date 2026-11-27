@@ -53,6 +53,7 @@ mod scan_policy;
 pub use scan_state::{LibraryFolder, ScanPhase, ScanPolicy, ScanStatus, ScanSummary};
 mod listening_export;
 mod listening_period;
+mod listening_ranking;
 mod listening_mosaic;
 mod listening_recap;
 mod listening_stats;

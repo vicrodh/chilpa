@@ -62,6 +62,11 @@ Item {
         HistoryRow { width: parent.width; index: 1; listen: ({ clock: "07:58", title: "Northern Cross", artist: "May'n", album: "Macross Frontier", played: "0:31", length: "4:57", quality: "24/96", skipped: true }) }
         HistoryRow { width: parent.width; index: 2; rich: false; listen: ({ clock: "07:51", title: "Diamond Crevasse", artist: "May'n", album: "Macross Frontier", played: "5:10", length: "5:10", quality: "16/44.1", bit_perfect: true }) }
         Pager { page: 4; pages: 12 }
+        Row {
+            spacing: Metrics.gap24
+            DateRange { latest: "2026-10-09" }
+            DateRange { from: "2026-10-01"; to: "2026-10-09"; latest: "2026-10-09" }
+        }
         PillButton {
             id: pickerSample
             glyph: Icons.calendar
@@ -95,6 +100,7 @@ Item {
             spacing: Metrics.gap16
             TopTile { width: Charts.tileMin; height: Charts.tileTall; kind: "artists"; title: "Artists"; numbers: gallery.week.artists }
             RankRow { width: Charts.tileMin; rank: 2; title: "Yoko Kanno"; detail: "Macross Frontier"; plays: 41; most: 64 }
+            RankRow { width: Charts.tileMin; rank: 128; rankWidth: Metrics.gap24 + Metrics.gap8; title: "Lion"; detail: "May'n"; plays: 3; most: 64; note: "12 min" } // derived: a place in the hundreds
             FactCard { width: Charts.factMin; height: Charts.factTall; glyph: Icons.calendar; value: "Sat 4 Oct"; label: "Busiest day" }
         }
     }

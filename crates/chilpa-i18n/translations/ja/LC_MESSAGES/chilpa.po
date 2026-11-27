@@ -509,6 +509,9 @@ msgstr "すべての作曲者"
 msgid "All compositions"
 msgstr "すべての作品"
 
+msgid "All days"
+msgstr "全期間"
+
 msgid "All discs"
 msgstr "すべてのディスク"
 
@@ -3144,6 +3147,9 @@ msgstr ""
 msgid "Finished"
 msgstr "完了"
 
+msgid "First day"
+msgstr "開始日"
+
 msgid "First line of the status. Fields: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%. Text in [ ] shows only when a field in it has a value. Functions: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr. Empty brings back the default."
 msgstr "ステータスの1行目。フィールド: %title%, %artist%, %album%, %albumartist%, %date%, %year%, %genre%, %track%, %disc%, %codec%, %samplerate%, %bitdepth%, %duration%, %source%。[ ] 内のテキストは、中のフィールドに値があるときだけ表示されます。関数: $if, $if2, $if3, $and, $or, $not, $xor, $ifequal, $ifgreater, $iflonger, $upper, $lower, $caps, $trim, $left, $right, $num, $replace, $len, $abbr。空にすると既定値に戻ります。"
 
@@ -3530,6 +3536,9 @@ msgstr "確認の詳細を隠す"
 
 msgid "Hide sidebar"
 msgstr "サイドバーを非表示"
+
+msgid "Hide skipped listens"
+msgstr "スキップした再生を隠す"
 
 msgid "Hide the console line"
 msgstr "コンソール行を隠す"
@@ -4136,6 +4145,9 @@ msgstr "過去3か月"
 
 msgid "Last check"
 msgstr "前回のチェック"
+
+msgid "Last day"
+msgstr "終了日"
 
 msgid "Last file changed: {}"
 msgstr ""
@@ -5258,6 +5270,9 @@ msgstr "まだ何もありません。ライブラリにフォルダーを追加
 
 msgid "Nothing here."
 msgstr "ここには何もありません。"
+
+msgid "Nothing in these days."
+msgstr "この期間には何もありません。"
 
 msgid "Nothing in this period."
 msgstr "この期間には何もありません。"
@@ -7364,6 +7379,9 @@ msgstr "確認の詳細を表示"
 msgid "Show saved tracks in Tracks"
 msgstr "保存したトラックを「トラック」に表示"
 
+msgid "Show skipped listens"
+msgstr "スキップした再生を表示"
+
 msgid "Show source recommendations by default in Home"
 msgstr "ホームにソースのおすすめを既定で表示"
 
@@ -8937,8 +8955,17 @@ msgstr "ツール"
 msgid "Top album"
 msgstr "トップアルバム"
 
+msgid "Top albums"
+msgstr "トップアルバム"
+
 msgid "Top artist"
 msgstr "トップアーティスト"
+
+msgid "Top artists"
+msgstr "トップアーティスト"
+
+msgid "Top genres"
+msgstr "トップジャンル"
 
 msgid "Top level"
 msgstr "最上位"
@@ -11258,6 +11285,10 @@ msgstr[0] "{}フォルダー"
 msgid "{} folder comes in:"
 msgid_plural "{} folders come in:"
 msgstr[0] "{} 個のフォルダを取り込みます："
+
+msgid "{} genre"
+msgid_plural "{} genres"
+msgstr[0] "{}ジャンル"
 
 msgid "{} has no place for \"{}\""
 msgstr "{}に「{}」の置き場所がありません"
