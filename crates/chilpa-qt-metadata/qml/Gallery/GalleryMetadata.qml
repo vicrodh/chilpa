@@ -33,7 +33,7 @@ TitledFlow {
                 field("genres", "", { mixed: true }), field("catalog_number", "DGC-24425", { overridden: true })],
         tracks: [{ id: 1, file: "01 Smells Like Teen Spirit.flac", inside_a_disc: false,
                    fields: [field("title", "Smells Like Teen Spirit", { dirty: true }), field("artist_credit", "Nirvana"),
-                            field("track_number", "1"), field("disc_number", "1")] },
+                            field("track_number", "1"), field("disc_number", "1"), field("work", "Nevermind Suite")] },
                  { id: 2, file: "02 In Bloom.flac", inside_a_disc: false,
                    fields: [field("title", "In Bloom"), field("artist_credit", "Nirvana"), field("track_number", "x", { invalid: "a number from 1 to 9999, or nothing" }), field("disc_number", "1")] }],
         cover: { path: "", waiting: true, width: 1400, height: 1400, from: "musicbrainz" },

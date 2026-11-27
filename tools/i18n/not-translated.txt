@@ -30,3 +30,5 @@ Chilpa Mini Player
 E
 # The shared AI content glyph is fixed; its full accessible label is translated.
 AI
+# A work's mark in the metadata editor is a fixed W; the work's name shows on hover.
+W
