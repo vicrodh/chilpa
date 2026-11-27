@@ -1,8 +1,16 @@
-//! The genres a Discover page was last filtered by, put back when the page
-//! is opened again without them.
+//! The genres a plugin's Discover was last filtered by, put back when one
+//! of its tabs is opened again without them. A plugin carries its filter
+//! from tab to tab, so the filter is the plugin's and not a tab's: chosen on
+//! one tab, it is there when the sidebar opens another.
 
-/// Where the Discover page of a plugin keeps the genres it was filtered by.
-pub fn preference(plugin: &str, tab: &str) -> String {
+/// Where a plugin keeps the genres its Discover was last filtered by.
+pub fn preference(plugin: &str) -> String {
+    format!("ui.source.{plugin}.discover.genres")
+}
+
+/// Where a tab kept them before they were the plugin's; still read, for a
+/// filter chosen then and not chosen again since.
+fn tab_preference(plugin: &str, tab: &str) -> String {
     format!("ui.source.{plugin}.discover.{tab}.genres")
 }
 
@@ -14,7 +22,7 @@ pub fn remembered(key: &str, kept: impl Fn(&str) -> Option<String>) -> String {
     if plugin.is_empty() || tab.is_empty() || tab.contains([':', '|']) {
         return key.to_string();
     }
-    let genres = kept(&preference(plugin, tab)).unwrap_or_default();
+    let genres = kept(&preference(plugin)).or_else(|| kept(&tab_preference(plugin, tab))).unwrap_or_default();
     let valid = !genres.is_empty() && genres.split(',').all(|id| !id.is_empty() && id.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-')));
     if valid { format!("{key}:{genres}") } else { key.to_string() }
 }
@@ -32,12 +40,31 @@ mod tests {
     use super::*;
 
     fn kept(key: &str) -> Option<String> {
-        (key == "ui.source.fixture.discover.home.genres").then(|| "12,40".to_string())
+        (key == "ui.source.fixture.discover.genres").then(|| "12,40".to_string())
     }
 
     #[test]
     fn a_discover_tab_opened_bare_gets_its_genres_back() {
         assert_eq!(remembered("fixture native:discover:home", kept), "fixture native:discover:home:12,40");
+    }
+
+    #[test]
+    fn genres_chosen_on_one_tab_come_back_on_another() {
+        // Chosen on Editor's Picks; the sidebar opens Home.
+        assert_eq!(remembered("fixture native:discover:editors", kept), "fixture native:discover:editors:12,40");
+        assert_eq!(remembered("fixture native:discover:home", kept), "fixture native:discover:home:12,40");
+    }
+
+    #[test]
+    fn a_filter_kept_by_a_tab_before_is_still_read_until_one_is_chosen_again() {
+        let old = |key: &str| (key == "ui.source.fixture.discover.home.genres").then(|| "7".to_string());
+        assert_eq!(remembered("fixture native:discover:home", old), "fixture native:discover:home:7");
+        let cleared = |key: &str| match key {
+            "ui.source.fixture.discover.genres" => Some(String::new()),
+            "ui.source.fixture.discover.home.genres" => Some("7".to_string()),
+            _ => None,
+        };
+        assert_eq!(remembered("fixture native:discover:home", cleared), "fixture native:discover:home", "a cleared filter stays cleared");
     }
 
     #[test]
