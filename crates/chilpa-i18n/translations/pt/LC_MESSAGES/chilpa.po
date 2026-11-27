@@ -3008,6 +3008,9 @@ msgstr "Exportar diagnóstico"
 msgid "Export listening history"
 msgstr "Exportar histórico de reprodução"
 
+msgid "Export plain data…"
+msgstr "Exportar só os dados…"
+
 msgid "Export playlist"
 msgstr "Exportar playlist"
 
@@ -4537,6 +4540,9 @@ msgstr ""
 
 msgid "Manage"
 msgstr "Gerenciar"
+
+msgid "Manage offline music"
+msgstr "Gerenciar a música offline"
 
 msgid "Manage playlists"
 msgstr "Gerenciar playlists"
@@ -8204,6 +8210,9 @@ msgstr ""
 
 msgid "The file tags have been written."
 msgstr ""
+
+msgid "The files downloaded from your self-hosted servers: what is kept, its limit and each server's folder."
+msgstr "Os arquivos baixados dos seus servidores próprios: o que fica guardado, o limite e a pasta de cada servidor."
 
 msgid "The filter cannot be read."
 msgstr "Não é possível ler o filtro."

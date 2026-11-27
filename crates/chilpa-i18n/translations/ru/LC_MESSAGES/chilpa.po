@@ -3010,6 +3010,9 @@ msgstr "Экспорт диагностики"
 msgid "Export listening history"
 msgstr "Экспорт истории прослушивания"
 
+msgid "Export plain data…"
+msgstr "Экспорт только данных…"
+
 msgid "Export playlist"
 msgstr "Экспорт плейлиста"
 
@@ -4542,6 +4545,9 @@ msgstr ""
 
 msgid "Manage"
 msgstr "Управление"
+
+msgid "Manage offline music"
+msgstr "Управление музыкой офлайн"
 
 msgid "Manage playlists"
 msgstr "Управление плейлистами"
@@ -8214,6 +8220,9 @@ msgstr ""
 
 msgid "The file tags have been written."
 msgstr ""
+
+msgid "The files downloaded from your self-hosted servers: what is kept, its limit and each server's folder."
+msgstr "Файлы, загруженные с ваших собственных серверов: что хранится, лимит и папка каждого сервера."
 
 msgid "The filter cannot be read."
 msgstr "Не удалось прочитать фильтр."

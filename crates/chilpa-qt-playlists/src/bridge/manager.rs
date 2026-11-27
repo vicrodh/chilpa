@@ -38,17 +38,26 @@ pub mod qobject {
         /// Reads every server's playlists again.
         #[qinvokable]
         fn refresh_servers(self: &PlaylistManager);
-        /// Writes a playlist to a file, XSPF or M3U8 by its extension: what
-        /// went in, what had no place there and why it failed, as JSON.
+        /// Asks where with the system's save dialog and writes the list
+        /// there: a playlist of the library (`id` above 0) or a source's
+        /// (below), with its files or as plain data. `exported` says how it
+        /// went.
         #[qinvokable]
-        fn export_to(self: &PlaylistManager, id: i64, path: &QString) -> QString;
+        fn export_list(self: Pin<&mut PlaylistManager>, id: i64, plain: bool);
+        /// What writing a list left, as JSON: written, left_out and error.
+        #[qsignal]
+        fn exported(self: Pin<&mut PlaylistManager>, result: &QString);
         /// Whether a name carries a character a source may refuse.
         #[qinvokable]
         fn name_is_unusual(self: &PlaylistManager, name: &QString) -> bool;
     }
+
+    impl cxx_qt::Threading for PlaylistManager {}
 }
 
 use chilpa_qt_kit::app;
+use core::pin::Pin;
+use cxx_qt::Threading;
 use cxx_qt_lib::QString;
 
 #[derive(Default)]
@@ -78,9 +87,18 @@ impl qobject::PlaylistManager {
     pub fn server_playlist(&self, id: i64, _rev: i32) -> QString {
         QString::from(&app::with(|api| api.server_playlist_json(id)))
     }
-    pub fn export_to(&self, id: i64, path: &QString) -> QString {
-        let path = std::path::PathBuf::from(path.to_string());
-        QString::from(&app::with(|api| api.export_playlist(id, &path)).json())
+    pub fn export_list(self: Pin<&mut Self>, id: i64, plain: bool) {
+        let suggested = app::with(|api| api.export_file_name(id, plain));
+        let filter = |name: String, extension: &str| (name, vec![extension.to_string()]);
+        let mut filters = vec![filter(app::t("JSON playlist"), "json"), filter(app::t("XSPF playlist"), "xspf")];
+        if !plain && id > 0 {
+            filters.insert(0, filter(app::t("M3U8 playlist"), "m3u8"));
+        }
+        let ask = chilpa_qt_kit::dialogs::Ask::Save { suggested: chilpa_qt_kit::dialogs::file_name(&suggested), filters };
+        chilpa_qt_kit::dialogs::ask(self.qt_thread(), app::t("Export playlist"), ask, move |manager, path| {
+            let result = app::with(|api| api.export_list(id, &path, plain)).json();
+            manager.exported(&QString::from(&result));
+        });
     }
     pub fn name_is_unusual(&self, name: &QString) -> bool {
         chilpa_api::playlist_name_is_unusual(&name.to_string())

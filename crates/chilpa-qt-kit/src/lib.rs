@@ -4,6 +4,7 @@
 //! It depends on the facade and on nothing of the window.
 
 pub mod app;
+pub mod dialogs;
 pub mod format;
 pub mod worker;
 pub mod browse;
@@ -18,6 +19,7 @@ pub mod bridge {
     pub mod prefs;
     pub mod pulse;
     pub mod queue_activity;
+    pub mod system_dialogs;
     pub mod theme;
     pub mod track_columns;
 }

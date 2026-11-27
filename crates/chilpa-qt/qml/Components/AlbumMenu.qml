@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import app.chilpa.offline
 import app.chilpa.folders
+import app.chilpa.playlists
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
@@ -60,6 +61,8 @@ CascadingMenu {
         ]
         // Out of the library, its files untouched: Settings > Library brings it back.
         if (one && id > 0) all.push({separator:true}, {text:I18n.tr("Remove from library…", I18n.rev),act:"remove"})
+        // A source's playlist has no file here: its titles, artists and albums go to a file.
+        if (one && id < 0 && /^playlist:/.test(nativeInfo.ref || "")) all.push({separator:true}, {text:I18n.tr("Export plain data…", I18n.rev),act:"exportPlain"})
         if (deletable) all.push({separator:true}, {text:I18n.tr("Delete from server…", I18n.rev),act:"server_delete",glyph:Icons.trash,enabled:!Prefs.protectLibrary})
         const offline = one && id > 0 ? JSON.parse(Offline.menu("album", JSON.stringify([id]))) : []
         if (offline.length > 0) all.push({separator:true}, ...offline)
@@ -78,6 +81,7 @@ CascadingMenu {
         switch (act) {
         case "server_delete": Sources.serverMediaRequested("album", albumId); break;
         case "remove": RemovedAlbums.ask(albumId, title); break
+        case "exportPlain": PlaylistManager.exportList(albumId, true); break
         case "play": if (playAction) playAction(); else AlbumActions.play(albumId, false); break
         case "next": AlbumActions.playNext(albumId); break
         case "later": AlbumActions.playLater(albumId, title); break

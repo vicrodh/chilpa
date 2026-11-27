@@ -3014,6 +3014,9 @@ msgstr "匯出診斷資訊"
 msgid "Export listening history"
 msgstr "匯出聆聽歷史"
 
+msgid "Export plain data…"
+msgstr "僅匯出資料…"
+
 msgid "Export playlist"
 msgstr "匯出播放清單"
 
@@ -4540,6 +4543,9 @@ msgstr ""
 
 msgid "Manage"
 msgstr "管理"
+
+msgid "Manage offline music"
+msgstr "管理離線音樂"
 
 msgid "Manage playlists"
 msgstr "管理播放清單"
@@ -8202,6 +8208,9 @@ msgstr ""
 
 msgid "The file tags have been written."
 msgstr ""
+
+msgid "The files downloaded from your self-hosted servers: what is kept, its limit and each server's folder."
+msgstr "從自架伺服器下載的檔案：保留哪些、上限，以及每台伺服器的資料夾。"
 
 msgid "The filter cannot be read."
 msgstr ""

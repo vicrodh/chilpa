@@ -3008,6 +3008,9 @@ msgstr "Export diagnostics"
 msgid "Export listening history"
 msgstr ""
 
+msgid "Export plain data…"
+msgstr ""
+
 msgid "Export playlist"
 msgstr ""
 
@@ -4536,6 +4539,9 @@ msgid "Makeup gain"
 msgstr ""
 
 msgid "Manage"
+msgstr ""
+
+msgid "Manage offline music"
 msgstr ""
 
 msgid "Manage playlists"
@@ -8203,6 +8209,9 @@ msgid "The file selection belongs to another metadata session."
 msgstr ""
 
 msgid "The file tags have been written."
+msgstr ""
+
+msgid "The files downloaded from your self-hosted servers: what is kept, its limit and each server's folder."
 msgstr ""
 
 msgid "The filter cannot be read."

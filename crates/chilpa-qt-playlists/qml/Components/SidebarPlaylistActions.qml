@@ -61,7 +61,8 @@ Item {
             {text: I18n.tr("Edit playlist", I18n.rev), action: "edit"},
             {text: I18n.tr("Delete…", I18n.rev), action: "deletePlaylist"})
         // Any playlist goes to a file: its tracks as they stand here.
-        if (!folder && value.playlistId > 0) entries.push({text: I18n.tr("Export…", I18n.rev), action: "export"})
+        if (!folder && value.playlistId > 0) entries.push({text: I18n.tr("Export…", I18n.rev), action: "export"},
+            {text: I18n.tr("Export plain data…", I18n.rev), action: "exportPlain"})
         entries = entries.concat([
             {separator: true},
             {text: I18n.tr("Move up", I18n.rev), action: "move", value: -1},
@@ -114,7 +115,8 @@ Item {
             case "open": actions.sidebar.openPlaylist(row.playlistId); break
             case "edit": if (row.local || row.server) editDialog.show(row.playlistId); else actions.sidebar.openPlaylist(row.playlistId); break
             case "hide": Playlists.setVisible(row.playlistId, false); break
-            case "export": exporter.show(row.playlistId); break
+            case "export": PlaylistManager.exportList(row.playlistId, false); break
+            case "exportPlain": PlaylistManager.exportList(row.playlistId, true); break
             case "moveFolder": folderDialog.move(row); break
             case "editNativeFolder": folderDialog.showNative(row); break
             case "file": Playlists.moveToFolder(row.playlistId, item.value); break
@@ -141,5 +143,4 @@ Item {
     }
     PlaylistFolderDialog { id: folderDialog }
     PlaylistEditDialog { id: editDialog }
-    PlaylistExport { id: exporter }
 }

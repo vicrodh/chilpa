@@ -55,11 +55,12 @@ Item {
             width: parent.width
         }
         // The page with every download, its limit and each server's folder.
-        PillButton {
-            objectName: "offlineDownloads"
-            text: I18n.tr("Offline music", I18n.rev)
-            glyph: Icons.download
-            onClicked: Offline.requested("downloads", "[]")
+        Item {
+            width: parent.width; height: Math.max(offlineSaid.height, offlinePage.height)
+            SettingText { id: offlineSaid; width: parent.width - offlinePage.width - Metrics.gap16; anchors.verticalCenter: parent.verticalCenter
+                title: I18n.tr("Manage offline music", I18n.rev); description: I18n.tr("The files downloaded from your self-hosted servers: what is kept, its limit and each server's folder.", I18n.rev) }
+            PillButton { id: offlinePage; objectName: "offlineDownloads"; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                text: I18n.tr("Offline music", I18n.rev); glyph: Icons.download; onClicked: Offline.requested("downloads", "[]") }
         }
         ServerTableRow { width: parent.width; heading: true }
     }

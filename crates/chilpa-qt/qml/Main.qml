@@ -13,6 +13,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as KitParts
 import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns" as FolderParts
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Components" as PlaylistParts
 import "Patterns"
 
 // The window (design/02): the floating sidebar, the tab bar, the screen of
@@ -105,11 +106,7 @@ Window {
     }
     Driving.PlayerPlan { id: plan; window: window; content: contentPlane; tall: player.implicitHeight; away: idle.away }
 
-    PlayerIdle {
-        id: idle
-        target: window.contentItem
-        holding: player.pointed
-    }
+    PlayerIdle { id: idle; target: window.contentItem; holding: player.pointed }
 
     SelectionBar {
         z: 4
@@ -154,6 +151,7 @@ Window {
     Driving.StartupSplash { anchors.fill: parent; z: 1000 }
     KitParts.ResumeOffer {}
     FolderParts.RemovedAlbumsHost {}
+    PlaylistParts.PlaylistExport {}
     // A press outside the field that has the keyboard, or another view, takes it.
     FocusRelease { key: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.screen === "folders" ? "" : Navigation.routeKey].join(" ") }
 }
