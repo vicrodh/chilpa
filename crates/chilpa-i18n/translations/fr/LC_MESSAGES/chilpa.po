@@ -495,6 +495,9 @@ msgstr ""
 msgid "Albums in your library"
 msgstr ""
 
+msgid "Albums taken out of the library. Their files were not touched; any of them can come back."
+msgstr "Albums retirés de la bibliothèque. Leurs fichiers n’ont pas été touchés ; chacun peut revenir."
+
 msgid "All"
 msgstr "Tout"
 
@@ -1079,6 +1082,9 @@ msgstr "Bordure"
 
 msgid "Both"
 msgstr ""
+
+msgid "Bring back"
+msgstr "Rétablir"
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "Parcourez pour trouver un dossier de musique, ou saisissez son chemin complet."
@@ -4046,6 +4052,9 @@ msgstr "Italien"
 msgid "Its connection"
 msgstr "Sa connexion"
 
+msgid "Its files stay where they are, and it can come back from Settings > Library > Removed albums."
+msgstr "Ses fichiers restent où ils sont, et il peut revenir depuis Paramètres > Bibliothèque > Albums retirés."
+
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr "Sa musique est en cours d'analyse ; elle apparaît dans la bibliothèque au fur et à mesure."
 
@@ -4978,6 +4987,9 @@ msgstr "Aucun module d'accueil n'est disponible pour cette source."
 
 msgid "No active parametric EQ filters were found."
 msgstr "Aucun filtre d'EQ paramétrique actif n'a été trouvé."
+
+msgid "No album has been removed."
+msgstr "Aucun album n’a été retiré."
 
 msgid "No album tracks"
 msgstr ""
@@ -6623,6 +6635,9 @@ msgstr "Retirer des favoris"
 msgid "Remove from library"
 msgstr "Retirer de la bibliothèque"
 
+msgid "Remove from library…"
+msgstr "Retirer de la bibliothèque…"
+
 msgid "Remove from playlist"
 msgstr "Retirer de la playlist"
 
@@ -6675,6 +6690,12 @@ msgstr ""
 
 msgid "Remove {}?"
 msgstr "Supprimer {} ?"
+
+msgid "Remove “{}” from the library?"
+msgstr "Retirer « {} » de la bibliothèque ?"
+
+msgid "Removed albums"
+msgstr "Albums retirés"
 
 msgid "Remove…"
 msgstr "Supprimer…"
@@ -7511,6 +7532,9 @@ msgstr "Affiché au survol de la pochette, écrit comme le titre."
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Affiche les résultats sous le champ de recherche pendant la saisie. Désactivé, la saisie ouvre la page des résultats."
+
+msgid "Show…"
+msgstr "Afficher…"
 
 msgid "Shuffle"
 msgstr "Lecture aléatoire"
@@ -10642,6 +10666,12 @@ msgstr "le compte ne s'est pas connecté : {}"
 
 msgid "the address has to be https"
 msgstr "l'adresse doit être en https"
+
+msgid "the album could not be brought back: {}"
+msgstr "l'album n'a pas pu être rétabli : {}"
+
+msgid "the album could not be removed: {}"
+msgstr "l'album n'a pas pu être retiré : {}"
 
 msgid "the analysis stopped: {}"
 msgstr "l'analyse s'est arrêtée : {}"

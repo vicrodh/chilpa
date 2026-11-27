@@ -33,5 +33,6 @@ pub use store::ExportTrack;
 pub use store::is_busy;
 pub use store::{is_various, split_genres, letter_of, AlbumDisc, AlbumEdit, ArtistRole, EditTrack, Edited, Hosted, Put, TrackEdit, AlbumSort, BrowseTrack, FacetEntry, Filter, FolderEntry, Library, PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, Snapshot, Stats, StoredAlbum, StoredArtist, StoredPlaylist, StoredRoot, StoredTrack, Totals, TrackOrder, TrackStat, RecentRelease};
 pub use store::overlay::StoredOverlay;
+pub use store::removed::RemovedAlbum;
 pub use sidecar::{Home, Override, Scope, Sidecar, SidecarError};
 pub use store::order_keys::{first_name, nocase, AlbumKey, OrderKey};

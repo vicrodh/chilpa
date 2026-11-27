@@ -12,6 +12,7 @@ import "qrc:/qt/qml/app/chilpa/immersive/qml/Screens" as Overlay
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components" as KitParts
+import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns" as FolderParts
 import "Patterns"
 
 // The window (design/02): the floating sidebar, the tab bar, the screen of
@@ -152,6 +153,7 @@ Window {
     // Over everything until what has to be read before a click is read.
     Driving.StartupSplash { anchors.fill: parent; z: 1000 }
     KitParts.ResumeOffer {}
+    FolderParts.RemovedAlbumsHost {}
     // A press outside the field that has the keyboard, or another view, takes it.
     FocusRelease { key: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.screen === "folders" ? "" : Navigation.routeKey].join(" ") }
 }

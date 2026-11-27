@@ -6,4 +6,5 @@ pub mod bridge {
     pub mod folder_list;
     pub mod folder_view;
     pub mod folders;
+    pub mod removed_albums;
 }

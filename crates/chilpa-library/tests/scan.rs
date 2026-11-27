@@ -1095,3 +1095,41 @@ fn a_track_that_came_in_without_a_record_is_read_again() {
     assert_eq!(lib.album_tracks(albums[0].id).unwrap().len(), 2, "both on the record again");
     let _ = std::fs::remove_dir_all(root);
 }
+
+#[test]
+fn a_removed_album_stays_out_through_scans_until_it_is_brought_back() {
+    let Some(dir) = album("removed", 3) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+    let id = lib.albums(10, 0).unwrap()[0].id;
+    assert_eq!(lib.remove_album(id, 1_000).unwrap(), 3);
+    assert_eq!(lib.track_count(false).unwrap(), 0);
+    assert!(lib.albums(10, 0).unwrap().is_empty());
+
+    // Nothing changed on disk: the scan finds the same files.
+    scan_root(&lib, &dir).unwrap();
+    assert!(lib.albums(10, 0).unwrap().is_empty(), "a scan does not bring it back");
+
+    // A file rewritten is read again, and still stays out.
+    let first = dir.join("disc 1").join("01-track.flac");
+    let rewritten = dir.join("disc 1").join("01-track.tmp.flac");
+    let ok = Command::new("ffmpeg")
+        .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=880:duration=2", "-c:a", "flac"])
+        .args(["-metadata", "title=Track 1 (new)", "-metadata", "artist=Artist", "-metadata", "album=Disco", "-metadata", "track=1"])
+        .arg(&rewritten)
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+    assert!(ok);
+    std::fs::rename(&rewritten, &first).unwrap();
+    scan_root(&lib, &dir).unwrap();
+    assert_eq!(lib.track_count(false).unwrap(), 0, "a file read again stays out");
+
+    assert_eq!(lib.restore_album(id).unwrap(), 3);
+    assert_eq!(lib.track_count(false).unwrap(), 3);
+    assert_eq!(lib.albums(10, 0).unwrap().len(), 1);
+    let _ = std::fs::remove_dir_all(dir);
+}

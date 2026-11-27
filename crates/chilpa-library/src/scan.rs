@@ -365,7 +365,9 @@ pub fn scan_watched(
 
         if let Some((m, s, track)) = &known {
             report.changed |= lib.db.prepare_cached(
-                "UPDATE tracks SET present = 1, reachable = 1 WHERE id = ?1 AND (present <> 1 OR reachable <> 1)",
+                // A track taken out of the library stays out when its file is found.
+                "UPDATE tracks SET present = 1, reachable = 1 WHERE id = ?1 AND (present <> 1 OR reachable <> 1)
+                 AND NOT EXISTS (SELECT 1 FROM removed_tracks WHERE track_id = ?1)",
             )?.execute(params![track])? > 0;
             // A sidecar that changed makes its folder's files worth reading
             // again, though none of them did.
@@ -398,7 +400,7 @@ pub fn scan_watched(
         if known.is_none() {
             if let Some(moved) = moved_here(lib, root_id, mtime, size, inode(&meta))? {
                 lib.db.execute(
-                    "UPDATE tracks SET external_id = ?2, present = 1, reachable = 1 WHERE id = ?1",
+                    "UPDATE tracks SET external_id = ?2, present = NOT EXISTS (SELECT 1 FROM removed_tracks WHERE track_id = ?1), reachable = 1 WHERE id = ?1",
                     params![moved.track_id, path],
                 )?;
                 lib.db.execute(
@@ -528,7 +530,7 @@ impl Found<'_> {
             .collect::<rusqlite::Result<_>>()?;
         if !stale && !known.is_empty() && known.iter().all(|(_, m, s, t)| *m == mtime && *s == size && t.is_some() && evidence_read(lib, *t)) {
             for (path, _, _, track) in &known {
-                report.changed |= lib.db.execute("UPDATE tracks SET present = 1, reachable = 1 WHERE id = ?1 AND (present <> 1 OR reachable <> 1)", params![track])? > 0;
+                report.changed |= lib.db.execute("UPDATE tracks SET present = 1, reachable = 1 WHERE id = ?1 AND (present <> 1 OR reachable <> 1) AND NOT EXISTS (SELECT 1 FROM removed_tracks WHERE track_id = ?1)", params![track])? > 0;
                 readable.insert(path.clone());
             }
             report.seen += known.len();
@@ -834,7 +836,8 @@ fn save_track(
            track_number = excluded.track_number, disc_number = excluded.disc_number,
            duration_ms = excluded.duration_ms, sample_rate_hz = excluded.sample_rate_hz,
            bit_depth = excluded.bit_depth, channels = excluded.channels,
-           isrc = excluded.isrc, recording_mbid = excluded.recording_mbid, present = 1,
+           isrc = excluded.isrc, recording_mbid = excluded.recording_mbid,
+           present = NOT EXISTS (SELECT 1 FROM removed_tracks WHERE track_id = tracks.id),
            label = excluded.label, explicit = excluded.explicit,
            album_credit = excluded.album_credit, album_title = excluded.album_title,
            disc_total = excluded.disc_total, release_part = excluded.release_part,

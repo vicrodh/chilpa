@@ -495,6 +495,9 @@ msgstr ""
 msgid "Albums in your library"
 msgstr ""
 
+msgid "Albums taken out of the library. Their files were not touched; any of them can come back."
+msgstr ""
+
 msgid "All"
 msgstr ""
 
@@ -1078,6 +1081,9 @@ msgid "Border"
 msgstr ""
 
 msgid "Both"
+msgstr ""
+
+msgid "Bring back"
 msgstr ""
 
 msgid "Browse for a music folder, or type its full path."
@@ -4046,6 +4052,9 @@ msgstr ""
 msgid "Its connection"
 msgstr ""
 
+msgid "Its files stay where they are, and it can come back from Settings > Library > Removed albums."
+msgstr ""
+
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr ""
 
@@ -4977,6 +4986,9 @@ msgid "No Home modules are available for this source."
 msgstr ""
 
 msgid "No active parametric EQ filters were found."
+msgstr ""
+
+msgid "No album has been removed."
 msgstr ""
 
 msgid "No album tracks"
@@ -6623,6 +6635,9 @@ msgstr ""
 msgid "Remove from library"
 msgstr "Remove from library"
 
+msgid "Remove from library…"
+msgstr ""
+
 msgid "Remove from playlist"
 msgstr ""
 
@@ -6674,6 +6689,12 @@ msgid "Remove values"
 msgstr ""
 
 msgid "Remove {}?"
+msgstr ""
+
+msgid "Remove “{}” from the library?"
+msgstr ""
+
+msgid "Removed albums"
 msgstr ""
 
 msgid "Remove…"
@@ -7511,6 +7532,9 @@ msgstr "Shown when pointing at the cover, written like the title."
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "Shows results under the search box as you type. Off, typing opens the results page."
+
+msgid "Show…"
+msgstr ""
 
 msgid "Shuffle"
 msgstr ""
@@ -10641,6 +10665,12 @@ msgid "the account did not connect: {}"
 msgstr ""
 
 msgid "the address has to be https"
+msgstr ""
+
+msgid "the album could not be brought back: {}"
+msgstr ""
+
+msgid "the album could not be removed: {}"
 msgstr ""
 
 msgid "the analysis stopped: {}"

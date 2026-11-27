@@ -494,6 +494,9 @@ msgstr ""
 msgid "Albums in your library"
 msgstr ""
 
+msgid "Albums taken out of the library. Their files were not touched; any of them can come back."
+msgstr "ライブラリから外したアルバムです。ファイルには手を加えていないので、どれでも戻せます。"
+
 msgid "All"
 msgstr "すべて"
 
@@ -1078,6 +1081,9 @@ msgstr "境界線"
 
 msgid "Both"
 msgstr ""
+
+msgid "Bring back"
+msgstr "戻す"
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "音楽フォルダーを参照するか、フルパスを入力してください。"
@@ -4041,6 +4047,9 @@ msgstr "イタリア語"
 msgid "Its connection"
 msgstr "接続"
 
+msgid "Its files stay where they are, and it can come back from Settings > Library > Removed albums."
+msgstr "ファイルはそのまま残ります。設定 > ライブラリ > 外したアルバム から戻せます。"
+
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr "音楽を読み取り中です。届いた順にライブラリに表示されます。"
 
@@ -4973,6 +4982,9 @@ msgstr "このソースで使えるホームのモジュールはありません
 
 msgid "No active parametric EQ filters were found."
 msgstr "有効なパラメトリックEQフィルターが見つかりませんでした。"
+
+msgid "No album has been removed."
+msgstr "外したアルバムはありません。"
 
 msgid "No album tracks"
 msgstr ""
@@ -6618,6 +6630,9 @@ msgstr "お気に入りから削除"
 msgid "Remove from library"
 msgstr "ライブラリから削除"
 
+msgid "Remove from library…"
+msgstr "ライブラリから外す…"
+
 msgid "Remove from playlist"
 msgstr "プレイリストから削除"
 
@@ -6669,6 +6684,12 @@ msgstr ""
 
 msgid "Remove {}?"
 msgstr "{}を削除しますか？"
+
+msgid "Remove “{}” from the library?"
+msgstr "「{}」をライブラリから外しますか？"
+
+msgid "Removed albums"
+msgstr "外したアルバム"
 
 msgid "Remove…"
 msgstr "削除…"
@@ -7504,6 +7525,9 @@ msgstr "カバーにポインターを合わせると表示されます。タイ
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "入力中に検索ボックスの下へ結果を表示します。オフにすると、入力で結果ページが開きます。"
+
+msgid "Show…"
+msgstr "表示…"
 
 msgid "Shuffle"
 msgstr "シャッフル"
@@ -10628,6 +10652,12 @@ msgstr "アカウントに接続できませんでした: {}"
 
 msgid "the address has to be https"
 msgstr "アドレスはhttpsである必要があります"
+
+msgid "the album could not be brought back: {}"
+msgstr "アルバムを戻せませんでした: {}"
+
+msgid "the album could not be removed: {}"
+msgstr "アルバムを外せませんでした: {}"
 
 msgid "the analysis stopped: {}"
 msgstr "解析が停止しました: {}"

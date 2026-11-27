@@ -26,6 +26,7 @@ mod offline_audio;
 mod rating_sync;
 mod favorite_sync;
 mod local_presentation;
+mod removed_albums;
 mod rebuild;
 mod track_ids;
 #[cfg(test)]
@@ -40,7 +41,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 57;
+pub const VERSION: i64 = 58;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -48,7 +49,7 @@ pub const VERSION: i64 = 57;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[Step] = &[Step::Sql(SCHEMA_V1), Step::Sql(MIGRATION_V2), Step::Sql(MIGRATION_V3), Step::Sql(MIGRATION_V4), Step::Sql(MIGRATION_V5), Step::Sql(MIGRATION_V6), Step::Sql(MIGRATION_V7), Step::Sql(MIGRATION_V8), Step::Sql(MIGRATION_V9), Step::Sql(MIGRATION_V10), Step::Sql(MIGRATION_V11), Step::Sql(MIGRATION_V12), Step::Sql(MIGRATION_V13), Step::Sql(MIGRATION_V14), Step::Sql(MIGRATION_V15), Step::Sql(MIGRATION_V16), Step::Sql(MIGRATION_V17), Step::Sql(MIGRATION_V18), Step::Sql(MIGRATION_V19), Step::Sql(MIGRATION_V20), Step::Sql(MIGRATION_V21), Step::Sql(MIGRATION_V22), Step::Sql(MIGRATION_V23), Step::Sql(MIGRATION_V24), Step::Sql(MIGRATION_V25), Step::Sql(MIGRATION_V26), Step::Sql(MIGRATION_V27), Step::Sql(MIGRATION_V28), Step::Sql(MIGRATION_V29), Step::Sql(MIGRATION_V30), Step::Sql(MIGRATION_V31), Step::Sql(MIGRATION_V32), Step::Sql(MIGRATION_V33), Step::Sql(MIGRATION_V34), Step::Sql(MIGRATION_V35), Step::Sql(MIGRATION_V36), Step::Sql(MIGRATION_V37), Step::Sql(MIGRATION_V38), Step::Sql(MIGRATION_V39), Step::Sql(MIGRATION_V40), Step::Sql(MIGRATION_V41), Step::Sql(MIGRATION_V42), Step::Sql(revisions::MIGRATION_V43), Step::Sql(metadata::MIGRATION_V44), Step::Sql(device_sync::MIGRATION_V45), Step::Sql(revisions::MIGRATION_V46), Step::Sql(MIGRATION_V47), Step::Sql(MIGRATION_V48), Step::Sql(MIGRATION_V49), Step::Sql(MIGRATION_V50), Step::Sql(server_sessions::MIGRATION_V51), Step::Sql(server_storage::MIGRATION_V52), Step::Sql(offline_audio::MIGRATION_V53), Step::Sql(rating_sync::MIGRATION_V54), Step::Sql(favorite_sync::MIGRATION_V55), Step::Sql(local_presentation::MIGRATION_V56), Step::Rebuild(&track_ids::TRACKS)];
+const STEPS: &[Step] = &[Step::Sql(SCHEMA_V1), Step::Sql(MIGRATION_V2), Step::Sql(MIGRATION_V3), Step::Sql(MIGRATION_V4), Step::Sql(MIGRATION_V5), Step::Sql(MIGRATION_V6), Step::Sql(MIGRATION_V7), Step::Sql(MIGRATION_V8), Step::Sql(MIGRATION_V9), Step::Sql(MIGRATION_V10), Step::Sql(MIGRATION_V11), Step::Sql(MIGRATION_V12), Step::Sql(MIGRATION_V13), Step::Sql(MIGRATION_V14), Step::Sql(MIGRATION_V15), Step::Sql(MIGRATION_V16), Step::Sql(MIGRATION_V17), Step::Sql(MIGRATION_V18), Step::Sql(MIGRATION_V19), Step::Sql(MIGRATION_V20), Step::Sql(MIGRATION_V21), Step::Sql(MIGRATION_V22), Step::Sql(MIGRATION_V23), Step::Sql(MIGRATION_V24), Step::Sql(MIGRATION_V25), Step::Sql(MIGRATION_V26), Step::Sql(MIGRATION_V27), Step::Sql(MIGRATION_V28), Step::Sql(MIGRATION_V29), Step::Sql(MIGRATION_V30), Step::Sql(MIGRATION_V31), Step::Sql(MIGRATION_V32), Step::Sql(MIGRATION_V33), Step::Sql(MIGRATION_V34), Step::Sql(MIGRATION_V35), Step::Sql(MIGRATION_V36), Step::Sql(MIGRATION_V37), Step::Sql(MIGRATION_V38), Step::Sql(MIGRATION_V39), Step::Sql(MIGRATION_V40), Step::Sql(MIGRATION_V41), Step::Sql(MIGRATION_V42), Step::Sql(revisions::MIGRATION_V43), Step::Sql(metadata::MIGRATION_V44), Step::Sql(device_sync::MIGRATION_V45), Step::Sql(revisions::MIGRATION_V46), Step::Sql(MIGRATION_V47), Step::Sql(MIGRATION_V48), Step::Sql(MIGRATION_V49), Step::Sql(MIGRATION_V50), Step::Sql(server_sessions::MIGRATION_V51), Step::Sql(server_storage::MIGRATION_V52), Step::Sql(offline_audio::MIGRATION_V53), Step::Sql(rating_sync::MIGRATION_V54), Step::Sql(favorite_sync::MIGRATION_V55), Step::Sql(local_presentation::MIGRATION_V56), Step::Rebuild(&track_ids::TRACKS), Step::Sql(removed_albums::MIGRATION_V58)];
 
 /// One step: SQL run in a transaction of its own, or a table rebuilt
 /// (`rebuild`), which needs settings a transaction cannot change.

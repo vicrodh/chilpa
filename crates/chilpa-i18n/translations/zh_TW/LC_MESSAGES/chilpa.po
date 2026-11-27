@@ -502,6 +502,9 @@ msgstr "來自串流服務的專輯不會被同步。"
 msgid "Albums in your library"
 msgstr ""
 
+msgid "Albums taken out of the library. Their files were not touched; any of them can come back."
+msgstr "從音樂庫移除的專輯。檔案未被更動，任何一張都能找回。"
+
 msgid "All"
 msgstr "全部"
 
@@ -1086,6 +1089,9 @@ msgstr "邊框"
 
 msgid "Both"
 msgstr ""
+
+msgid "Bring back"
+msgstr "找回"
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "瀏覽音樂資料夾，或輸入完整路徑。"
@@ -4049,6 +4055,9 @@ msgstr "義大利文"
 msgid "Its connection"
 msgstr "連線"
 
+msgid "Its files stay where they are, and it can come back from Settings > Library > Removed albums."
+msgstr "檔案會留在原處，之後可從 設定 > 音樂庫 > 已移除的專輯 找回。"
+
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr "正在讀取其音樂；讀取完成後會陸續顯示於音樂庫。"
 
@@ -4981,6 +4990,9 @@ msgstr "此來源無可用的首頁模組。"
 
 msgid "No active parametric EQ filters were found."
 msgstr "未找到啟用的參數化 EQ 濾波器。"
+
+msgid "No album has been removed."
+msgstr "尚未移除任何專輯。"
 
 msgid "No album tracks"
 msgstr "無專輯曲目"
@@ -6626,6 +6638,9 @@ msgstr "從我的最愛移除"
 msgid "Remove from library"
 msgstr "從音樂庫移除"
 
+msgid "Remove from library…"
+msgstr "從音樂庫移除…"
+
 msgid "Remove from playlist"
 msgstr "從播放清單移除"
 
@@ -6677,6 +6692,12 @@ msgstr ""
 
 msgid "Remove {}?"
 msgstr "移除 {}"
+
+msgid "Remove “{}” from the library?"
+msgstr "要將「{}」從音樂庫移除嗎？"
+
+msgid "Removed albums"
+msgstr "已移除的專輯"
 
 msgid "Remove…"
 msgstr "移除…"
@@ -7512,6 +7533,9 @@ msgstr ""
 
 msgid "Shows results under the search box as you type. Off, typing opens the results page."
 msgstr "打字時在搜尋框下方即時顯示結果。關閉時，打字完成後才會開啟結果頁面。"
+
+msgid "Show…"
+msgstr "顯示…"
 
 msgid "Shuffle"
 msgstr "隨機播放"
@@ -10636,6 +10660,12 @@ msgstr "帳號未連線：{}"
 
 msgid "the address has to be https"
 msgstr "位址必須為 https"
+
+msgid "the album could not be brought back: {}"
+msgstr "無法找回專輯：{}"
+
+msgid "the album could not be removed: {}"
+msgstr "無法移除專輯：{}"
 
 msgid "the analysis stopped: {}"
 msgstr "分析已停止：{}"
