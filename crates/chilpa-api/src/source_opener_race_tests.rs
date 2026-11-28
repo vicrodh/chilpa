@@ -1,7 +1,7 @@
 use super::*;
 use chilpa_audio::{format::StreamFormat, sink::{AudioSink, SinkError}};
 use chilpa_core::{launch::LaunchSpec, player::Player};
-use std::{path::Path, sync::{atomic::{AtomicU64, AtomicUsize, Ordering}, mpsc::{channel, Receiver}}, time::Instant};
+use std::{sync::{atomic::{AtomicU64, AtomicUsize, Ordering}, mpsc::{channel, Receiver}}, time::Instant};
 
 #[derive(Default)]
 struct Heard(AtomicU64);
@@ -35,25 +35,6 @@ fn player(opened: Arc<Mutex<Vec<String>>>, written: Arc<AtomicU64>, gate: Option
     )
 }
 
-fn wave(path: &Path) {
-    let frames = 4_410u32;
-    let data = frames * 4;
-    let mut bytes = b"RIFF".to_vec();
-    bytes.extend_from_slice(&(36 + data).to_le_bytes());
-    bytes.extend_from_slice(b"WAVEfmt ");
-    bytes.extend_from_slice(&16u32.to_le_bytes());
-    bytes.extend_from_slice(&1u16.to_le_bytes());
-    bytes.extend_from_slice(&2u16.to_le_bytes());
-    bytes.extend_from_slice(&44_100u32.to_le_bytes());
-    bytes.extend_from_slice(&176_400u32.to_le_bytes());
-    bytes.extend_from_slice(&4u16.to_le_bytes());
-    bytes.extend_from_slice(&16u16.to_le_bytes());
-    bytes.extend_from_slice(b"data");
-    bytes.extend_from_slice(&data.to_le_bytes());
-    bytes.resize(bytes.len() + data as usize, 0);
-    std::fs::write(path, bytes).unwrap();
-}
-
 fn until(mut ready: impl FnMut() -> bool) {
     let deadline = Instant::now() + Duration::from_secs(10);
     while !ready() {
@@ -66,7 +47,7 @@ fn until(mut ready: impl FnMut() -> bool) {
 fn an_address_resolved_late_is_consumed_by_the_recreated_player_without_marking_its_play() {
     let dir = tempfile::tempdir().unwrap();
     let file = dir.path().join("resolved.wav");
-    wave(&file);
+    crate::test_support::wave(&file, 4_410);
     let mut api = crate::Chilpa::with_listed(Vec::new(), Vec::new());
     api.install_openers();
     let openers = api.installed_openers();

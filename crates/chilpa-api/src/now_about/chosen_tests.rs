@@ -103,18 +103,6 @@ fn the_track_that_plays_gets_the_answer_it_always_had() {
     assert_eq!(api.now_track_about(), "{}", "nothing plays, nothing is said");
 }
 
-/// A short silent WAV: 16 bits, 44.1 kHz, stereo.
-fn wave(path: &std::path::Path, frames: u32) {
-    let data = frames * 4;
-    let mut bytes = Vec::new();
-    for part in [&b"RIFF"[..], &(36 + data).to_le_bytes(), b"WAVEfmt ", &16u32.to_le_bytes(), &1u16.to_le_bytes(), &2u16.to_le_bytes(),
-        &44_100u32.to_le_bytes(), &176_400u32.to_le_bytes(), &4u16.to_le_bytes(), &16u16.to_le_bytes(), b"data", &data.to_le_bytes()] {
-        bytes.extend_from_slice(part);
-    }
-    bytes.resize(bytes.len() + data as usize, 0);
-    std::fs::write(path, bytes).unwrap();
-}
-
 fn listed(found: &Value, key: &str) -> Vec<(String, String)> {
     found[key].as_array().unwrap().iter()
         .map(|fact| (fact["label"].as_str().unwrap().to_string(), fact["value"].as_str().unwrap().to_string())).collect()
@@ -124,7 +112,7 @@ fn listed(found: &Value, key: &str) -> Vec<(String, String)> {
 fn a_file_that_is_here_says_its_own_technical_data_and_one_that_is_gone_what_the_library_kept() {
     let music = tempfile::tempdir().unwrap();
     let here = music.path().join("here.wav");
-    wave(&here, 90_000);
+    crate::test_support::wave(&here, 90_000);
     let here = here.to_string_lossy().into_owned();
     let gone = music.path().join("gone.flac").to_string_lossy().into_owned();
     let library = chilpa_library::Library::in_memory().unwrap();

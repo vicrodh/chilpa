@@ -14,6 +14,18 @@ pub(crate) fn profile_environment(root: &Path) -> [(&'static str, PathBuf); 4] {
     [(config, config_path), (data, data_path), (cache, cache_path), (ROOT, root)]
 }
 
+/// A short silent WAV: 16 bits, 44.1 kHz, stereo.
+pub(crate) fn wave(path: &Path, frames: u32) {
+    let data = frames * 4;
+    let mut bytes = Vec::new();
+    for part in [&b"RIFF"[..], &(36 + data).to_le_bytes(), b"WAVEfmt ", &16u32.to_le_bytes(), &1u16.to_le_bytes(), &2u16.to_le_bytes(),
+        &44_100u32.to_le_bytes(), &176_400u32.to_le_bytes(), &4u16.to_le_bytes(), &16u16.to_le_bytes(), b"data", &data.to_le_bytes()] {
+        bytes.extend_from_slice(part);
+    }
+    bytes.resize(bytes.len() + data as usize, 0);
+    std::fs::write(path, bytes).unwrap();
+}
+
 pub(crate) fn assert_isolated_profile() {
     let root = std::env::var_os(ROOT).map(PathBuf::from).expect(REJECTED);
     assert!(root.is_absolute() && root.parent().is_some(), "{REJECTED}");
