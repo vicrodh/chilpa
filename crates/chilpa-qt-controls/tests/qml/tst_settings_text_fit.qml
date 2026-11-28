@@ -113,7 +113,8 @@ TestCase {
             out[arm[1].replace(/"/g, "")] = each(arm[2], label).map(m => m[1] !== undefined ? I18n.tr(unquote(m[1])) : unquote(m[2]))
         const tables = { "crate::graphics_boot::RENDERER": ["graphics_boot.rs", "RENDERER_CHOICES"], "crate::graphics_boot::INTERFACE_SIZE": ["graphics_boot.rs", "SIZE_CHOICES"],
             "crate::queue::normalization::TARGET": ["queue/normalization.rs", "TARGET_CHOICES"], "crate::queue::back_button::BACK": ["queue/back_button.rs", "CHOICES"], "crate::outputs::channel_mode::CHANNEL_MODE": ["outputs/channel_mode.rs", "CHOICES"],
-            "integrations.discord.artworkSource": ["discord/mod.rs", "SOURCES"], "integrations.discord.artworkRetention": ["discord/mod.rs", "RETENTIONS"] }
+            "integrations.discord.artworkSource": ["discord/mod.rs", "SOURCES"], "integrations.discord.artworkRetention": ["discord/mod.rs", "RETENTIONS"],
+            "integrations.discord.memberList": ["discord/mod.rs", "MEMBER_LISTS"] }
         for (const key in tables) {
             const source = read(api + tables[key][0])
             const body = source.match(new RegExp("const " + tables[key][1] + ":[^=]*=\\s*\\[([^;]*)\\];"))
