@@ -736,7 +736,7 @@ fn a_track_the_dsp_reached_after_its_start_is_kept_in_the_history_as_processed()
     let dsp = std::sync::Arc::new(std::sync::OnceLock::new());
     let held = dsp.clone();
     let player = chilpa_core::player::Player::spawn(
-        Box::new(|_| chilpa_core::probe_device("file:capture")),
+        Box::new(|_| Ok(chilpa_audio::capture::capabilities())),
         Box::new(move |_, format, _| Ok(Box::new(DspLater { format, dsp: held.clone(), written: false }) as Box<dyn chilpa_audio::sink::AudioSink + Send>)),
     );
     assert!(dsp.set(player.dsp()).is_ok());
