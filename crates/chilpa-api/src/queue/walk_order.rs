@@ -60,15 +60,24 @@ mod tests {
 
     /// A facade with a player and a play asked of it on `names`, paused.
     fn playing(names: &[&str], order: Vec<usize>) -> Chilpa {
+        playing_rows(rows(names), order)
+    }
+
+    fn playing_rows(rows: Vec<String>, order: Vec<usize>) -> Chilpa {
         let mut api = Chilpa::with_listed(Vec::new(), Vec::new());
         api.player = Some(chilpa_core::spawn_player());
-        ask(&mut api, names, order);
+        ask_rows(&mut api, rows, order);
         api
     }
 
     fn ask(api: &mut Chilpa, names: &[&str], order: Vec<usize>) {
-        api.swap_rows(rows(names));
-        api.removed = vec![false; names.len()];
+        ask_rows(api, rows(names), order);
+    }
+
+    fn ask_rows(api: &mut Chilpa, rows: Vec<String>, order: Vec<usize>) {
+        let len = rows.len();
+        api.swap_rows(rows);
+        api.removed = vec![false; len];
         let spec = chilpa_core::launch::LaunchSpec {
             paths: api.queue.iter().map(std::path::PathBuf::from).collect(), device: "file:capture".into(), paused: true, order,
             ..Default::default()
@@ -116,7 +125,16 @@ mod tests {
 
     #[test]
     fn what_is_asked_with_no_play_in_front_reaches_no_play() {
-        let mut api = playing(&["a", "b", "c"], Vec::new());
+        // Files that open: the paused play holds the first one and never
+        // reaches the third. Missing ones are passed over and taken out of
+        // its queue by the play itself, which could beat the check below.
+        let music = tempfile::tempdir().unwrap();
+        let rows = ["a", "b", "c"].iter().map(|name| {
+            let path = music.path().join(format!("{name}.wav"));
+            crate::test_support::wave(&path, 4_410);
+            path.display().to_string()
+        }).collect();
+        let mut api = playing_rows(rows, Vec::new());
         let old = api.current_launch().unwrap().clone();
         api.stop();
         assert!(api.current_launch().is_none());
